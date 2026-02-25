@@ -1,0 +1,49 @@
+.header { background:var(--dark-navy); padding:2rem 2.5rem; }
+.headerInner { max-width:1100px; margin:0 auto; }
+.breadcrumb { display:flex; gap:0.5rem; font-size:0.8rem; color:rgba(255,255,255,0.4); margin-bottom:0.8rem; }
+.breadcrumb a { color:rgba(255,255,255,0.4); }
+.breadcrumb a:hover { color:rgba(255,255,255,0.8); }
+.breadcrumb span { color:var(--yellow); }
+.headerTitle { font-family:'Fredoka One',cursive; font-size:2.2rem; color:white; margin-bottom:0.4rem; }
+.headerSub { color:rgba(255,255,255,0.5); font-weight:600; margin-bottom:1.5rem; }
+.filterTabs { display:flex; gap:0.5rem; overflow-x:auto; padding-bottom:0.5rem; scrollbar-width:none; }
+.filterTabs::-webkit-scrollbar { display:none; }
+.filterTab { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:0.45rem 1rem; border-radius:50px; font-family:'Nunito',sans-serif; font-size:0.82rem; font-weight:800; white-space:nowrap; cursor:pointer; transition:all 0.2s; }
+.filterTab:hover { background:rgba(255,255,255,0.12); color:white; }
+.filterTabActive { background:var(--yellow) !important; color:var(--dark-navy) !important; border-color:var(--yellow) !important; }
+
+.content { max-width:1100px; margin:0 auto; padding:2rem 2.5rem; }
+.searchRow { display:flex; align-items:center; gap:1rem; margin-bottom:1.5rem; }
+.search { flex:1; background:white; border:1.5px solid var(--border); border-radius:50px; padding:0.7rem 1.2rem; font-family:'Nunito',sans-serif; font-size:0.95rem; font-weight:600; outline:none; color:var(--navy); }
+.search:focus { border-color:var(--teal); }
+.count { font-size:0.85rem; font-weight:800; color:#9aabbb; white-space:nowrap; }
+
+.loading { text-align:center; padding:4rem; color:var(--navy); font-weight:700; }
+.loading .spinner { margin:0 auto 1rem; }
+
+.vendorGrid { display:grid; grid-template-columns:repeat(2,1fr); gap:1.2rem; }
+.vendorCard { background:white; border:1.5px solid var(--border); border-radius:18px; padding:1.5rem; position:relative; transition:all 0.2s; }
+.vendorCard:hover { border-color:var(--teal); box-shadow:0 8px 30px rgba(0,0,0,0.08); transform:translateY(-2px); }
+.featured { border-color:var(--yellow); grid-column:span 2; }
+.badge { position:absolute; top:1rem; right:1rem; background:var(--coral); color:white; font-size:0.7rem; font-weight:800; padding:0.2rem 0.6rem; border-radius:50px; }
+.matchBadge { display:inline-flex; background:rgba(74,173,168,0.1); color:var(--teal); font-size:0.72rem; font-weight:800; padding:0.2rem 0.6rem; border-radius:50px; margin-bottom:0.8rem; }
+.vendorTop { display:flex; gap:1rem; align-items:flex-start; margin-bottom:0.8rem; }
+.vendorIcon { font-size:2rem; width:48px; height:48px; background:var(--light-bg); border-radius:12px; display:flex; align-items:center; justify-content:center; flex-shrink:0; }
+.vendorCat { font-size:0.72rem; font-weight:800; color:var(--teal); text-transform:uppercase; letter-spacing:0.5px; margin-bottom:0.2rem; }
+.vendorName { font-family:'Fredoka One',cursive; font-size:1.15rem; color:var(--navy); }
+.vendorLoc { font-size:0.78rem; color:#9aabbb; font-weight:700; margin-top:0.2rem; }
+.vendorRating { font-size:0.85rem; color:var(--yellow); font-weight:700; margin-bottom:0.6rem; }
+.vendorRating span { color:#9aabbb; margin-left:0.4rem; font-size:0.78rem; }
+.vendorDesc { font-size:0.85rem; color:#6b7f94; font-weight:600; line-height:1.5; margin-bottom:0.8rem; }
+.vendorTags { display:flex; flex-wrap:wrap; gap:0.4rem; margin-bottom:1rem; }
+.tag { background:var(--light-bg); color:var(--navy); font-size:0.72rem; font-weight:800; padding:0.2rem 0.6rem; border-radius:50px; border:1px solid var(--border); }
+.vendorBottom { display:flex; align-items:center; justify-content:space-between; border-top:1px solid var(--border); padding-top:0.8rem; }
+.price { font-family:'Fredoka One',cursive; font-size:1.2rem; color:var(--green); }
+.priceLabel { font-size:0.75rem; color:#9aabbb; font-weight:700; }
+.bookBtn { background:var(--navy); color:white; border:none; padding:0.5rem 1.2rem; border-radius:50px; font-family:'Nunito',sans-serif; font-weight:800; font-size:0.85rem; cursor:pointer; transition:all 0.2s; }
+.bookBtn:hover { background:var(--teal); }
+
+@media (max-width:700px) {
+  .vendorGrid { grid-template-columns:1fr; }
+  .featured { grid-column:span 1; }
+}

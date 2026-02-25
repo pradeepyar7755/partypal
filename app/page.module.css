@@ -1,0 +1,57 @@
+/* HERO */
+.hero { background: var(--dark-navy); padding: 5rem 2.5rem; text-align: center; position: relative; overflow: hidden; }
+.hero::before { content:''; position:absolute; inset:0; background: radial-gradient(ellipse 80% 60% at 50% 50%, rgba(247,201,72,0.08) 0%, transparent 70%); }
+.heroInner { position: relative; max-width: 720px; margin: 0 auto; }
+.heroBadge { display:inline-flex; align-items:center; gap:0.5rem; background:rgba(247,201,72,0.12); border:1px solid rgba(247,201,72,0.25); color:var(--yellow); padding:0.35rem 1rem; border-radius:50px; font-size:0.8rem; font-weight:800; letter-spacing:0.5px; margin-bottom:1.5rem; }
+.heroTitle { font-family:'Fredoka One',cursive; font-size:3.5rem; color:white; line-height:1.15; margin-bottom:1.2rem; }
+.heroTitle em { color:var(--yellow); font-style:normal; }
+.heroSub { color:rgba(255,255,255,0.6); font-size:1.1rem; font-weight:600; max-width:540px; margin:0 auto 2rem; line-height:1.6; }
+.heroBtns { display:flex; gap:1rem; justify-content:center; flex-wrap:wrap; }
+
+/* CATEGORIES */
+.catGrid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; }
+.catCard { background:white; border:1.5px solid var(--border); border-radius:16px; padding:1.5rem 1rem; text-align:center; cursor:pointer; transition:all 0.2s; }
+.catCard:hover { transform:translateY(-5px); }
+.catIcon { width:56px; height:56px; border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:1.6rem; margin:0 auto 0.8rem; transition:transform 0.2s; }
+.catCard:hover .catIcon { transform:scale(1.1) rotate(-5deg); }
+.catName { font-family:'Fredoka One',cursive; font-size:1.1rem; color:var(--navy); margin-bottom:0.3rem; }
+.catCount { font-size:0.78rem; color:#9aabbb; font-weight:700; }
+.yellow { background:rgba(247,201,72,0.15); border-color:transparent; }
+.catCard.yellow:hover { border-color:var(--yellow); box-shadow:0 12px 35px rgba(247,201,72,0.2); }
+.coral { background:rgba(232,137,106,0.15); }
+.catCard.coral:hover { border-color:var(--coral); box-shadow:0 12px 35px rgba(232,137,106,0.2); }
+.teal { background:rgba(74,173,168,0.15); }
+.catCard.teal:hover { border-color:var(--teal); box-shadow:0 12px 35px rgba(74,173,168,0.2); }
+.green { background:rgba(61,140,110,0.15); }
+.catCard.green:hover { border-color:var(--green); }
+.slate { background:rgba(59,80,104,0.15); }
+.catCard.slate:hover { border-color:var(--slate); }
+.dark { background:rgba(26,37,53,0.08); }
+.catCard.dark:hover { border-color:var(--dark-navy); }
+.sand { background:rgba(196,168,130,0.15); }
+.catCard.sand:hover { border-color:var(--sand); }
+
+/* WIZARD */
+.wizardSection { background:var(--dark-navy); padding:5rem 2.5rem; }
+.wizardInner { max-width:760px; margin:0 auto; }
+.wizardForm { background:rgba(255,255,255,0.04); border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:2rem; margin-top:1.5rem; }
+.formRow { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1rem; }
+.formGroup { display:flex; flex-direction:column; gap:0.5rem; }
+.formGroup label { font-size:0.82rem; font-weight:800; color:rgba(255,255,255,0.7); text-transform:uppercase; letter-spacing:0.5px; }
+.formGroup input, .formGroup select { background:rgba(255,255,255,0.07); border:1px solid rgba(255,255,255,0.12); border-radius:10px; padding:0.75rem 1rem; color:white; font-family:'Nunito',sans-serif; font-size:0.95rem; font-weight:600; outline:none; transition:border-color 0.2s; }
+.formGroup input:focus, .formGroup select:focus { border-color:rgba(247,201,72,0.5); }
+.formGroup select option { background:#1A2535; color:white; }
+.wizardSubmit { width:100%; background:var(--yellow); color:var(--dark-navy); border:none; padding:1rem; border-radius:12px; font-family:'Fredoka One',cursive; font-size:1.1rem; cursor:pointer; transition:all 0.2s; margin-top:1rem; }
+.wizardSubmit:hover:not(:disabled) { transform:translateY(-2px); box-shadow:0 8px 30px rgba(247,201,72,0.4); }
+.wizardSubmit:disabled { opacity:0.7; cursor:not-allowed; }
+
+/* FOOTER */
+.footer { background:var(--dark-navy); text-align:center; padding:3rem 2rem; color:rgba(255,255,255,0.4); font-size:0.85rem; font-weight:600; border-top:1px solid rgba(255,255,255,0.06); }
+.footerLogo { font-family:'Fredoka One',cursive; font-size:1.3rem; color:white; margin-bottom:0.5rem; }
+.footerLogo span { color:var(--yellow); }
+
+@media (max-width:700px) {
+  .heroTitle { font-size:2.2rem; }
+  .catGrid { grid-template-columns:repeat(2,1fr); }
+  .formRow { grid-template-columns:1fr; }
+}
