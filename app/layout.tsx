@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <ul>
             <li><a href="/vendors">Browse</a></li>
             <li><a href="/results">My Events</a></li>
-            <li><a href="/vendors">Vendors</a></li>
+            <li><a href="/guests">Guests</a></li>
             <li><a href="/#wizard" className="nav-cta">Plan a Party</a></li>
           </ul>
         </nav>
