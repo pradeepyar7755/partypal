@@ -18,7 +18,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <nav>
           <a href="/" className="nav-logo">🎊 Party<span>Pal</span></a>
           <ul>
-            <li><a href="/vendors">Browse</a></li>
+            <li><a href="/">Browse</a></li>
             <li><a href="/results">My Events</a></li>
             <li><a href="/guests">Guests</a></li>
             <li><a href="/#wizard" className="nav-cta">Plan a Party</a></li>
