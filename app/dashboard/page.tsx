@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from './dashboard.module.css'
 import { showToast } from '@/components/Toast'
+import LocationSearch from '@/components/LocationSearch'
 
 interface ChecklistItem { item: string; category: string; done: boolean; due?: string; urgent?: boolean }
 interface TimelineItem { weeks: string; task: string; category: string; priority: string; emoji?: string }
@@ -184,8 +185,12 @@ export default function Dashboard() {
         }
         setData(updated)
         localStorage.setItem('partyplan', JSON.stringify(updated))
-        // Sync to Firestore
+        // Sync to allEvents array
         if (updated.eventId) {
+            const updatedEvents = allEvents.map(ev => ev.eventId === updated.eventId ? updated : ev)
+            setAllEvents(updatedEvents)
+            localStorage.setItem('partypal_events', JSON.stringify(updatedEvents))
+            // Sync to Firestore
             fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => { })
         }
         setIsEditing(false)
@@ -280,14 +285,6 @@ export default function Dashboard() {
                     </div>
                     <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
                         <button className="back-btn" onClick={() => router.push('/')}>← Back to Home</button>
-                        {!isEditing ? (
-                            <button onClick={startEditing} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '0.4rem 1rem', color: '#fff', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>✏️ Edit Plan</button>
-                        ) : (
-                            <>
-                                <button onClick={saveEdits} style={{ background: 'linear-gradient(135deg, #3D8C6E, #2D7050)', border: 'none', borderRadius: 8, padding: '0.4rem 1rem', color: '#fff', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}>💾 Save</button>
-                                <button onClick={cancelEdits} style={{ background: 'rgba(232,137,106,0.2)', border: '1px solid rgba(232,137,106,0.4)', borderRadius: 8, padding: '0.4rem 1rem', color: '#E8896A', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}>✕ Cancel</button>
-                            </>
-                        )}
                     </div>
                     <div className={styles.eventBadge}>🤖 AI Generated Plan</div>
                 </div>
@@ -300,13 +297,17 @@ export default function Dashboard() {
                     <div
                         onClick={() => loadEvent(DEFAULT_PLAN, true)}
                         style={{
-                            minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s',
-                            background: isDemo ? 'linear-gradient(135deg, rgba(247,201,72,0.15), rgba(232,137,106,0.1))' : 'rgba(0,0,0,0.03)',
-                            border: isDemo ? '2px solid rgba(247,201,72,0.5)' : '1.5px solid rgba(0,0,0,0.08)',
+                            minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const, overflow: 'hidden',
+                            background: isDemo
+                                ? 'repeating-linear-gradient(135deg, rgba(0,0,0,0.03), rgba(0,0,0,0.03) 8px, rgba(0,0,0,0.06) 8px, rgba(0,0,0,0.06) 16px)'
+                                : 'rgba(0,0,0,0.03)',
+                            border: isDemo ? '2px solid rgba(155,155,155,0.4)' : '1.5px solid rgba(0,0,0,0.08)',
+                            opacity: isDemo ? 1 : 0.7,
                         }}
                     >
+                        <div style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.08)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.58rem', fontWeight: 900, color: '#888', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>DEMO</div>
                         <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>🎂</div>
-                        <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '0.2rem' }}>Maya&apos;s 30th Birthday</div>
+                        <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: isDemo ? 'var(--navy)' : '#999', marginBottom: '0.2rem' }}>Maya&apos;s 30th Birthday</div>
                         <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>Mar 15 · Atlanta, GA · Demo</div>
                     </div>
                     {/* User events */}
@@ -347,7 +348,88 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* ══ TABS ══ */}
+            {/* ══ EVENT DETAILS STRIP ══ */}
+            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0.5rem 1.5rem 0' }}>
+                {isDemo ? (
+                    /* Demo: compact disclaimer banner */
+                    <div style={{
+                        background: 'repeating-linear-gradient(135deg, rgba(0,0,0,0.02), rgba(0,0,0,0.02) 8px, rgba(0,0,0,0.04) 8px, rgba(0,0,0,0.04) 16px)',
+                        border: '1.5px solid rgba(155,155,155,0.3)',
+                        borderRadius: 10, padding: '0.6rem 1.2rem',
+                        display: 'flex', alignItems: 'center', gap: '0.8rem',
+                    }}>
+                        <span style={{ fontSize: '1rem' }}>💡</span>
+                        <div style={{ flex: 1, fontSize: '0.78rem', fontWeight: 700, color: '#888' }}>
+                            For Illustration Purposes Only — this is a sample AI-generated plan.
+                        </div>
+                        <button onClick={() => router.push('/#wizard')} style={{
+                            background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none',
+                            borderRadius: 8, padding: '0.4rem 1rem', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap',
+                        }}>✨ Create My Plan</button>
+                    </div>
+                ) : (
+                    /* Real event: editable details strip */
+                    <div style={{
+                        background: 'rgba(74,173,168,0.04)', border: '1.5px solid rgba(74,173,168,0.15)',
+                        borderRadius: 12, padding: '0.8rem 1.2rem',
+                    }}>
+                        {!isEditing ? (
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
+                                <div style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '0.95rem', marginRight: '0.5rem' }}>
+                                    {data.eventType}
+                                </div>
+                                {data.date && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>📅 {new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>}
+                                <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>👥 {data.guests} guests</div>
+                                <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>📍 {data.location}</div>
+                                {data.theme && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>🎨 {data.theme}</div>}
+                                {data.budget && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>💰 {data.budget}</div>}
+                                <button onClick={startEditing} style={{ marginLeft: 'auto', background: 'rgba(74,173,168,0.1)', border: '1.5px solid rgba(74,173,168,0.25)', borderRadius: 8, padding: '0.3rem 0.8rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>✏️ Edit</button>
+                            </div>
+                        ) : (
+                            <div>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                                    <div>
+                                        <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Event Name</label>
+                                        <input value={editData.eventType} onChange={e => setEditData(p => ({ ...p, eventType: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Date</label>
+                                        <input type="date" value={editData.date} onChange={e => setEditData(p => ({ ...p, date: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Guests</label>
+                                        <input type="number" value={editData.guests} onChange={e => setEditData(p => ({ ...p, guests: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Location</label>
+                                        <LocationSearch
+                                            value={editData.location}
+                                            onChange={(loc) => setEditData(p => ({ ...p, location: loc }))}
+                                            placeholder="Search location..."
+                                        />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Theme</label>
+                                        <input value={editData.theme} onChange={e => setEditData(p => ({ ...p, theme: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
+                                    </div>
+                                    <div>
+                                        <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Budget</label>
+                                        <select value={editData.budget} onChange={e => setEditData(p => ({ ...p, budget: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }}>
+                                            <option value="">Select...</option>
+                                            <option>Under $500</option><option>$500 – $1,500</option><option>$1,500 – $5,000</option><option>$5,000 – $10,000</option><option>$10,000+</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                    <button onClick={cancelEdits} style={{ background: 'rgba(232,137,106,0.1)', border: '1.5px solid rgba(232,137,106,0.3)', borderRadius: 8, padding: '0.35rem 0.8rem', fontSize: '0.75rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Cancel</button>
+                                    <button onClick={saveEdits} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', border: 'none', borderRadius: 8, padding: '0.35rem 1rem', fontSize: '0.75rem', fontWeight: 800, color: '#fff', cursor: 'pointer' }}>💾 Save</button>
+                                </div>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
             <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0.8rem 1.5rem 0' }}>
                 <div style={{ display: 'flex', gap: '0.3rem', borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: 0 }}>
                     {([['plan', '📋 Plan'], ['theme', '🎨 Theme'], ['vendors', '🏪 Vendors'], ['guests', '👥 Guests']] as const).map(([key, label]) => (
@@ -366,48 +448,7 @@ export default function Dashboard() {
                 </div>
             </div>
 
-            {/* ══ DEMO DISCLAIMER ══ */}
-            {
-                isDemo && selectedTab === 'plan' && (
-                    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 1.5rem' }}>
-                        <div style={{
-                            background: 'linear-gradient(135deg, rgba(247,201,72,0.12), rgba(232,137,106,0.08))',
-                            border: '1.5px solid rgba(247,201,72,0.35)',
-                            borderRadius: 12,
-                            padding: '1rem 1.5rem',
-                            display: 'flex',
-                            alignItems: 'center',
-                            gap: '1rem',
-                            marginBottom: '0.5rem',
-                            marginTop: '-0.5rem',
-                        }}>
-                            <span style={{ fontSize: '1.4rem' }}>💡</span>
-                            <div style={{ flex: 1 }}>
-                                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#c9960a', marginBottom: 2 }}>For Illustration Purposes Only</div>
-                                <div style={{ fontSize: '0.78rem', color: '#6b7c93', fontWeight: 600, lineHeight: 1.4 }}>
-                                    This is a sample AI-generated plan for &quot;Maya&apos;s 30th Birthday.&quot; To create your personalized party plan, use the AI planner on the homepage.
-                                </div>
-                            </div>
-                            <button
-                                onClick={() => router.push('/#wizard')}
-                                style={{
-                                    background: 'linear-gradient(135deg, #F7C948, #E8A020)',
-                                    color: '#1A2535',
-                                    border: 'none',
-                                    borderRadius: 8,
-                                    padding: '0.6rem 1.2rem',
-                                    fontFamily: "'Fredoka One', cursive",
-                                    fontSize: '0.78rem',
-                                    cursor: 'pointer',
-                                    whiteSpace: 'nowrap',
-                                }}
-                            >
-                                ✨ Create My Plan
-                            </button>
-                        </div>
-                    </div>
-                )
-            }
+
 
             {/* ══ THEME TAB ══ */}
             {
