@@ -21,16 +21,35 @@ function RSVPContent() {
     const [submitted, setSubmitted] = useState(false)
 
     useEffect(() => {
-        // Support both new params (e, n, d, l, t, s, m) and old params (event, date, location)
         const eventId = params.get('e') || undefined
         const eventType = params.get('n') || params.get('event') || undefined
         const date = params.get('d') || params.get('date') || undefined
         const location = params.get('l') || params.get('location') || undefined
         const theme = params.get('t') || params.get('theme') || undefined
-        const inviteSubject = params.get('s') || params.get('subject') || undefined
-        const inviteMessage = params.get('m') || params.get('msg') || undefined
 
-        // Try localStorage for missing data
+        // Try Firestore first (for guests who don't have localStorage)
+        if (eventId) {
+            fetch(`/api/events/${eventId}`)
+                .then(res => res.json())
+                .then(data => {
+                    if (data && !data.error) {
+                        setEventData({
+                            eventId,
+                            eventType: data.eventType || eventType || 'Party',
+                            date: data.date || date || '',
+                            time: data.time,
+                            location: data.location || location || '',
+                            theme: data.theme || theme || '',
+                            inviteSubject: data.invite?.subject,
+                            inviteMessage: data.invite?.message,
+                        })
+                        return
+                    }
+                })
+                .catch(() => { })
+        }
+
+        // Fallback: localStorage then URL params
         const stored = localStorage.getItem('partyplan')
         if (stored) {
             const p = JSON.parse(stored)
@@ -41,8 +60,6 @@ function RSVPContent() {
                 time: p.time,
                 location: location || p.location,
                 theme: theme || p.theme,
-                inviteSubject,
-                inviteMessage,
             })
         } else {
             setEventData({
@@ -51,8 +68,6 @@ function RSVPContent() {
                 date: date || '',
                 location: location || '',
                 theme: theme || '',
-                inviteSubject,
-                inviteMessage,
             })
         }
     }, [params])
@@ -77,6 +92,7 @@ function RSVPContent() {
     const handleSubmit = () => {
         if (!name || !response) return
         const validAdditional = additionalGuests.filter(ag => ag.name.trim())
+        // Save to localStorage
         const rsvps = JSON.parse(localStorage.getItem('partypal_rsvps') || '[]')
         rsvps.push({
             name, email, response, dietary,
@@ -86,6 +102,14 @@ function RSVPContent() {
             timestamp: new Date().toISOString()
         })
         localStorage.setItem('partypal_rsvps', JSON.stringify(rsvps))
+        // Save to Firestore
+        if (eventData.eventId) {
+            fetch(`/api/events/${eventData.eventId}`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ name, email, response, dietary, additionalGuests: validAdditional, totalPartySize: 1 + validAdditional.length }),
+            }).catch(() => { })
+        }
         setSubmitted(true)
     }
 

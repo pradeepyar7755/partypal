@@ -202,6 +202,12 @@ export default function Home() {
       if (data.error) throw new Error(data.error)
       data.eventId = Math.random().toString(36).substring(2, 10)
       localStorage.setItem('partyplan', JSON.stringify(data))
+      // Save to Firestore
+      fetch('/api/events', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data),
+      }).catch(() => { }) // fire-and-forget
       router.push('/dashboard')
     } catch {
       alert('Failed to generate plan. Please try again.')

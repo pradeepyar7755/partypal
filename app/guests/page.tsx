@@ -177,6 +177,10 @@ export default function Guests() {
       const data = await res.json()
       setInvite(data)
       setIsEditingInvite(false)
+      // Save invite to Firestore
+      if (planData.eventId) {
+        fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: data }) }).catch(() => { })
+      }
       showToast('Invite generated!', 'success')
     } catch { showToast('Failed to generate invite', 'error') }
     setLoadingInvite(false)

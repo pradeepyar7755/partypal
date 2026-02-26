@@ -155,6 +155,10 @@ export default function Dashboard() {
         }
         setData(updated)
         localStorage.setItem('partyplan', JSON.stringify(updated))
+        // Sync to Firestore
+        if (updated.eventId) {
+            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => { })
+        }
         setIsEditing(false)
         showToast('Plan updated ✓', 'success')
     }
