@@ -228,38 +228,6 @@ export default function Dashboard() {
                         )}
                     </div>
                     <div className={styles.eventBadge}>🤖 AI Generated Plan</div>
-                    {isEditing ? (
-                        <input value={editData.eventType} onChange={e => setEditData(p => ({ ...p, eventType: e.target.value }))} style={{ fontFamily: "'Fredoka One', cursive", fontSize: '1.8rem', color: '#fff', background: 'rgba(255,255,255,0.08)', border: '1.5px solid rgba(247,201,72,0.4)', borderRadius: 10, padding: '0.4rem 0.8rem', width: '100%', outline: 'none' }} />
-                    ) : (
-                        <h1 className={styles.headerTitle}>{data.eventType}</h1>
-                    )}
-                    <div className={styles.eventMeta}>
-                        {isEditing ? (
-                            <>
-                                <input type="date" value={editData.date} onChange={e => setEditData(p => ({ ...p, date: e.target.value }))} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 20, padding: '0.3rem 0.8rem', color: '#fff', fontSize: '0.8rem', fontWeight: 700 }} />
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 20, padding: '0.3rem 0.8rem' }}>
-                                    <span>👥</span><input type="number" value={editData.guests} onChange={e => setEditData(p => ({ ...p, guests: e.target.value }))} style={{ background: 'transparent', border: 'none', color: '#fff', width: 50, fontSize: '0.8rem', fontWeight: 700, outline: 'none' }} /><span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>guests</span>
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 20, padding: '0.3rem 0.8rem' }}>
-                                    <span>📍</span><input value={editData.location} onChange={e => setEditData(p => ({ ...p, location: e.target.value }))} style={{ background: 'transparent', border: 'none', color: '#fff', width: 120, fontSize: '0.8rem', fontWeight: 700, outline: 'none' }} />
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 20, padding: '0.3rem 0.8rem' }}>
-                                    <span>🎨</span><input value={editData.theme} onChange={e => setEditData(p => ({ ...p, theme: e.target.value }))} placeholder="Theme" style={{ background: 'transparent', border: 'none', color: '#fff', width: 90, fontSize: '0.8rem', fontWeight: 700, outline: 'none' }} />
-                                </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 20, padding: '0.3rem 0.8rem' }}>
-                                    <span>💰</span><input value={editData.budget} onChange={e => setEditData(p => ({ ...p, budget: e.target.value }))} style={{ background: 'transparent', border: 'none', color: '#fff', width: 80, fontSize: '0.8rem', fontWeight: 700, outline: 'none' }} />
-                                </div>
-                            </>
-                        ) : (
-                            <>
-                                {data.date && <div className={styles.metaChip}>📅 {new Date(data.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>}
-                                <div className={styles.metaChip}>👥 {data.guests} Guests</div>
-                                <div className={styles.metaChip}>📍 {data.location}</div>
-                                {data.theme && <div className={styles.metaChip}>🎨 {data.theme} Theme</div>}
-                                {data.budget && <div className={styles.metaChip}>💰 {data.budget} Budget</div>}
-                            </>
-                        )}
-                    </div>
                 </div>
             </header>
 
