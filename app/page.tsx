@@ -359,7 +359,7 @@ export default function Home() {
                         setForm(prev => ({ ...prev, location: '' }))
                       }
                     }} style={{ accentColor: 'var(--teal)' }} />
-                    Not decided yet
+                    TBD
                   </label>
                 </label>
                 {locationTBD ? (
