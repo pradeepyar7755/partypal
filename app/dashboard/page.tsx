@@ -195,13 +195,26 @@ export default function Dashboard() {
         { name: 'Budget Set', pct: 100, color: '#7B5EA7' },
     ]
 
+    const deleteEvent = (eventId: string, e: React.MouseEvent) => {
+        e.stopPropagation()
+        if (!confirm('Delete this event?')) return
+        const updated = allEvents.filter(ev => ev.eventId !== eventId)
+        setAllEvents(updated)
+        localStorage.setItem('partypal_events', JSON.stringify(updated))
+        if (data.eventId === eventId) {
+            loadEvent(DEFAULT_PLAN, true)
+            localStorage.removeItem('partyplan')
+        }
+        showToast('Event deleted', 'success')
+    }
+
     return (
         <main className="page-enter">
             {/* ══ HEADER ══ */}
             <header className={styles.header}>
                 <div className={styles.headerInner}>
                     <div className="breadcrumb">
-                        <a href="/">🏠 Home</a> › <a href="/dashboard">My Events</a> › <span className="breadcrumb current">AI Plan</span>
+                        <a href="/">🏠 Home</a> › <span className="breadcrumb current">My Events</span>
                     </div>
                     <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
                         <button className="back-btn" onClick={() => router.push('/')}>← Back to Home</button>
@@ -272,7 +285,7 @@ export default function Dashboard() {
                             key={ev.eventId}
                             onClick={() => loadEvent(ev, false)}
                             style={{
-                                minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s',
+                                minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const,
                                 background: !isDemo && data.eventId === ev.eventId ? 'linear-gradient(135deg, rgba(74,173,168,0.15), rgba(61,140,110,0.1))' : 'rgba(0,0,0,0.03)',
                                 border: !isDemo && data.eventId === ev.eventId ? '2px solid rgba(74,173,168,0.5)' : '1.5px solid rgba(0,0,0,0.08)',
                             }}
@@ -282,6 +295,11 @@ export default function Dashboard() {
                             <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>
                                 {ev.date ? new Date(ev.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'} · {ev.location || 'TBD'}
                             </div>
+                            <button
+                                onClick={(e) => deleteEvent(ev.eventId!, e)}
+                                style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(232,137,106,0.1)', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.65rem', color: '#E8896A', padding: 0, lineHeight: 1 }}
+                                title="Delete event"
+                            >✕</button>
                         </div>
                     ))}
                     {/* + New Party card */}
