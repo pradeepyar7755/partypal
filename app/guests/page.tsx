@@ -210,8 +210,6 @@ export default function Guests() {
     if (planData.date) params.set('d', planData.date)
     if (planData.location) params.set('l', planData.location)
     if (planData.theme) params.set('t', planData.theme)
-    if (invite?.subject) params.set('s', invite.subject)
-    if (invite?.message) params.set('m', invite.message.slice(0, 500))
     return `${origin}/rsvp?${params.toString()}`
   }
 
