@@ -82,30 +82,44 @@ const DEFAULT_PLAN: PlanData = {
 export default function Dashboard() {
     const router = useRouter()
     const [data, setData] = useState<PlanData>(DEFAULT_PLAN)
+    const [allEvents, setAllEvents] = useState<PlanData[]>([])
     const [checklist, setChecklist] = useState<ChecklistItem[]>([])
     const [isDemo, setIsDemo] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
     const [editData, setEditData] = useState<{ eventType: string; date: string; guests: string; location: string; theme: string; budget: string; time?: string }>({ eventType: '', date: '', guests: '', location: '', theme: '', budget: '' })
     const [editTimeline, setEditTimeline] = useState<TimelineItem[]>([])
+    const [selectedTab, setSelectedTab] = useState<'plan' | 'theme' | 'vendors' | 'guests'>('plan')
     const progressRefs = useRef<HTMLDivElement[]>([])
 
-    useEffect(() => {
-        const stored = localStorage.getItem('partyplan')
-        const parsed: PlanData = stored ? JSON.parse(stored) : DEFAULT_PLAN
-        setIsDemo(!stored)
-        // Ensure event has an ID
-        if (stored && !parsed.eventId) {
-            parsed.eventId = Math.random().toString(36).substring(2, 10)
-            localStorage.setItem('partyplan', JSON.stringify(parsed))
-        }
-        setData(parsed)
-        // Assign timeline labels to checklist items
+    const loadEvent = (plan: PlanData, demo: boolean) => {
+        setData(plan)
+        setIsDemo(demo)
+        if (!demo) localStorage.setItem('partyplan', JSON.stringify(plan))
         const TIMELINE_LABELS = ['6 wks out', '6 wks out', '4 wks out', '4 wks out', '3 wks out', '3 wks out', '2 wks out', '2 wks out', '1 wk out', 'Day before']
-        const enriched = (parsed.plan.checklist || []).map((item, i) => ({
+        const enriched = (plan.plan.checklist || []).map((item, i) => ({
             ...item,
             due: TIMELINE_LABELS[i] || `${Math.max(1, 6 - i)} wks out`,
         }))
         setChecklist(enriched)
+    }
+
+    useEffect(() => {
+        // Load all events from localStorage
+        const storedEvents: PlanData[] = JSON.parse(localStorage.getItem('partypal_events') || '[]')
+        // Ensure each event has an ID
+        storedEvents.forEach(ev => {
+            if (!ev.eventId) ev.eventId = Math.random().toString(36).substring(2, 10)
+        })
+        setAllEvents(storedEvents)
+
+        // Load the active plan
+        const stored = localStorage.getItem('partyplan')
+        const parsed: PlanData = stored ? JSON.parse(stored) : DEFAULT_PLAN
+        if (stored && !parsed.eventId) {
+            parsed.eventId = Math.random().toString(36).substring(2, 10)
+            localStorage.setItem('partyplan', JSON.stringify(parsed))
+        }
+        loadEvent(parsed, !stored)
     }, [])
 
     // Animate progress bars on mount
@@ -236,8 +250,80 @@ export default function Dashboard() {
                 </div>
             </header>
 
+            {/* ══ EVENT CARDS ══ */}
+            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1rem 1.5rem 0' }}>
+                <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'thin' }}>
+                    {/* Demo card: Maya's 30th */}
+                    <div
+                        onClick={() => loadEvent(DEFAULT_PLAN, true)}
+                        style={{
+                            minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s',
+                            background: isDemo ? 'linear-gradient(135deg, rgba(247,201,72,0.15), rgba(232,137,106,0.1))' : 'rgba(255,255,255,0.04)',
+                            border: isDemo ? '2px solid rgba(247,201,72,0.5)' : '1.5px solid rgba(255,255,255,0.08)',
+                        }}
+                    >
+                        <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>🎂</div>
+                        <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: '#fff', marginBottom: '0.2rem' }}>Maya&apos;s 30th Birthday</div>
+                        <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>Mar 15 · Atlanta, GA · Demo</div>
+                    </div>
+                    {/* User events */}
+                    {allEvents.map(ev => (
+                        <div
+                            key={ev.eventId}
+                            onClick={() => loadEvent(ev, false)}
+                            style={{
+                                minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s',
+                                background: !isDemo && data.eventId === ev.eventId ? 'linear-gradient(135deg, rgba(74,173,168,0.15), rgba(61,140,110,0.1))' : 'rgba(255,255,255,0.04)',
+                                border: !isDemo && data.eventId === ev.eventId ? '2px solid rgba(74,173,168,0.5)' : '1.5px solid rgba(255,255,255,0.08)',
+                            }}
+                        >
+                            <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>{ev.eventType?.split(' ')[0] || '🎉'}</div>
+                            <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: '#fff', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{ev.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</div>
+                            <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
+                                {ev.date ? new Date(ev.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'} · {ev.location || 'TBD'}
+                            </div>
+                        </div>
+                    ))}
+                    {/* + New Party card */}
+                    <div
+                        onClick={() => router.push('/#wizard')}
+                        style={{
+                            minWidth: 160, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s',
+                            background: 'rgba(255,255,255,0.02)', border: '1.5px dashed rgba(255,255,255,0.15)',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.3rem',
+                        }}
+                    >
+                        <div style={{ fontSize: '1.5rem', opacity: 0.5 }}>➕</div>
+                        <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700 }}>Plan a Party</div>
+                    </div>
+                </div>
+            </div>
+
+            {/* ══ TABS ══ */}
+            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0.8rem 1.5rem 0' }}>
+                <div style={{ display: 'flex', gap: '0.3rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 0 }}>
+                    {([['plan', '📋 Plan'], ['theme', '🎨 Theme'], ['vendors', '🏪 Vendors'], ['guests', '👥 Guests']] as const).map(([key, label]) => (
+                        <button
+                            key={key}
+                            onClick={() => {
+                                if (key === 'vendors') { router.push('/vendors'); return }
+                                if (key === 'guests') { router.push('/guests'); return }
+                                setSelectedTab(key)
+                            }}
+                            style={{
+                                padding: '0.6rem 1.2rem', border: 'none', borderBottom: selectedTab === key ? '2.5px solid var(--teal)' : '2.5px solid transparent',
+                                background: 'transparent', color: selectedTab === key ? '#fff' : 'rgba(255,255,255,0.45)',
+                                fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', transition: 'all 0.2s', borderRadius: '8px 8px 0 0',
+                            }}
+                        >
+                            {label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
             {/* ══ DEMO DISCLAIMER ══ */}
-            {isDemo && (
+            {isDemo && selectedTab === 'plan' && (
                 <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 1.5rem' }}>
                     <div style={{
                         background: 'linear-gradient(135deg, rgba(247,201,72,0.12), rgba(232,137,106,0.08))',
@@ -277,169 +363,191 @@ export default function Dashboard() {
                 </div>
             )}
 
-            {/* ══ MAIN GRID ══ */}
-            <div className={styles.main}>
-                {/* LEFT COLUMN */}
-                <div>
-                    {/* ── Planning Timeline ── */}
-                    <div className={styles.sectionCard}>
-                        <div className={styles.cardHeader}>
-                            <div className={styles.cardTitleGroup}>
-                                <span className={styles.cardIcon}>🗓️</span>
-                                <h2>Planning Timeline</h2>
-                            </div>
-                            <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
+            {/* ══ THEME TAB ══ */}
+            {selectedTab === 'theme' && (
+                <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem' }}>
+                    <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎨</div>
+                        <h2 style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', marginBottom: '0.5rem' }}>{data.theme ? `${data.theme} Theme` : 'Party Theme'}</h2>
+                        <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.85rem', marginBottom: '1.5rem' }}>Mood board, color palette, and decor inspiration for your event</p>
+                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                            {['🌴 Tropical Vibes', '✨ Gold Accents', '🎈 Balloon Arch', '🌺 Floral Centerpieces', '🕯️ Ambient Lighting', '🍹 Tiki Bar Setup'].map((idea, i) => (
+                                <div key={i} style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 10, padding: '0.6rem 1rem', fontSize: '0.82rem', fontWeight: 700, color: 'var(--teal)' }}>{idea}</div>
+                            ))}
                         </div>
-                        <div className={styles.timeline}>
-                            {(isEditing ? editTimeline : data.plan.timeline).map((t, i) => (
-                                <div key={i} className={styles.timelineItem}>
-                                    <div className={styles.tlLeft}>
-                                        <div className={`${styles.tlDot} ${styles[`tlDot${TIMELINE_DOTS[i % TIMELINE_DOTS.length].charAt(0).toUpperCase() + TIMELINE_DOTS[i % TIMELINE_DOTS.length].slice(1)}` as keyof typeof styles]}`}>
-                                            {TIMELINE_EMOJIS[i % TIMELINE_EMOJIS.length]}
+                    </div>
+                </div>
+            )}
+
+            {/* ══ PLAN TAB (MAIN GRID) ══ */}
+            {selectedTab === 'plan' && (
+                <>
+
+                    {/* ══ MAIN GRID ══ */}
+                    <div className={styles.main}>
+                        {/* LEFT COLUMN */}
+                        <div>
+                            {/* ── Planning Timeline ── */}
+                            <div className={styles.sectionCard}>
+                                <div className={styles.cardHeader}>
+                                    <div className={styles.cardTitleGroup}>
+                                        <span className={styles.cardIcon}>🗓️</span>
+                                        <h2>Planning Timeline</h2>
+                                    </div>
+                                    <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
+                                </div>
+                                <div className={styles.timeline}>
+                                    {(isEditing ? editTimeline : data.plan.timeline).map((t, i) => (
+                                        <div key={i} className={styles.timelineItem}>
+                                            <div className={styles.tlLeft}>
+                                                <div className={`${styles.tlDot} ${styles[`tlDot${TIMELINE_DOTS[i % TIMELINE_DOTS.length].charAt(0).toUpperCase() + TIMELINE_DOTS[i % TIMELINE_DOTS.length].slice(1)}` as keyof typeof styles]}`}>
+                                                    {TIMELINE_EMOJIS[i % TIMELINE_EMOJIS.length]}
+                                                </div>
+                                                <div className={styles.tlLine} />
+                                            </div>
+                                            <div className={styles.tlContent}>
+                                                {isEditing ? (
+                                                    <>
+                                                        <input value={t.weeks} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, weeks: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(74,173,168,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', color: '#4AADA8', fontSize: '0.68rem', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.06em', width: '100%', outline: 'none', marginBottom: 4 }} />
+                                                        <input value={t.task} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, task: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#1A2535', fontSize: '0.9rem', fontWeight: 800, width: '100%', outline: 'none', marginBottom: 4 }} />
+                                                        <textarea value={t.category} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, category: e.target.value } : item))} rows={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#6b7c93', fontSize: '0.78rem', fontWeight: 600, width: '100%', outline: 'none', resize: 'vertical' as const }} />
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <div className={styles.tlTime}>{t.weeks}</div>
+                                                        <div className={styles.tlTitle}>{t.task}</div>
+                                                        {t.category && <div className={styles.tlDesc}>{t.category}</div>}
+                                                    </>
+                                                )}
+                                            </div>
                                         </div>
-                                        <div className={styles.tlLine} />
-                                    </div>
-                                    <div className={styles.tlContent}>
-                                        {isEditing ? (
-                                            <>
-                                                <input value={t.weeks} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, weeks: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(74,173,168,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', color: '#4AADA8', fontSize: '0.68rem', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.06em', width: '100%', outline: 'none', marginBottom: 4 }} />
-                                                <input value={t.task} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, task: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#1A2535', fontSize: '0.9rem', fontWeight: 800, width: '100%', outline: 'none', marginBottom: 4 }} />
-                                                <textarea value={t.category} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, category: e.target.value } : item))} rows={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#6b7c93', fontSize: '0.78rem', fontWeight: 600, width: '100%', outline: 'none', resize: 'vertical' as const }} />
-                                            </>
-                                        ) : (
-                                            <>
-                                                <div className={styles.tlTime}>{t.weeks}</div>
-                                                <div className={styles.tlTitle}>{t.task}</div>
-                                                {t.category && <div className={styles.tlDesc}>{t.category}</div>}
-                                            </>
-                                        )}
-                                    </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* ── Smart Checklist ── */}
-                    <div className={styles.sectionCard}>
-                        <div className={styles.cardHeader}>
-                            <div className={styles.cardTitleGroup}>
-                                <span className={styles.cardIcon}>✅</span>
-                                <h2>Smart Checklist</h2>
                             </div>
-                            <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
-                        </div>
-                        <div className={styles.checklist}>
-                            {checklist.map((item, i) => (
-                                <div key={i} className={`${styles.checkItem} ${item.done ? styles.checkItemDone : ''}`} onClick={() => toggleCheck(i)}>
-                                    <div className={`${styles.checkBox} ${item.done ? styles.checkBoxDone : ''}`}>
-                                        {item.done ? '✓' : ''}
-                                    </div>
-                                    <div className={`${styles.checkLabel} ${item.done ? styles.checkLabelDone : ''}`}>{item.item}</div>
-                                    {item.due && <span className={styles.checkDue}>{item.due}</span>}
-                                </div>
-                            ))}
-                        </div>
-                    </div>
 
-                    {/* ── Top Vendor Matches ── */}
-                    <div className={styles.sectionCard}>
-                        <div className={styles.cardHeader}>
-                            <div className={styles.cardTitleGroup}>
-                                <span className={styles.cardIcon}>⭐</span>
-                                <h2>Top Vendor Matches</h2>
+                            {/* ── Smart Checklist ── */}
+                            <div className={styles.sectionCard}>
+                                <div className={styles.cardHeader}>
+                                    <div className={styles.cardTitleGroup}>
+                                        <span className={styles.cardIcon}>✅</span>
+                                        <h2>Smart Checklist</h2>
+                                    </div>
+                                    <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
+                                </div>
+                                <div className={styles.checklist}>
+                                    {checklist.map((item, i) => (
+                                        <div key={i} className={`${styles.checkItem} ${item.done ? styles.checkItemDone : ''}`} onClick={() => toggleCheck(i)}>
+                                            <div className={`${styles.checkBox} ${item.done ? styles.checkBoxDone : ''}`}>
+                                                {item.done ? '✓' : ''}
+                                            </div>
+                                            <div className={`${styles.checkLabel} ${item.done ? styles.checkLabelDone : ''}`}>{item.item}</div>
+                                            {item.due && <span className={styles.checkDue}>{item.due}</span>}
+                                        </div>
+                                    ))}
+                                </div>
                             </div>
-                            <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
-                        </div>
-                        <div className={styles.vendorRecs}>
-                            {DEFAULT_VENDORS.map((v, i) => (
-                                <div key={i} className={styles.vendorRecCard} onClick={() => router.push(`/vendors?cat=${v.cat.split(' ')[0].toLowerCase()}`)}>
-                                    <div className={styles.vrecTop}>
-                                        <span className={styles.vrecIcon}>{v.emoji}</span>
-                                        <span className={styles.vrecMatch}>{v.match}% match</span>
+
+                            {/* ── Top Vendor Matches ── */}
+                            <div className={styles.sectionCard}>
+                                <div className={styles.cardHeader}>
+                                    <div className={styles.cardTitleGroup}>
+                                        <span className={styles.cardIcon}>⭐</span>
+                                        <h2>Top Vendor Matches</h2>
                                     </div>
-                                    <div className={styles.vrecName}>{v.name}</div>
-                                    <div className={styles.vrecCat}>{v.cat}</div>
-                                    <div className={styles.stars}>{'★'.repeat(Math.floor(v.stars))}{'½' === (v.stars % 1 ? '½' : '') ? '½' : ''}</div>
-                                    <div className={styles.vrecPrice}>{v.price}</div>
+                                    <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-
-
-                </div>
-
-                {/* RIGHT SIDEBAR */}
-                <div>
-                    {/* ── Budget Breakdown ── */}
-                    <div className={styles.sidebarCard}>
-                        <div className={styles.sidebarTitle}>💰 Budget Breakdown</div>
-                        <div className={styles.budgetTotal}>
-                            <div className={styles.budgetAmount}>${allocatedAmount.toLocaleString()}</div>
-                            <div className={styles.budgetLabel}>of ${totalBudget.toLocaleString()} allocated</div>
-                        </div>
-                        <div className={styles.budgetBarWrap}>
-                            <div className={styles.budgetBar} style={{ width: `${budgetPct}%` }} />
-                        </div>
-                        <div className={styles.budgetSpent}>
-                            <span>{budgetPct}% allocated</span>
-                            <span>${remaining.toLocaleString()} remaining</span>
-                        </div>
-                        <div className={styles.budgetItems}>
-                            {data.plan.budget.breakdown.map((b, i) => (
-                                <div key={i} className={styles.budgetItem}>
-                                    <div className={styles.budgetDot} style={{ background: b.color }} />
-                                    <div className={styles.budgetName}>{b.category}</div>
-                                    <div className={styles.budgetVal}>${b.amount.toLocaleString()}</div>
-                                    <div className={styles.budgetPct}>{b.percentage}%</div>
+                                <div className={styles.vendorRecs}>
+                                    {DEFAULT_VENDORS.map((v, i) => (
+                                        <div key={i} className={styles.vendorRecCard} onClick={() => router.push(`/vendors?cat=${v.cat.split(' ')[0].toLowerCase()}`)}>
+                                            <div className={styles.vrecTop}>
+                                                <span className={styles.vrecIcon}>{v.emoji}</span>
+                                                <span className={styles.vrecMatch}>{v.match}% match</span>
+                                            </div>
+                                            <div className={styles.vrecName}>{v.name}</div>
+                                            <div className={styles.vrecCat}>{v.cat}</div>
+                                            <div className={styles.stars}>{'★'.repeat(Math.floor(v.stars))}{'½' === (v.stars % 1 ? '½' : '') ? '½' : ''}</div>
+                                            <div className={styles.vrecPrice}>{v.price}</div>
+                                        </div>
+                                    ))}
                                 </div>
-                            ))}
-                        </div>
-                    </div>
+                            </div>
 
-                    {/* ── Planning Progress ── */}
-                    <div className={styles.sidebarCard}>
-                        <div className={styles.sidebarTitle}>📊 Planning Progress</div>
-                        <div className={styles.progressList}>
-                            {progressItems.map((p, i) => (
-                                <div key={i} className={styles.progItem}>
-                                    <div className={styles.progTop}>
-                                        <span className={styles.progName}>{p.name}</span>
-                                        <span className={styles.progPct}>{p.pct}%</span>
-                                    </div>
-                                    <div className={styles.progBarWrap}>
-                                        <div
-                                            className={styles.progBar}
-                                            ref={el => { if (el) progressRefs.current[i] = el }}
-                                            data-width={`${p.pct}%`}
-                                            style={{ width: 0, background: p.color }}
-                                        />
-                                    </div>
+
+                        </div>
+
+                        {/* RIGHT SIDEBAR */}
+                        <div>
+                            {/* ── Budget Breakdown ── */}
+                            <div className={styles.sidebarCard}>
+                                <div className={styles.sidebarTitle}>💰 Budget Breakdown</div>
+                                <div className={styles.budgetTotal}>
+                                    <div className={styles.budgetAmount}>${allocatedAmount.toLocaleString()}</div>
+                                    <div className={styles.budgetLabel}>of ${totalBudget.toLocaleString()} allocated</div>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
+                                <div className={styles.budgetBarWrap}>
+                                    <div className={styles.budgetBar} style={{ width: `${budgetPct}%` }} />
+                                </div>
+                                <div className={styles.budgetSpent}>
+                                    <span>{budgetPct}% allocated</span>
+                                    <span>${remaining.toLocaleString()} remaining</span>
+                                </div>
+                                <div className={styles.budgetItems}>
+                                    {data.plan.budget.breakdown.map((b, i) => (
+                                        <div key={i} className={styles.budgetItem}>
+                                            <div className={styles.budgetDot} style={{ background: b.color }} />
+                                            <div className={styles.budgetName}>{b.category}</div>
+                                            <div className={styles.budgetVal}>${b.amount.toLocaleString()}</div>
+                                            <div className={styles.budgetPct}>{b.percentage}%</div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
 
-                    {/* ── Quick Actions ── */}
-                    <div className={styles.sidebarCard}>
-                        <div className={styles.sidebarTitle}>⚡ Quick Actions</div>
-                        <div className={styles.quickActions}>
-                            <button className={styles.qaBtn} onClick={() => router.push(`/vendors?cat=venue&location=${data.location}`)}>
-                                <span>🏛️</span><span>Browse Venues Near {data.location?.split(',')[0]}</span><span>›</span>
-                            </button>
-                            <button className={styles.qaBtn} onClick={() => router.push('/guests')}>
-                                <span>💌</span><span>Send Invitations Now</span><span>›</span>
-                            </button>
-                            <button className={styles.qaBtn} onClick={() => router.push('/budget')}>
-                                <span>🤖</span><span>Ask AI to Adjust Budget</span><span>›</span>
-                            </button>
-                            <button className={styles.qaBtn} onClick={() => { showToast('Export coming soon!', 'info') }}>
-                                <span>📋</span><span>Export Plan as PDF</span><span>›</span>
-                            </button>
+                            {/* ── Planning Progress ── */}
+                            <div className={styles.sidebarCard}>
+                                <div className={styles.sidebarTitle}>📊 Planning Progress</div>
+                                <div className={styles.progressList}>
+                                    {progressItems.map((p, i) => (
+                                        <div key={i} className={styles.progItem}>
+                                            <div className={styles.progTop}>
+                                                <span className={styles.progName}>{p.name}</span>
+                                                <span className={styles.progPct}>{p.pct}%</span>
+                                            </div>
+                                            <div className={styles.progBarWrap}>
+                                                <div
+                                                    className={styles.progBar}
+                                                    ref={el => { if (el) progressRefs.current[i] = el }}
+                                                    data-width={`${p.pct}%`}
+                                                    style={{ width: 0, background: p.color }}
+                                                />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+
+                            {/* ── Quick Actions ── */}
+                            <div className={styles.sidebarCard}>
+                                <div className={styles.sidebarTitle}>⚡ Quick Actions</div>
+                                <div className={styles.quickActions}>
+                                    <button className={styles.qaBtn} onClick={() => router.push(`/vendors?cat=venue&location=${data.location}`)}>
+                                        <span>🏛️</span><span>Browse Venues Near {data.location?.split(',')[0]}</span><span>›</span>
+                                    </button>
+                                    <button className={styles.qaBtn} onClick={() => router.push('/guests')}>
+                                        <span>💌</span><span>Send Invitations Now</span><span>›</span>
+                                    </button>
+                                    <button className={styles.qaBtn} onClick={() => router.push('/budget')}>
+                                        <span>🤖</span><span>Ask AI to Adjust Budget</span><span>›</span>
+                                    </button>
+                                    <button className={styles.qaBtn} onClick={() => { showToast('Export coming soon!', 'info') }}>
+                                        <span>📋</span><span>Export Plan as PDF</span><span>›</span>
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
-                </div>
-            </div>
+                </>
+            )}
         </main>
     )
 }

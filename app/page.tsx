@@ -150,7 +150,7 @@ const PARTICLE_COLORS = ['#F7C948', '#E8896A', '#4AADA8', '#7B5EA7', '#3D8C6E', 
 
 export default function Home() {
   const router = useRouter()
-  const [form, setForm] = useState({ eventType: '', date: '', time: '', guests: '', location: '', theme: '', budget: '' })
+  const [form, setForm] = useState({ eventType: '', date: '', guests: '', location: '', theme: '', budget: '' })
   const [locationDetails, setLocationDetails] = useState<{ lat?: number; lng?: number; name?: string; city?: string; state?: string; type?: string } | null>(null)
   const [locationTBD, setLocationTBD] = useState(false)
   const [loading, setLoading] = useState(false)
@@ -202,13 +202,18 @@ export default function Home() {
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       data.eventId = Math.random().toString(36).substring(2, 10)
+      // Store in events array for multi-event support
+      const existing = JSON.parse(localStorage.getItem('partypal_events') || '[]')
+      existing.push(data)
+      localStorage.setItem('partypal_events', JSON.stringify(existing))
+      // Also set as active plan for backward compat
       localStorage.setItem('partyplan', JSON.stringify(data))
       // Save to Firestore
       fetch('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
-      }).catch(() => { }) // fire-and-forget
+      }).catch(() => { })
       router.push('/dashboard')
     } catch {
       alert('Failed to generate plan. Please try again.')
@@ -336,10 +341,6 @@ export default function Home() {
               </div>
             </div>
             <div className={styles.formRow}>
-              <div className={styles.formGroup}>
-                <label>Party Time</label>
-                <input type="time" value={form.time} onChange={e => setForm({ ...form, time: e.target.value })} />
-              </div>
               <div className={styles.formGroup}>
                 <label>Number of Guests *</label>
                 <input type="number" placeholder="e.g. 30" min="1" value={form.guests} onChange={e => setForm({ ...form, guests: e.target.value })} />
