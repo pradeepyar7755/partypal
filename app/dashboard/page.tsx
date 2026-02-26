@@ -12,7 +12,7 @@ interface EventGuest { name: string; email: string; status: 'invited' | 'confirm
 interface EventVendor { name: string; category: string; notes: string; confirmed: boolean }
 
 interface PlanData {
-    eventId?: string; eventType: string; guests: string; location: string; theme: string; date: string; budget: string; time?: string
+    eventId?: string; eventType: string; guests: string; location: string; theme: string; date: string; budget: string; time?: string; createdAt?: string
     plan: {
         summary: string
         timeline: TimelineItem[]
@@ -270,10 +270,12 @@ export default function Dashboard() {
 
     // Countdown calculation
     const today = new Date()
-    const eventDate = data.date ? new Date(data.date + 'T23:59:59') : null
+    const eventDate = data.date ? new Date(data.date + 'T12:00:00') : null
+    const createdDate = data.createdAt ? new Date(data.createdAt) : null
     const daysLeft = eventDate ? Math.max(0, Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))) : null
-    const totalDays = 42 // 6 weeks planning window
-    const countdownPct = daysLeft !== null ? Math.min(100, Math.max(0, Math.round(((totalDays - daysLeft) / totalDays) * 100))) : 0
+    const totalSpan = (eventDate && createdDate) ? Math.max(1, Math.ceil((eventDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24))) : 42
+    const elapsed = (createdDate) ? Math.max(0, Math.ceil((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24))) : 0
+    const countdownPct = Math.min(100, Math.max(0, Math.round((elapsed / totalSpan) * 100)))
 
     return (
         <main className="page-enter">
@@ -324,7 +326,7 @@ export default function Dashboard() {
                             <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>{ev.eventType?.split(' ')[0] || '🎉'}</div>
                             <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{ev.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</div>
                             <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>
-                                {ev.date ? new Date(ev.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'} · {ev.location || 'TBD'}
+                                {ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'} · {ev.location || 'TBD'}
                             </div>
                             <button
                                 onClick={(e) => deleteEvent(ev.eventId!, e)}
@@ -378,7 +380,7 @@ export default function Dashboard() {
                                 <div style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '0.95rem', marginRight: '0.5rem' }}>
                                     {data.eventType}
                                 </div>
-                                {data.date && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>📅 {new Date(data.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>}
+                                {data.date && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>📅 {new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>}
                                 <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>👥 {data.guests} guests</div>
                                 <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>📍 {data.location}</div>
                                 {data.theme && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>🎨 {data.theme}</div>}
@@ -648,7 +650,7 @@ export default function Dashboard() {
                                             <div style={{ height: '100%', width: `${countdownPct}%`, background: daysLeft !== null && daysLeft <= 7 ? 'linear-gradient(90deg, #E8896A, #e06040)' : 'linear-gradient(90deg, var(--teal), #3D8C6E)', borderRadius: 10, transition: 'width 0.8s ease' }} />
                                         </div>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.4rem' }}>
-                                            <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>📋 Plan Created</span>
+                                            <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>📋 {createdDate ? createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Plan Created'}</span>
                                             <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>📍 Today</span>
                                             <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>🎉 {eventDate ? eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Event'}</span>
                                         </div>

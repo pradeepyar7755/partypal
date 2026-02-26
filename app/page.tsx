@@ -202,6 +202,7 @@ export default function Home() {
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       data.eventId = Math.random().toString(36).substring(2, 10)
+      data.createdAt = new Date().toISOString()
       // Store in events array for multi-event support
       const existing = JSON.parse(localStorage.getItem('partypal_events') || '[]')
       existing.push(data)
