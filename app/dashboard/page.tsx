@@ -258,13 +258,13 @@ export default function Dashboard() {
                         onClick={() => loadEvent(DEFAULT_PLAN, true)}
                         style={{
                             minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s',
-                            background: isDemo ? 'linear-gradient(135deg, rgba(247,201,72,0.15), rgba(232,137,106,0.1))' : 'rgba(255,255,255,0.04)',
-                            border: isDemo ? '2px solid rgba(247,201,72,0.5)' : '1.5px solid rgba(255,255,255,0.08)',
+                            background: isDemo ? 'linear-gradient(135deg, rgba(247,201,72,0.15), rgba(232,137,106,0.1))' : 'rgba(0,0,0,0.03)',
+                            border: isDemo ? '2px solid rgba(247,201,72,0.5)' : '1.5px solid rgba(0,0,0,0.08)',
                         }}
                     >
                         <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>🎂</div>
-                        <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: '#fff', marginBottom: '0.2rem' }}>Maya&apos;s 30th Birthday</div>
-                        <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>Mar 15 · Atlanta, GA · Demo</div>
+                        <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '0.2rem' }}>Maya&apos;s 30th Birthday</div>
+                        <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>Mar 15 · Atlanta, GA · Demo</div>
                     </div>
                     {/* User events */}
                     {allEvents.map(ev => (
@@ -273,13 +273,13 @@ export default function Dashboard() {
                             onClick={() => loadEvent(ev, false)}
                             style={{
                                 minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s',
-                                background: !isDemo && data.eventId === ev.eventId ? 'linear-gradient(135deg, rgba(74,173,168,0.15), rgba(61,140,110,0.1))' : 'rgba(255,255,255,0.04)',
-                                border: !isDemo && data.eventId === ev.eventId ? '2px solid rgba(74,173,168,0.5)' : '1.5px solid rgba(255,255,255,0.08)',
+                                background: !isDemo && data.eventId === ev.eventId ? 'linear-gradient(135deg, rgba(74,173,168,0.15), rgba(61,140,110,0.1))' : 'rgba(0,0,0,0.03)',
+                                border: !isDemo && data.eventId === ev.eventId ? '2px solid rgba(74,173,168,0.5)' : '1.5px solid rgba(0,0,0,0.08)',
                             }}
                         >
                             <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>{ev.eventType?.split(' ')[0] || '🎉'}</div>
-                            <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: '#fff', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{ev.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</div>
-                            <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.5)', fontWeight: 600 }}>
+                            <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{ev.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</div>
+                            <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>
                                 {ev.date ? new Date(ev.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'} · {ev.location || 'TBD'}
                             </div>
                         </div>
@@ -289,12 +289,12 @@ export default function Dashboard() {
                         onClick={() => router.push('/#wizard')}
                         style={{
                             minWidth: 160, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s',
-                            background: 'rgba(255,255,255,0.02)', border: '1.5px dashed rgba(255,255,255,0.15)',
+                            background: 'rgba(0,0,0,0.02)', border: '1.5px dashed rgba(0,0,0,0.12)',
                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.3rem',
                         }}
                     >
                         <div style={{ fontSize: '1.5rem', opacity: 0.5 }}>➕</div>
-                        <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.4)', fontWeight: 700 }}>Plan a Party</div>
+                        <div style={{ fontSize: '0.78rem', color: '#9aabbb', fontWeight: 700 }}>Plan a Party</div>
                     </div>
                 </div>
             </div>
@@ -312,7 +312,7 @@ export default function Dashboard() {
                             }}
                             style={{
                                 padding: '0.6rem 1.2rem', border: 'none', borderBottom: selectedTab === key ? '2.5px solid var(--teal)' : '2.5px solid transparent',
-                                background: 'transparent', color: selectedTab === key ? '#fff' : 'rgba(255,255,255,0.45)',
+                                background: 'transparent', color: selectedTab === key ? 'var(--navy)' : '#9aabbb',
                                 fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', transition: 'all 0.2s', borderRadius: '8px 8px 0 0',
                             }}
                         >
@@ -339,7 +339,7 @@ export default function Dashboard() {
                         <span style={{ fontSize: '1.4rem' }}>💡</span>
                         <div style={{ flex: 1 }}>
                             <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: '#F7C948', marginBottom: 2 }}>For Illustration Purposes Only</div>
-                            <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.65)', fontWeight: 600, lineHeight: 1.4 }}>
+                            <div style={{ fontSize: '0.78rem', color: '#6b7c93', fontWeight: 600, lineHeight: 1.4 }}>
                                 This is a sample AI-generated plan for &quot;Maya&apos;s 30th Birthday.&quot; To create your personalized party plan, use the AI planner on the homepage.
                             </div>
                         </div>
