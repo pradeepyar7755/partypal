@@ -343,28 +343,40 @@ export default function Dashboard() {
                         <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>Mar 15 · Atlanta, GA · Demo</div>
                     </div>
                     {/* User events */}
-                    {allEvents.map(ev => (
-                        <div
-                            key={ev.eventId}
-                            onClick={() => loadEvent(ev, false)}
-                            style={{
-                                minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const,
-                                background: !isDemo && data.eventId === ev.eventId ? 'linear-gradient(135deg, rgba(74,173,168,0.15), rgba(61,140,110,0.1))' : 'rgba(0,0,0,0.03)',
-                                border: !isDemo && data.eventId === ev.eventId ? '2px solid rgba(74,173,168,0.5)' : '1.5px solid rgba(0,0,0,0.08)',
-                            }}
-                        >
-                            <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>{ev.eventType?.split(' ')[0] || '🎉'}</div>
-                            <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{ev.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</div>
-                            <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>
-                                {ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'} · {ev.location || 'TBD'}
+                    {allEvents.map((ev, idx) => {
+                        const isActive = !isDemo && data.eventId === ev.eventId
+                        const palette = [
+                            { bg: 'linear-gradient(135deg, rgba(74,173,168,0.18), rgba(61,140,110,0.12))', border: 'rgba(74,173,168,0.5)' },
+                            { bg: 'linear-gradient(135deg, rgba(232,137,106,0.18), rgba(200,100,70,0.12))', border: 'rgba(232,137,106,0.5)' },
+                            { bg: 'linear-gradient(135deg, rgba(123,94,167,0.18), rgba(100,70,150,0.12))', border: 'rgba(123,94,167,0.5)' },
+                            { bg: 'linear-gradient(135deg, rgba(247,201,72,0.20), rgba(220,170,40,0.12))', border: 'rgba(247,201,72,0.5)' },
+                            { bg: 'linear-gradient(135deg, rgba(66,133,244,0.18), rgba(40,100,200,0.12))', border: 'rgba(66,133,244,0.5)' },
+                        ]
+                        const color = palette[idx % palette.length]
+                        return (
+                            <div
+                                key={ev.eventId}
+                                onClick={() => loadEvent(ev, false)}
+                                style={{
+                                    minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const,
+                                    background: isActive ? color.bg : 'linear-gradient(135deg, rgba(0,0,0,0.03), rgba(0,0,0,0.06))',
+                                    border: isActive ? `2px solid ${color.border}` : '1.5px solid rgba(0,0,0,0.1)',
+                                    boxShadow: isActive ? `0 4px 16px ${color.border.replace('0.5', '0.2')}` : '0 1px 4px rgba(0,0,0,0.04)',
+                                }}
+                            >
+                                <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>{ev.eventType?.split(' ')[0] || '🎉'}</div>
+                                <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{ev.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</div>
+                                <div style={{ fontSize: '0.7rem', color: '#6b7c93', fontWeight: 700 }}>
+                                    {ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'} · {ev.location || 'TBD'}
+                                </div>
+                                <button
+                                    onClick={(e) => deleteEvent(ev.eventId!, e)}
+                                    style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(232,137,106,0.1)', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.65rem', color: '#E8896A', padding: 0, lineHeight: 1 }}
+                                    title="Delete event"
+                                >✕</button>
                             </div>
-                            <button
-                                onClick={(e) => deleteEvent(ev.eventId!, e)}
-                                style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(232,137,106,0.1)', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.65rem', color: '#E8896A', padding: 0, lineHeight: 1 }}
-                                title="Delete event"
-                            >✕</button>
-                        </div>
-                    ))}
+                        )
+                    })}
                     {/* + New Party card */}
                     <div
                         onClick={() => router.push('/#wizard')}
