@@ -37,7 +37,7 @@ export default function Guests() {
   const [newGuest, setNewGuest] = useState({ name: '', email: '', dietary: 'None', additionalGuests: [] as AdditionalGuest[] })
   const [invite, setInvite] = useState<{ subject?: string; message?: string; smsVersion?: string; shareableLink?: string } | null>(null)
   const [loadingInvite, setLoadingInvite] = useState(false)
-  const [planData, setPlanData] = useState<{ eventType?: string; theme?: string; date?: string; location?: string }>({})
+  const [planData, setPlanData] = useState<{ eventType?: string; theme?: string; date?: string; location?: string; eventId?: string }>({})
   const [copied, setCopied] = useState(false)
   const [search, setSearch] = useState('')
   const [filter, setFilter] = useState<string>('all')
@@ -49,7 +49,15 @@ export default function Guests() {
 
   useEffect(() => {
     const stored = localStorage.getItem('partyplan')
-    if (stored) { const p = JSON.parse(stored); setPlanData({ eventType: p.eventType, theme: p.theme, date: p.date, location: p.location }) }
+    if (stored) {
+      const p = JSON.parse(stored)
+      // Ensure event has an ID
+      if (!p.eventId) {
+        p.eventId = Math.random().toString(36).substring(2, 10)
+        localStorage.setItem('partyplan', JSON.stringify(p))
+      }
+      setPlanData({ eventType: p.eventType, theme: p.theme, date: p.date, location: p.location, eventId: p.eventId })
+    }
   }, [])
 
   const totalHeadcount = guests.reduce((sum, g) => sum + 1 + g.additionalGuests.length, 0)
@@ -195,11 +203,16 @@ export default function Guests() {
   }
 
   const getRSVPLink = () => {
-    const base = `${typeof window !== 'undefined' ? window.location.origin : 'https://partypal.social'}/rsvp?event=${encodeURIComponent(planData.eventType || 'Party')}&date=${planData.date || ''}&location=${encodeURIComponent(planData.location || '')}`
-    if (invite?.subject && invite?.message) {
-      return `${base}&subject=${encodeURIComponent(invite.subject)}&msg=${encodeURIComponent(invite.message.slice(0, 500))}`
-    }
-    return base
+    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://partypal.social'
+    const eventId = planData.eventId || Math.random().toString(36).substring(2, 10)
+    const params = new URLSearchParams({ e: eventId })
+    if (planData.eventType) params.set('n', planData.eventType)
+    if (planData.date) params.set('d', planData.date)
+    if (planData.location) params.set('l', planData.location)
+    if (planData.theme) params.set('t', planData.theme)
+    if (invite?.subject) params.set('s', invite.subject)
+    if (invite?.message) params.set('m', invite.message.slice(0, 500))
+    return `${origin}/rsvp?${params.toString()}`
   }
 
   const copyRSVPLink = () => {

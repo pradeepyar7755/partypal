@@ -9,7 +9,7 @@ interface TimelineItem { weeks: string; task: string; category: string; priority
 interface BudgetItem { category: string; amount: number; percentage: number; color: string }
 
 interface PlanData {
-    eventType: string; guests: string; location: string; theme: string; date: string; budget: string; time?: string
+    eventId?: string; eventType: string; guests: string; location: string; theme: string; date: string; budget: string; time?: string
     plan: {
         summary: string
         timeline: TimelineItem[]
@@ -93,6 +93,11 @@ export default function Dashboard() {
         const stored = localStorage.getItem('partyplan')
         const parsed: PlanData = stored ? JSON.parse(stored) : DEFAULT_PLAN
         setIsDemo(!stored)
+        // Ensure event has an ID
+        if (stored && !parsed.eventId) {
+            parsed.eventId = Math.random().toString(36).substring(2, 10)
+            localStorage.setItem('partyplan', JSON.stringify(parsed))
+        }
         setData(parsed)
         // Assign timeline labels to checklist items
         const TIMELINE_LABELS = ['6 wks out', '6 wks out', '4 wks out', '4 wks out', '3 wks out', '3 wks out', '2 wks out', '2 wks out', '1 wk out', 'Day before']

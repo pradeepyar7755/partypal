@@ -12,7 +12,7 @@ const RELATIONSHIP_OPTIONS = ['Partner', 'Spouse', 'Child', 'Family', 'Friend', 
 
 function RSVPContent() {
     const params = useSearchParams()
-    const [eventData, setEventData] = useState<{ eventType?: string; date?: string; time?: string; location?: string; theme?: string }>({})
+    const [eventData, setEventData] = useState<{ eventType?: string; date?: string; time?: string; location?: string; theme?: string; eventId?: string; inviteSubject?: string; inviteMessage?: string }>({})
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
     const [response, setResponse] = useState<'going' | 'maybe' | 'declined' | ''>('')
@@ -21,22 +21,38 @@ function RSVPContent() {
     const [submitted, setSubmitted] = useState(false)
 
     useEffect(() => {
+        // Support both new params (e, n, d, l, t, s, m) and old params (event, date, location)
+        const eventId = params.get('e') || undefined
+        const eventType = params.get('n') || params.get('event') || undefined
+        const date = params.get('d') || params.get('date') || undefined
+        const location = params.get('l') || params.get('location') || undefined
+        const theme = params.get('t') || params.get('theme') || undefined
+        const inviteSubject = params.get('s') || params.get('subject') || undefined
+        const inviteMessage = params.get('m') || params.get('msg') || undefined
+
+        // Try localStorage for missing data
         const stored = localStorage.getItem('partyplan')
         if (stored) {
             const p = JSON.parse(stored)
             setEventData({
-                eventType: params.get('event') || p.eventType || 'Party',
-                date: p.date,
+                eventId,
+                eventType: eventType || p.eventType || 'Party',
+                date: date || p.date,
                 time: p.time,
-                location: p.location,
-                theme: p.theme,
+                location: location || p.location,
+                theme: theme || p.theme,
+                inviteSubject,
+                inviteMessage,
             })
         } else {
             setEventData({
-                eventType: params.get('event') || 'Party',
-                date: params.get('date') || '',
-                location: params.get('location') || '',
-                theme: params.get('theme') || '',
+                eventId,
+                eventType: eventType || 'Party',
+                date: date || '',
+                location: location || '',
+                theme: theme || '',
+                inviteSubject,
+                inviteMessage,
             })
         }
     }, [params])
@@ -64,6 +80,7 @@ function RSVPContent() {
         const rsvps = JSON.parse(localStorage.getItem('partypal_rsvps') || '[]')
         rsvps.push({
             name, email, response, dietary,
+            eventId: eventData.eventId,
             additionalGuests: validAdditional,
             totalPartySize: 1 + validAdditional.length,
             timestamp: new Date().toISOString()
@@ -87,7 +104,16 @@ function RSVPContent() {
                         {eventData.location || 'Location TBD'}
                         {eventData.theme && ` · ${eventData.theme} Theme`}
                     </p>
+                    {eventData.eventId && <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.3rem' }}>Event ID: {eventData.eventId}</p>}
                 </div>
+
+                {/* Show invite message if present */}
+                {eventData.inviteMessage && (
+                    <div style={{ padding: '1rem 1.5rem', background: 'rgba(247,201,72,0.08)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        {eventData.inviteSubject && <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.9rem', color: 'var(--navy)', marginBottom: '0.4rem' }}>{eventData.inviteSubject}</div>}
+                        <p style={{ fontSize: '0.82rem', color: '#6b7c93', lineHeight: 1.5, fontWeight: 600 }}>{eventData.inviteMessage}</p>
+                    </div>
+                )}
 
                 {!submitted ? (
                     <div className={styles.rsvpBody}>

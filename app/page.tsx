@@ -200,6 +200,7 @@ export default function Home() {
       })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
+      data.eventId = Math.random().toString(36).substring(2, 10)
       localStorage.setItem('partyplan', JSON.stringify(data))
       router.push('/dashboard')
     } catch {
