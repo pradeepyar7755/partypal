@@ -1,0 +1,645 @@
+/* ══ RESULTS HEADER ══ */
+.header {
+    background: var(--dark-navy);
+    padding: 3rem 2.5rem 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.header::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse 60% 80% at 80% 50%, rgba(74, 173, 168, 0.12) 0%, transparent 70%),
+        radial-gradient(ellipse 40% 60% at 10% 50%, rgba(247, 201, 72, 0.08) 0%, transparent 60%);
+    pointer-events: none;
+}
+
+.headerInner {
+    max-width: 1100px;
+    margin: 0 auto;
+    position: relative;
+}
+
+.eventBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(247, 201, 72, 0.12);
+    border: 1px solid rgba(247, 201, 72, 0.3);
+    color: var(--yellow);
+    padding: 0.35rem 1rem;
+    border-radius: 50px;
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    margin-bottom: 1rem;
+}
+
+.headerTitle {
+    font-family: 'Fredoka One', cursive;
+    font-size: 2.6rem;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.eventMeta {
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+    margin-top: 0.8rem;
+}
+
+.metaChip {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: rgba(255, 255, 255, 0.07);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.65);
+    padding: 0.35rem 0.9rem;
+    border-radius: 50px;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.aiGenerating {
+    margin-top: 1.5rem;
+    background: rgba(74, 173, 168, 0.1);
+    border: 1px solid rgba(74, 173, 168, 0.25);
+    border-radius: 12px;
+    padding: 0.9rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    max-width: 480px;
+}
+
+.aiGenText {
+    font-size: 0.85rem;
+    color: var(--teal);
+    font-weight: 700;
+}
+
+.aiGenSub {
+    font-size: 0.75rem;
+    color: rgba(74, 173, 168, 0.6);
+    font-weight: 600;
+}
+
+/* ══ MAIN LAYOUT ══ */
+.main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 2.5rem;
+    display: grid;
+    grid-template-columns: 1fr 340px;
+    gap: 2rem;
+}
+
+/* ══ SECTION CARD ══ */
+.sectionCard {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 1.8rem;
+    border: 1.5px solid var(--border);
+    margin-bottom: 1.5rem;
+}
+
+.cardHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+}
+
+.cardTitleGroup {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.cardTitleGroup h2 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.2rem;
+    color: var(--navy);
+}
+
+.cardIcon {
+    font-size: 1.3rem;
+}
+
+.sourceBadge {
+    font-size: 0.7rem;
+    font-weight: 800;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 0.25rem 0.7rem;
+    border-radius: 50px;
+}
+
+.claudeBadge {
+    background: rgba(232, 137, 106, 0.12);
+    color: var(--coral);
+}
+
+/* ══ TIMELINE ══ */
+.timeline {
+    display: flex;
+    flex-direction: column;
+}
+
+.timelineItem {
+    display: flex;
+    gap: 1.2rem;
+    position: relative;
+    padding-bottom: 1.5rem;
+}
+
+.timelineItem:last-child {
+    padding-bottom: 0;
+}
+
+.timelineItem:last-child .tlLine {
+    display: none;
+}
+
+.tlLeft {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    flex-shrink: 0;
+    width: 36px;
+}
+
+.tlDot {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1rem;
+    flex-shrink: 0;
+    z-index: 1;
+}
+
+.tlDotCoral {
+    background: rgba(232, 137, 106, 0.15);
+}
+
+.tlDotYellow {
+    background: rgba(247, 201, 72, 0.15);
+}
+
+.tlDotTeal {
+    background: rgba(74, 173, 168, 0.15);
+}
+
+.tlDotGreen {
+    background: rgba(61, 140, 110, 0.15);
+}
+
+.tlDotNavy {
+    background: rgba(45, 64, 89, 0.12);
+}
+
+.tlLine {
+    width: 2px;
+    flex: 1;
+    background: var(--border);
+    margin-top: 4px;
+    min-height: 20px;
+}
+
+.tlContent {
+    padding-top: 0.4rem;
+}
+
+.tlTime {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    color: #9aabbb;
+    margin-bottom: 0.2rem;
+}
+
+.tlTitle {
+    font-weight: 800;
+    font-size: 0.95rem;
+    color: var(--navy);
+    margin-bottom: 0.2rem;
+}
+
+.tlDesc {
+    font-size: 0.83rem;
+    color: #7a8a9a;
+    line-height: 1.5;
+}
+
+/* ══ CHECKLIST ══ */
+.checklist {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.checkItem {
+    display: flex;
+    align-items: center;
+    gap: 0.85rem;
+    padding: 0.75rem 1rem;
+    border-radius: 10px;
+    background: var(--light-bg);
+    border: 1.5px solid transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.checkItem:hover {
+    border-color: var(--yellow);
+    background: rgba(247, 201, 72, 0.05);
+}
+
+.checkItemDone {
+    opacity: 0.5;
+}
+
+.checkBox {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    font-size: 0.8rem;
+    transition: all 0.2s;
+    color: transparent;
+}
+
+.checkBoxDone {
+    background: var(--teal);
+    border-color: var(--teal);
+    color: white;
+}
+
+.checkLabel {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--navy);
+    flex: 1;
+}
+
+.checkLabelDone {
+    text-decoration: line-through;
+}
+
+.checkDue {
+    font-size: 0.75rem;
+    color: #9aabbb;
+    font-weight: 600;
+}
+
+.checkUrgent {
+    font-size: 0.72rem;
+    background: rgba(232, 137, 106, 0.12);
+    color: var(--coral);
+    font-weight: 800;
+    padding: 0.15rem 0.5rem;
+    border-radius: 50px;
+}
+
+/* ══ VENDOR RECS ══ */
+.vendorRecs {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.vendorRecCard {
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.vendorRecCard:hover {
+    border-color: var(--yellow);
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(247, 201, 72, 0.15);
+}
+
+.vrecTop {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 0.6rem;
+}
+
+.vrecIcon {
+    font-size: 1.6rem;
+}
+
+.vrecMatch {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--teal);
+    background: rgba(74, 173, 168, 0.1);
+    padding: 0.2rem 0.55rem;
+    border-radius: 50px;
+}
+
+.vrecName {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1rem;
+    color: var(--navy);
+    margin-bottom: 0.2rem;
+}
+
+.vrecCat {
+    font-size: 0.78rem;
+    color: #9aabbb;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.stars {
+    color: var(--yellow);
+    font-size: 0.8rem;
+    margin-bottom: 0.3rem;
+}
+
+.vrecPrice {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--green);
+}
+
+/* ══ MOOD BOARD ══ */
+.moodBoard {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.75rem;
+}
+
+.moodTile {
+    border-radius: 12px;
+    aspect-ratio: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2.5rem;
+    cursor: pointer;
+    transition: transform 0.2s;
+    position: relative;
+    overflow: hidden;
+}
+
+.moodTile:hover {
+    transform: scale(1.04);
+}
+
+.moodLabel {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: linear-gradient(transparent, rgba(0, 0, 0, 0.5));
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.5rem 0.4rem 0.4rem;
+    text-align: center;
+}
+
+/* ══ SIDEBAR ══ */
+.sidebarCard {
+    background: var(--white);
+    border-radius: 20px;
+    padding: 1.5rem;
+    border: 1.5px solid var(--border);
+    margin-bottom: 1.5rem;
+}
+
+.sidebarTitle {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.1rem;
+    color: var(--navy);
+    margin-bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+/* Budget Breakdown */
+.budgetTotal {
+    text-align: center;
+    margin-bottom: 1.5rem;
+}
+
+.budgetAmount {
+    font-family: 'Fredoka One', cursive;
+    font-size: 2.4rem;
+    color: var(--navy);
+}
+
+.budgetLabel {
+    font-size: 0.8rem;
+    color: #9aabbb;
+    font-weight: 600;
+}
+
+.budgetBarWrap {
+    height: 10px;
+    background: var(--border);
+    border-radius: 50px;
+    overflow: hidden;
+    margin-bottom: 1.2rem;
+}
+
+.budgetBar {
+    height: 100%;
+    border-radius: 50px;
+    background: linear-gradient(90deg, var(--teal), var(--yellow));
+    transition: width 1.2s ease;
+}
+
+.budgetSpent {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.78rem;
+    color: #9aabbb;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.budgetItems {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+.budgetItem {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+}
+
+.budgetDot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.budgetName {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--navy);
+    flex: 1;
+}
+
+.budgetVal {
+    font-size: 0.85rem;
+    font-weight: 800;
+    color: var(--navy);
+}
+
+.budgetPct {
+    font-size: 0.75rem;
+    color: #9aabbb;
+    min-width: 32px;
+    text-align: right;
+}
+
+/* Planning Progress */
+.progressList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.85rem;
+}
+
+.progItem {}
+
+.progTop {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 0.35rem;
+}
+
+.progName {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--navy);
+}
+
+.progPct {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: #9aabbb;
+}
+
+.progBarWrap {
+    height: 7px;
+    background: var(--border);
+    border-radius: 50px;
+    overflow: hidden;
+}
+
+.progBar {
+    height: 100%;
+    border-radius: 50px;
+    transition: width 1s ease;
+}
+
+/* Quick Actions */
+.quickActions {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+}
+
+.qaBtn {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.85rem 1rem;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+    width: 100%;
+    font-family: 'Nunito', sans-serif;
+    text-align: left;
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--navy);
+}
+
+.qaBtn:hover {
+    border-color: var(--yellow);
+    background: rgba(247, 201, 72, 0.05);
+}
+
+.qaBtn span:last-child {
+    margin-left: auto;
+    color: #ccc;
+    font-size: 0.9rem;
+}
+
+/* ══ EMPTY STATE ══ */
+.emptyState {
+    text-align: center;
+    padding: 4rem 2rem;
+}
+
+.emptyIcon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+}
+
+.emptyTitle {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.5rem;
+    color: var(--navy);
+    margin-bottom: 0.5rem;
+}
+
+.emptyMsg {
+    color: #6b7f94;
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+    max-width: 400px;
+    margin-left: auto;
+    margin-right: auto;
+}
+
+@media (max-width: 900px) {
+    .main {
+        grid-template-columns: 1fr;
+    }
+
+    .vendorRecs {
+        grid-template-columns: 1fr;
+    }
+
+    .moodBoard {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 600px) {
+    .header {
+        padding: 2rem 1.2rem;
+    }
+
+    .main {
+        padding: 1.5rem;
+    }
+}

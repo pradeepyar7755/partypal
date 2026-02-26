@@ -1,0 +1,166 @@
+.rsvpPage {
+    min-height: 100vh;
+    background: var(--dark-navy);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem;
+}
+
+.rsvpCard {
+    background: white;
+    border-radius: 24px;
+    width: 100%;
+    max-width: 520px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+}
+
+.rsvpHeader {
+    background: linear-gradient(135deg, var(--dark-navy), var(--slate));
+    padding: 2.5rem 2rem;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+}
+
+.rsvpHeader::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(circle at 80% 20%, rgba(247, 201, 72, 0.15), transparent 50%);
+    pointer-events: none;
+}
+
+.rsvpEmoji {
+    font-size: 3rem;
+    margin-bottom: 0.8rem;
+    display: block;
+    position: relative;
+}
+
+.rsvpEventName {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.8rem;
+    color: white;
+    margin-bottom: 0.5rem;
+    position: relative;
+}
+
+.rsvpDetails {
+    color: rgba(255, 255, 255, 0.6);
+    font-weight: 600;
+    font-size: 0.9rem;
+    position: relative;
+}
+
+.rsvpBody {
+    padding: 2rem;
+}
+
+.rsvpLabel {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--navy);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.4rem;
+}
+
+.rsvpInput {
+    width: 100%;
+    background: var(--light-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 0.7rem 1rem;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--navy);
+    outline: none;
+    margin-bottom: 1rem;
+}
+
+.rsvpInput:focus {
+    border-color: var(--teal);
+}
+
+.rsvpOptions {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+}
+
+.rsvpOption {
+    flex: 1;
+    padding: 0.8rem;
+    border-radius: 12px;
+    border: 2px solid var(--border);
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-weight: 800;
+    font-size: 0.85rem;
+}
+
+.rsvpOption:hover {
+    border-color: var(--teal);
+}
+
+.rsvpOptionActive {
+    border-color: var(--teal) !important;
+    background: rgba(74, 173, 168, 0.08);
+    color: var(--teal);
+}
+
+.rsvpSubmit {
+    width: 100%;
+    background: var(--yellow);
+    color: var(--dark-navy);
+    border: none;
+    padding: 0.9rem;
+    border-radius: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.rsvpSubmit:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 24px rgba(247, 201, 72, 0.4);
+}
+
+.rsvpSuccess {
+    text-align: center;
+    padding: 3rem 2rem;
+}
+
+.rsvpSuccessIcon {
+    font-size: 4rem;
+    margin-bottom: 1rem;
+    display: block;
+}
+
+.rsvpSuccessTitle {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.5rem;
+    color: var(--navy);
+    margin-bottom: 0.5rem;
+}
+
+.rsvpSuccessMsg {
+    color: #6b7f94;
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.rsvpPowered {
+    text-align: center;
+    padding: 1rem;
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #9aabbb;
+    border-top: 1px solid var(--border);
+}
