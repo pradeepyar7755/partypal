@@ -345,8 +345,6 @@ export default function Home() {
                 <label>Number of Guests *</label>
                 <input type="number" placeholder="e.g. 30" min="1" value={form.guests} onChange={e => setForm({ ...form, guests: e.target.value })} />
               </div>
-            </div>
-            <div className={styles.formRow}>
               <div className={styles.formGroup}>
                 <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span>Location / City / Venue {!locationTBD && '*'}</span>
@@ -382,12 +380,12 @@ export default function Home() {
                   />
                 )}
               </div>
+            </div>
+            <div className={styles.formRow}>
               <div className={styles.formGroup}>
                 <label>Party Theme</label>
                 <input type="text" placeholder="e.g. Tropical, Vintage, Neon..." value={form.theme} onChange={e => setForm({ ...form, theme: e.target.value })} />
               </div>
-            </div>
-            <div className={styles.formRow}>
               <div className={styles.formGroup}>
                 <label>Estimated Budget</label>
                 <select value={form.budget} onChange={e => setForm({ ...form, budget: e.target.value })}>
@@ -399,7 +397,6 @@ export default function Home() {
                   <option>$10,000+</option>
                 </select>
               </div>
-              <div className={styles.formGroup} />
             </div>
             <button className={styles.wizardSubmit} onClick={handleSubmit} disabled={loading}>
               {loading ? (
