@@ -64,7 +64,8 @@ function VendorsContent() {
     }
 
     // If we already have a location from URL params or plan, skip detection
-    const existingLoc = params.get('location') || (stored ? JSON.parse(stored).location : '')
+    const rawLoc = params.get('location') || (stored ? JSON.parse(stored).location : '')
+    const existingLoc = rawLoc && rawLoc !== 'TBD' ? rawLoc : ''
     if (existingLoc) {
       setDetectedLocation(existingLoc)
       setLocationReady(true)
@@ -159,7 +160,7 @@ function VendorsContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           category: cat === 'All Vendors' ? 'Mixed party vendors' : cat,
-          location: params.get('location') || planData.location || detectedLocation || 'Atlanta, GA',
+          location: (() => { const l = params.get('location') || planData.location || ''; return l && l !== 'TBD' ? l : detectedLocation || 'Atlanta, GA' })(),
           theme: planData.theme || '', budget: planData.budget || '', guests: planData.guests || '30',
         }),
       })
@@ -193,7 +194,7 @@ function VendorsContent() {
     return b.matchScore - a.matchScore
   })
 
-  const location = params.get('location') || planData.location || detectedLocation || 'Atlanta, GA'
+  const location = (() => { const l = params.get('location') || planData.location || ''; return l && l !== 'TBD' ? l : detectedLocation || 'Atlanta, GA' })()
 
   return (
     <main className="page-enter">
