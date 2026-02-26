@@ -287,15 +287,11 @@ export default function Dashboard() {
 
             {/* ══ TABS ══ */}
             <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0.8rem 1.5rem 0' }}>
-                <div style={{ display: 'flex', gap: '0.3rem', borderBottom: '1px solid rgba(255,255,255,0.08)', paddingBottom: 0 }}>
+                <div style={{ display: 'flex', gap: '0.3rem', borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: 0 }}>
                     {([['plan', '📋 Plan'], ['theme', '🎨 Theme'], ['vendors', '🏪 Vendors'], ['guests', '👥 Guests']] as const).map(([key, label]) => (
                         <button
                             key={key}
-                            onClick={() => {
-                                if (key === 'vendors') { router.push('/vendors'); return }
-                                if (key === 'guests') { router.push('/guests'); return }
-                                setSelectedTab(key)
-                            }}
+                            onClick={() => setSelectedTab(key)}
                             style={{
                                 padding: '0.6rem 1.2rem', border: 'none', borderBottom: selectedTab === key ? '2.5px solid var(--teal)' : '2.5px solid transparent',
                                 background: 'transparent', color: selectedTab === key ? 'var(--navy)' : '#9aabbb',
@@ -309,231 +305,283 @@ export default function Dashboard() {
             </div>
 
             {/* ══ DEMO DISCLAIMER ══ */}
-            {isDemo && selectedTab === 'plan' && (
-                <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 1.5rem' }}>
-                    <div style={{
-                        background: 'linear-gradient(135deg, rgba(247,201,72,0.12), rgba(232,137,106,0.08))',
-                        border: '1.5px solid rgba(247,201,72,0.35)',
-                        borderRadius: 12,
-                        padding: '1rem 1.5rem',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '1rem',
-                        marginBottom: '0.5rem',
-                        marginTop: '-0.5rem',
-                    }}>
-                        <span style={{ fontSize: '1.4rem' }}>💡</span>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: '#F7C948', marginBottom: 2 }}>For Illustration Purposes Only</div>
-                            <div style={{ fontSize: '0.78rem', color: '#6b7c93', fontWeight: 600, lineHeight: 1.4 }}>
-                                This is a sample AI-generated plan for &quot;Maya&apos;s 30th Birthday.&quot; To create your personalized party plan, use the AI planner on the homepage.
+            {
+                isDemo && selectedTab === 'plan' && (
+                    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 1.5rem' }}>
+                        <div style={{
+                            background: 'linear-gradient(135deg, rgba(247,201,72,0.12), rgba(232,137,106,0.08))',
+                            border: '1.5px solid rgba(247,201,72,0.35)',
+                            borderRadius: 12,
+                            padding: '1rem 1.5rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '1rem',
+                            marginBottom: '0.5rem',
+                            marginTop: '-0.5rem',
+                        }}>
+                            <span style={{ fontSize: '1.4rem' }}>💡</span>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: '#F7C948', marginBottom: 2 }}>For Illustration Purposes Only</div>
+                                <div style={{ fontSize: '0.78rem', color: '#6b7c93', fontWeight: 600, lineHeight: 1.4 }}>
+                                    This is a sample AI-generated plan for &quot;Maya&apos;s 30th Birthday.&quot; To create your personalized party plan, use the AI planner on the homepage.
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => router.push('/#wizard')}
+                                style={{
+                                    background: 'linear-gradient(135deg, #F7C948, #E8A020)',
+                                    color: '#1A2535',
+                                    border: 'none',
+                                    borderRadius: 8,
+                                    padding: '0.6rem 1.2rem',
+                                    fontFamily: "'Fredoka One', cursive",
+                                    fontSize: '0.78rem',
+                                    cursor: 'pointer',
+                                    whiteSpace: 'nowrap',
+                                }}
+                            >
+                                ✨ Create My Plan
+                            </button>
+                        </div>
+                    </div>
+                )
+            }
+
+            {/* ══ THEME TAB ══ */}
+            {
+                selectedTab === 'theme' && (
+                    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem' }}>
+                        <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
+                            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎨</div>
+                            <h2 style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', marginBottom: '0.5rem' }}>{data.theme ? `${data.theme} Theme` : 'Party Theme'}</h2>
+                            <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.85rem', marginBottom: '1.5rem' }}>Mood board, color palette, and decor inspiration for your event</p>
+                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
+                                {['🌴 Tropical Vibes', '✨ Gold Accents', '🎈 Balloon Arch', '🌺 Floral Centerpieces', '🕯️ Ambient Lighting', '🍹 Tiki Bar Setup'].map((idea, i) => (
+                                    <div key={i} style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 10, padding: '0.6rem 1rem', fontSize: '0.82rem', fontWeight: 700, color: 'var(--teal)' }}>{idea}</div>
+                                ))}
                             </div>
                         </div>
-                        <button
-                            onClick={() => router.push('/#wizard')}
-                            style={{
-                                background: 'linear-gradient(135deg, #F7C948, #E8A020)',
-                                color: '#1A2535',
-                                border: 'none',
-                                borderRadius: 8,
-                                padding: '0.6rem 1.2rem',
-                                fontFamily: "'Fredoka One', cursive",
-                                fontSize: '0.78rem',
-                                cursor: 'pointer',
-                                whiteSpace: 'nowrap',
-                            }}
-                        >
-                            ✨ Create My Plan
-                        </button>
                     </div>
+                )
+            }
+
+            {/* ══ VENDORS TAB ══ */}
+            {selectedTab === 'vendors' && (
+                <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem' }}>
+                    {isDemo ? (
+                        <div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
+                                {DEFAULT_VENDORS.map((v, i) => (
+                                    <div key={i} className="card" style={{ padding: '1.2rem', cursor: 'pointer' }} onClick={() => router.push(`/vendors?cat=${v.cat.split(' ')[0].toLowerCase()}`)}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
+                                            <span style={{ fontSize: '1.8rem' }}>{v.emoji}</span>
+                                            <span style={{ background: 'rgba(74,173,168,0.1)', color: 'var(--teal)', padding: '0.2rem 0.6rem', borderRadius: 20, fontSize: '0.72rem', fontWeight: 800 }}>{v.match}% match</span>
+                                        </div>
+                                        <div style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '0.95rem', marginBottom: '0.2rem' }}>{v.name}</div>
+                                        <div style={{ color: '#9aabbb', fontSize: '0.78rem', fontWeight: 600, marginBottom: '0.4rem' }}>{v.cat}</div>
+                                        <div style={{ color: '#F7C948', fontSize: '0.85rem', letterSpacing: 1 }}>{'★'.repeat(Math.floor(v.stars))}</div>
+                                        <div style={{ color: 'var(--teal)', fontSize: '0.78rem', fontWeight: 800, marginTop: '0.4rem' }}>{v.price}</div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+                                <button onClick={() => router.push('/vendors')} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 10, padding: '0.7rem 2rem', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' }}>Browse All Vendors →</button>
+                            </div>
+                        </div>
+                    ) : (
+                        <div className="card" style={{ padding: '2.5rem', textAlign: 'center' }}>
+                            <div style={{ fontSize: '2.5rem', marginBottom: '0.8rem' }}>🏪</div>
+                            <h2 style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', marginBottom: '0.4rem' }}>Event Vendors</h2>
+                            <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.85rem', marginBottom: '1.5rem' }}>Find and manage vendors for {data.eventType}</p>
+                            <button onClick={() => router.push('/vendors')} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 10, padding: '0.7rem 2rem', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' }}>Browse Vendors →</button>
+                        </div>
+                    )}
                 </div>
             )}
 
-            {/* ══ THEME TAB ══ */}
-            {selectedTab === 'theme' && (
+            {/* ══ GUESTS TAB ══ */}
+            {selectedTab === 'guests' && (
                 <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem' }}>
-                    <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
-                        <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎨</div>
-                        <h2 style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', marginBottom: '0.5rem' }}>{data.theme ? `${data.theme} Theme` : 'Party Theme'}</h2>
-                        <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.85rem', marginBottom: '1.5rem' }}>Mood board, color palette, and decor inspiration for your event</p>
-                        <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                            {['🌴 Tropical Vibes', '✨ Gold Accents', '🎈 Balloon Arch', '🌺 Floral Centerpieces', '🕯️ Ambient Lighting', '🍹 Tiki Bar Setup'].map((idea, i) => (
-                                <div key={i} style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 10, padding: '0.6rem 1rem', fontSize: '0.82rem', fontWeight: 700, color: 'var(--teal)' }}>{idea}</div>
-                            ))}
+                    {isDemo ? (
+                        <div>
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
+                                {[{ name: 'Alex Rivera', status: '✅ Confirmed', dietary: 'None', plus: 1 }, { name: 'Jordan Chen', status: '✅ Confirmed', dietary: 'Vegetarian', plus: 0 }, { name: 'Maya Thompson', status: '⏳ Pending', dietary: 'Gluten-Free', plus: 2 }, { name: 'Sam Williams', status: '❌ Declined', dietary: 'None', plus: 0 }, { name: 'Taylor Brooks', status: '⏳ Pending', dietary: 'Vegan', plus: 1 }, { name: 'Chris Morgan', status: '✅ Confirmed', dietary: 'Nut Allergy', plus: 0 }].map((g, i) => (
+                                    <div key={i} className="card" style={{ padding: '1rem 1.2rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
+                                            <span style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '0.9rem' }}>{g.name}</span>
+                                            <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>{g.status}</span>
+                                        </div>
+                                        <div style={{ fontSize: '0.75rem', color: '#9aabbb', fontWeight: 600 }}>
+                                            {g.dietary !== 'None' && <span style={{ color: 'var(--teal)' }}>🍽️ {g.dietary}</span>}
+                                            {g.plus > 0 && <span style={{ marginLeft: '0.5rem' }}>+{g.plus} guest{g.plus > 1 ? 's' : ''}</span>}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                            <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
+                                <button onClick={() => router.push('/guests')} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 10, padding: '0.7rem 2rem', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' }}>Manage Guests & Invites →</button>
+                            </div>
                         </div>
-                    </div>
+                    ) : (
+                        <div className="card" style={{ padding: '2.5rem', textAlign: 'center' }}>
+                            <div style={{ fontSize: '2.5rem', marginBottom: '0.8rem' }}>👥</div>
+                            <h2 style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', marginBottom: '0.4rem' }}>Guest List & Invites</h2>
+                            <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.85rem', marginBottom: '1.5rem' }}>Manage RSVPs and send invitations for {data.eventType}</p>
+                            <button onClick={() => router.push('/guests')} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 10, padding: '0.7rem 2rem', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' }}>Manage Guests →</button>
+                        </div>
+                    )}
                 </div>
             )}
 
             {/* ══ PLAN TAB (MAIN GRID) ══ */}
-            {selectedTab === 'plan' && (
-                <>
+            {
+                selectedTab === 'plan' && (
+                    <>
 
-                    {/* ══ MAIN GRID ══ */}
-                    <div className={styles.main}>
-                        {/* LEFT COLUMN */}
-                        <div>
-                            {/* ── Planning Timeline ── */}
-                            <div className={styles.sectionCard}>
-                                <div className={styles.cardHeader}>
-                                    <div className={styles.cardTitleGroup}>
-                                        <span className={styles.cardIcon}>🗓️</span>
-                                        <h2>Planning Timeline</h2>
+                        {/* ══ MAIN GRID ══ */}
+                        <div className={styles.main}>
+                            {/* LEFT COLUMN */}
+                            <div>
+                                {/* ── Planning Timeline ── */}
+                                <div className={styles.sectionCard}>
+                                    <div className={styles.cardHeader}>
+                                        <div className={styles.cardTitleGroup}>
+                                            <span className={styles.cardIcon}>🗓️</span>
+                                            <h2>Planning Timeline</h2>
+                                        </div>
+                                        <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
                                     </div>
-                                    <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
-                                </div>
-                                <div className={styles.timeline}>
-                                    {(isEditing ? editTimeline : data.plan.timeline).map((t, i) => (
-                                        <div key={i} className={styles.timelineItem}>
-                                            <div className={styles.tlLeft}>
-                                                <div className={`${styles.tlDot} ${styles[`tlDot${TIMELINE_DOTS[i % TIMELINE_DOTS.length].charAt(0).toUpperCase() + TIMELINE_DOTS[i % TIMELINE_DOTS.length].slice(1)}` as keyof typeof styles]}`}>
-                                                    {TIMELINE_EMOJIS[i % TIMELINE_EMOJIS.length]}
+                                    <div className={styles.timeline}>
+                                        {(isEditing ? editTimeline : data.plan.timeline).map((t, i) => (
+                                            <div key={i} className={styles.timelineItem}>
+                                                <div className={styles.tlLeft}>
+                                                    <div className={`${styles.tlDot} ${styles[`tlDot${TIMELINE_DOTS[i % TIMELINE_DOTS.length].charAt(0).toUpperCase() + TIMELINE_DOTS[i % TIMELINE_DOTS.length].slice(1)}` as keyof typeof styles]}`}>
+                                                        {TIMELINE_EMOJIS[i % TIMELINE_EMOJIS.length]}
+                                                    </div>
+                                                    <div className={styles.tlLine} />
                                                 </div>
-                                                <div className={styles.tlLine} />
+                                                <div className={styles.tlContent}>
+                                                    {isEditing ? (
+                                                        <>
+                                                            <input value={t.weeks} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, weeks: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(74,173,168,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', color: '#4AADA8', fontSize: '0.68rem', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.06em', width: '100%', outline: 'none', marginBottom: 4 }} />
+                                                            <input value={t.task} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, task: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#1A2535', fontSize: '0.9rem', fontWeight: 800, width: '100%', outline: 'none', marginBottom: 4 }} />
+                                                            <textarea value={t.category} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, category: e.target.value } : item))} rows={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#6b7c93', fontSize: '0.78rem', fontWeight: 600, width: '100%', outline: 'none', resize: 'vertical' as const }} />
+                                                        </>
+                                                    ) : (
+                                                        <>
+                                                            <div className={styles.tlTime}>{t.weeks}</div>
+                                                            <div className={styles.tlTitle}>{t.task}</div>
+                                                            {t.category && <div className={styles.tlDesc}>{t.category}</div>}
+                                                        </>
+                                                    )}
+                                                </div>
                                             </div>
-                                            <div className={styles.tlContent}>
-                                                {isEditing ? (
-                                                    <>
-                                                        <input value={t.weeks} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, weeks: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(74,173,168,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', color: '#4AADA8', fontSize: '0.68rem', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.06em', width: '100%', outline: 'none', marginBottom: 4 }} />
-                                                        <input value={t.task} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, task: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#1A2535', fontSize: '0.9rem', fontWeight: 800, width: '100%', outline: 'none', marginBottom: 4 }} />
-                                                        <textarea value={t.category} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, category: e.target.value } : item))} rows={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#6b7c93', fontSize: '0.78rem', fontWeight: 600, width: '100%', outline: 'none', resize: 'vertical' as const }} />
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <div className={styles.tlTime}>{t.weeks}</div>
-                                                        <div className={styles.tlTitle}>{t.task}</div>
-                                                        {t.category && <div className={styles.tlDesc}>{t.category}</div>}
-                                                    </>
-                                                )}
-                                            </div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* ── Smart Checklist ── */}
-                            <div className={styles.sectionCard}>
-                                <div className={styles.cardHeader}>
-                                    <div className={styles.cardTitleGroup}>
-                                        <span className={styles.cardIcon}>✅</span>
-                                        <h2>Smart Checklist</h2>
+                                        ))}
                                     </div>
-                                    <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
                                 </div>
-                                <div className={styles.checklist}>
-                                    {checklist.map((item, i) => (
-                                        <div key={i} className={`${styles.checkItem} ${item.done ? styles.checkItemDone : ''}`} onClick={() => toggleCheck(i)}>
-                                            <div className={`${styles.checkBox} ${item.done ? styles.checkBoxDone : ''}`}>
-                                                {item.done ? '✓' : ''}
-                                            </div>
-                                            <div className={`${styles.checkLabel} ${item.done ? styles.checkLabelDone : ''}`}>{item.item}</div>
-                                            {item.due && <span className={styles.checkDue}>{item.due}</span>}
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
 
-                            {/* ── Top Vendor Matches ── */}
-                            <div className={styles.sectionCard}>
-                                <div className={styles.cardHeader}>
-                                    <div className={styles.cardTitleGroup}>
-                                        <span className={styles.cardIcon}>⭐</span>
-                                        <h2>Top Vendor Matches</h2>
+                                {/* ── Smart Checklist ── */}
+                                <div className={styles.sectionCard}>
+                                    <div className={styles.cardHeader}>
+                                        <div className={styles.cardTitleGroup}>
+                                            <span className={styles.cardIcon}>✅</span>
+                                            <h2>Smart Checklist</h2>
+                                        </div>
+                                        <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
                                     </div>
-                                    <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
-                                </div>
-                                <div className={styles.vendorRecs}>
-                                    {DEFAULT_VENDORS.map((v, i) => (
-                                        <div key={i} className={styles.vendorRecCard} onClick={() => router.push(`/vendors?cat=${v.cat.split(' ')[0].toLowerCase()}`)}>
-                                            <div className={styles.vrecTop}>
-                                                <span className={styles.vrecIcon}>{v.emoji}</span>
-                                                <span className={styles.vrecMatch}>{v.match}% match</span>
+                                    <div className={styles.checklist}>
+                                        {checklist.map((item, i) => (
+                                            <div key={i} className={`${styles.checkItem} ${item.done ? styles.checkItemDone : ''}`} onClick={() => toggleCheck(i)}>
+                                                <div className={`${styles.checkBox} ${item.done ? styles.checkBoxDone : ''}`}>
+                                                    {item.done ? '✓' : ''}
+                                                </div>
+                                                <div className={`${styles.checkLabel} ${item.done ? styles.checkLabelDone : ''}`}>{item.item}</div>
+                                                {item.due && <span className={styles.checkDue}>{item.due}</span>}
                                             </div>
-                                            <div className={styles.vrecName}>{v.name}</div>
-                                            <div className={styles.vrecCat}>{v.cat}</div>
-                                            <div className={styles.stars}>{'★'.repeat(Math.floor(v.stars))}{'½' === (v.stars % 1 ? '½' : '') ? '½' : ''}</div>
-                                            <div className={styles.vrecPrice}>{v.price}</div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
+
+
+
+
+
                             </div>
 
-
-                        </div>
-
-                        {/* RIGHT SIDEBAR */}
-                        <div>
-                            {/* ── Budget Breakdown ── */}
-                            <div className={styles.sidebarCard}>
-                                <div className={styles.sidebarTitle}>💰 Budget Breakdown</div>
-                                <div className={styles.budgetTotal}>
-                                    <div className={styles.budgetAmount}>${allocatedAmount.toLocaleString()}</div>
-                                    <div className={styles.budgetLabel}>of ${totalBudget.toLocaleString()} allocated</div>
-                                </div>
-                                <div className={styles.budgetBarWrap}>
-                                    <div className={styles.budgetBar} style={{ width: `${budgetPct}%` }} />
-                                </div>
-                                <div className={styles.budgetSpent}>
-                                    <span>{budgetPct}% allocated</span>
-                                    <span>${remaining.toLocaleString()} remaining</span>
-                                </div>
-                                <div className={styles.budgetItems}>
-                                    {data.plan.budget.breakdown.map((b, i) => (
-                                        <div key={i} className={styles.budgetItem}>
-                                            <div className={styles.budgetDot} style={{ background: b.color }} />
-                                            <div className={styles.budgetName}>{b.category}</div>
-                                            <div className={styles.budgetVal}>${b.amount.toLocaleString()}</div>
-                                            <div className={styles.budgetPct}>{b.percentage}%</div>
-                                        </div>
-                                    ))}
-                                </div>
-                            </div>
-
-                            {/* ── Planning Progress ── */}
-                            <div className={styles.sidebarCard}>
-                                <div className={styles.sidebarTitle}>📊 Planning Progress</div>
-                                <div className={styles.progressList}>
-                                    {progressItems.map((p, i) => (
-                                        <div key={i} className={styles.progItem}>
-                                            <div className={styles.progTop}>
-                                                <span className={styles.progName}>{p.name}</span>
-                                                <span className={styles.progPct}>{p.pct}%</span>
+                            {/* RIGHT SIDEBAR */}
+                            <div>
+                                {/* ── Budget Breakdown ── */}
+                                <div className={styles.sidebarCard}>
+                                    <div className={styles.sidebarTitle}>💰 Budget Breakdown</div>
+                                    <div className={styles.budgetTotal}>
+                                        <div className={styles.budgetAmount}>${allocatedAmount.toLocaleString()}</div>
+                                        <div className={styles.budgetLabel}>of ${totalBudget.toLocaleString()} allocated</div>
+                                    </div>
+                                    <div className={styles.budgetBarWrap}>
+                                        <div className={styles.budgetBar} style={{ width: `${budgetPct}%` }} />
+                                    </div>
+                                    <div className={styles.budgetSpent}>
+                                        <span>{budgetPct}% allocated</span>
+                                        <span>${remaining.toLocaleString()} remaining</span>
+                                    </div>
+                                    <div className={styles.budgetItems}>
+                                        {data.plan.budget.breakdown.map((b, i) => (
+                                            <div key={i} className={styles.budgetItem}>
+                                                <div className={styles.budgetDot} style={{ background: b.color }} />
+                                                <div className={styles.budgetName}>{b.category}</div>
+                                                <div className={styles.budgetVal}>${b.amount.toLocaleString()}</div>
+                                                <div className={styles.budgetPct}>{b.percentage}%</div>
                                             </div>
-                                            <div className={styles.progBarWrap}>
-                                                <div
-                                                    className={styles.progBar}
-                                                    ref={el => { if (el) progressRefs.current[i] = el }}
-                                                    data-width={`${p.pct}%`}
-                                                    style={{ width: 0, background: p.color }}
-                                                />
-                                            </div>
-                                        </div>
-                                    ))}
+                                        ))}
+                                    </div>
                                 </div>
-                            </div>
 
-                            {/* ── Quick Actions ── */}
-                            <div className={styles.sidebarCard}>
-                                <div className={styles.sidebarTitle}>⚡ Quick Actions</div>
-                                <div className={styles.quickActions}>
-                                    <button className={styles.qaBtn} onClick={() => router.push(`/vendors?cat=venue&location=${data.location}`)}>
-                                        <span>🏛️</span><span>Browse Venues Near {data.location?.split(',')[0]}</span><span>›</span>
-                                    </button>
-                                    <button className={styles.qaBtn} onClick={() => router.push('/guests')}>
-                                        <span>💌</span><span>Send Invitations Now</span><span>›</span>
-                                    </button>
-                                    <button className={styles.qaBtn} onClick={() => router.push('/budget')}>
-                                        <span>🤖</span><span>Ask AI to Adjust Budget</span><span>›</span>
-                                    </button>
-                                    <button className={styles.qaBtn} onClick={() => { showToast('Export coming soon!', 'info') }}>
-                                        <span>📋</span><span>Export Plan as PDF</span><span>›</span>
-                                    </button>
+                                {/* ── Planning Progress ── */}
+                                <div className={styles.sidebarCard}>
+                                    <div className={styles.sidebarTitle}>📊 Planning Progress</div>
+                                    <div className={styles.progressList}>
+                                        {progressItems.map((p, i) => (
+                                            <div key={i} className={styles.progItem}>
+                                                <div className={styles.progTop}>
+                                                    <span className={styles.progName}>{p.name}</span>
+                                                    <span className={styles.progPct}>{p.pct}%</span>
+                                                </div>
+                                                <div className={styles.progBarWrap}>
+                                                    <div
+                                                        className={styles.progBar}
+                                                        ref={el => { if (el) progressRefs.current[i] = el }}
+                                                        data-width={`${p.pct}%`}
+                                                        style={{ width: 0, background: p.color }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* ── Quick Actions ── */}
+                                <div className={styles.sidebarCard}>
+                                    <div className={styles.sidebarTitle}>⚡ Quick Actions</div>
+                                    <div className={styles.quickActions}>
+                                        <button className={styles.qaBtn} onClick={() => router.push(`/vendors?cat=venue&location=${data.location}`)}>
+                                            <span>🏛️</span><span>Browse Venues Near {data.location?.split(',')[0]}</span><span>›</span>
+                                        </button>
+                                        <button className={styles.qaBtn} onClick={() => router.push('/guests')}>
+                                            <span>💌</span><span>Send Invitations Now</span><span>›</span>
+                                        </button>
+                                        <button className={styles.qaBtn} onClick={() => router.push('/budget')}>
+                                            <span>🤖</span><span>Ask AI to Adjust Budget</span><span>›</span>
+                                        </button>
+                                        <button className={styles.qaBtn} onClick={() => { showToast('Export coming soon!', 'info') }}>
+                                            <span>📋</span><span>Export Plan as PDF</span><span>›</span>
+                                        </button>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
-                </>
-            )}
-        </main>
+                    </>
+                )
+            }
+        </main >
     )
 }
