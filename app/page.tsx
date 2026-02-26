@@ -201,7 +201,7 @@ export default function Home() {
       const data = await res.json()
       if (data.error) throw new Error(data.error)
       localStorage.setItem('partyplan', JSON.stringify(data))
-      router.push('/results')
+      router.push('/dashboard')
     } catch {
       alert('Failed to generate plan. Please try again.')
       setLoading(false)

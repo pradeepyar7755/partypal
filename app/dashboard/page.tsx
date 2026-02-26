@@ -90,11 +90,13 @@ export default function Dashboard() {
     const router = useRouter()
     const [data, setData] = useState<PlanData>(DEFAULT_PLAN)
     const [checklist, setChecklist] = useState<ChecklistItem[]>([])
+    const [isDemo, setIsDemo] = useState(false)
     const progressRefs = useRef<HTMLDivElement[]>([])
 
     useEffect(() => {
         const stored = localStorage.getItem('partyplan')
         const parsed: PlanData = stored ? JSON.parse(stored) : DEFAULT_PLAN
+        setIsDemo(!stored)
         setData(parsed)
         // Enrich checklist with due dates and urgency markers matching mockup
         const DUE_LABELS = ['Done', 'Done', 'Urgent', 'Urgent', '6 wks out', '4 wks out', '3 wks out', '3 wks out', '2 wks out', '1 wk out']
@@ -169,6 +171,47 @@ export default function Dashboard() {
                     </div>
                 </div>
             </header>
+
+            {/* ══ DEMO DISCLAIMER ══ */}
+            {isDemo && (
+                <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 1.5rem' }}>
+                    <div style={{
+                        background: 'linear-gradient(135deg, rgba(247,201,72,0.12), rgba(232,137,106,0.08))',
+                        border: '1.5px solid rgba(247,201,72,0.35)',
+                        borderRadius: 12,
+                        padding: '1rem 1.5rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '1rem',
+                        marginBottom: '0.5rem',
+                        marginTop: '-0.5rem',
+                    }}>
+                        <span style={{ fontSize: '1.4rem' }}>💡</span>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: '#F7C948', marginBottom: 2 }}>For Illustration Purposes Only</div>
+                            <div style={{ fontSize: '0.78rem', color: 'rgba(255,255,255,0.65)', fontWeight: 600, lineHeight: 1.4 }}>
+                                This is a sample AI-generated plan for &quot;Maya&apos;s 30th Birthday.&quot; To create your personalized party plan, use the AI planner on the homepage.
+                            </div>
+                        </div>
+                        <button
+                            onClick={() => router.push('/#wizard')}
+                            style={{
+                                background: 'linear-gradient(135deg, #F7C948, #E8A020)',
+                                color: '#1A2535',
+                                border: 'none',
+                                borderRadius: 8,
+                                padding: '0.6rem 1.2rem',
+                                fontFamily: "'Fredoka One', cursive",
+                                fontSize: '0.78rem',
+                                cursor: 'pointer',
+                                whiteSpace: 'nowrap',
+                            }}
+                        >
+                            ✨ Create My Plan
+                        </button>
+                    </div>
+                </div>
+            )}
 
             {/* ══ MAIN GRID ══ */}
             <div className={styles.main}>
