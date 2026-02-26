@@ -96,6 +96,7 @@ export default function Dashboard() {
     const [eventVendors, setEventVendors] = useState<EventVendor[]>([])
     const [guestForm, setGuestForm] = useState({ name: '', email: '' })
     const [vendorForm, setVendorForm] = useState({ name: '', category: '', notes: '' })
+    const [newCheckItem, setNewCheckItem] = useState('')
     const progressRefs = useRef<HTMLDivElement[]>([])
 
     const loadEvent = (plan: PlanData, demo: boolean) => {
@@ -163,6 +164,35 @@ export default function Dashboard() {
             showToast(updated[i].done ? `"${updated[i].item}" completed ✓` : `"${updated[i].item}" unmarked`, 'info')
             return updated
         })
+    }
+
+    const addCheckItem = () => {
+        if (!newCheckItem.trim()) return
+        const newItem: ChecklistItem = { item: newCheckItem.trim(), category: 'Custom', done: false }
+        const updated = [...checklist, newItem]
+        setChecklist(updated)
+        const stored = localStorage.getItem('partyplan')
+        if (stored) {
+            const d = JSON.parse(stored)
+            d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done }))
+            localStorage.setItem('partyplan', JSON.stringify(d))
+        }
+        setNewCheckItem('')
+        showToast('Item added ✓', 'success')
+    }
+
+    const removeCheckItem = (i: number, e: React.MouseEvent) => {
+        e.stopPropagation()
+        const removed = checklist[i]
+        const updated = checklist.filter((_, idx) => idx !== i)
+        setChecklist(updated)
+        const stored = localStorage.getItem('partyplan')
+        if (stored) {
+            const d = JSON.parse(stored)
+            d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done }))
+            localStorage.setItem('partyplan', JSON.stringify(d))
+        }
+        showToast(`"${removed.item}" removed`, 'info')
     }
 
     const startEditing = () => {
@@ -706,14 +736,28 @@ export default function Dashboard() {
                                     </div>
                                     <div className={styles.checklist}>
                                         {checklist.map((item, i) => (
-                                            <div key={i} className={`${styles.checkItem} ${item.done ? styles.checkItemDone : ''}`} onClick={() => toggleCheck(i)}>
-                                                <div className={`${styles.checkBox} ${item.done ? styles.checkBoxDone : ''}`}>
-                                                    {item.done ? '✓' : ''}
+                                            <div key={i} className={`${styles.checkItem} ${item.done ? styles.checkItemDone : ''}`} style={{ position: 'relative' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', flex: 1, cursor: 'pointer' }} onClick={() => toggleCheck(i)}>
+                                                    <div className={`${styles.checkBox} ${item.done ? styles.checkBoxDone : ''}`}>
+                                                        {item.done ? '✓' : ''}
+                                                    </div>
+                                                    <div className={`${styles.checkLabel} ${item.done ? styles.checkLabelDone : ''}`}>{item.item}</div>
+                                                    {item.due && <span className={styles.checkDue}>{item.due}</span>}
                                                 </div>
-                                                <div className={`${styles.checkLabel} ${item.done ? styles.checkLabelDone : ''}`}>{item.item}</div>
-                                                {item.due && <span className={styles.checkDue}>{item.due}</span>}
+                                                <button onClick={(e) => removeCheckItem(i, e)} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800, padding: '0.2rem 0.4rem', borderRadius: 4, transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = '#E8896A')} onMouseLeave={e => (e.currentTarget.style.color = '#ccc')} title="Remove item">✕</button>
                                             </div>
                                         ))}
+                                    </div>
+                                    {/* Add new checklist item */}
+                                    <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.6rem', padding: '0 0.2rem' }}>
+                                        <input
+                                            value={newCheckItem}
+                                            onChange={e => setNewCheckItem(e.target.value)}
+                                            onKeyDown={e => e.key === 'Enter' && addCheckItem()}
+                                            placeholder="Add a task..."
+                                            style={{ flex: 1, padding: '0.45rem 0.7rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.8rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }}
+                                        />
+                                        <button onClick={addCheckItem} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.45rem 0.8rem', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add</button>
                                     </div>
                                 </div>
 
