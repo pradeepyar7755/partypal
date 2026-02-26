@@ -2,6 +2,7 @@
 import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from './page.module.css'
+import LocationSearch from '@/components/LocationSearch'
 
 const CATEGORIES = [
   { name: 'Venue', emoji: '🏛️', count: '124 options nearby', color: 'yellow', cat: 'venue' },
@@ -150,6 +151,7 @@ const PARTICLE_COLORS = ['#F7C948', '#E8896A', '#4AADA8', '#7B5EA7', '#3D8C6E', 
 export default function Home() {
   const router = useRouter()
   const [form, setForm] = useState({ eventType: '', date: '', time: '', guests: '', location: '', theme: '', budget: '' })
+  const [locationDetails, setLocationDetails] = useState<{ lat?: number; lng?: number; name?: string; city?: string; state?: string; type?: string } | null>(null)
   const [loading, setLoading] = useState(false)
   const [showVideo, setShowVideo] = useState(false)
   const [slide, setSlide] = useState(0)
@@ -194,7 +196,7 @@ export default function Home() {
       const res = await fetch('/api/plan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, locationDetails }),
       })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
@@ -337,8 +339,19 @@ export default function Home() {
             </div>
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
-                <label>Location / City *</label>
-                <input type="text" placeholder="e.g. Atlanta, GA" value={form.location} onChange={e => setForm({ ...form, location: e.target.value })} />
+                <label>Location / City / Venue *</label>
+                <LocationSearch
+                  value={form.location}
+                  onChange={(location, details) => {
+                    setForm(prev => ({ ...prev, location }))
+                    if (details) {
+                      setLocationDetails({ lat: details.lat, lng: details.lng, name: details.name, city: details.city, state: details.state, type: details.type })
+                    } else {
+                      setLocationDetails(null)
+                    }
+                  }}
+                  placeholder="Search a city, venue, or address..."
+                />
               </div>
               <div className={styles.formGroup}>
                 <label>Party Theme</label>
