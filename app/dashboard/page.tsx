@@ -7,6 +7,8 @@ import { showToast } from '@/components/Toast'
 interface ChecklistItem { item: string; category: string; done: boolean; due?: string; urgent?: boolean }
 interface TimelineItem { weeks: string; task: string; category: string; priority: string; emoji?: string }
 interface BudgetItem { category: string; amount: number; percentage: number; color: string }
+interface EventGuest { name: string; email: string; status: 'invited' | 'confirmed' | 'declined' }
+interface EventVendor { name: string; category: string; notes: string; confirmed: boolean }
 
 interface PlanData {
     eventId?: string; eventType: string; guests: string; location: string; theme: string; date: string; budget: string; time?: string
@@ -89,11 +91,16 @@ export default function Dashboard() {
     const [editData, setEditData] = useState<{ eventType: string; date: string; guests: string; location: string; theme: string; budget: string; time?: string }>({ eventType: '', date: '', guests: '', location: '', theme: '', budget: '' })
     const [editTimeline, setEditTimeline] = useState<TimelineItem[]>([])
     const [selectedTab, setSelectedTab] = useState<'plan' | 'theme' | 'vendors' | 'guests'>('plan')
+    const [eventGuests, setEventGuests] = useState<EventGuest[]>([])
+    const [eventVendors, setEventVendors] = useState<EventVendor[]>([])
+    const [guestForm, setGuestForm] = useState({ name: '', email: '' })
+    const [vendorForm, setVendorForm] = useState({ name: '', category: '', notes: '' })
     const progressRefs = useRef<HTMLDivElement[]>([])
 
     const loadEvent = (plan: PlanData, demo: boolean) => {
         setData(plan)
         setIsDemo(demo)
+        setSelectedTab('plan')
         if (!demo) localStorage.setItem('partyplan', JSON.stringify(plan))
         const TIMELINE_LABELS = ['6 wks out', '6 wks out', '4 wks out', '4 wks out', '3 wks out', '3 wks out', '2 wks out', '2 wks out', '1 wk out', 'Day before']
         const enriched = (plan.plan.checklist || []).map((item, i) => ({
@@ -101,6 +108,14 @@ export default function Dashboard() {
             due: TIMELINE_LABELS[i] || `${Math.max(1, 6 - i)} wks out`,
         }))
         setChecklist(enriched)
+        // Load per-event guests & vendors
+        if (!demo && plan.eventId) {
+            setEventGuests(JSON.parse(localStorage.getItem(`partypal_guests_${plan.eventId}`) || '[]'))
+            setEventVendors(JSON.parse(localStorage.getItem(`partypal_vendors_${plan.eventId}`) || '[]'))
+        } else {
+            setEventGuests([])
+            setEventVendors([])
+        }
     }
 
     useEffect(() => {
@@ -207,6 +222,53 @@ export default function Dashboard() {
         }
         showToast('Event deleted', 'success')
     }
+
+    // Guest management
+    const addGuest = () => {
+        if (!guestForm.name.trim()) return
+        const updated = [...eventGuests, { name: guestForm.name.trim(), email: guestForm.email.trim(), status: 'invited' as const }]
+        setEventGuests(updated)
+        if (data.eventId) localStorage.setItem(`partypal_guests_${data.eventId}`, JSON.stringify(updated))
+        setGuestForm({ name: '', email: '' })
+        showToast('Guest added', 'success')
+    }
+    const removeGuest = (idx: number) => {
+        const updated = eventGuests.filter((_, i) => i !== idx)
+        setEventGuests(updated)
+        if (data.eventId) localStorage.setItem(`partypal_guests_${data.eventId}`, JSON.stringify(updated))
+    }
+    const updateGuestStatus = (idx: number, status: EventGuest['status']) => {
+        const updated = eventGuests.map((g, i) => i === idx ? { ...g, status } : g)
+        setEventGuests(updated)
+        if (data.eventId) localStorage.setItem(`partypal_guests_${data.eventId}`, JSON.stringify(updated))
+    }
+
+    // Vendor management
+    const addVendor = () => {
+        if (!vendorForm.name.trim() || !vendorForm.category.trim()) return
+        const updated = [...eventVendors, { name: vendorForm.name.trim(), category: vendorForm.category.trim(), notes: vendorForm.notes.trim(), confirmed: false }]
+        setEventVendors(updated)
+        if (data.eventId) localStorage.setItem(`partypal_vendors_${data.eventId}`, JSON.stringify(updated))
+        setVendorForm({ name: '', category: '', notes: '' })
+        showToast('Vendor added', 'success')
+    }
+    const removeVendor = (idx: number) => {
+        const updated = eventVendors.filter((_, i) => i !== idx)
+        setEventVendors(updated)
+        if (data.eventId) localStorage.setItem(`partypal_vendors_${data.eventId}`, JSON.stringify(updated))
+    }
+    const toggleVendorConfirmed = (idx: number) => {
+        const updated = eventVendors.map((v, i) => i === idx ? { ...v, confirmed: !v.confirmed } : v)
+        setEventVendors(updated)
+        if (data.eventId) localStorage.setItem(`partypal_vendors_${data.eventId}`, JSON.stringify(updated))
+    }
+
+    // Countdown calculation
+    const today = new Date()
+    const eventDate = data.date ? new Date(data.date + 'T23:59:59') : null
+    const daysLeft = eventDate ? Math.max(0, Math.ceil((eventDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))) : null
+    const totalDays = 42 // 6 weeks planning window
+    const countdownPct = daysLeft !== null ? Math.min(100, Math.max(0, Math.round(((totalDays - daysLeft) / totalDays) * 100))) : 0
 
     return (
         <main className="page-enter">
@@ -321,7 +383,7 @@ export default function Dashboard() {
                         }}>
                             <span style={{ fontSize: '1.4rem' }}>💡</span>
                             <div style={{ flex: 1 }}>
-                                <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: '#F7C948', marginBottom: 2 }}>For Illustration Purposes Only</div>
+                                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#c9960a', marginBottom: 2 }}>For Illustration Purposes Only</div>
                                 <div style={{ fontSize: '0.78rem', color: '#6b7c93', fontWeight: 600, lineHeight: 1.4 }}>
                                     This is a sample AI-generated plan for &quot;Maya&apos;s 30th Birthday.&quot; To create your personalized party plan, use the AI planner on the homepage.
                                 </div>
@@ -389,11 +451,46 @@ export default function Dashboard() {
                             </div>
                         </div>
                     ) : (
-                        <div className="card" style={{ padding: '2.5rem', textAlign: 'center' }}>
-                            <div style={{ fontSize: '2.5rem', marginBottom: '0.8rem' }}>🏪</div>
-                            <h2 style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', marginBottom: '0.4rem' }}>Event Vendors</h2>
-                            <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.85rem', marginBottom: '1.5rem' }}>Find and manage vendors for {data.eventType}</p>
-                            <button onClick={() => router.push('/vendors')} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 10, padding: '0.7rem 2rem', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' }}>Browse Vendors →</button>
+                        <div>
+                            {/* Add Vendor Form */}
+                            <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
+                                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.8rem' }}>➕ Add Vendor</div>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    <input placeholder="Vendor name" value={vendorForm.name} onChange={e => setVendorForm(p => ({ ...p, name: e.target.value }))} style={{ flex: 1, minWidth: 150, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
+                                    <select value={vendorForm.category} onChange={e => setVendorForm(p => ({ ...p, category: e.target.value }))} style={{ padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none', color: vendorForm.category ? 'var(--navy)' : '#9aabbb' }}>
+                                        <option value="">Category...</option>
+                                        <option>Venue</option><option>Photography</option><option>Music / DJ</option><option>Catering</option><option>Baker</option><option>Florist</option><option>Decor</option><option>Other</option>
+                                    </select>
+                                    <input placeholder="Notes (optional)" value={vendorForm.notes} onChange={e => setVendorForm(p => ({ ...p, notes: e.target.value }))} style={{ flex: 1, minWidth: 120, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
+                                    <button onClick={addVendor} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 1.2rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}>Add</button>
+                                </div>
+                            </div>
+                            {/* Vendor List */}
+                            {eventVendors.length > 0 ? (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
+                                    {eventVendors.map((v, i) => (
+                                        <div key={i} className="card" style={{ padding: '1.2rem', position: 'relative' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                                                <span style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '0.9rem' }}>{v.name}</span>
+                                                <button onClick={() => toggleVendorConfirmed(i)} style={{ background: v.confirmed ? 'rgba(61,140,110,0.1)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${v.confirmed ? 'rgba(61,140,110,0.3)' : 'rgba(0,0,0,0.1)'}`, borderRadius: 6, padding: '0.2rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: v.confirmed ? '#3D8C6E' : '#9aabbb', cursor: 'pointer' }}>
+                                                    {v.confirmed ? '✅ Confirmed' : '⏳ Pending'}
+                                                </button>
+                                            </div>
+                                            <div style={{ fontSize: '0.75rem', color: 'var(--teal)', fontWeight: 700, marginBottom: '0.2rem' }}>{v.category}</div>
+                                            {v.notes && <div style={{ fontSize: '0.72rem', color: '#9aabbb', fontWeight: 600 }}>{v.notes}</div>}
+                                            <button onClick={() => removeVendor(i)} style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#E8896A', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800 }}>✕</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
+                                    <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem', opacity: 0.5 }}>🏪</div>
+                                    <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.82rem' }}>No vendors added yet. Add your first vendor above!</p>
+                                </div>
+                            )}
+                            <div style={{ textAlign: 'center', marginTop: '1.2rem' }}>
+                                <button onClick={() => router.push('/vendors')} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 10, padding: '0.6rem 1.5rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', color: 'var(--navy)' }}>Browse More Vendors →</button>
+                            </div>
                         </div>
                     )}
                 </div>
@@ -423,11 +520,64 @@ export default function Dashboard() {
                             </div>
                         </div>
                     ) : (
-                        <div className="card" style={{ padding: '2.5rem', textAlign: 'center' }}>
-                            <div style={{ fontSize: '2.5rem', marginBottom: '0.8rem' }}>👥</div>
-                            <h2 style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', marginBottom: '0.4rem' }}>Guest List & Invites</h2>
-                            <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.85rem', marginBottom: '1.5rem' }}>Manage RSVPs and send invitations for {data.eventType}</p>
-                            <button onClick={() => router.push('/guests')} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 10, padding: '0.7rem 2rem', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' }}>Manage Guests →</button>
+                        <div>
+                            {/* Add Guest Form */}
+                            <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
+                                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.8rem' }}>➕ Add Guest</div>
+                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                    <input placeholder="Guest name" value={guestForm.name} onChange={e => setGuestForm(p => ({ ...p, name: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addGuest()} style={{ flex: 1, minWidth: 150, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
+                                    <input placeholder="Email or phone (optional)" value={guestForm.email} onChange={e => setGuestForm(p => ({ ...p, email: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addGuest()} style={{ flex: 1, minWidth: 180, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
+                                    <button onClick={addGuest} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 1.2rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}>Add</button>
+                                </div>
+                            </div>
+                            {/* Guest Summary */}
+                            {eventGuests.length > 0 && (
+                                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                                    <div className="card" style={{ padding: '0.6rem 1rem', flex: 1, minWidth: 100, textAlign: 'center' }}>
+                                        <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--navy)' }}>{eventGuests.length}</div>
+                                        <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 700 }}>Total</div>
+                                    </div>
+                                    <div className="card" style={{ padding: '0.6rem 1rem', flex: 1, minWidth: 100, textAlign: 'center' }}>
+                                        <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#3D8C6E' }}>{eventGuests.filter(g => g.status === 'confirmed').length}</div>
+                                        <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 700 }}>Confirmed</div>
+                                    </div>
+                                    <div className="card" style={{ padding: '0.6rem 1rem', flex: 1, minWidth: 100, textAlign: 'center' }}>
+                                        <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#F7C948' }}>{eventGuests.filter(g => g.status === 'invited').length}</div>
+                                        <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 700 }}>Invited</div>
+                                    </div>
+                                    <div className="card" style={{ padding: '0.6rem 1rem', flex: 1, minWidth: 100, textAlign: 'center' }}>
+                                        <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#E8896A' }}>{eventGuests.filter(g => g.status === 'declined').length}</div>
+                                        <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 700 }}>Declined</div>
+                                    </div>
+                                </div>
+                            )}
+                            {/* Guest List */}
+                            {eventGuests.length > 0 ? (
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.8rem' }}>
+                                    {eventGuests.map((g, i) => (
+                                        <div key={i} className="card" style={{ padding: '0.8rem 1rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: '0.78rem', flexShrink: 0 }}>
+                                                {g.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
+                                            </div>
+                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                <div style={{ fontWeight: 800, color: 'var(--navy)', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.name}</div>
+                                                {g.email && <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>{g.email}</div>}
+                                            </div>
+                                            <select value={g.status} onChange={e => updateGuestStatus(i, e.target.value as EventGuest['status'])} style={{ padding: '0.25rem 0.4rem', borderRadius: 6, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.7rem', fontWeight: 800, outline: 'none', color: g.status === 'confirmed' ? '#3D8C6E' : g.status === 'declined' ? '#E8896A' : '#c9960a', background: g.status === 'confirmed' ? 'rgba(61,140,110,0.08)' : g.status === 'declined' ? 'rgba(232,137,106,0.08)' : 'rgba(247,201,72,0.08)' }}>
+                                                <option value="invited">⏳ Invited</option>
+                                                <option value="confirmed">✅ Confirmed</option>
+                                                <option value="declined">❌ Declined</option>
+                                            </select>
+                                            <button onClick={() => removeGuest(i)} style={{ background: 'none', border: 'none', color: '#E8896A', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 800, padding: '0.2rem' }}>✕</button>
+                                        </div>
+                                    ))}
+                                </div>
+                            ) : (
+                                <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
+                                    <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem', opacity: 0.5 }}>👥</div>
+                                    <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.82rem' }}>No guests added yet. Add your first guest above!</p>
+                                </div>
+                            )}
                         </div>
                     )}
                 </div>
@@ -442,6 +592,28 @@ export default function Dashboard() {
                         <div className={styles.main}>
                             {/* LEFT COLUMN */}
                             <div>
+                                {/* ── Countdown Bar ── */}
+                                {data.date && (
+                                    <div className={styles.sectionCard} style={{ marginBottom: '1rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                                            <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)' }}>
+                                                📅 Event Countdown
+                                            </div>
+                                            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: daysLeft !== null && daysLeft <= 7 ? '#E8896A' : 'var(--teal)' }}>
+                                                {daysLeft !== null ? (daysLeft === 0 ? '🎉 Today!' : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`) : 'No date set'}
+                                            </div>
+                                        </div>
+                                        <div style={{ position: 'relative', height: 8, background: 'rgba(0,0,0,0.06)', borderRadius: 10, overflow: 'hidden' }}>
+                                            <div style={{ height: '100%', width: `${countdownPct}%`, background: daysLeft !== null && daysLeft <= 7 ? 'linear-gradient(90deg, #E8896A, #e06040)' : 'linear-gradient(90deg, var(--teal), #3D8C6E)', borderRadius: 10, transition: 'width 0.8s ease' }} />
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.4rem' }}>
+                                            <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>📋 Plan Created</span>
+                                            <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>📍 Today</span>
+                                            <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>🎉 {eventDate ? eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Event'}</span>
+                                        </div>
+                                    </div>
+                                )}
+
                                 {/* ── Planning Timeline ── */}
                                 <div className={styles.sectionCard}>
                                     <div className={styles.cardHeader}>
