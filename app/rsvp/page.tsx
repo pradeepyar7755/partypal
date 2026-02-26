@@ -124,7 +124,7 @@ function RSVPContent() {
                     <span className={styles.rsvpEmoji}>{eventEmoji}</span>
                     <h1 className={styles.rsvpEventName}>{eventName}</h1>
                     <p className={styles.rsvpDetails}>
-                        {eventData.date && `${new Date(eventData.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} · `}
+                        {eventData.date && `${new Date(eventData.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })} · `}
                         {eventData.location || 'Location TBD'}
                         {eventData.theme && ` · ${eventData.theme} Theme`}
                     </p>

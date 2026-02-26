@@ -97,6 +97,11 @@ export default function Dashboard() {
     const [guestForm, setGuestForm] = useState({ name: '', email: '' })
     const [vendorForm, setVendorForm] = useState({ name: '', category: '', notes: '' })
     const [newCheckItem, setNewCheckItem] = useState('')
+    const [guestSearch, setGuestSearch] = useState('')
+    const [guestFilter, setGuestFilter] = useState<'all' | 'invited' | 'confirmed' | 'declined'>('all')
+    const [showAddGuest, setShowAddGuest] = useState(false)
+    const [showBulkImport, setShowBulkImport] = useState(false)
+    const [bulkText, setBulkText] = useState('')
     const progressRefs = useRef<HTMLDivElement[]>([])
 
     const loadEvent = (plan: PlanData, demo: boolean) => {
@@ -195,6 +200,21 @@ export default function Dashboard() {
         showToast(`"${removed.item}" removed`, 'info')
     }
 
+    const bulkImportGuests = () => {
+        if (!bulkText.trim()) return
+        const lines = bulkText.split('\n').filter(l => l.trim())
+        const newGuests: EventGuest[] = lines.map(line => {
+            const parts = line.split(',').map(p => p.trim())
+            return { name: parts[0] || 'Guest', email: parts[1] || '', status: 'invited' as const }
+        })
+        const updated = [...eventGuests, ...newGuests]
+        setEventGuests(updated)
+        if (data.eventId) localStorage.setItem(`partypal_guests_${data.eventId}`, JSON.stringify(updated))
+        setBulkText('')
+        setShowBulkImport(false)
+        showToast(`${newGuests.length} guest${newGuests.length > 1 ? 's' : ''} imported`, 'success')
+    }
+
     const startEditing = () => {
         setEditData({ eventType: data.eventType, date: data.date, guests: data.guests, location: data.location, theme: data.theme, budget: data.budget, time: data.time })
         setEditTimeline(data.plan.timeline.map(t => ({ ...t })))
@@ -230,7 +250,12 @@ export default function Dashboard() {
     const cancelEdits = () => setIsEditing(false)
 
     const allocatedAmount = data.plan.budget.breakdown.reduce((s, b) => s + b.amount, 0)
-    const totalBudget = parseInt(data.budget?.replace(/[^0-9]/g, '') || '2000') || 2000
+    const totalBudget = (() => {
+        const b = data.budget || '$2,000'
+        const nums = b.match(/[\d,]+/g)?.map(n => parseInt(n.replace(/,/g, ''))) || [2000]
+        if (nums.length >= 2) return Math.round((nums[0] + nums[1]) / 2)
+        return nums[0] || 2000
+    })()
     const budgetPct = Math.min(100, Math.round((allocatedAmount / totalBudget) * 100))
     const remaining = totalBudget - allocatedAmount
     const checkDone = checklist.filter(c => c.done).length
@@ -606,63 +631,105 @@ export default function Dashboard() {
                         </div>
                     ) : (
                         <div>
-                            {/* Add Guest Form */}
-                            <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
-                                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.8rem' }}>➕ Add Guest</div>
-                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                    <input placeholder="Guest name" value={guestForm.name} onChange={e => setGuestForm(p => ({ ...p, name: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addGuest()} style={{ flex: 1, minWidth: 150, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
-                                    <input placeholder="Email or phone (optional)" value={guestForm.email} onChange={e => setGuestForm(p => ({ ...p, email: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addGuest()} style={{ flex: 1, minWidth: 180, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
-                                    <button onClick={addGuest} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 1.2rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}>Add</button>
-                                </div>
+                            {/* ── Stat Cards ── */}
+                            <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                                {[
+                                    { label: 'Total', val: eventGuests.length, color: 'var(--navy)', filterKey: 'all' as const },
+                                    { label: 'Confirmed', val: eventGuests.filter(g => g.status === 'confirmed').length, color: '#3D8C6E', filterKey: 'confirmed' as const },
+                                    { label: 'Invited', val: eventGuests.filter(g => g.status === 'invited').length, color: '#c4880a', filterKey: 'invited' as const },
+                                    { label: 'Declined', val: eventGuests.filter(g => g.status === 'declined').length, color: '#E8896A', filterKey: 'declined' as const },
+                                ].map(s => (
+                                    <div key={s.label} className="card" onClick={() => setGuestFilter(s.filterKey)} style={{
+                                        padding: '0.7rem 1rem', flex: 1, minWidth: 90, textAlign: 'center', cursor: 'pointer',
+                                        border: guestFilter === s.filterKey ? `2px solid ${s.color}` : '1.5px solid rgba(0,0,0,0.08)',
+                                        transition: 'all 0.2s',
+                                    }}>
+                                        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: s.color }}>{s.val}</div>
+                                        <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 700 }}>{s.label}</div>
+                                    </div>
+                                ))}
                             </div>
-                            {/* Guest Summary */}
-                            {eventGuests.length > 0 && (
-                                <div style={{ display: 'flex', gap: '1rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                                    <div className="card" style={{ padding: '0.6rem 1rem', flex: 1, minWidth: 100, textAlign: 'center' }}>
-                                        <div style={{ fontSize: '1.2rem', fontWeight: 900, color: 'var(--navy)' }}>{eventGuests.length}</div>
-                                        <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 700 }}>Total</div>
-                                    </div>
-                                    <div className="card" style={{ padding: '0.6rem 1rem', flex: 1, minWidth: 100, textAlign: 'center' }}>
-                                        <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#3D8C6E' }}>{eventGuests.filter(g => g.status === 'confirmed').length}</div>
-                                        <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 700 }}>Confirmed</div>
-                                    </div>
-                                    <div className="card" style={{ padding: '0.6rem 1rem', flex: 1, minWidth: 100, textAlign: 'center' }}>
-                                        <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#F7C948' }}>{eventGuests.filter(g => g.status === 'invited').length}</div>
-                                        <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 700 }}>Invited</div>
-                                    </div>
-                                    <div className="card" style={{ padding: '0.6rem 1rem', flex: 1, minWidth: 100, textAlign: 'center' }}>
-                                        <div style={{ fontSize: '1.2rem', fontWeight: 900, color: '#E8896A' }}>{eventGuests.filter(g => g.status === 'declined').length}</div>
-                                        <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 700 }}>Declined</div>
+
+                            {/* ── Action Buttons ── */}
+                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                                <button onClick={() => { setShowAddGuest(!showAddGuest); setShowBulkImport(false) }} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 1rem', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}>{showAddGuest ? '✕ Close' : '+ Add Guest'}</button>
+                                <button onClick={() => { setShowBulkImport(!showBulkImport); setShowAddGuest(false) }} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 8, padding: '0.5rem 1rem', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', color: 'var(--navy)' }}>📋 Bulk Import</button>
+                                <button onClick={() => router.push('/guests')} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 8, padding: '0.5rem 1rem', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', color: 'var(--navy)', marginLeft: 'auto' }}>✉️ Full Guest Manager →</button>
+                            </div>
+
+                            {/* ── Add Guest Form ── */}
+                            {showAddGuest && (
+                                <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
+                                    <div style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '0.9rem', marginBottom: '0.8rem' }}>Add New Guest</div>
+                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                        <input placeholder="Full Name *" value={guestForm.name} onChange={e => setGuestForm(p => ({ ...p, name: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addGuest()} style={{ flex: 1, minWidth: 150, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
+                                        <input placeholder="Email or phone" value={guestForm.email} onChange={e => setGuestForm(p => ({ ...p, email: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addGuest()} style={{ flex: 1, minWidth: 180, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
+                                        <button onClick={addGuest} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 1.2rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}>Add</button>
                                     </div>
                                 </div>
                             )}
-                            {/* Guest List */}
-                            {eventGuests.length > 0 ? (
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.8rem' }}>
-                                    {eventGuests.map((g, i) => (
-                                        <div key={i} className="card" style={{ padding: '0.8rem 1rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                            <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: '0.78rem', flexShrink: 0 }}>
-                                                {g.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)}
-                                            </div>
-                                            <div style={{ flex: 1, minWidth: 0 }}>
-                                                <div style={{ fontWeight: 800, color: 'var(--navy)', fontSize: '0.85rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{g.name}</div>
-                                                {g.email && <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>{g.email}</div>}
-                                            </div>
-                                            <select value={g.status} onChange={e => updateGuestStatus(i, e.target.value as EventGuest['status'])} style={{ padding: '0.25rem 0.4rem', borderRadius: 6, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.7rem', fontWeight: 800, outline: 'none', color: g.status === 'confirmed' ? '#3D8C6E' : g.status === 'declined' ? '#E8896A' : '#c9960a', background: g.status === 'confirmed' ? 'rgba(61,140,110,0.08)' : g.status === 'declined' ? 'rgba(232,137,106,0.08)' : 'rgba(247,201,72,0.08)' }}>
-                                                <option value="invited">⏳ Invited</option>
-                                                <option value="confirmed">✅ Confirmed</option>
-                                                <option value="declined">❌ Declined</option>
-                                            </select>
-                                            <button onClick={() => removeGuest(i)} style={{ background: 'none', border: 'none', color: '#E8896A', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 800, padding: '0.2rem' }}>✕</button>
-                                        </div>
-                                    ))}
-                                </div>
-                            ) : (
-                                <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
-                                    <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem', opacity: 0.5 }}>👥</div>
-                                    <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.82rem' }}>No guests added yet. Add your first guest above!</p>
+
+                            {/* ── Bulk Import ── */}
+                            {showBulkImport && (
+                                <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
+                                    <div style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '0.9rem', marginBottom: '0.4rem' }}>Bulk Import</div>
+                                    <p style={{ fontSize: '0.75rem', color: '#9aabbb', fontWeight: 600, marginBottom: '0.6rem' }}>One guest per line. Format: Name, Email (optional)</p>
+                                    <textarea value={bulkText} onChange={e => setBulkText(e.target.value)} placeholder={"Jane Doe, jane@email.com\nJohn Smith\nSarah Lee, sarah@email.com"} rows={5} style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
+                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                        <button onClick={() => setShowBulkImport(false)} style={{ background: 'rgba(232,137,106,0.1)', border: '1.5px solid rgba(232,137,106,0.3)', borderRadius: 8, padding: '0.4rem 0.8rem', fontSize: '0.78rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>Cancel</button>
+                                        <button onClick={bulkImportGuests} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.4rem 1rem', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}>Import {bulkText.split('\n').filter(l => l.trim()).length} Guests</button>
+                                    </div>
                                 </div>
                             )}
+
+                            {/* ── Search ── */}
+                            <input placeholder="🔍 Search guests..." value={guestSearch} onChange={e => setGuestSearch(e.target.value)} style={{ width: '100%', padding: '0.55rem 1rem', borderRadius: 50, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none', marginBottom: '1rem', color: 'var(--navy)' }} />
+
+                            {/* ── Guest Cards ── */}
+                            {(() => {
+                                const filtered = eventGuests.filter(g => {
+                                    if (guestFilter !== 'all' && g.status !== guestFilter) return false
+                                    if (guestSearch && !g.name.toLowerCase().includes(guestSearch.toLowerCase()) && !g.email.toLowerCase().includes(guestSearch.toLowerCase())) return false
+                                    return true
+                                })
+                                const avatarColors = ['#E8896A', '#4AADA8', '#F7C948', '#3D8C6E', '#7B5EA7', '#2D4059']
+                                return filtered.length > 0 ? (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '0.8rem' }}>
+                                        {filtered.map((g, i) => {
+                                            const initials = g.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+                                            const color = avatarColors[i % avatarColors.length]
+                                            const statusColor = g.status === 'confirmed' ? '#3D8C6E' : g.status === 'declined' ? '#E8896A' : '#c4880a'
+                                            const statusBg = g.status === 'confirmed' ? 'rgba(61,140,110,0.08)' : g.status === 'declined' ? 'rgba(232,137,106,0.08)' : 'rgba(247,201,72,0.08)'
+                                            const statusLabel = g.status === 'confirmed' ? '✓ Going' : g.status === 'declined' ? '✕ Declined' : '⏳ Pending'
+                                            const originalIdx = eventGuests.indexOf(g)
+                                            return (
+                                                <div key={originalIdx} className="card" style={{ padding: '1rem 1.2rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
+                                                    <div style={{ width: 42, height: 42, borderRadius: '50%', background: `linear-gradient(135deg, ${color}, ${color}dd)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: '0.82rem', flexShrink: 0 }}>
+                                                        {initials}
+                                                    </div>
+                                                    <div style={{ flex: 1, minWidth: 0 }}>
+                                                        <div style={{ fontWeight: 800, color: 'var(--navy)', fontSize: '0.88rem', marginBottom: '0.15rem' }}>{g.name}</div>
+                                                        {g.email && <div style={{ fontSize: '0.72rem', color: '#9aabbb', fontWeight: 600 }}>{g.email}</div>}
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
+                                                        <select value={g.status} onChange={e => updateGuestStatus(originalIdx, e.target.value as EventGuest['status'])} style={{ padding: '0.3rem 0.5rem', borderRadius: 8, border: `1.5px solid ${statusColor}30`, fontSize: '0.72rem', fontWeight: 800, outline: 'none', color: statusColor, background: statusBg, cursor: 'pointer' }}>
+                                                            <option value="invited">⏳ Pending</option>
+                                                            <option value="confirmed">✓ Going</option>
+                                                            <option value="declined">✕ Declined</option>
+                                                        </select>
+                                                        <button onClick={() => removeGuest(originalIdx)} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 800, padding: '0.2rem' }} onMouseEnter={e => (e.currentTarget.style.color = '#E8896A')} onMouseLeave={e => (e.currentTarget.style.color = '#ccc')}>✕</button>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                ) : (
+                                    <div className="card" style={{ padding: '2.5rem', textAlign: 'center' }}>
+                                        <div style={{ fontSize: '2rem', marginBottom: '0.5rem', opacity: 0.4 }}>👥</div>
+                                        <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.85rem' }}>{eventGuests.length > 0 ? 'No guests match your filter' : 'No guests yet. Click "+ Add Guest" or "Bulk Import" to get started!'}</p>
+                                    </div>
+                                )
+                            })()}
                         </div>
                     )}
                 </div>
