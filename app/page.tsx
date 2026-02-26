@@ -403,7 +403,7 @@ export default function Home() {
               {loading ? (
                 <span style={{ display: 'flex', alignItems: 'center', gap: '0.7rem', justifyContent: 'center' }}>
                   <span className="spinner" style={{ width: 20, height: 20, borderWidth: 2 }} />
-                  AI is planning your party...
+                  PartyPal is planning your party...
                 </span>
               ) : '🪄 Generate My Party Plan with AI'}
             </button>
