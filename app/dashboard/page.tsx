@@ -640,7 +640,7 @@ export default function Dashboard() {
                                     <div className={styles.sectionCard} style={{ marginBottom: '1rem' }}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
                                             <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)' }}>
-                                                📅 Event Countdown
+                                                ⏳ Event Countdown
                                             </div>
                                             <div style={{ fontSize: '0.78rem', fontWeight: 800, color: daysLeft !== null && daysLeft <= 7 ? '#E8896A' : 'var(--teal)' }}>
                                                 {daysLeft !== null ? (daysLeft === 0 ? '🎉 Today!' : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`) : 'No date set'}
