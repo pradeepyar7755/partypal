@@ -23,14 +23,7 @@ interface PlanData {
 const TIMELINE_EMOJIS = ['📋', '💌', '🎀', '🍽️', '✅', '🎉']
 const TIMELINE_DOTS = ['coral', 'yellow', 'teal', 'green', 'navy', 'coral']
 
-const MOOD_TILES = [
-    { emoji: '🌴', label: 'Palm Decor', gradient: 'linear-gradient(135deg, #4AADA8 0%, #2D7D7A 100%)' },
-    { emoji: '🌺', label: 'Hibiscus', gradient: 'linear-gradient(135deg, #F7C948 0%, #E8A020 100%)' },
-    { emoji: '🍹', label: 'Tiki Bar', gradient: 'linear-gradient(135deg, #E8896A 0%, #C96040 100%)' },
-    { emoji: '🌿', label: 'Greenery', gradient: 'linear-gradient(135deg, #3D8C6E 0%, #256048 100%)' },
-    { emoji: '🦜', label: 'Parrot Print', gradient: 'linear-gradient(135deg, #7B5EA7 0%, #5A3A8A 100%)' },
-    { emoji: '🌊', label: 'Ocean Blue', gradient: 'linear-gradient(135deg, #2D4059 0%, #1A2535 100%)' },
-]
+
 
 const DEFAULT_VENDORS = [
     { emoji: '🏛️', name: 'The Loft ATL', cat: 'Venue · Midtown Atlanta', match: 98, stars: 5, price: 'From $450 / event' },
@@ -91,6 +84,9 @@ export default function Dashboard() {
     const [data, setData] = useState<PlanData>(DEFAULT_PLAN)
     const [checklist, setChecklist] = useState<ChecklistItem[]>([])
     const [isDemo, setIsDemo] = useState(false)
+    const [isEditing, setIsEditing] = useState(false)
+    const [editData, setEditData] = useState<{ eventType: string; date: string; guests: string; location: string; theme: string; budget: string; time?: string }>({ eventType: '', date: '', guests: '', location: '', theme: '', budget: '' })
+    const [editTimeline, setEditTimeline] = useState<TimelineItem[]>([])
     const progressRefs = useRef<HTMLDivElement[]>([])
 
     useEffect(() => {
@@ -98,12 +94,11 @@ export default function Dashboard() {
         const parsed: PlanData = stored ? JSON.parse(stored) : DEFAULT_PLAN
         setIsDemo(!stored)
         setData(parsed)
-        // Enrich checklist with due dates and urgency markers matching mockup
-        const DUE_LABELS = ['Done', 'Done', 'Urgent', 'Urgent', '6 wks out', '4 wks out', '3 wks out', '3 wks out', '2 wks out', '1 wk out']
+        // Assign timeline labels to checklist items
+        const TIMELINE_LABELS = ['6 wks out', '6 wks out', '4 wks out', '4 wks out', '3 wks out', '3 wks out', '2 wks out', '2 wks out', '1 wk out', 'Day before']
         const enriched = (parsed.plan.checklist || []).map((item, i) => ({
             ...item,
-            due: DUE_LABELS[i] || `${Math.max(1, 6 - i)} wks out`,
-            urgent: DUE_LABELS[i] === 'Urgent',
+            due: TIMELINE_LABELS[i] || `${Math.max(1, 6 - i)} wks out`,
         }))
         setChecklist(enriched)
     }, [])
@@ -135,6 +130,32 @@ export default function Dashboard() {
         })
     }
 
+    const startEditing = () => {
+        setEditData({ eventType: data.eventType, date: data.date, guests: data.guests, location: data.location, theme: data.theme, budget: data.budget, time: data.time })
+        setEditTimeline(data.plan.timeline.map(t => ({ ...t })))
+        setIsEditing(true)
+    }
+
+    const saveEdits = () => {
+        const updated = {
+            ...data,
+            eventType: editData.eventType,
+            date: editData.date,
+            guests: editData.guests,
+            location: editData.location,
+            theme: editData.theme,
+            budget: editData.budget,
+            time: editData.time,
+            plan: { ...data.plan, timeline: editTimeline },
+        }
+        setData(updated)
+        localStorage.setItem('partyplan', JSON.stringify(updated))
+        setIsEditing(false)
+        showToast('Plan updated ✓', 'success')
+    }
+
+    const cancelEdits = () => setIsEditing(false)
+
     const allocatedAmount = data.plan.budget.breakdown.reduce((s, b) => s + b.amount, 0)
     const totalBudget = parseInt(data.budget?.replace(/[^0-9]/g, '') || '2000') || 2000
     const budgetPct = Math.min(100, Math.round((allocatedAmount / totalBudget) * 100))
@@ -159,15 +180,49 @@ export default function Dashboard() {
                     <div className="breadcrumb">
                         <a href="/">🏠 Home</a> › <a href="/dashboard">My Events</a> › <span className="breadcrumb current">AI Plan</span>
                     </div>
-                    <button className="back-btn" onClick={() => router.push('/')}>← Back to Home</button>
+                    <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
+                        <button className="back-btn" onClick={() => router.push('/')}>← Back to Home</button>
+                        {!isEditing ? (
+                            <button onClick={startEditing} style={{ background: 'rgba(255,255,255,0.1)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 8, padding: '0.4rem 1rem', color: '#fff', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.4rem' }}>✏️ Edit Plan</button>
+                        ) : (
+                            <>
+                                <button onClick={saveEdits} style={{ background: 'linear-gradient(135deg, #3D8C6E, #2D7050)', border: 'none', borderRadius: 8, padding: '0.4rem 1rem', color: '#fff', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}>💾 Save</button>
+                                <button onClick={cancelEdits} style={{ background: 'rgba(232,137,106,0.2)', border: '1px solid rgba(232,137,106,0.4)', borderRadius: 8, padding: '0.4rem 1rem', color: '#E8896A', cursor: 'pointer', fontSize: '0.8rem', fontWeight: 700 }}>✕ Cancel</button>
+                            </>
+                        )}
+                    </div>
                     <div className={styles.eventBadge}>🤖 AI Generated Plan</div>
-                    <h1 className={styles.headerTitle}>{data.eventType}</h1>
+                    {isEditing ? (
+                        <input value={editData.eventType} onChange={e => setEditData(p => ({ ...p, eventType: e.target.value }))} style={{ fontFamily: "'Fredoka One', cursive", fontSize: '1.8rem', color: '#fff', background: 'rgba(255,255,255,0.08)', border: '1.5px solid rgba(247,201,72,0.4)', borderRadius: 10, padding: '0.4rem 0.8rem', width: '100%', outline: 'none' }} />
+                    ) : (
+                        <h1 className={styles.headerTitle}>{data.eventType}</h1>
+                    )}
                     <div className={styles.eventMeta}>
-                        {data.date && <div className={styles.metaChip}>📅 {new Date(data.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>}
-                        <div className={styles.metaChip}>👥 {data.guests} Guests</div>
-                        <div className={styles.metaChip}>📍 {data.location}</div>
-                        {data.theme && <div className={styles.metaChip}>🎨 {data.theme} Theme</div>}
-                        {data.budget && <div className={styles.metaChip}>💰 {data.budget} Budget</div>}
+                        {isEditing ? (
+                            <>
+                                <input type="date" value={editData.date} onChange={e => setEditData(p => ({ ...p, date: e.target.value }))} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 20, padding: '0.3rem 0.8rem', color: '#fff', fontSize: '0.8rem', fontWeight: 700 }} />
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 20, padding: '0.3rem 0.8rem' }}>
+                                    <span>👥</span><input type="number" value={editData.guests} onChange={e => setEditData(p => ({ ...p, guests: e.target.value }))} style={{ background: 'transparent', border: 'none', color: '#fff', width: 50, fontSize: '0.8rem', fontWeight: 700, outline: 'none' }} /><span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>guests</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 20, padding: '0.3rem 0.8rem' }}>
+                                    <span>📍</span><input value={editData.location} onChange={e => setEditData(p => ({ ...p, location: e.target.value }))} style={{ background: 'transparent', border: 'none', color: '#fff', width: 120, fontSize: '0.8rem', fontWeight: 700, outline: 'none' }} />
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 20, padding: '0.3rem 0.8rem' }}>
+                                    <span>🎨</span><input value={editData.theme} onChange={e => setEditData(p => ({ ...p, theme: e.target.value }))} placeholder="Theme" style={{ background: 'transparent', border: 'none', color: '#fff', width: 90, fontSize: '0.8rem', fontWeight: 700, outline: 'none' }} />
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.2)', borderRadius: 20, padding: '0.3rem 0.8rem' }}>
+                                    <span>💰</span><input value={editData.budget} onChange={e => setEditData(p => ({ ...p, budget: e.target.value }))} style={{ background: 'transparent', border: 'none', color: '#fff', width: 80, fontSize: '0.8rem', fontWeight: 700, outline: 'none' }} />
+                                </div>
+                            </>
+                        ) : (
+                            <>
+                                {data.date && <div className={styles.metaChip}>📅 {new Date(data.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</div>}
+                                <div className={styles.metaChip}>👥 {data.guests} Guests</div>
+                                <div className={styles.metaChip}>📍 {data.location}</div>
+                                {data.theme && <div className={styles.metaChip}>🎨 {data.theme} Theme</div>}
+                                {data.budget && <div className={styles.metaChip}>💰 {data.budget} Budget</div>}
+                            </>
+                        )}
                     </div>
                 </div>
             </header>
@@ -227,7 +282,7 @@ export default function Dashboard() {
                             <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
                         </div>
                         <div className={styles.timeline}>
-                            {data.plan.timeline.map((t, i) => (
+                            {(isEditing ? editTimeline : data.plan.timeline).map((t, i) => (
                                 <div key={i} className={styles.timelineItem}>
                                     <div className={styles.tlLeft}>
                                         <div className={`${styles.tlDot} ${styles[`tlDot${TIMELINE_DOTS[i % TIMELINE_DOTS.length].charAt(0).toUpperCase() + TIMELINE_DOTS[i % TIMELINE_DOTS.length].slice(1)}` as keyof typeof styles]}`}>
@@ -236,9 +291,19 @@ export default function Dashboard() {
                                         <div className={styles.tlLine} />
                                     </div>
                                     <div className={styles.tlContent}>
-                                        <div className={styles.tlTime}>{t.weeks}</div>
-                                        <div className={styles.tlTitle}>{t.task}</div>
-                                        {t.category && <div className={styles.tlDesc}>{t.category}</div>}
+                                        {isEditing ? (
+                                            <>
+                                                <input value={t.weeks} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, weeks: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(74,173,168,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', color: '#4AADA8', fontSize: '0.68rem', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.06em', width: '100%', outline: 'none', marginBottom: 4 }} />
+                                                <input value={t.task} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, task: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#1A2535', fontSize: '0.9rem', fontWeight: 800, width: '100%', outline: 'none', marginBottom: 4 }} />
+                                                <textarea value={t.category} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, category: e.target.value } : item))} rows={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#6b7c93', fontSize: '0.78rem', fontWeight: 600, width: '100%', outline: 'none', resize: 'vertical' as const }} />
+                                            </>
+                                        ) : (
+                                            <>
+                                                <div className={styles.tlTime}>{t.weeks}</div>
+                                                <div className={styles.tlTitle}>{t.task}</div>
+                                                {t.category && <div className={styles.tlDesc}>{t.category}</div>}
+                                            </>
+                                        )}
                                     </div>
                                 </div>
                             ))}
@@ -261,13 +326,7 @@ export default function Dashboard() {
                                         {item.done ? '✓' : ''}
                                     </div>
                                     <div className={`${styles.checkLabel} ${item.done ? styles.checkLabelDone : ''}`}>{item.item}</div>
-                                    {item.done ? (
-                                        <span className={styles.checkDue}>Done</span>
-                                    ) : item.urgent ? (
-                                        <span className={styles.checkUrgent}>Urgent</span>
-                                    ) : item.due ? (
-                                        <span className={styles.checkDue}>{item.due}</span>
-                                    ) : null}
+                                    {item.due && <span className={styles.checkDue}>{item.due}</span>}
                                 </div>
                             ))}
                         </div>
@@ -298,24 +357,7 @@ export default function Dashboard() {
                         </div>
                     </div>
 
-                    {/* ── Theme Mood Board ── */}
-                    <div className={styles.sectionCard}>
-                        <div className={styles.cardHeader}>
-                            <div className={styles.cardTitleGroup}>
-                                <span className={styles.cardIcon}>🎨</span>
-                                <h2>{data.theme ? `${data.theme} Theme` : 'Party Theme'} Mood Board</h2>
-                            </div>
-                            <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
-                        </div>
-                        <div className={styles.moodBoard}>
-                            {MOOD_TILES.map((tile, i) => (
-                                <div key={i} className={styles.moodTile} style={{ background: tile.gradient }}>
-                                    {tile.emoji}
-                                    <div className={styles.moodLabel}>{tile.label}</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
+
                 </div>
 
                 {/* RIGHT SIDEBAR */}
