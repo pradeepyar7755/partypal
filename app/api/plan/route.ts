@@ -1,7 +1,7 @@
-import Anthropic from '@anthropic-ai/sdk'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 
-const client = new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY })
+const genAI = new GoogleGenerativeAI(process.env.GOOGLE_MAPS_API_KEY || '')
 
 export async function POST(req: NextRequest) {
   try {
@@ -65,17 +65,12 @@ Return ONLY valid JSON, no markdown, no backticks:
   }
 }
 
-Make ALL content specific to the actual event details provided. Adjust budget percentages to make sense for the event type.`
+Make ALL content specific to the actual event details provided. Adjust budget percentages to make sense for the event type and the budget amount given.`
 
-    const message = await client.messages.create({
-      model: 'claude-haiku-4-5-20251001',
-      max_tokens: 2000,
-      messages: [{ role: 'user', content: prompt }],
-    })
-
-    const content = message.content[0]
-    if (content.type !== 'text') throw new Error('Unexpected response type')
-    const cleaned = content.text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+    const result = await model.generateContent(prompt)
+    const text = result.response.text()
+    const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const plan = JSON.parse(cleaned)
     return NextResponse.json({ plan, eventType, guests, location, theme, date, budget })
   } catch (error: unknown) {
