@@ -4,9 +4,9 @@ import { useRouter, useSearchParams } from 'next/navigation'
 import styles from './vendors.module.css'
 import { showToast } from '@/components/Toast'
 
-const CATS = ['All Vendors', 'Venue', 'Decor', 'Baker', 'Food', 'Photos', 'Music', 'Drinks', 'Entertain', 'Guests']
+const CATS = ['All Vendors', 'Venue', 'Decor', 'Baker', 'Food', 'Photos', 'Music', 'Drinks', 'Entertain']
 const CAT_EMOJIS: Record<string, string> = {
-  'All Vendors': '🌟', Venue: '🏛️', Decor: '🎀', Baker: '🎂', Food: '🍽️', Photos: '📷', Music: '🎵', Drinks: '🥂', Entertain: '🤹', Guests: '💌'
+  'All Vendors': '🌟', Venue: '🏛️', Decor: '🎀', Baker: '🎂', Food: '🍽️', Photos: '📷', Music: '🎵', Drinks: '🥂', Entertain: '🤹'
 }
 
 const GRADIENTS: Record<string, string> = {
@@ -26,22 +26,15 @@ interface Vendor {
   id: string; name: string; category: string; location: string; rating: number
   reviews: number; price: string; priceLabel: string; matchScore: number
   description: string; tags: string[]; badge: string; emoji: string; featured: boolean
+  photoUrl?: string; photoUrl2?: string; googleMapsUri?: string; websiteUri?: string
+  isOpen?: boolean; source?: string
 }
-
-const STATIC_VENDORS: Vendor[] = [
-  { id: 'v1', name: 'The Loft ATL', category: 'Venue', location: 'Midtown Atlanta, GA', rating: 4.9, reviews: 312, price: '$450', priceLabel: '/ event', matchScore: 98, description: 'A stunning industrial-chic loft in the heart of Midtown. Features exposed brick, Edison bulb lighting, a full catering kitchen, and a rooftop terrace. Perfect for intimate parties of 20–80 guests.', tags: ['Tropical-friendly', 'Rooftop', 'Indoor+Outdoor', 'Catering Kitchen', 'AV Equipment'], badge: '⭐ Top Rated', emoji: '🏛️', featured: true },
-  { id: 'v2', name: 'Lens & Light Co.', category: 'Photography', location: 'Buckhead, Atlanta', rating: 4.8, reviews: 178, price: '$320', priceLabel: '/ event', matchScore: 95, description: 'Award-winning event photographers specializing in vibrant, candid party photography. Includes 4-hr coverage, 200+ edited photos, and online gallery.', tags: ['Candid Style', 'Same-day Previews', 'Video Add-on'], badge: '', emoji: '📷', featured: false },
-  { id: 'v3', name: 'DJ Tropicana', category: 'Music', location: 'East Atlanta Village', rating: 4.6, reviews: 94, price: '$280', priceLabel: '/ event', matchScore: 91, description: 'Specializes in tropical, reggaeton, and Afrobeats vibes. Brings full sound system, lighting rig, and a custom playlist curated for your theme.', tags: ['Tropical Vibes', 'Sound System', 'Custom Playlist'], badge: 'New', emoji: '🎵', featured: false },
-  { id: 'v4', name: 'Sugar Blooms Bakery', category: 'Baker', location: 'Decatur, Atlanta', rating: 5.0, reviews: 256, price: '$150', priceLabel: '/ cake', matchScore: 89, description: 'Custom celebration cakes with stunning tropical and floral designs. Offers tasting sessions, tiered cakes, and cupcake towers. Gluten-free and vegan options available.', tags: ['Custom Design', 'Vegan Options', 'Tasting Session'], badge: '⭐ Top Rated', emoji: '🎂', featured: false },
-  { id: 'v5', name: 'Island Dreams Decor', category: 'Decor', location: 'Smyrna, Atlanta', rating: 4.4, reviews: 112, price: '$220', priceLabel: '/ event', matchScore: 87, description: 'Full-service tropical event decoration. Palm trees, flamingo centerpieces, tiki torches, floral arches, and table settings. Setup and teardown included.', tags: ['Full Setup', 'Rentals Available', 'Floral Arches'], badge: '', emoji: '🎀', featured: false },
-  { id: 'v6', name: 'Tropical Bites Catering', category: 'Catering', location: 'Sandy Springs, Atlanta', rating: 4.5, reviews: 89, price: '$18', priceLabel: '/ person', matchScore: 84, description: 'Caribbean and Latin-inspired catering with vibrant tropical flavors. Buffet and plated options available. Includes serving staff, plates, and utensils.', tags: ['Caribbean Menu', 'Staff Included', 'Dietary Options'], badge: '', emoji: '🍽️', featured: false },
-]
 
 function VendorsContent() {
   const router = useRouter()
   const params = useSearchParams()
   const [activecat, setActivecat] = useState('All Vendors')
-  const [vendors, setVendors] = useState<Vendor[]>(STATIC_VENDORS)
+  const [vendors, setVendors] = useState<Vendor[]>([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
   const [sort, setSort] = useState('Best Match')
@@ -52,7 +45,10 @@ function VendorsContent() {
   const [showSidebar, setShowSidebar] = useState(true)
   const [priceMax, setPriceMax] = useState(1000)
   const [ratingFilter, setRatingFilter] = useState(4)
+  const [detectedLocation, setDetectedLocation] = useState('')
+  const [locationReady, setLocationReady] = useState(false)
 
+  // Auto-detect user location on mount
   useEffect(() => {
     const saved = JSON.parse(localStorage.getItem('partypal_shortlist') || '[]')
     setShortlist(saved)
@@ -66,13 +62,94 @@ function VendorsContent() {
       const match = CATS.find(c => c.toLowerCase() === cat.toLowerCase())
       if (match) setActivecat(match)
     }
+
+    // If we already have a location from URL params or plan, skip detection
+    const existingLoc = params.get('location') || (stored ? JSON.parse(stored).location : '')
+    if (existingLoc) {
+      setDetectedLocation(existingLoc)
+      setLocationReady(true)
+      return
+    }
+
+    // Try browser geolocation first, then IP fallback
+    detectLocation()
   }, [params])
 
+  const detectLocation = async () => {
+    // 1. Try browser Geolocation API
+    if ('geolocation' in navigator) {
+      try {
+        const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
+          navigator.geolocation.getCurrentPosition(resolve, reject, {
+            enableHighAccuracy: false,
+            timeout: 5000,
+            maximumAge: 300000, // Cache for 5 min
+          })
+        })
+        const { latitude, longitude } = pos.coords
+
+        // Reverse geocode using Maps JS client-side Geocoder (always works)
+        try {
+          const apiRes = await fetch('/api/location')
+          const apiData = await apiRes.json()
+          if (apiData.apiKey) {
+            // Load Google Maps if not already loaded
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const w = window as any
+            if (w.google?.maps?.Geocoder) {
+              const geocoder = new w.google.maps.Geocoder()
+              const result = await new Promise<string>((resolve) => {
+                geocoder.geocode(
+                  { location: { lat: latitude, lng: longitude } },
+                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                  (results: any[], status: string) => {
+                    if (status === 'OK' && results?.[0]) {
+                      let city = '', state = ''
+                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                      results[0].address_components.forEach((c: any) => {
+                        if (c.types.includes('locality')) city = c.long_name
+                        if (c.types.includes('sublocality_level_1') && !city) city = c.long_name
+                        if (c.types.includes('administrative_area_level_1')) state = c.short_name
+                      })
+                      resolve(city && state ? `${city}, ${state}` : results[0].formatted_address?.split(',').slice(0, 2).join(',') || '')
+                    } else resolve('')
+                  }
+                )
+              })
+              if (result) {
+                setDetectedLocation(result)
+                setLocationReady(true)
+                return
+              }
+            }
+          }
+        } catch { /* Maps JS not loaded, fall through */ }
+      } catch {
+        // Geolocation denied or failed — fall through to IP
+      }
+    }
+
+    // 2. Fallback: IP-based geolocation
+    try {
+      const res = await fetch('/api/geolocation')
+      const data = await res.json()
+      if (data.label) {
+        setDetectedLocation(data.label)
+        setLocationReady(true)
+        return
+      }
+    } catch { /* ignore */ }
+
+    // 3. Final fallback
+    setDetectedLocation('Atlanta, GA')
+    setLocationReady(true)
+  }
+
   useEffect(() => {
-    if (activecat === 'Guests') { router.push('/guests'); return }
+    if (!locationReady) return
     fetchVendors(activecat)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activecat, planData])
+  }, [activecat, planData, locationReady, detectedLocation])
 
   const fetchVendors = async (cat: string) => {
     setLoading(true)
@@ -82,14 +159,13 @@ function VendorsContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           category: cat === 'All Vendors' ? 'Mixed party vendors' : cat,
-          location: params.get('location') || planData.location || 'Atlanta, GA',
+          location: params.get('location') || planData.location || detectedLocation || 'Atlanta, GA',
           theme: planData.theme || '', budget: planData.budget || '', guests: planData.guests || '30',
         }),
       })
       const data = await res.json()
       if (data.vendors?.length > 0) setVendors(data.vendors)
-      else setVendors(STATIC_VENDORS)
-    } catch { setVendors(STATIC_VENDORS) }
+    } catch { /* keep current vendors */ }
     setLoading(false)
   }
 
@@ -117,7 +193,7 @@ function VendorsContent() {
     return b.matchScore - a.matchScore
   })
 
-  const location = params.get('location') || planData.location || 'Atlanta, GA'
+  const location = params.get('location') || planData.location || detectedLocation || 'Atlanta, GA'
 
   return (
     <main className="page-enter">
@@ -231,12 +307,20 @@ function VendorsContent() {
               {filtered.map(v => (
                 <div key={v.id} className={`${styles.vendorCard} ${v.featured ? `${styles.featured} ${styles.featuredRow}` : ''}`} onClick={() => setSelectedVendor(v)}>
                   {/* Image Area */}
-                  <div className={styles.vendorCardImg} style={{ background: GRADIENTS[v.category] || 'linear-gradient(135deg, #2D4059, #1A2535)' }}>
-                    {v.emoji}
+                  <div className={styles.vendorCardImg} style={v.photoUrl ? { background: '#1A2535', padding: 0 } : { background: GRADIENTS[v.category] || 'linear-gradient(135deg, #2D4059, #1A2535)' }}>
+                    {v.photoUrl ? (
+                      <img src={v.photoUrl} alt={v.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} />
+                    ) : v.emoji}
                     <div className={styles.vendorBadgeWrap}>
                       {v.badge === '⭐ Top Rated' && <span className={styles.badgeTop}>⭐ Top Rated</span>}
                       {v.badge === 'New' && <span className={styles.badgeNew}>New</span>}
+                      {v.badge === 'Popular' && <span className={styles.badgeNew} style={{ background: '#7B5EA7' }}>Popular</span>}
                       {v.matchScore >= 85 && <span className={styles.badgeMatch}>{v.matchScore}% match</span>}
+                      {v.isOpen !== undefined && (
+                        <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '0.2rem 0.6rem', borderRadius: 50, background: v.isOpen ? 'rgba(61,140,110,0.9)' : 'rgba(200,60,60,0.9)', color: 'white' }}>
+                          {v.isOpen ? 'Open Now' : 'Closed'}
+                        </span>
+                      )}
                     </div>
                     <button className={`${styles.favBtn} ${shortlist.includes(v.id) ? styles.favBtnActive : ''}`} onClick={(e) => toggleShortlist(v.id, e)}>
                       {shortlist.includes(v.id) ? '❤️' : '🤍'}
@@ -275,6 +359,15 @@ function VendorsContent() {
       {selectedVendor && (
         <div className={styles.modalOverlay} onClick={(e) => { if (e.target === e.currentTarget) setSelectedVendor(null) }}>
           <div className={styles.modalCard}>
+            {/* Modal photo banner */}
+            {selectedVendor.photoUrl && (
+              <div style={{ width: '100%', height: 200, borderRadius: '16px 16px 0 0', overflow: 'hidden', position: 'relative' }}>
+                <img src={selectedVendor.photoUrl} alt={selectedVendor.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                {selectedVendor.photoUrl2 && (
+                  <img src={selectedVendor.photoUrl2} alt="" style={{ position: 'absolute', bottom: 8, right: 8, width: 80, height: 60, objectFit: 'cover', borderRadius: 8, border: '2px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }} />
+                )}
+              </div>
+            )}
             <div className={styles.modalHeader}>
               <div className={styles.modalVendorIcon} style={{ background: GRADIENTS[selectedVendor.category] || 'var(--light-bg)' }}>
                 {selectedVendor.emoji}
@@ -287,6 +380,11 @@ function VendorsContent() {
                   <span className="stars">{'★'.repeat(Math.floor(selectedVendor.rating))}{'☆'.repeat(5 - Math.floor(selectedVendor.rating))}</span>
                   <span className={styles.ratingNum}>{selectedVendor.rating}</span>
                   <span className={styles.reviewCount}>({selectedVendor.reviews} reviews)</span>
+                  {selectedVendor.isOpen !== undefined && (
+                    <span style={{ fontSize: '0.7rem', fontWeight: 800, padding: '0.15rem 0.5rem', borderRadius: 50, marginLeft: '0.5rem', background: selectedVendor.isOpen ? 'rgba(61,140,110,0.12)' : 'rgba(200,60,60,0.1)', color: selectedVendor.isOpen ? '#3D8C6E' : '#c83c3c' }}>
+                      {selectedVendor.isOpen ? '● Open Now' : '● Closed'}
+                    </span>
+                  )}
                 </div>
               </div>
               <button className={styles.modalClose} onClick={() => setSelectedVendor(null)}>✕</button>
@@ -311,10 +409,18 @@ function VendorsContent() {
                   <div className={styles.matchBadge} style={{ fontSize: '0.82rem', padding: '0.3rem 0.8rem' }}>🎯 {selectedVendor.matchScore}% match for your party</div>
                 </div>
               )}
-              <div style={{ display: 'flex', gap: '0.8rem' }}>
-                <button className={styles.contactBtn} onClick={() => { showToast(`Booking request sent for ${selectedVendor.name}!`, 'success'); setSelectedVendor(null) }}>
-                  📞 Contact & Book
-                </button>
+              {/* Action buttons */}
+              <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                {selectedVendor.googleMapsUri && (
+                  <a href={selectedVendor.googleMapsUri} target="_blank" rel="noopener noreferrer" className={styles.contactBtn} style={{ textDecoration: 'none', textAlign: 'center', flex: 1 }}>
+                    📍 View on Maps
+                  </a>
+                )}
+                {selectedVendor.websiteUri && (
+                  <a href={selectedVendor.websiteUri} target="_blank" rel="noopener noreferrer" className={styles.contactBtn} style={{ textDecoration: 'none', textAlign: 'center', background: 'var(--teal)', flex: 1 }}>
+                    🌐 Website
+                  </a>
+                )}
                 <button
                   className={styles.contactBtn}
                   style={{ background: shortlist.includes(selectedVendor.id) ? 'var(--coral)' : 'var(--light-bg)', color: shortlist.includes(selectedVendor.id) ? 'white' : 'var(--navy)', flex: '0 0 auto', padding: '0.85rem 1.2rem' }}

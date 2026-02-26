@@ -29,21 +29,23 @@ export async function GET(request: NextRequest) {
 // POST: Get place details (lat/lng) via Geocoding API (always enabled)
 export async function POST(request: NextRequest) {
     const body = await request.json()
-    const { placeId, address } = body
+    const { placeId, address, latlng } = body
 
     if (!GOOGLE_MAPS_API_KEY) {
         return NextResponse.json({ error: 'Missing API key' }, { status: 400 })
     }
 
     try {
-        // Use Geocoding API with place_id or address — this API is always enabled
+        // Use Geocoding API with place_id, address, or latlng (reverse geocode)
         const params = new URLSearchParams({ key: GOOGLE_MAPS_API_KEY })
         if (placeId) {
             params.set('place_id', placeId)
+        } else if (latlng) {
+            params.set('latlng', latlng)
         } else if (address) {
             params.set('address', address)
         } else {
-            return NextResponse.json({ error: 'Missing placeId or address' }, { status: 400 })
+            return NextResponse.json({ error: 'Missing placeId, address, or latlng' }, { status: 400 })
         }
 
         const res = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?${params}`)
