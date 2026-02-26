@@ -152,6 +152,7 @@ export default function Home() {
   const router = useRouter()
   const [form, setForm] = useState({ eventType: '', date: '', time: '', guests: '', location: '', theme: '', budget: '' })
   const [locationDetails, setLocationDetails] = useState<{ lat?: number; lng?: number; name?: string; city?: string; state?: string; type?: string } | null>(null)
+  const [locationTBD, setLocationTBD] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showVideo, setShowVideo] = useState(false)
   const [slide, setSlide] = useState(0)
@@ -187,8 +188,8 @@ export default function Home() {
   }
 
   const handleSubmit = async () => {
-    if (!form.eventType || !form.guests || !form.location) {
-      alert('Please fill in Event Type, Number of Guests, and Location')
+    if (!form.eventType || !form.guests || (!form.location && !locationTBD)) {
+      alert('Please fill in Event Type, Number of Guests, and Location (or mark as TBD)')
       return
     }
     setLoading(true)
@@ -346,19 +347,39 @@ export default function Home() {
             </div>
             <div className={styles.formRow}>
               <div className={styles.formGroup}>
-                <label>Location / City / Venue *</label>
-                <LocationSearch
-                  value={form.location}
-                  onChange={(location, details) => {
-                    setForm(prev => ({ ...prev, location }))
-                    if (details) {
-                      setLocationDetails({ lat: details.lat, lng: details.lng, name: details.name, city: details.city, state: details.state, type: details.type })
-                    } else {
-                      setLocationDetails(null)
-                    }
-                  }}
-                  placeholder="Search a city, venue, or address..."
-                />
+                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                  <span>Location / City / Venue {!locationTBD && '*'}</span>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', fontWeight: 700, color: locationTBD ? 'var(--teal)' : '#9aabbb', cursor: 'pointer' }}>
+                    <input type="checkbox" checked={locationTBD} onChange={e => {
+                      setLocationTBD(e.target.checked)
+                      if (e.target.checked) {
+                        setForm(prev => ({ ...prev, location: 'TBD' }))
+                        setLocationDetails(null)
+                      } else {
+                        setForm(prev => ({ ...prev, location: '' }))
+                      }
+                    }} style={{ accentColor: 'var(--teal)' }} />
+                    Not decided yet
+                  </label>
+                </label>
+                {locationTBD ? (
+                  <div style={{ background: 'rgba(74,173,168,0.08)', border: '1.5px dashed rgba(74,173,168,0.3)', borderRadius: 10, padding: '1rem', textAlign: 'center', color: 'var(--teal)', fontWeight: 700, fontSize: '0.9rem' }}>
+                    📍 Location TBD — AI will suggest venue ideas in your area
+                  </div>
+                ) : (
+                  <LocationSearch
+                    value={form.location}
+                    onChange={(location, details) => {
+                      setForm(prev => ({ ...prev, location }))
+                      if (details) {
+                        setLocationDetails({ lat: details.lat, lng: details.lng, name: details.name, city: details.city, state: details.state, type: details.type })
+                      } else {
+                        setLocationDetails(null)
+                      }
+                    }}
+                    placeholder="Search a city, venue, or address..."
+                  />
+                )}
               </div>
               <div className={styles.formGroup}>
                 <label>Party Theme</label>
