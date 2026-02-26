@@ -364,7 +364,7 @@ export default function Home() {
                 </label>
                 {locationTBD ? (
                   <div style={{ background: 'rgba(74,173,168,0.08)', border: '1.5px dashed rgba(74,173,168,0.3)', borderRadius: 10, padding: '1rem', textAlign: 'center', color: 'var(--teal)', fontWeight: 700, fontSize: '0.9rem' }}>
-                    📍 TBD
+                    📍Location TBD
                   </div>
                 ) : (
                   <LocationSearch
