@@ -3,6 +3,13 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import styles from './rsvp.module.css'
 
+interface AdditionalGuest {
+    id: string; name: string; dietary: string; relationship: string
+}
+
+const DIETARY_OPTIONS = ['None', 'Vegetarian', 'Vegan', 'Gluten-Free', 'Nut Allergy', 'Kosher', 'Halal', 'Dairy-Free', 'Shellfish Allergy']
+const RELATIONSHIP_OPTIONS = ['Partner', 'Spouse', 'Child', 'Family', 'Friend', 'Other']
+
 function RSVPContent() {
     const params = useSearchParams()
     const [eventData, setEventData] = useState<{ eventType?: string; date?: string; time?: string; location?: string; theme?: string }>({})
@@ -10,12 +17,10 @@ function RSVPContent() {
     const [email, setEmail] = useState('')
     const [response, setResponse] = useState<'going' | 'maybe' | 'declined' | ''>('')
     const [dietary, setDietary] = useState('None')
-    const [plusOne, setPlusOne] = useState(false)
+    const [additionalGuests, setAdditionalGuests] = useState<AdditionalGuest[]>([])
     const [submitted, setSubmitted] = useState(false)
 
     useEffect(() => {
-        // In a real app, this would fetch event data from a database
-        // For now, read from localStorage or URL params
         const stored = localStorage.getItem('partyplan')
         if (stored) {
             const p = JSON.parse(stored)
@@ -36,17 +41,40 @@ function RSVPContent() {
         }
     }, [params])
 
+    const addAdditionalGuest = () => {
+        setAdditionalGuests(prev => [...prev, {
+            id: Date.now().toString(),
+            name: '',
+            dietary: 'None',
+            relationship: 'Partner'
+        }])
+    }
+
+    const updateAdditionalGuest = (id: string, field: string, value: string) => {
+        setAdditionalGuests(prev => prev.map(ag => ag.id === id ? { ...ag, [field]: value } : ag))
+    }
+
+    const removeAdditionalGuest = (id: string) => {
+        setAdditionalGuests(prev => prev.filter(ag => ag.id !== id))
+    }
+
     const handleSubmit = () => {
         if (!name || !response) return
-        // Save RSVP to localStorage (simulated)
+        const validAdditional = additionalGuests.filter(ag => ag.name.trim())
         const rsvps = JSON.parse(localStorage.getItem('partypal_rsvps') || '[]')
-        rsvps.push({ name, email, response, dietary, plusOne, timestamp: new Date().toISOString() })
+        rsvps.push({
+            name, email, response, dietary,
+            additionalGuests: validAdditional,
+            totalPartySize: 1 + validAdditional.length,
+            timestamp: new Date().toISOString()
+        })
         localStorage.setItem('partypal_rsvps', JSON.stringify(rsvps))
         setSubmitted(true)
     }
 
     const eventEmoji = eventData.eventType?.split(' ')[0] || '🎉'
     const eventName = eventData.eventType?.replace(/^[^\s]+\s/, '') || 'Party'
+    const totalPartySize = 1 + additionalGuests.length
 
     return (
         <div className={styles.rsvpPage}>
@@ -91,23 +119,80 @@ function RSVPContent() {
                             </div>
                         </div>
                         <div>
-                            <div className={styles.rsvpLabel}>Dietary Needs</div>
+                            <div className={styles.rsvpLabel}>Your Dietary Needs</div>
                             <select className={styles.rsvpInput} value={dietary} onChange={e => setDietary(e.target.value)} style={{ cursor: 'pointer' }}>
-                                <option>None</option>
-                                <option>Vegetarian</option>
-                                <option>Vegan</option>
-                                <option>Gluten-Free</option>
-                                <option>Nut Allergy</option>
-                                <option>Kosher</option>
-                                <option>Halal</option>
+                                {DIETARY_OPTIONS.map(d => <option key={d}>{d}</option>)}
                             </select>
                         </div>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1.5rem' }}>
-                            <input type="checkbox" id="plusOne" checked={plusOne} onChange={e => setPlusOne(e.target.checked)} />
-                            <label htmlFor="plusOne" style={{ fontWeight: 700, fontSize: '0.9rem', color: 'var(--navy)', cursor: 'pointer' }}>Bringing a +1</label>
+
+                        {/* Additional Guests Section */}
+                        <div className={styles.additionalSection}>
+                            <div className={styles.additionalHeader}>
+                                <div>
+                                    <div className={styles.additionalTitle}>👥 Bringing Anyone?</div>
+                                    <div className={styles.additionalSubtitle}>Add family members, a partner, or friends</div>
+                                </div>
+                                <button type="button" className={styles.addGuestBtn} onClick={addAdditionalGuest}>+ Add Person</button>
+                            </div>
+
+                            {additionalGuests.map((ag, idx) => (
+                                <div key={ag.id} className={styles.additionalCard}>
+                                    <div className={styles.additionalCardHeader}>
+                                        <span className={styles.additionalCardNum}>Guest {idx + 2}</span>
+                                        <button className={styles.additionalRemove} onClick={() => removeAdditionalGuest(ag.id)} title="Remove">✕</button>
+                                    </div>
+                                    <div className={styles.additionalCardBody}>
+                                        <div className={styles.additionalField}>
+                                            <label className={styles.additionalFieldLabel}>Name *</label>
+                                            <input
+                                                className={styles.additionalInput}
+                                                placeholder="Full name"
+                                                value={ag.name}
+                                                onChange={e => updateAdditionalGuest(ag.id, 'name', e.target.value)}
+                                            />
+                                        </div>
+                                        <div className={styles.additionalFieldRow}>
+                                            <div className={styles.additionalField}>
+                                                <label className={styles.additionalFieldLabel}>Relationship</label>
+                                                <select
+                                                    className={styles.additionalInput}
+                                                    value={ag.relationship}
+                                                    onChange={e => updateAdditionalGuest(ag.id, 'relationship', e.target.value)}
+                                                >
+                                                    {RELATIONSHIP_OPTIONS.map(r => <option key={r}>{r}</option>)}
+                                                </select>
+                                            </div>
+                                            <div className={styles.additionalField}>
+                                                <label className={styles.additionalFieldLabel}>Dietary Needs</label>
+                                                <select
+                                                    className={styles.additionalInput}
+                                                    value={ag.dietary}
+                                                    onChange={e => updateAdditionalGuest(ag.id, 'dietary', e.target.value)}
+                                                >
+                                                    {DIETARY_OPTIONS.map(d => <option key={d}>{d}</option>)}
+                                                </select>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+
+                            {additionalGuests.length === 0 && (
+                                <div className={styles.additionalEmpty}>
+                                    <span style={{ fontSize: '1.5rem' }}>👨‍👩‍👧‍👦</span>
+                                    <span>Coming solo? No problem! Or add your crew above.</span>
+                                </div>
+                            )}
                         </div>
+
+                        {totalPartySize > 1 && (
+                            <div className={styles.partySummary}>
+                                🎟️ Party size: <strong>{totalPartySize} {totalPartySize === 1 ? 'person' : 'people'}</strong>
+                            </div>
+                        )}
+
                         <button className={styles.rsvpSubmit} onClick={handleSubmit} disabled={!name || !response}>
-                            Send My RSVP 🎊
+                            Send My RSVP {totalPartySize > 1 ? `(${totalPartySize} people)` : ''} 🎊
                         </button>
                     </div>
                 ) : (
@@ -120,12 +205,29 @@ function RSVPContent() {
                         </h2>
                         <p className={styles.rsvpSuccessMsg}>
                             {response === 'going'
-                                ? `Thank you ${name}! We're excited to have you at the ${eventName}. Check your email for more details soon.`
+                                ? `Thank you ${name}! We're excited to have ${totalPartySize > 1 ? `your party of ${totalPartySize}` : 'you'} at the ${eventName}. Check your email for more details soon.`
                                 : response === 'maybe'
-                                    ? `Thanks ${name}! We'll save a spot for you. Let us know when you've decided!`
+                                    ? `Thanks ${name}! We'll save ${totalPartySize > 1 ? `${totalPartySize} spots` : 'a spot'} for you. Let us know when you've decided!`
                                     : `We'll miss you, ${name}! Maybe next time. 💛`
                             }
                         </p>
+                        {response === 'going' && totalPartySize > 1 && (
+                            <div className={styles.successPartyList}>
+                                <div className={styles.successPartyTitle}>Your Party</div>
+                                <div className={styles.successPartyItem}>
+                                    <span className={styles.successPartyDot} style={{ background: 'var(--teal)' }} />
+                                    {name} {dietary !== 'None' && <span className={styles.successDietary}>{dietary}</span>}
+                                </div>
+                                {additionalGuests.filter(ag => ag.name.trim()).map(ag => (
+                                    <div key={ag.id} className={styles.successPartyItem}>
+                                        <span className={styles.successPartyDot} style={{ background: 'var(--yellow)' }} />
+                                        {ag.name}
+                                        <span className={styles.successRelationship}>{ag.relationship}</span>
+                                        {ag.dietary !== 'None' && <span className={styles.successDietary}>{ag.dietary}</span>}
+                                    </div>
+                                ))}
+                            </div>
+                        )}
                     </div>
                 )}
 
