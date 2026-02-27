@@ -26,9 +26,13 @@ export default function LoginPage() {
         setLoading(true)
         try {
             await fn()
-            // signInWithRedirect will navigate away from the page
+            router.push('/')
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Something went wrong'
+            if (msg.includes('popup-closed') || msg.includes('cancelled')) {
+                setLoading(false)
+                return
+            }
             if (msg.includes('unauthorized-domain')) {
                 setError('This domain is not authorized. Add it in Firebase Console → Authentication → Settings → Authorized domains.')
             } else if (msg.includes('operation-not-allowed')) {

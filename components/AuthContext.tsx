@@ -3,13 +3,11 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import {
     User,
     onAuthStateChanged,
-    signInWithRedirect,
-    getRedirectResult,
+    signInWithPopup,
     GoogleAuthProvider,
     OAuthProvider,
     signInWithEmailAndPassword,
     createUserWithEmailAndPassword,
-    signInAnonymously,
     signOut,
     updateProfile,
 } from 'firebase/auth'
@@ -22,7 +20,6 @@ interface AuthContextType {
     signInWithApple: () => Promise<void>
     signInWithEmail: (email: string, password: string) => Promise<void>
     signUpWithEmail: (email: string, password: string, name: string) => Promise<void>
-    continueAsGuest: () => Promise<void>
     logout: () => Promise<void>
 }
 
@@ -33,7 +30,6 @@ const AuthContext = createContext<AuthContextType>({
     signInWithApple: async () => { },
     signInWithEmail: async () => { },
     signUpWithEmail: async () => { },
-    continueAsGuest: async () => { },
     logout: async () => { },
 })
 
@@ -46,21 +42,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(user)
             setLoading(false)
         })
-        // Handle redirect result on mount
-        getRedirectResult(auth).catch(() => { })
         return unsubscribe
     }, [])
 
     const signInWithGoogle = async () => {
         const provider = new GoogleAuthProvider()
-        await signInWithRedirect(auth, provider)
+        await signInWithPopup(auth, provider)
     }
 
     const signInWithApple = async () => {
         const provider = new OAuthProvider('apple.com')
         provider.addScope('email')
         provider.addScope('name')
-        await signInWithRedirect(auth, provider)
+        await signInWithPopup(auth, provider)
     }
 
     const signInWithEmail = async (email: string, password: string) => {
@@ -72,16 +66,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await updateProfile(cred.user, { displayName: name })
     }
 
-    const continueAsGuest = async () => {
-        await signInAnonymously(auth)
-    }
-
     const logout = async () => {
         await signOut(auth)
     }
 
     return (
-        <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail, continueAsGuest, logout }}>
+        <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail, logout }}>
             {children}
         </AuthContext.Provider>
     )
