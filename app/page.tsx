@@ -436,7 +436,6 @@ export default function Home() {
           <a href="/#wizard">Plan a Party</a>
           <a href="/vendors">Browse Vendors</a>
           <a href="/guests">Guest Management</a>
-          <a href="/budget">Budget Tracker</a>
           <a href="/dashboard">My Events</a>
         </div>
         <p style={{ marginTop: '1rem', fontSize: '0.75rem' }}>partypal.social</p>

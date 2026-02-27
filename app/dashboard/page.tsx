@@ -178,11 +178,18 @@ export default function Dashboard() {
     const toggleCheck = (i: number) => {
         setChecklist(prev => {
             const updated = prev.map((item, idx) => idx === i ? { ...item, done: !item.done } : item)
-            const stored = userGet('partyplan')
-            if (stored) {
-                const d = JSON.parse(stored)
-                d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done }))
-                userSetJSON('partyplan', d)
+            if (isDemo) {
+                // Save demo edits separately
+                const demoData = { ...data, plan: { ...data.plan, checklist: updated.map(c => ({ item: c.item, category: c.category, done: c.done })) } }
+                setData(demoData)
+                userSetJSON('partypal_demo', demoData)
+            } else {
+                const stored = userGet('partyplan')
+                if (stored) {
+                    const d = JSON.parse(stored)
+                    d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done }))
+                    userSetJSON('partyplan', d)
+                }
             }
             showToast(updated[i].done ? `"${updated[i].item}" completed ✓` : `"${updated[i].item}" unmarked`, 'info')
             return updated
@@ -252,14 +259,18 @@ export default function Dashboard() {
             plan: { ...data.plan, timeline: editTimeline },
         }
         setData(updated)
-        userSetJSON('partyplan', updated)
-        // Sync to allEvents array
-        if (updated.eventId) {
-            const updatedEvents = allEvents.map(ev => ev.eventId === updated.eventId ? updated : ev)
-            setAllEvents(updatedEvents)
-            userSetJSON('partypal_events', updatedEvents)
-            // Sync to Firestore
-            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => { })
+        if (isDemo) {
+            userSetJSON('partypal_demo', updated)
+        } else {
+            userSetJSON('partyplan', updated)
+            // Sync to allEvents array
+            if (updated.eventId) {
+                const updatedEvents = allEvents.map(ev => ev.eventId === updated.eventId ? updated : ev)
+                setAllEvents(updatedEvents)
+                userSetJSON('partypal_events', updatedEvents)
+                // Sync to Firestore
+                fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => { })
+            }
         }
         setIsEditing(false)
         showToast('Plan updated ✓', 'success')
@@ -416,7 +427,11 @@ export default function Dashboard() {
                 <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'thin' }}>
                     {/* Demo card: Maya's 30th */}
                     <div
-                        onClick={() => loadEvent(DEFAULT_PLAN, true)}
+                        onClick={() => {
+                            // Load user's saved demo edits if they exist, otherwise fresh default
+                            const saved = userGetJSON('partypal_demo', null)
+                            loadEvent(saved || DEFAULT_PLAN, true)
+                        }}
                         style={{
                             minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const, overflow: 'hidden',
                             background: isDemo
@@ -499,6 +514,14 @@ export default function Dashboard() {
                             background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none',
                             borderRadius: 8, padding: '0.4rem 1rem', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap',
                         }}>✨ Create My Plan</button>
+                        <button onClick={() => {
+                            userRemove('partypal_demo')
+                            loadEvent(DEFAULT_PLAN, true)
+                            showToast('Demo reset to original!', 'success')
+                        }} style={{
+                            background: 'transparent', color: '#999', border: '1.5px solid rgba(155,155,155,0.3)',
+                            borderRadius: 8, padding: '0.4rem 1rem', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap',
+                        }}>🔄 Reset Demo</button>
                     </div>
                 ) : (
                     /* Real event: editable details strip */
