@@ -129,14 +129,15 @@ function RSVPContent() {
                         {eventData.location || 'Location TBD'}
                         {eventData.theme && ` · ${eventData.theme} Theme`}
                     </p>
-                    {eventData.eventId && <p style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: '0.3rem' }}>Event ID: {eventData.eventId}</p>}
                 </div>
 
                 {/* Show invite message if present */}
                 {eventData.inviteMessage && (
-                    <div style={{ padding: '1rem 1.5rem', background: 'rgba(247,201,72,0.08)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                        {eventData.inviteSubject && <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.9rem', color: 'var(--navy)', marginBottom: '0.4rem' }}>{eventData.inviteSubject}</div>}
-                        <p style={{ fontSize: '0.82rem', color: '#6b7c93', lineHeight: 1.5, fontWeight: 600 }}>{eventData.inviteMessage}</p>
+                    <div style={{ padding: '1.2rem 1.5rem', background: 'rgba(247,201,72,0.08)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        {eventData.inviteSubject && <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.95rem', color: 'var(--navy)', marginBottom: '0.6rem' }}>{eventData.inviteSubject}</div>}
+                        {eventData.inviteMessage.split('\n').map((line, i) => (
+                            <p key={i} style={{ fontSize: '0.85rem', color: '#4a5568', lineHeight: 1.65, fontWeight: 500, margin: line.trim() ? '0 0 0.5rem 0' : '0 0 0.3rem 0' }}>{line || '\u00A0'}</p>
+                        ))}
                     </div>
                 )}
 
@@ -181,45 +182,45 @@ function RSVPContent() {
                             <div className={styles.additionalHeader}>
                                 <div>
                                     <div className={styles.additionalTitle}>👥 Bringing Anyone?</div>
-                                    <div className={styles.additionalSubtitle}>Add family members, a partner, or friends</div>
+                                    <div className={styles.additionalSubtitle}>Tap to add your crew</div>
                                 </div>
-                                <button type="button" className={styles.addGuestBtn} onClick={addAdditionalGuest}>+ Add Person</button>
+                            </div>
+
+                            {/* Quick +N buttons */}
+                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '0.8rem', flexWrap: 'wrap' }}>
+                                {[1, 2, 3, 4].map(n => {
+                                    const isActive = additionalGuests.length === n
+                                    return (
+                                        <button key={n} onClick={() => {
+                                            if (additionalGuests.length < n) {
+                                                const toAdd = n - additionalGuests.length
+                                                setAdditionalGuests(prev => [...prev, ...Array.from({ length: toAdd }, (_, i) => ({ id: (Date.now() + i).toString(), name: `Guest ${prev.length + i + 2}`, dietary: 'None', relationship: 'Friend' }))])
+                                            } else if (additionalGuests.length > n) {
+                                                setAdditionalGuests(prev => prev.slice(0, n))
+                                            }
+                                        }} style={{ padding: '0.45rem 1rem', borderRadius: 20, border: `1.5px solid ${isActive ? 'rgba(74,173,168,0.5)' : 'rgba(0,0,0,0.1)'}`, background: isActive ? 'rgba(74,173,168,0.1)' : 'white', color: isActive ? 'var(--teal)' : '#6b7c93', fontSize: '0.82rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.15s' }}>+{n}</button>
+                                    )
+                                })}
+                                {additionalGuests.length > 0 && (
+                                    <button onClick={() => setAdditionalGuests([])} style={{ padding: '0.45rem 0.8rem', borderRadius: 20, border: '1.5px solid rgba(232,137,106,0.3)', background: 'rgba(232,137,106,0.05)', color: '#E8896A', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer' }}>Clear</button>
+                                )}
                             </div>
 
                             {additionalGuests.map((ag, idx) => (
                                 <div key={ag.id} className={styles.additionalCard}>
                                     <div className={styles.additionalCardHeader}>
-                                        <span className={styles.additionalCardNum}>Guest {idx + 2}</span>
+                                        <span className={styles.additionalCardNum}>Guest {idx + 2}: {ag.name}</span>
                                         <button className={styles.additionalRemove} onClick={() => removeAdditionalGuest(ag.id)} title="Remove">✕</button>
                                     </div>
                                     <div className={styles.additionalCardBody}>
-                                        <div className={styles.additionalField}>
-                                            <label className={styles.additionalFieldLabel}>Name *</label>
-                                            <input
-                                                className={styles.additionalInput}
-                                                placeholder="Full name"
-                                                value={ag.name}
-                                                onChange={e => updateAdditionalGuest(ag.id, 'name', e.target.value)}
-                                            />
-                                        </div>
                                         <div className={styles.additionalFieldRow}>
                                             <div className={styles.additionalField}>
-                                                <label className={styles.additionalFieldLabel}>Relationship</label>
-                                                <select
-                                                    className={styles.additionalInput}
-                                                    value={ag.relationship}
-                                                    onChange={e => updateAdditionalGuest(ag.id, 'relationship', e.target.value)}
-                                                >
-                                                    {RELATIONSHIP_OPTIONS.map(r => <option key={r}>{r}</option>)}
-                                                </select>
+                                                <label className={styles.additionalFieldLabel}>Name</label>
+                                                <input className={styles.additionalInput} placeholder={`Guest ${idx + 2}`} value={ag.name === `Guest ${idx + 2}` ? '' : ag.name} onChange={e => updateAdditionalGuest(ag.id, 'name', e.target.value || `Guest ${idx + 2}`)} />
                                             </div>
                                             <div className={styles.additionalField}>
                                                 <label className={styles.additionalFieldLabel}>Dietary Needs</label>
-                                                <select
-                                                    className={styles.additionalInput}
-                                                    value={ag.dietary}
-                                                    onChange={e => updateAdditionalGuest(ag.id, 'dietary', e.target.value)}
-                                                >
+                                                <select className={styles.additionalInput} value={ag.dietary} onChange={e => updateAdditionalGuest(ag.id, 'dietary', e.target.value)}>
                                                     {DIETARY_OPTIONS.map(d => <option key={d}>{d}</option>)}
                                                 </select>
                                             </div>
@@ -231,7 +232,7 @@ function RSVPContent() {
                             {additionalGuests.length === 0 && (
                                 <div className={styles.additionalEmpty}>
                                     <span style={{ fontSize: '1.5rem' }}>👨‍👩‍👧‍👦</span>
-                                    <span>Coming solo? No problem! Or add your crew above.</span>
+                                    <span>Coming solo? No problem! Or tap +1, +2, +3 above.</span>
                                 </div>
                             )}
                         </div>
