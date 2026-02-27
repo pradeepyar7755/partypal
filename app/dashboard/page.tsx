@@ -143,15 +143,28 @@ export default function Dashboard() {
 
         return items.map(t => {
             let weeks = t.weeks
-            // Parse week offset from label
+            // Parse various time offset formats
             const wMatch = weeks.match(/(\d+)\s*w(?:ee)?ks?\s*out/i)
-            const dMatch = weeks.match(/day\s*(?:before)/i)
+            const dOutMatch = weeks.match(/(\d+)\s*days?\s*out/i)
+            const dMatch = weeks.match(/day\s*(?:before|of\s*prep)/i)
             const eventDayMatch = /event\s*day/i.test(weeks) || /event\s*day/i.test(t.task)
+            const thisWeekMatch = /this\s*week/i.test(weeks)
+            const tomorrowMatch = /tomorrow/i.test(weeks)
+            const todayMatch = /^today$/i.test(weeks.trim())
             let targetDate: Date | null = null
             if (eventDayMatch) {
-                targetDate = new Date(ev) // Event day = the event date itself
+                targetDate = new Date(ev)
+            } else if (todayMatch) {
+                targetDate = new Date()
+            } else if (tomorrowMatch) {
+                targetDate = new Date(); targetDate.setDate(targetDate.getDate() + 1)
+            } else if (thisWeekMatch) {
+                targetDate = new Date(); targetDate.setDate(targetDate.getDate() + 3) // mid-week
             } else if (dMatch) {
                 targetDate = new Date(ev); targetDate.setDate(targetDate.getDate() - 1)
+            } else if (dOutMatch) {
+                const days = parseInt(dOutMatch[1])
+                targetDate = new Date(ev); targetDate.setDate(targetDate.getDate() - days)
             } else if (wMatch) {
                 const wks = parseInt(wMatch[1])
                 targetDate = new Date(ev); targetDate.setDate(targetDate.getDate() - wks * 7)
@@ -1051,23 +1064,39 @@ export default function Dashboard() {
 
                                 <div className={styles.sectionCard}>
                                     <div className={styles.cardHeader} style={{ flexDirection: 'column', gap: '0.4rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', width: '100%', gap: '0.4rem' }}>
                                             <div className={styles.cardTitleGroup}>
                                                 <span className={styles.cardIcon}>🗓️</span>
                                                 <h2>Planning Timeline</h2>
-                                                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#9aabbb', marginLeft: '0.2rem' }}>{checkDone}/{checkTotal} ({checkPct}%)</span>
                                             </div>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                                <button onClick={() => setEditTimelineMode(!editTimelineMode)} title={editTimelineMode ? 'Exit edit mode' : 'Edit timeline'} style={{ background: editTimelineMode ? 'var(--teal)' : 'transparent', color: editTimelineMode ? '#fff' : '#9aabbb', border: `1.5px solid ${editTimelineMode ? 'var(--teal)' : 'var(--border)'}`, borderRadius: 6, padding: '0.2rem 0.4rem', fontSize: '0.7rem', cursor: 'pointer', transition: 'all 0.2s' }}>✏️</button>
-                                                <button onClick={() => setTasksCollapsed(!tasksCollapsed)} title={tasksCollapsed ? 'Show tasks' : 'Hide tasks'} style={{ background: tasksCollapsed ? 'rgba(74,173,168,0.1)' : 'transparent', color: tasksCollapsed ? 'var(--teal)' : '#9aabbb', border: `1.5px solid ${tasksCollapsed ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`, borderRadius: 6, padding: '0.2rem 0.4rem', fontSize: '0.7rem', cursor: 'pointer', transition: 'all 0.2s' }}>{tasksCollapsed ? '☐ Tasks' : '☑ Tasks'}</button>
-                                            </div>
+                                            {(() => {
+                                                const timeline = data.plan.timeline
+                                                const now = new Date()
+                                                let overdue = 0, done = 0, due = 0
+                                                timeline.forEach((t, ti) => {
+                                                    if (t.completedAt) { done++; return }
+                                                    // Parse date from weeks label
+                                                    const dateMatch = t.weeks.match(/^([A-Z][a-z]{2})\s(\d{1,2})/)
+                                                    if (dateMatch) {
+                                                        const targetDate = new Date(`${dateMatch[1]} ${dateMatch[2]}, ${now.getFullYear()}`)
+                                                        if (targetDate < now) overdue++
+                                                        else due++
+                                                    } else { due++ }
+                                                })
+                                                const statusColor = overdue > 0 ? '#E8896A' : done === timeline.length ? '#3D8C6E' : 'var(--teal)'
+                                                const statusLabel = overdue > 0 ? `${overdue} Overdue` : done === timeline.length ? 'All Done!' : 'On Track'
+                                                return <span style={{ fontSize: '0.62rem', fontWeight: 800, color: statusColor, background: `${statusColor}12`, border: `1px solid ${statusColor}30`, padding: '0.1rem 0.45rem', borderRadius: 10, whiteSpace: 'nowrap' }}>{statusLabel}</span>
+                                            })()}
+                                            <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', marginLeft: 'auto' }}>{checkDone}/{checkTotal} ({checkPct}%)</span>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', width: '100%' }}>
-                                            <span className={`${styles.sourceBadge} ${styles.claudeBadge}`} style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem' }}>AI Generated</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', width: '100%' }}>
+                                            <span className={`${styles.sourceBadge} ${styles.claudeBadge}`} style={{ fontSize: '0.58rem', padding: '0.08rem 0.35rem' }}>AI</span>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flex: 1 }}>
-                                                <input value={refineTimelineInput} onChange={e => setRefineTimelineInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') refineTimeline() }} placeholder="Refine with AI..." style={{ flex: 1, padding: '0.25rem 0.5rem', borderRadius: 6, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.7rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
-                                                <button onClick={refineTimeline} disabled={isRefiningTimeline || !refineTimelineInput.trim()} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefiningTimeline || !refineTimelineInput.trim() ? 0.5 : 1 }}>{isRefiningTimeline ? '...' : '✨ Refine'}</button>
+                                                <input value={refineTimelineInput} onChange={e => setRefineTimelineInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') refineTimeline() }} placeholder="Refine with AI..." style={{ flex: 1, padding: '0.22rem 0.5rem', borderRadius: 6, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.68rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
+                                                <button onClick={refineTimeline} disabled={isRefiningTimeline || !refineTimelineInput.trim()} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 6, padding: '0.22rem 0.45rem', fontSize: '0.62rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefiningTimeline || !refineTimelineInput.trim() ? 0.5 : 1 }}>{isRefiningTimeline ? '...' : '✨'}</button>
                                             </div>
+                                            <button onClick={() => setEditTimelineMode(!editTimelineMode)} title={editTimelineMode ? 'Exit edit' : 'Edit'} style={{ background: editTimelineMode ? 'var(--teal)' : 'transparent', color: editTimelineMode ? '#fff' : '#9aabbb', border: `1.5px solid ${editTimelineMode ? 'var(--teal)' : 'var(--border)'}`, borderRadius: 6, padding: '0.18rem 0.35rem', fontSize: '0.65rem', cursor: 'pointer', transition: 'all 0.2s' }}>✏️</button>
+                                            <button onClick={() => setTasksCollapsed(!tasksCollapsed)} title={tasksCollapsed ? 'Show tasks' : 'Hide tasks'} style={{ background: tasksCollapsed ? 'rgba(74,173,168,0.1)' : 'transparent', color: tasksCollapsed ? 'var(--teal)' : '#9aabbb', border: `1.5px solid ${tasksCollapsed ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`, borderRadius: 6, padding: '0.18rem 0.35rem', fontSize: '0.62rem', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>{tasksCollapsed ? '☐' : '☑'}</button>
                                         </div>
                                     </div>
                                     <div className={styles.timeline}>
@@ -1124,13 +1153,25 @@ export default function Dashboard() {
                                                         ) : (
                                                             <>
                                                                 <div className={styles.tlTime}>{t.weeks}</div>
-                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                                                                     <div className={styles.tlTitle} style={t.completedAt ? { textDecoration: 'line-through', opacity: 0.5 } : undefined}>{t.task}</div>
-                                                                    {t.completedAt && <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#3D8C6E', background: '#3D8C6E15', padding: '0.1rem 0.4rem', borderRadius: 8, whiteSpace: 'nowrap' }}>✓ {new Date(t.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
-                                                                    {taskMapping[i]?.length > 0 && (() => {
-                                                                        const tasks = taskMapping[i]
-                                                                        const done = tasks.filter(ci => checklist[ci]?.done).length
-                                                                        return <span style={{ fontSize: '0.6rem', fontWeight: 800, color: done === tasks.length ? '#3D8C6E' : '#9aabbb', whiteSpace: 'nowrap' }}>{done}/{tasks.length}</span>
+                                                                    {(() => {
+                                                                        const tasks = taskMapping[i] || []
+                                                                        const tasksDone = tasks.filter(ci => checklist[ci]?.done).length
+                                                                        const allTasksDone = tasks.length > 0 && tasksDone === tasks.length
+                                                                        // Determine status
+                                                                        if (t.completedAt || allTasksDone) {
+                                                                            return <span style={{ fontSize: '0.55rem', fontWeight: 800, color: '#3D8C6E', background: '#3D8C6E12', border: '1px solid #3D8C6E30', padding: '0.05rem 0.35rem', borderRadius: 8, whiteSpace: 'nowrap' }}>✓ Done{t.completedAt ? ` ${new Date(t.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</span>
+                                                                        }
+                                                                        // Check if overdue by parsing date from weeks
+                                                                        const dateMatch = t.weeks.match(/^([A-Z][a-z]{2})\s(\d{1,2})/)
+                                                                        if (dateMatch) {
+                                                                            const targetDate = new Date(`${dateMatch[1]} ${dateMatch[2]}, ${new Date().getFullYear()}`)
+                                                                            if (targetDate < new Date()) {
+                                                                                return <span style={{ fontSize: '0.55rem', fontWeight: 800, color: '#E8896A', background: '#E8896A12', border: '1px solid #E8896A30', padding: '0.05rem 0.35rem', borderRadius: 8, whiteSpace: 'nowrap' }}>⚠ Overdue</span>
+                                                                            }
+                                                                        }
+                                                                        return <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--teal)', background: 'rgba(74,173,168,0.08)', border: '1px solid rgba(74,173,168,0.2)', padding: '0.05rem 0.35rem', borderRadius: 8, whiteSpace: 'nowrap' }}>Due{tasks.length > 0 ? ` ${tasksDone}/${tasks.length}` : ''}</span>
                                                                     })()}
                                                                 </div>
                                                                 {t.category && (() => {
@@ -1172,40 +1213,28 @@ export default function Dashboard() {
                                             )
                                         })}
                                     </div>
-                                </div>
-
-                                {/* ── Unassigned Tasks + Add Task ── */}
-                                <div className={styles.sectionCard}>
-                                    <div className={styles.cardHeader}>
-                                        <div className={styles.cardTitleGroup}>
-                                            <span className={styles.cardIcon}>✅</span>
-                                            <h2>Tasks</h2>
-                                            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#9aabbb', marginLeft: '0.3rem' }}>{checkDone}/{checkTotal} done ({checkPct}%)</span>
-                                        </div>
-                                    </div>
-                                    {unassignedTasks.length > 0 && (
-                                        <div className={styles.checklist}>
-                                            <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>General Tasks</div>
+                                    {/* Unassigned tasks at end of timeline */}
+                                    {!tasksCollapsed && unassignedTasks.length > 0 && (
+                                        <div style={{ padding: '0.6rem 1rem', borderTop: '1px dashed rgba(0,0,0,0.08)' }}>
+                                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>General Tasks</div>
                                             {unassignedTasks.map(ci => {
-                                                const item = checklist[ci]
-                                                if (!item) return null
+                                                const c = checklist[ci]
+                                                if (!c) return null
                                                 return (
-                                                    <div key={ci} className={`${styles.checkItem} ${item.done ? styles.checkItemDone : ''}`} style={{ position: 'relative' }}>
-                                                        <div style={{ display: 'flex', alignItems: 'center', flex: 1, cursor: 'pointer' }} onClick={() => toggleCheck(ci)}>
-                                                            <div className={`${styles.checkBox} ${item.done ? styles.checkBoxDone : ''}`}>{item.done ? '✓' : ''}</div>
-                                                            <div className={`${styles.checkLabel} ${item.done ? styles.checkLabelDone : ''}`}>{item.item}</div>
-                                                            {item.completedAt && <span style={{ fontSize: '0.6rem', color: '#3D8C6E', fontWeight: 700, marginLeft: '0.3rem' }}>{new Date(item.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
-                                                        </div>
-                                                        <button onClick={(e) => removeCheckItem(ci, e)} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800, padding: '0.2rem 0.4rem', borderRadius: 4 }} onMouseEnter={e => (e.currentTarget.style.color = '#E8896A')} onMouseLeave={e => (e.currentTarget.style.color = '#ccc')}>✕</button>
+                                                    <div key={ci} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.2rem 0', cursor: 'pointer' }} onClick={() => toggleCheck(ci)}>
+                                                        <div style={{ width: 16, height: 16, borderRadius: 4, border: c.done ? '2px solid #3D8C6E' : '2px solid #ccc', background: c.done ? '#3D8C6E' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: '#fff', flexShrink: 0, transition: 'all 0.2s' }}>{c.done ? '✓' : ''}</div>
+                                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: c.done ? '#9aabbb' : 'var(--navy)', textDecoration: c.done ? 'line-through' : 'none', flex: 1 }}>{c.item}</span>
+                                                        {c.completedAt && <span style={{ fontSize: '0.55rem', color: '#3D8C6E', fontWeight: 700, whiteSpace: 'nowrap' }}>{new Date(c.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                                                        <button onClick={(e) => removeCheckItem(ci, e)} style={{ background: 'none', border: 'none', color: '#ddd', cursor: 'pointer', fontSize: '0.6rem', padding: '0.1rem', flexShrink: 0 }} onMouseEnter={e => (e.currentTarget.style.color = '#E8896A')} onMouseLeave={e => (e.currentTarget.style.color = '#ddd')}>✕</button>
                                                     </div>
                                                 )
                                             })}
                                         </div>
                                     )}
-                                    {/* Add new task */}
-                                    <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.6rem', padding: '0 0.2rem' }}>
-                                        <input value={newCheckItem} onChange={e => setNewCheckItem(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCheckItem()} placeholder="Add a task..." style={{ flex: 1, padding: '0.45rem 0.7rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.8rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
-                                        <button onClick={addCheckItem} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.45rem 0.8rem', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add</button>
+                                    {/* Add task inline */}
+                                    <div style={{ display: 'flex', gap: '0.3rem', padding: '0.5rem 1rem', borderTop: '1px solid rgba(0,0,0,0.04)' }}>
+                                        <input value={newCheckItem} onChange={e => setNewCheckItem(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCheckItem()} placeholder="+ Add a task..." style={{ flex: 1, padding: '0.3rem 0.5rem', borderRadius: 6, border: '1.5px solid rgba(0,0,0,0.08)', fontSize: '0.75rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
+                                        <button onClick={addCheckItem} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 6, padding: '0.3rem 0.6rem', fontWeight: 800, fontSize: '0.7rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>Add</button>
                                     </div>
                                 </div>
 

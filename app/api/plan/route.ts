@@ -15,6 +15,7 @@ export async function POST(req: NextRequest) {
     const prompt = isRefinement ? `You are PartyPal, an expert party planner AI. Refine the planning timeline below based on user feedback.
 
 Event: ${eventType} | Date: ${date || 'TBD'} | Guests: ${guests} | Location: ${location} | Theme: ${theme || 'Open'} | Budget: ${budget || 'Flexible'}
+Today's date: ${new Date().toISOString().split('T')[0]}
 
 Current Timeline:
 ${existingTimeline}
@@ -31,49 +32,39 @@ Return ONLY valid JSON with the updated timeline applying the user's feedback. K
 Return ONLY valid JSON, no markdown, no backticks.` : `You are PartyPal, an expert party planner AI. Generate a comprehensive party plan.
 
 Event: ${eventType} | Date: ${date || 'TBD'} | Guests: ${guests} | Location: ${location} | Theme: ${theme || 'Open'} | Budget: ${budget || 'Flexible'}
+Today's date: ${new Date().toISOString().split('T')[0]}
+
+IMPORTANT TIMELINE RULES:
+- Calculate the ACTUAL time between today and the event date
+- Generate timeline milestones using REALISTIC time periods (e.g. "This week", "3 days out", "2 weeks out") based on the real lead time available
+- If the event is less than 2 weeks away, this is SHORT NOTICE: compress the timeline into days, flag items that need to be fast-tracked with ⚡ prefix, and add a warning note about potential blockers (vendor availability, venue constraints)
+- If the event is less than 1 week away, this is RUSH PLANNING: be very aggressive with the timeline, prioritize essentials only, and note what can realistically be pulled off
+- Do NOT use a generic "6 weeks out" format if the event is sooner than that
+- Keep deliverables CONCISE (4-6 milestones max, not 10+). Each milestone should be a clear action.
+- Always include a "Day before" or final prep milestone and an "Event Day" milestone
 
 Return ONLY valid JSON, no markdown, no backticks:
 {
-  "summary": "2-sentence exciting summary",
+  "summary": "2-sentence exciting summary. If short notice, acknowledge the tight timeline but stay encouraging.",
   "timeline": [
-    {"weeks":"6 weeks out","task":"Book venue and send save-the-dates","category":"venue","priority":"high"},
-    {"weeks":"4 weeks out","task":"Send formal invitations","category":"invitations","priority":"high"},
-    {"weeks":"3 weeks out","task":"Finalize catering and cake","category":"catering","priority":"medium"},
-    {"weeks":"2 weeks out","task":"Order decorations and party supplies","category":"decor","priority":"medium"},
-    {"weeks":"1 week out","task":"Confirm all vendors and RSVPs","category":"logistics","priority":"high"},
-    {"weeks":"Day before","task":"Set up venue and prep day-of bag","category":"prep","priority":"high"}
+    {"weeks":"appropriate time period","task":"Concise action item","category":"category_tag","priority":"high|medium|low"}
   ],
   "checklist": [
-    {"item":"Book and confirm venue","category":"venue","done":false},
-    {"item":"Create and send invitations","category":"invitations","done":false},
-    {"item":"Finalize catering menu","category":"food","done":false},
-    {"item":"Order custom cake or desserts","category":"food","done":false},
-    {"item":"Arrange decorations and theme items","category":"decor","done":false},
-    {"item":"Book photographer or videographer","category":"photos","done":false},
-    {"item":"Create party playlist","category":"music","done":false},
-    {"item":"Plan entertainment or activities","category":"entertainment","done":false},
-    {"item":"Arrange transportation if needed","category":"logistics","done":false},
-    {"item":"Prepare welcome bags or party favors","category":"extras","done":false}
+    {"item":"Specific actionable task","category":"matching_category","done":false}
   ],
   "budget": {
     "total": "${budget || '$2,000'}",
     "breakdown": [
-      {"category":"Venue","amount":450,"percentage":22,"color":"#2D4059"},
-      {"category":"Catering","amount":400,"percentage":20,"color":"#E8896A"},
-      {"category":"Decor","amount":250,"percentage":13,"color":"#4AADA8"},
-      {"category":"Entertainment","amount":300,"percentage":15,"color":"#7B5EA7"},
-      {"category":"Photography","amount":250,"percentage":13,"color":"#3D8C6E"},
-      {"category":"Cake","amount":150,"percentage":7,"color":"#F7C948"},
-      {"category":"Misc","amount":200,"percentage":10,"color":"#C4A882"}
+      {"category":"Category","amount":number,"percentage":number,"color":"hex_color"}
     ]
   },
   "tips": [
-    "Tip 1 specific to this party type",
+    "Tip 1 specific to this party type and timeline",
     "Tip 2 specific to this theme",
     "Tip 3 for this guest count"
   ],
   "moodboard": {
-    "palette": ["#F7C948","#E8896A","#4AADA8","#2D4059"],
+    "palette": ["#hex1","#hex2","#hex3","#hex4"],
     "keywords": ["keyword1","keyword2","keyword3","keyword4","keyword5"],
     "vibe": "2-sentence description of the aesthetic and atmosphere",
     "decorIdeas": ["idea1","idea2","idea3","idea4"],
@@ -82,6 +73,12 @@ Return ONLY valid JSON, no markdown, no backticks:
     "musicGenre": "Music/playlist recommendation"
   }
 }
+
+CHECKLIST RULES:
+- Generate 6-10 specific checklist items
+- Each checklist item category MUST match one of the timeline milestone categories so they group together
+- Never leave a timeline milestone without at least 1 matching checklist item
+- Categories should be single-word lowercase tags like: venue, vendor, food, decor, guests, music, planning, logistics, photos
 
 Make ALL content specific to the actual event details provided. Adjust budget percentages to make sense for the event type and the budget amount given.`
 
