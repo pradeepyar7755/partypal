@@ -115,7 +115,13 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
         userSetJSON(inviteKey, invite)
         // Also sync to Firestore for RSVP page (including null to clear)
         if (planData.eventId) {
-            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: invite || null, rsvpBy: rsvpByDate || null }) }).catch(() => { })
+            // Ensure removed images are explicitly null (not undefined) so Firestore clears them
+            const invitePayload = invite ? {
+                ...invite,
+                customImage: invite.customImage || null,
+                coverPhoto: invite.coverPhoto || null,
+            } : null
+            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: invitePayload, rsvpBy: rsvpByDate || null }) }).catch(() => { })
         }
     }, [invite, inviteKey, planData.eventId, rsvpByDate])
 
