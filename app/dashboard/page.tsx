@@ -424,7 +424,7 @@ export default function Dashboard() {
                         <div style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.08)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.58rem', fontWeight: 900, color: '#888', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>DEMO</div>
                         <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>🎂</div>
                         <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: isDemo ? 'var(--navy)' : '#999', marginBottom: '0.2rem' }}>Maya&apos;s 30th Birthday</div>
-                        <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>Mar 15 · 50 guests · Atlanta, GA</div>
+                        <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>Mar 15 · 50 guests</div>
                     </div>
                     {/* User events */}
                     {allEvents.map((ev, idx) => {
@@ -451,7 +451,7 @@ export default function Dashboard() {
                                 <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>{ev.eventType?.split(' ')[0] || '🎉'}</div>
                                 <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{ev.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</div>
                                 <div style={{ fontSize: '0.7rem', color: '#6b7c93', fontWeight: 700 }}>
-                                    {ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'} · {ev.guests || '?'} guests{ev.location ? ` · ${ev.location}` : ''}
+                                    {ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'} · {ev.guests || '?'} guests
                                 </div>
                                 <button
                                     onClick={(e) => deleteEvent(ev.eventId!, e)}
