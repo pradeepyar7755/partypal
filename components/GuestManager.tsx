@@ -152,11 +152,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const getRSVPLink = () => {
         const origin = typeof window !== 'undefined' ? window.location.origin : 'https://partypal.social'
         const eid = planData.eventId || eventId || ''
-        const params = new URLSearchParams({ e: eid })
-        if (planData.eventType) params.set('n', planData.eventType)
-        if (planData.date) params.set('d', planData.date)
-        if (planData.location) params.set('l', planData.location)
-        return `${origin}/rsvp?${params.toString()}`
+        return `${origin}/rsvp?e=${eid}`
     }
 
     const copyRSVPLink = () => { navigator.clipboard.writeText(getRSVPLink()); setCopied(true); setTimeout(() => setCopied(false), 2000); showToast('RSVP link copied!', 'success') }
