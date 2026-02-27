@@ -1,0 +1,402 @@
+'use client'
+import { useState, useEffect } from 'react'
+import { userGet, userSetJSON, userGetJSON } from '@/lib/userStorage'
+import { showToast } from '@/components/Toast'
+import styles from './GuestManager.module.css'
+
+interface AdditionalGuest {
+    id: string; name: string; dietary: string; relationship: string
+}
+
+interface Guest {
+    id: string; name: string; email: string; status: 'going' | 'maybe' | 'declined' | 'pending'
+    dietary: string; additionalGuests: AdditionalGuest[]; avatar: string; color: string
+}
+
+const DIETARY_OPTIONS = ['None', 'Vegetarian', 'Vegan', 'Gluten-Free', 'Nut Allergy', 'Kosher', 'Halal', 'Dairy-Free', 'Shellfish Allergy']
+const RELATIONSHIP_OPTIONS = ['Partner', 'Spouse', 'Child', 'Family', 'Friend', 'Other']
+const COLORS = ['#E8896A', '#4AADA8', '#F7C948', '#3D8C6E', '#7B5EA7', '#2D4059']
+const STATUS_COLORS: Record<string, string> = { going: '#3D8C6E', maybe: '#c4880a', declined: '#E8896A', pending: '#9aabbb' }
+const STATUS_BG: Record<string, string> = { going: 'rgba(61,140,110,0.1)', maybe: 'rgba(247,201,72,0.15)', declined: 'rgba(232,137,106,0.1)', pending: 'rgba(150,150,170,0.1)' }
+
+interface GuestManagerProps {
+    eventId?: string
+    planData?: { eventType?: string; theme?: string; date?: string; location?: string; eventId?: string }
+}
+
+export default function GuestManager({ eventId, planData: propPlanData }: GuestManagerProps) {
+    const [guests, setGuests] = useState<Guest[]>([])
+    const [showAdd, setShowAdd] = useState(false)
+    const [showBulk, setShowBulk] = useState(false)
+    const [bulkText, setBulkText] = useState('')
+    const [newGuest, setNewGuest] = useState({ name: '', email: '', dietary: 'None', additionalGuests: [] as AdditionalGuest[] })
+    const [invite, setInvite] = useState<{ subject?: string; message?: string; smsVersion?: string } | null>(null)
+    const [loadingInvite, setLoadingInvite] = useState(false)
+    const [planData, setPlanData] = useState<{ eventType?: string; theme?: string; date?: string; location?: string; eventId?: string }>(propPlanData || {})
+    const [copied, setCopied] = useState(false)
+    const [search, setSearch] = useState('')
+    const [filter, setFilter] = useState<string>('all')
+    const [expandedGuest, setExpandedGuest] = useState<string | null>(null)
+    const [inviteTheme, setInviteTheme] = useState('Modern & Fun')
+    const [refineInput, setRefineInput] = useState('')
+    const [isRefining, setIsRefining] = useState(false)
+    const [isEditingInvite, setIsEditingInvite] = useState(false)
+
+    const storageKey = eventId ? `partypal_eventguests_${eventId}` : 'partypal_eventguests'
+
+    useEffect(() => {
+        const saved = userGetJSON<Guest[]>(storageKey, [])
+        if (saved.length > 0) setGuests(saved)
+        if (!propPlanData) {
+            const stored = userGet('partyplan')
+            if (stored) {
+                const p = JSON.parse(stored)
+                setPlanData({ eventType: p.eventType, theme: p.theme, date: p.date, location: p.location, eventId: p.eventId || eventId })
+            }
+        }
+    }, [eventId, storageKey, propPlanData])
+
+    useEffect(() => {
+        if (guests.length > 0) userSetJSON(storageKey, guests)
+    }, [guests, storageKey])
+
+    const totalHeadcount = guests.reduce((sum, g) => sum + 1 + g.additionalGuests.length, 0)
+    const goingHeadcount = guests.filter(g => g.status === 'going').reduce((sum, g) => sum + 1 + g.additionalGuests.length, 0)
+
+    const stats = {
+        total: guests.length, headcount: totalHeadcount,
+        going: guests.filter(g => g.status === 'going').length, goingHeadcount,
+        maybe: guests.filter(g => g.status === 'maybe').length,
+        declined: guests.filter(g => g.status === 'declined').length,
+        pending: guests.filter(g => g.status === 'pending').length,
+    }
+
+    const addAdditionalToNew = () => {
+        setNewGuest(prev => ({ ...prev, additionalGuests: [...prev.additionalGuests, { id: Date.now().toString(), name: '', dietary: 'None', relationship: 'Partner' }] }))
+    }
+    const updateAdditionalNew = (idx: number, field: string, value: string) => {
+        setNewGuest(prev => ({ ...prev, additionalGuests: prev.additionalGuests.map((ag, i) => i === idx ? { ...ag, [field]: value } : ag) }))
+    }
+    const removeAdditionalNew = (idx: number) => {
+        setNewGuest(prev => ({ ...prev, additionalGuests: prev.additionalGuests.filter((_, i) => i !== idx) }))
+    }
+
+    const addGuest = () => {
+        if (!newGuest.name || !newGuest.email) return
+        const initials = newGuest.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+        const validAdditional = newGuest.additionalGuests.filter(ag => ag.name.trim())
+        setGuests(prev => [...prev, {
+            id: Date.now().toString(), name: newGuest.name, email: newGuest.email,
+            status: 'pending', dietary: newGuest.dietary, additionalGuests: validAdditional,
+            avatar: initials, color: COLORS[Math.floor(Math.random() * COLORS.length)]
+        }])
+        setNewGuest({ name: '', email: '', dietary: 'None', additionalGuests: [] })
+        setShowAdd(false)
+        showToast(`${newGuest.name} added`, 'success')
+    }
+
+    const bulkImport = () => {
+        const lines = bulkText.split('\n').filter(l => l.trim())
+        const newGuests: Guest[] = lines.map((line, i) => {
+            const parts = line.split(/[,\t]/).map(s => s.trim())
+            const name = parts[0] || 'Guest'
+            const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
+            return { id: (Date.now() + i).toString(), name, email: parts[1] || '', status: 'pending' as const, dietary: 'None', additionalGuests: [], avatar: initials, color: COLORS[i % COLORS.length] }
+        })
+        setGuests(prev => [...prev, ...newGuests])
+        setBulkText(''); setShowBulk(false)
+        showToast(`${newGuests.length} guests imported!`, 'success')
+    }
+
+    const updateStatus = (id: string, status: Guest['status']) => { setGuests(prev => prev.map(g => g.id === id ? { ...g, status } : g)); showToast('RSVP updated', 'info') }
+    const removeGuest = (id: string) => { const g = guests.find(x => x.id === id); setGuests(prev => prev.filter(x => x.id !== id)); showToast(`${g?.name || 'Guest'} removed`, 'info') }
+    const addAdditionalToExisting = (guestId: string) => { setGuests(prev => prev.map(g => g.id === guestId ? { ...g, additionalGuests: [...g.additionalGuests, { id: Date.now().toString(), name: '', dietary: 'None', relationship: 'Partner' }] } : g)) }
+    const updateAdditionalExisting = (guestId: string, addId: string, field: string, value: string) => { setGuests(prev => prev.map(g => g.id === guestId ? { ...g, additionalGuests: g.additionalGuests.map(ag => ag.id === addId ? { ...ag, [field]: value } : ag) } : g)) }
+    const removeAdditionalExisting = (guestId: string, addId: string) => { setGuests(prev => prev.map(g => g.id === guestId ? { ...g, additionalGuests: g.additionalGuests.filter(ag => ag.id !== addId) } : g)) }
+    const updateGuestDietary = (guestId: string, dietary: string) => { setGuests(prev => prev.map(g => g.id === guestId ? { ...g, dietary } : g)) }
+
+    const generateInvite = async () => {
+        setLoadingInvite(true)
+        try {
+            const res = await fetch('/api/guests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'generate_invite', eventDetails: { ...planData, inviteTheme, hostName: 'Your Host' } }) })
+            const data = await res.json()
+            setInvite(data); setIsEditingInvite(false)
+            if (planData.eventId) fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: data }) }).catch(() => { })
+            showToast('Invite generated!', 'success')
+        } catch { showToast('Failed to generate invite', 'error') }
+        setLoadingInvite(false)
+    }
+
+    const refineInvite = async () => {
+        if (!refineInput.trim() || !invite) return
+        setIsRefining(true)
+        try {
+            const res = await fetch('/api/guests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'refine_invite', currentSubject: invite.subject, currentMessage: invite.message, instruction: refineInput }) })
+            const data = await res.json()
+            if (data.subject) { setInvite(prev => prev ? { ...prev, subject: data.subject, message: data.message, smsVersion: data.smsVersion || prev?.smsVersion } : prev); setRefineInput(''); setIsEditingInvite(false); showToast('Invite refined!', 'success') }
+        } catch { showToast('Failed to refine invite', 'error') }
+        setIsRefining(false)
+    }
+
+    const getRSVPLink = () => {
+        const origin = typeof window !== 'undefined' ? window.location.origin : 'https://partypal.social'
+        const eid = planData.eventId || eventId || ''
+        const params = new URLSearchParams({ e: eid })
+        if (planData.eventType) params.set('n', planData.eventType)
+        if (planData.date) params.set('d', planData.date)
+        if (planData.location) params.set('l', planData.location)
+        return `${origin}/rsvp?${params.toString()}`
+    }
+
+    const copyRSVPLink = () => { navigator.clipboard.writeText(getRSVPLink()); setCopied(true); setTimeout(() => setCopied(false), 2000); showToast('RSVP link copied!', 'success') }
+
+    const shareWhatsApp = () => {
+        const text = invite ? `${invite.subject}\n\n${invite.message}\n\nRSVP here: ${getRSVPLink()}` : `You're invited! RSVP here: ${getRSVPLink()}`
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
+    }
+
+    const dietaryCounts: Record<string, number> = {}
+    guests.forEach(g => {
+        dietaryCounts[g.dietary] = (dietaryCounts[g.dietary] || 0) + 1
+        g.additionalGuests.forEach(ag => { dietaryCounts[ag.dietary] = (dietaryCounts[ag.dietary] || 0) + 1 })
+    })
+
+    const filteredGuests = guests.filter(g => {
+        if (filter !== 'all' && g.status !== filter) return false
+        if (search && !g.name.toLowerCase().includes(search.toLowerCase()) && !g.email.toLowerCase().includes(search.toLowerCase())) return false
+        return true
+    })
+
+    return (
+        <div>
+            {/* Stats */}
+            <div className={styles.statsRow}>
+                {[
+                    { label: 'Invitations', val: stats.total, sub: `${stats.headcount} people`, color: 'var(--navy)', fk: 'all' },
+                    { label: 'Going ✓', val: stats.going, sub: `${stats.goingHeadcount} people`, color: '#3D8C6E', fk: 'going' },
+                    { label: 'Maybe', val: stats.maybe, sub: '', color: '#c4880a', fk: 'maybe' },
+                    { label: 'Declined', val: stats.declined, sub: '', color: '#E8896A', fk: 'declined' },
+                    { label: 'Pending', val: stats.pending, sub: '', color: '#9aabbb', fk: 'pending' },
+                ].map(s => (
+                    <div key={s.label} className={styles.statCard} onClick={() => setFilter(s.fk)} style={{ borderColor: filter === s.fk ? s.color : undefined }}>
+                        <div className={styles.statNum} style={{ color: s.color }}>{s.val}</div>
+                        <div className={styles.statLabel}>{s.label}</div>
+                        {s.sub && <div className={styles.statSub}>{s.sub}</div>}
+                    </div>
+                ))}
+            </div>
+
+            <div className={styles.mainLayout}>
+                <div>
+                    {/* Actions */}
+                    <div className={styles.actionsRow}>
+                        <button className={styles.actionBtn} onClick={() => { setShowAdd(!showAdd); setShowBulk(false) }}>+ Add Guest</button>
+                        <button className={styles.secondaryBtn} onClick={() => { setShowBulk(!showBulk); setShowAdd(false) }}>📋 Bulk Import</button>
+                        <button className={styles.secondaryBtn} onClick={generateInvite} disabled={loadingInvite}>{loadingInvite ? '⏳ Generating...' : '✉️ Generate Invite'}</button>
+                        <button className={styles.secondaryBtn} onClick={copyRSVPLink}>{copied ? '✓ Copied!' : '🔗 RSVP Link'}</button>
+                    </div>
+
+                    {/* Search */}
+                    <input className={styles.searchInput} placeholder="🔍 Search guests..." value={search} onChange={e => setSearch(e.target.value)} />
+
+                    {/* Add Form */}
+                    {showAdd && (
+                        <div className={styles.addForm}>
+                            <h4 style={{ fontFamily: "'Fredoka One',cursive", marginBottom: '0.8rem', color: 'var(--navy)', fontSize: '0.95rem' }}>Add New Guest</h4>
+                            <div className={styles.addRow}>
+                                <input placeholder="Full Name *" value={newGuest.name} onChange={e => setNewGuest({ ...newGuest, name: e.target.value })} className={styles.addInput} />
+                                <input placeholder="Email *" value={newGuest.email} onChange={e => setNewGuest({ ...newGuest, email: e.target.value })} className={styles.addInput} />
+                            </div>
+                            <div className={styles.addRow}>
+                                <div>
+                                    <label className={styles.fieldLabel}>Dietary Restrictions</label>
+                                    <select value={newGuest.dietary} onChange={e => setNewGuest({ ...newGuest, dietary: e.target.value })} className={styles.addInput}>
+                                        {DIETARY_OPTIONS.map(d => <option key={d}>{d}</option>)}
+                                    </select>
+                                </div>
+                            </div>
+                            <div className={styles.additionalSection}>
+                                <div className={styles.additionalHeader}>
+                                    <span className={styles.additionalTitle}>👥 Additional Guests</span>
+                                    <button type="button" className={styles.addMemberBtn} onClick={addAdditionalToNew}>+ Add Person</button>
+                                </div>
+                                {newGuest.additionalGuests.map((ag, idx) => (
+                                    <div key={ag.id} className={styles.additionalRow}>
+                                        <input placeholder="Name" value={ag.name} onChange={e => updateAdditionalNew(idx, 'name', e.target.value)} className={styles.addInputSmall} />
+                                        <select value={ag.relationship} onChange={e => updateAdditionalNew(idx, 'relationship', e.target.value)} className={styles.addInputSmall}>
+                                            {RELATIONSHIP_OPTIONS.map(r => <option key={r}>{r}</option>)}
+                                        </select>
+                                        <select value={ag.dietary} onChange={e => updateAdditionalNew(idx, 'dietary', e.target.value)} className={styles.addInputSmall}>
+                                            {DIETARY_OPTIONS.map(d => <option key={d}>{d}</option>)}
+                                        </select>
+                                        <button className={styles.removeBtn} onClick={() => removeAdditionalNew(idx)}>✕</button>
+                                    </div>
+                                ))}
+                                {newGuest.additionalGuests.length === 0 && <p className={styles.additionalHint}>No additional guests. Click &quot;+ Add Person&quot; to bring family or friends.</p>}
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem' }}>
+                                <button className={styles.actionBtn} onClick={addGuest}>Add Guest{newGuest.additionalGuests.length > 0 ? ` + ${newGuest.additionalGuests.length}` : ''}</button>
+                                <button onClick={() => setShowAdd(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9aabbb', fontWeight: 700, fontSize: '0.85rem' }}>Cancel</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Bulk Import */}
+                    {showBulk && (
+                        <div className={styles.addForm}>
+                            <h4 style={{ fontFamily: "'Fredoka One',cursive", marginBottom: '0.4rem', color: 'var(--navy)', fontSize: '0.95rem' }}>Bulk Import Guests</h4>
+                            <p style={{ fontSize: '0.78rem', color: '#9aabbb', fontWeight: 600, marginBottom: '0.6rem' }}>One per line: <strong>Name, Email</strong></p>
+                            <textarea className={styles.addInput} style={{ minHeight: '100px', resize: 'vertical', fontFamily: 'monospace', fontSize: '0.8rem' }} placeholder={"John Doe, john@email.com\nJane Smith, jane@email.com"} value={bulkText} onChange={e => setBulkText(e.target.value)} />
+                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.4rem' }}>
+                                <button className={styles.actionBtn} onClick={bulkImport} disabled={!bulkText.trim()}>Import {bulkText.split('\n').filter(l => l.trim()).length} Guests</button>
+                                <button onClick={() => setShowBulk(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9aabbb', fontWeight: 700, fontSize: '0.85rem' }}>Cancel</button>
+                            </div>
+                        </div>
+                    )}
+
+                    {/* Guest Table */}
+                    <div className={styles.guestTable}>
+                        {filteredGuests.length === 0 ? (
+                            <div style={{ padding: '2rem', textAlign: 'center', color: '#9aabbb', fontWeight: 700 }}>
+                                {search || filter !== 'all' ? 'No guests match your filters' : 'No guests yet — add some above!'}
+                            </div>
+                        ) : filteredGuests.map(g => (
+                            <div key={g.id} className={styles.guestEntry}>
+                                <div className={styles.guestRow} onClick={() => setExpandedGuest(expandedGuest === g.id ? null : g.id)} style={{ cursor: 'pointer' }}>
+                                    <div className={styles.guestAvatar} style={{ background: g.color }}>{g.avatar}</div>
+                                    <div className={styles.guestInfo}>
+                                        <div className={styles.guestName}>{g.name}</div>
+                                        <div className={styles.guestEmail}>{g.email}</div>
+                                    </div>
+                                    {g.dietary !== 'None' && <span className={styles.dietary}>{g.dietary}</span>}
+                                    {g.additionalGuests.length > 0 && <span className={styles.partySize} title={g.additionalGuests.map(ag => ag.name || 'Guest').join(', ')}>👥 +{g.additionalGuests.length}</span>}
+                                    <select value={g.status} onChange={e => { e.stopPropagation(); updateStatus(g.id, e.target.value as Guest['status']) }} onClick={e => e.stopPropagation()} className={styles.statusSelect} style={{ background: STATUS_BG[g.status], color: STATUS_COLORS[g.status] }}>
+                                        <option value="going">✓ Going</option>
+                                        <option value="maybe">? Maybe</option>
+                                        <option value="declined">✗ Declined</option>
+                                        <option value="pending">⏳ Pending</option>
+                                    </select>
+                                    <button className={styles.removeBtn} onClick={e => { e.stopPropagation(); removeGuest(g.id) }}>✕</button>
+                                    <span className={styles.expandIcon}>{expandedGuest === g.id ? '▾' : '▸'}</span>
+                                </div>
+
+                                {expandedGuest === g.id && (
+                                    <div className={styles.guestExpanded}>
+                                        <div className={styles.expandedSection}>
+                                            <div className={styles.expandedLabel}>🍽️ {g.name}&apos;s Dietary Restrictions</div>
+                                            <select value={g.dietary} onChange={e => updateGuestDietary(g.id, e.target.value)} className={styles.addInputSmall} style={{ maxWidth: '200px' }}>
+                                                {DIETARY_OPTIONS.map(d => <option key={d}>{d}</option>)}
+                                            </select>
+                                        </div>
+                                        <div className={styles.expandedSection}>
+                                            <div className={styles.expandedLabelRow}>
+                                                <span className={styles.expandedLabel}>👥 Additional Guests ({g.additionalGuests.length})</span>
+                                                <button className={styles.addMemberBtn} onClick={() => addAdditionalToExisting(g.id)}>+ Add Person</button>
+                                            </div>
+                                            {g.additionalGuests.map(ag => (
+                                                <div key={ag.id} className={styles.additionalRow}>
+                                                    <input placeholder="Name" value={ag.name} onChange={e => updateAdditionalExisting(g.id, ag.id, 'name', e.target.value)} className={styles.addInputSmall} />
+                                                    <select value={ag.relationship} onChange={e => updateAdditionalExisting(g.id, ag.id, 'relationship', e.target.value)} className={styles.addInputSmall}>
+                                                        {RELATIONSHIP_OPTIONS.map(r => <option key={r}>{r}</option>)}
+                                                    </select>
+                                                    <select value={ag.dietary} onChange={e => updateAdditionalExisting(g.id, ag.id, 'dietary', e.target.value)} className={styles.addInputSmall}>
+                                                        {DIETARY_OPTIONS.map(d => <option key={d}>{d}</option>)}
+                                                    </select>
+                                                    <button className={styles.removeBtn} onClick={() => removeAdditionalExisting(g.id, ag.id)}>✕</button>
+                                                </div>
+                                            ))}
+                                            {g.additionalGuests.length === 0 && <p className={styles.additionalHint}>No additional guests yet.</p>}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+
+                {/* Sidebar */}
+                <div>
+                    {/* Headcount */}
+                    <div className="card" style={{ marginBottom: '1rem', textAlign: 'center', padding: '1.2rem' }}>
+                        <div style={{ fontSize: '1.5rem', marginBottom: '0.2rem' }}>👥</div>
+                        <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', marginBottom: '0.4rem' }}>Total Headcount</h3>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '1.2rem' }}>
+                            <div>
+                                <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.5rem', color: 'var(--navy)' }}>{totalHeadcount}</div>
+                                <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' }}>Total</div>
+                            </div>
+                            <div>
+                                <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.5rem', color: '#3D8C6E' }}>{goingHeadcount}</div>
+                                <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' }}>Confirmed</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Dietary */}
+                    <div className="card" style={{ marginBottom: '1rem', padding: '1.2rem' }}>
+                        <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', marginBottom: '0.8rem' }}>🥗 Dietary Needs</h3>
+                        {Object.entries(dietaryCounts).sort((a, b) => b[1] - a[1]).map(([diet, count]) => (
+                            <div key={diet} className={styles.dietRow}>
+                                <span style={{ flex: 1, fontWeight: 700, fontSize: '0.8rem' }}>{diet}</span>
+                                <div className={styles.dietBar}><div className={styles.dietFill} style={{ width: `${totalHeadcount > 0 ? (count / totalHeadcount) * 100 : 0}%` }} /></div>
+                                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--navy)', minWidth: 18, textAlign: 'right' }}>{count}</span>
+                            </div>
+                        ))}
+                    </div>
+
+                    {/* Invite Theme */}
+                    <div className="card" style={{ marginBottom: '1rem', textAlign: 'center', padding: '1.2rem' }}>
+                        <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>✉️</div>
+                        <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', marginBottom: '0.4rem' }}>Invitation Theme</h3>
+                        <select value={inviteTheme} onChange={e => setInviteTheme(e.target.value)} className={styles.addInput} style={{ width: '100%', marginBottom: '0.6rem', textAlign: 'center' }}>
+                            <option>Modern &amp; Fun</option><option>Elegant &amp; Formal</option><option>Tropical Paradise</option><option>Rustic &amp; Cozy</option><option>Vintage &amp; Retro</option><option>Minimalist &amp; Clean</option><option>Glamorous &amp; Luxe</option>
+                        </select>
+                        <button className={styles.actionBtn} style={{ width: '100%' }} onClick={generateInvite} disabled={loadingInvite}>{loadingInvite ? '⏳ Generating...' : '✨ Generate Invite'}</button>
+                    </div>
+
+                    {/* Generated Invite */}
+                    {invite && (
+                        <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                                <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)' }}>✉️ Your Invitation</h3>
+                                <button onClick={() => setIsEditingInvite(!isEditingInvite)} style={{ background: 'none', border: '1px solid var(--teal)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--teal)', cursor: 'pointer' }}>
+                                    {isEditingInvite ? '✕ Cancel' : '✏️ Edit'}
+                                </button>
+                            </div>
+                            {isEditingInvite ? (
+                                <>
+                                    <input value={invite.subject || ''} onChange={e => setInvite(prev => prev ? { ...prev, subject: e.target.value } : prev)} className={styles.addInput} style={{ width: '100%', marginBottom: '0.4rem', fontWeight: 700 }} placeholder="Subject line" />
+                                    <textarea value={invite.message || ''} onChange={e => setInvite(prev => prev ? { ...prev, message: e.target.value } : prev)} className={styles.addInput} style={{ width: '100%', minHeight: 100, marginBottom: '0.4rem', resize: 'vertical', lineHeight: 1.5 }} />
+                                </>
+                            ) : (
+                                <>
+                                    <div className={styles.inviteSubject}>{invite.subject}</div>
+                                    <p className={styles.inviteMessage}>{invite.message}</p>
+                                </>
+                            )}
+                            {invite.smsVersion && (
+                                <div className={styles.smsBox}>
+                                    <div style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--teal)', marginBottom: '0.2rem' }}>SMS VERSION</div>
+                                    <p style={{ fontSize: '0.78rem', color: 'var(--navy)', fontWeight: 600, margin: 0 }}>{invite.smsVersion}</p>
+                                </div>
+                            )}
+                            <div style={{ marginTop: '0.6rem', borderTop: '1px solid #eee', paddingTop: '0.6rem' }}>
+                                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.3rem' }}>🤖 Refine with AI</div>
+                                <div style={{ display: 'flex', gap: '0.3rem' }}>
+                                    <input value={refineInput} onChange={e => setRefineInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') refineInvite() }} placeholder="e.g. Make it more formal..." className={styles.addInput} style={{ flex: 1, fontSize: '0.78rem' }} />
+                                    <button onClick={refineInvite} disabled={isRefining || !refineInput.trim()} style={{ background: 'var(--teal)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.35rem 0.6rem', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefining || !refineInput.trim() ? 0.5 : 1 }}>
+                                        {isRefining ? '...' : '✨ Refine'}
+                                    </button>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.6rem' }}>
+                                <button className={styles.copyBtn} style={{ flex: 1 }} onClick={copyRSVPLink}>{copied ? '✓ Copied!' : '🔗 Copy RSVP Link'}</button>
+                                <button onClick={shareWhatsApp} style={{ flex: 1, background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '0.4rem', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>💬 WhatsApp</button>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            </div>
+        </div>
+    )
+}

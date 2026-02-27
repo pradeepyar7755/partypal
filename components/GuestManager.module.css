@@ -1,0 +1,481 @@
+.statsRow {
+    display: grid;
+    grid-template-columns: repeat(5, 1fr);
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+}
+
+.statCard {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 1rem;
+    text-align: center;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.statCard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.06);
+}
+
+.statNum {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.6rem;
+    margin-bottom: 0.15rem;
+}
+
+.statLabel {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: #9aabbb;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.statSub {
+    font-size: 0.65rem;
+    font-weight: 700;
+    color: #b0bfcc;
+    margin-top: 0.15rem;
+}
+
+.mainLayout {
+    display: grid;
+    grid-template-columns: 1fr 280px;
+    gap: 1.5rem;
+}
+
+.actionsRow {
+    display: flex;
+    gap: 0.6rem;
+    margin-bottom: 0.8rem;
+    flex-wrap: wrap;
+}
+
+.actionBtn {
+    background: linear-gradient(135deg, var(--teal), #3D8C6E);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 0.5rem 1rem;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.actionBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(74, 173, 168, 0.3);
+}
+
+.secondaryBtn {
+    background: rgba(74, 173, 168, 0.1);
+    border: 1.5px solid rgba(74, 173, 168, 0.25);
+    color: var(--teal);
+    padding: 0.45rem 1rem;
+    border-radius: 50px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.secondaryBtn:hover:not(:disabled) {
+    background: rgba(74, 173, 168, 0.2);
+}
+
+.secondaryBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.searchInput {
+    width: 100%;
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 50px;
+    padding: 0.55rem 1.1rem;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: var(--navy);
+    outline: none;
+    margin-bottom: 0.8rem;
+}
+
+.searchInput:focus {
+    border-color: var(--teal);
+}
+
+.addForm {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    padding: 1.2rem;
+    margin-bottom: 0.8rem;
+    animation: fadeSlideIn 0.25s ease;
+}
+
+.addRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+}
+
+.addInput {
+    background: var(--light-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 0.5rem 0.8rem;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--navy);
+    outline: none;
+    width: 100%;
+}
+
+.addInput:focus {
+    border-color: var(--teal);
+}
+
+.addInputSmall {
+    background: var(--light-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 8px;
+    padding: 0.4rem 0.6rem;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--navy);
+    outline: none;
+    min-width: 0;
+    flex: 1;
+}
+
+.fieldLabel {
+    display: block;
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: #9aabbb;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.25rem;
+}
+
+.additionalSection {
+    background: var(--light-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 10px;
+    padding: 0.8rem;
+    margin-top: 0.4rem;
+}
+
+.additionalHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.6rem;
+}
+
+.additionalTitle {
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: var(--navy);
+}
+
+.addMemberBtn {
+    background: rgba(74, 173, 168, 0.1);
+    border: 1.5px solid rgba(74, 173, 168, 0.25);
+    color: var(--teal);
+    padding: 0.3rem 0.7rem;
+    border-radius: 50px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.addMemberBtn:hover {
+    background: rgba(74, 173, 168, 0.2);
+}
+
+.additionalRow {
+    display: flex;
+    gap: 0.4rem;
+    align-items: center;
+    margin-bottom: 0.4rem;
+    animation: fadeSlideIn 0.25s ease;
+}
+
+.additionalHint {
+    font-size: 0.75rem;
+    color: #b0bfcc;
+    font-weight: 600;
+    font-style: italic;
+    margin: 0;
+}
+
+.guestTable {
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.guestEntry {
+    border-bottom: 1px solid var(--border);
+}
+
+.guestEntry:last-child {
+    border-bottom: none;
+}
+
+.guestRow {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.75rem 1rem;
+    transition: background 0.15s;
+}
+
+.guestRow:hover {
+    background: var(--light-bg);
+}
+
+.guestAvatar {
+    width: 34px;
+    height: 34px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.68rem;
+    font-weight: 800;
+    color: white;
+    flex-shrink: 0;
+}
+
+.guestInfo {
+    flex: 1;
+    min-width: 0;
+}
+
+.guestName {
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: var(--navy);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.guestEmail {
+    font-size: 0.72rem;
+    color: #9aabbb;
+    font-weight: 600;
+}
+
+.dietary {
+    font-size: 0.68rem;
+    font-weight: 800;
+    background: rgba(74, 173, 168, 0.1);
+    color: var(--teal);
+    padding: 0.12rem 0.45rem;
+    border-radius: 50px;
+    white-space: nowrap;
+}
+
+.partySize {
+    font-size: 0.7rem;
+    font-weight: 800;
+    background: rgba(123, 94, 167, 0.1);
+    color: #7B5EA7;
+    padding: 0.15rem 0.5rem;
+    border-radius: 50px;
+    white-space: nowrap;
+    cursor: help;
+}
+
+.statusSelect {
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 50px;
+    padding: 0.2rem 0.5rem;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.72rem;
+    cursor: pointer;
+    outline: none;
+}
+
+.removeBtn {
+    background: none;
+    border: none;
+    color: #ccc;
+    cursor: pointer;
+    font-size: 0.9rem;
+    padding: 0.15rem;
+    border-radius: 4px;
+    transition: color 0.2s;
+    flex-shrink: 0;
+}
+
+.removeBtn:hover {
+    color: var(--coral);
+}
+
+.expandIcon {
+    font-size: 0.65rem;
+    color: #b0bfcc;
+    flex-shrink: 0;
+    transition: transform 0.2s;
+}
+
+.guestExpanded {
+    background: var(--light-bg);
+    padding: 0.8rem 1rem 0.8rem 3rem;
+    border-top: 1px solid var(--border);
+    animation: expandIn 0.25s ease;
+}
+
+.expandedSection {
+    margin-bottom: 0.8rem;
+}
+
+.expandedSection:last-child {
+    margin-bottom: 0;
+}
+
+.expandedLabel {
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: var(--navy);
+    margin-bottom: 0.4rem;
+}
+
+.expandedLabelRow {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 0.4rem;
+}
+
+.dietRow {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.dietBar {
+    flex: 1;
+    height: 5px;
+    background: var(--border);
+    border-radius: 50px;
+    overflow: hidden;
+}
+
+.dietFill {
+    height: 100%;
+    background: linear-gradient(90deg, var(--teal), var(--yellow));
+    border-radius: 50px;
+    transition: width 0.3s ease;
+}
+
+.inviteSubject {
+    font-weight: 800;
+    color: var(--navy);
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+}
+
+.inviteMessage {
+    font-size: 0.8rem;
+    color: #6b7f94;
+    font-weight: 600;
+    line-height: 1.6;
+    margin-bottom: 0.8rem;
+    white-space: pre-wrap;
+}
+
+.smsBox {
+    background: var(--light-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 0.7rem;
+    margin-bottom: 0.8rem;
+}
+
+.copyBtn {
+    width: 100%;
+    background: var(--teal);
+    color: white;
+    border: none;
+    padding: 0.5rem;
+    border-radius: 8px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    cursor: pointer;
+    font-size: 0.82rem;
+    transition: all 0.2s;
+}
+
+.copyBtn:hover {
+    background: #3a9a95;
+}
+
+@keyframes fadeSlideIn {
+    from {
+        opacity: 0;
+        transform: translateY(-8px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+@keyframes expandIn {
+    from {
+        opacity: 0;
+        max-height: 0;
+    }
+
+    to {
+        opacity: 1;
+        max-height: 500px;
+    }
+}
+
+@media (max-width:900px) {
+    .statsRow {
+        grid-template-columns: repeat(3, 1fr);
+    }
+
+    .mainLayout {
+        grid-template-columns: 1fr;
+    }
+
+    .addRow {
+        grid-template-columns: 1fr;
+    }
+
+    .additionalRow {
+        flex-wrap: wrap;
+    }
+
+    .guestExpanded {
+        padding-left: 1rem;
+    }
+}

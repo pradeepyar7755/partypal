@@ -5,6 +5,7 @@ import styles from './dashboard.module.css'
 import { showToast } from '@/components/Toast'
 import { userGet, userSet, userGetJSON, userSetJSON, userRemove } from '@/lib/userStorage'
 import LocationSearch from '@/components/LocationSearch'
+import GuestManager from '@/components/GuestManager'
 
 interface ChecklistItem { item: string; category: string; done: boolean; due?: string; urgent?: boolean }
 interface TimelineItem { weeks: string; task: string; category: string; priority: string; emoji?: string }
@@ -612,362 +613,240 @@ export default function Dashboard() {
             {/* ══ GUESTS TAB ══ */}
             {selectedTab === 'guests' && (
                 <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem' }}>
-                    {isDemo ? (
-                        <div>
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '1rem' }}>
-                                {[{ name: 'Alex Rivera', status: '✅ Confirmed', dietary: 'None', plus: 1 }, { name: 'Jordan Chen', status: '✅ Confirmed', dietary: 'Vegetarian', plus: 0 }, { name: 'Maya Thompson', status: '⏳ Pending', dietary: 'Gluten-Free', plus: 2 }, { name: 'Sam Williams', status: '❌ Declined', dietary: 'None', plus: 0 }, { name: 'Taylor Brooks', status: '⏳ Pending', dietary: 'Vegan', plus: 1 }, { name: 'Chris Morgan', status: '✅ Confirmed', dietary: 'Nut Allergy', plus: 0 }].map((g, i) => (
-                                    <div key={i} className="card" style={{ padding: '1rem 1.2rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.3rem' }}>
-                                            <span style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '0.9rem' }}>{g.name}</span>
-                                            <span style={{ fontSize: '0.75rem', fontWeight: 700 }}>{g.status}</span>
-                                        </div>
-                                        <div style={{ fontSize: '0.75rem', color: '#9aabbb', fontWeight: 600 }}>
-                                            {g.dietary !== 'None' && <span style={{ color: 'var(--teal)' }}>🍽️ {g.dietary}</span>}
-                                            {g.plus > 0 && <span style={{ marginLeft: '0.5rem' }}>+{g.plus} guest{g.plus > 1 ? 's' : ''}</span>}
-                                        </div>
-                                    </div>
-                                ))}
-                            </div>
-                            <div style={{ textAlign: 'center', marginTop: '1.5rem' }}>
-                                <button onClick={() => router.push('/guests')} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 10, padding: '0.7rem 2rem', fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer' }}>Manage Guests & Invites →</button>
-                            </div>
-                        </div>
-                    ) : (
-                        <div>
-                            {/* ── Stat Cards ── */}
-                            <div style={{ display: 'flex', gap: '0.8rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                                {[
-                                    { label: 'Total', val: eventGuests.length, color: 'var(--navy)', filterKey: 'all' as const },
-                                    { label: 'Confirmed', val: eventGuests.filter(g => g.status === 'confirmed').length, color: '#3D8C6E', filterKey: 'confirmed' as const },
-                                    { label: 'Invited', val: eventGuests.filter(g => g.status === 'invited').length, color: '#c4880a', filterKey: 'invited' as const },
-                                    { label: 'Declined', val: eventGuests.filter(g => g.status === 'declined').length, color: '#E8896A', filterKey: 'declined' as const },
-                                ].map(s => (
-                                    <div key={s.label} className="card" onClick={() => setGuestFilter(s.filterKey)} style={{
-                                        padding: '0.7rem 1rem', flex: 1, minWidth: 90, textAlign: 'center', cursor: 'pointer',
-                                        border: guestFilter === s.filterKey ? `2px solid ${s.color}` : '1.5px solid rgba(0,0,0,0.08)',
-                                        transition: 'all 0.2s',
-                                    }}>
-                                        <div style={{ fontSize: '1.4rem', fontWeight: 900, color: s.color }}>{s.val}</div>
-                                        <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 700 }}>{s.label}</div>
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* ── Action Buttons ── */}
-                            <div style={{ display: 'flex', gap: '0.5rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
-                                <button onClick={() => { setShowAddGuest(!showAddGuest); setShowBulkImport(false) }} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 1rem', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer' }}>{showAddGuest ? '✕ Close' : '+ Add Guest'}</button>
-                                <button onClick={() => { setShowBulkImport(!showBulkImport); setShowAddGuest(false) }} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 8, padding: '0.5rem 1rem', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', color: 'var(--navy)' }}>📋 Bulk Import</button>
-                                <button onClick={() => router.push('/guests')} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 8, padding: '0.5rem 1rem', fontWeight: 800, fontSize: '0.8rem', cursor: 'pointer', color: 'var(--navy)', marginLeft: 'auto' }}>✉️ Full Guest Manager →</button>
-                            </div>
-
-                            {/* ── Add Guest Form ── */}
-                            {showAddGuest && (
-                                <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
-                                    <div style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '0.9rem', marginBottom: '0.8rem' }}>Add New Guest</div>
-                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                        <input placeholder="Full Name *" value={guestForm.name} onChange={e => setGuestForm(p => ({ ...p, name: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addGuest()} style={{ flex: 1, minWidth: 150, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
-                                        <input placeholder="Email or phone" value={guestForm.email} onChange={e => setGuestForm(p => ({ ...p, email: e.target.value }))} onKeyDown={e => e.key === 'Enter' && addGuest()} style={{ flex: 1, minWidth: 180, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
-                                        <button onClick={addGuest} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 1.2rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}>Add</button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* ── Bulk Import ── */}
-                            {showBulkImport && (
-                                <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
-                                    <div style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '0.9rem', marginBottom: '0.4rem' }}>Bulk Import</div>
-                                    <p style={{ fontSize: '0.75rem', color: '#9aabbb', fontWeight: 600, marginBottom: '0.6rem' }}>One guest per line. Format: Name, Email (optional)</p>
-                                    <textarea value={bulkText} onChange={e => setBulkText(e.target.value)} placeholder={"Jane Doe, jane@email.com\nJohn Smith\nSarah Lee, sarah@email.com"} rows={5} style={{ width: '100%', padding: '0.6rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none', resize: 'vertical', fontFamily: 'inherit' }} />
-                                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
-                                        <button onClick={() => setShowBulkImport(false)} style={{ background: 'rgba(232,137,106,0.1)', border: '1.5px solid rgba(232,137,106,0.3)', borderRadius: 8, padding: '0.4rem 0.8rem', fontSize: '0.78rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>Cancel</button>
-                                        <button onClick={bulkImportGuests} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.4rem 1rem', fontSize: '0.78rem', fontWeight: 800, cursor: 'pointer' }}>Import {bulkText.split('\n').filter(l => l.trim()).length} Guests</button>
-                                    </div>
-                                </div>
-                            )}
-
-                            {/* ── Search ── */}
-                            <input placeholder="🔍 Search guests..." value={guestSearch} onChange={e => setGuestSearch(e.target.value)} style={{ width: '100%', padding: '0.55rem 1rem', borderRadius: 50, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none', marginBottom: '1rem', color: 'var(--navy)' }} />
-
-                            {/* ── Guest Cards ── */}
-                            {(() => {
-                                const filtered = eventGuests.filter(g => {
-                                    if (guestFilter !== 'all' && g.status !== guestFilter) return false
-                                    if (guestSearch && !g.name.toLowerCase().includes(guestSearch.toLowerCase()) && !g.email.toLowerCase().includes(guestSearch.toLowerCase())) return false
-                                    return true
-                                })
-                                const avatarColors = ['#E8896A', '#4AADA8', '#F7C948', '#3D8C6E', '#7B5EA7', '#2D4059']
-                                return filtered.length > 0 ? (
-                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '0.8rem' }}>
-                                        {filtered.map((g, i) => {
-                                            const initials = g.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-                                            const color = avatarColors[i % avatarColors.length]
-                                            const statusColor = g.status === 'confirmed' ? '#3D8C6E' : g.status === 'declined' ? '#E8896A' : '#c4880a'
-                                            const statusBg = g.status === 'confirmed' ? 'rgba(61,140,110,0.08)' : g.status === 'declined' ? 'rgba(232,137,106,0.08)' : 'rgba(247,201,72,0.08)'
-                                            const statusLabel = g.status === 'confirmed' ? '✓ Going' : g.status === 'declined' ? '✕ Declined' : '⏳ Pending'
-                                            const originalIdx = eventGuests.indexOf(g)
-                                            return (
-                                                <div key={originalIdx} className="card" style={{ padding: '1rem 1.2rem', display: 'flex', alignItems: 'center', gap: '0.8rem' }}>
-                                                    <div style={{ width: 42, height: 42, borderRadius: '50%', background: `linear-gradient(135deg, ${color}, ${color}dd)`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 900, fontSize: '0.82rem', flexShrink: 0 }}>
-                                                        {initials}
-                                                    </div>
-                                                    <div style={{ flex: 1, minWidth: 0 }}>
-                                                        <div style={{ fontWeight: 800, color: 'var(--navy)', fontSize: '0.88rem', marginBottom: '0.15rem' }}>{g.name}</div>
-                                                        {g.email && <div style={{ fontSize: '0.72rem', color: '#9aabbb', fontWeight: 600 }}>{g.email}</div>}
-                                                    </div>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', flexShrink: 0 }}>
-                                                        <select value={g.status} onChange={e => updateGuestStatus(originalIdx, e.target.value as EventGuest['status'])} style={{ padding: '0.3rem 0.5rem', borderRadius: 8, border: `1.5px solid ${statusColor}30`, fontSize: '0.72rem', fontWeight: 800, outline: 'none', color: statusColor, background: statusBg, cursor: 'pointer' }}>
-                                                            <option value="invited">⏳ Pending</option>
-                                                            <option value="confirmed">✓ Going</option>
-                                                            <option value="declined">✕ Declined</option>
-                                                        </select>
-                                                        <button onClick={() => removeGuest(originalIdx)} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.85rem', fontWeight: 800, padding: '0.2rem' }} onMouseEnter={e => (e.currentTarget.style.color = '#E8896A')} onMouseLeave={e => (e.currentTarget.style.color = '#ccc')}>✕</button>
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
-                                ) : (
-                                    <div className="card" style={{ padding: '2.5rem', textAlign: 'center' }}>
-                                        <div style={{ fontSize: '2rem', marginBottom: '0.5rem', opacity: 0.4 }}>👥</div>
-                                        <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.85rem' }}>{eventGuests.length > 0 ? 'No guests match your filter' : 'No guests yet. Click "+ Add Guest" or "Bulk Import" to get started!'}</p>
-                                    </div>
-                                )
-                            })()}
-                        </div>
-                    )}
+                    <GuestManager eventId={data.eventId} planData={{ eventType: data.eventType, theme: data.theme, date: data.date, location: data.location, eventId: data.eventId }} />
                 </div>
             )}
 
-            {/* ══ PLAN TAB (MAIN GRID) ══ */}
-            {
-                selectedTab === 'plan' && (
-                    <>
+{/* ══ PLAN TAB (MAIN GRID) ══ */ }
+{
+    selectedTab === 'plan' && (
+        <>
 
-                        {/* ══ MAIN GRID ══ */}
-                        <div className={styles.main}>
-                            {/* LEFT COLUMN */}
-                            <div>
-                                {/* ── Countdown Bar ── */}
-                                {data.date && (
-                                    <div className={styles.sectionCard} style={{ marginBottom: '1rem' }}>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
-                                            <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)' }}>
-                                                ⏳ Event Countdown
-                                            </div>
-                                            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: daysLeft !== null && daysLeft <= 7 ? '#E8896A' : 'var(--teal)' }}>
-                                                {daysLeft !== null ? (daysLeft === 0 ? '🎉 Today!' : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`) : 'No date set'}
-                                            </div>
-                                        </div>
-                                        <div style={{ position: 'relative', height: 8, background: 'rgba(0,0,0,0.06)', borderRadius: 10, overflow: 'hidden' }}>
-                                            <div style={{ height: '100%', width: `${countdownPct}%`, background: daysLeft !== null && daysLeft <= 7 ? 'linear-gradient(90deg, #E8896A, #e06040)' : 'linear-gradient(90deg, var(--teal), #3D8C6E)', borderRadius: 10, transition: 'width 0.8s ease' }} />
-                                        </div>
-                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.4rem' }}>
-                                            <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>📋 {createdDate ? createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Plan Created'}</span>
-                                            <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>📍 Today</span>
-                                            <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>🎉 {eventDate ? eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Event'}</span>
-                                        </div>
-                                    </div>
-                                )}
-
-
-                                {/* ── Planning Timeline ── */}
-                                <div className={styles.sectionCard}>
-                                    <div className={styles.cardHeader}>
-                                        <div className={styles.cardTitleGroup}>
-                                            <span className={styles.cardIcon}>🗓️</span>
-                                            <h2>Planning Timeline</h2>
-                                        </div>
-                                        <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
-                                    </div>
-                                    <div className={styles.timeline}>
-                                        {(isEditing ? editTimeline : data.plan.timeline).map((t, i, arr) => {
-                                            const firstTag = t.category ? (t.category.split(/[_,/]/)[0] || '').trim().toLowerCase() : ''
-                                            const icon = CATEGORY_ICONS[firstTag] || CATEGORY_ICONS.default
-                                            const dotColor = CATEGORY_DOTS[firstTag] || CATEGORY_DOTS.default
-                                            return (
-                                                <div
-                                                    key={i}
-                                                    className={styles.timelineItem}
-                                                    draggable={!isEditing}
-                                                    onDragStart={() => setDragIdx(i)}
-                                                    onDragOver={e => e.preventDefault()}
-                                                    onDrop={() => {
-                                                        if (dragIdx === null || dragIdx === i) return
-                                                        const items = [...(isEditing ? editTimeline : data.plan.timeline)]
-                                                        const [moved] = items.splice(dragIdx, 1)
-                                                        items.splice(i, 0, moved)
-                                                        if (isEditing) {
-                                                            setEditTimeline(items)
-                                                        } else {
-                                                            const updated = { ...data, plan: { ...data.plan, timeline: items } }
-                                                            setData(updated)
-                                                            userSetJSON('partyplan', updated)
-                                                        }
-                                                        setDragIdx(null)
-                                                    }}
-                                                    onDragEnd={() => setDragIdx(null)}
-                                                    style={{ opacity: dragIdx === i ? 0.4 : 1, cursor: isEditing ? 'default' : 'grab' }}
-                                                >
-                                                    {!isEditing && (
-                                                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', marginRight: 4, color: '#ccc', fontSize: '0.7rem', cursor: 'grab', userSelect: 'none' }} title="Drag to reorder">⋮⋮</div>
-                                                    )}
-                                                    <div className={styles.tlLeft}>
-                                                        <div className={`${styles.tlDot} ${styles[`tlDot${dotColor}` as keyof typeof styles]}`}>
-                                                            {icon}
-                                                        </div>
-                                                        <div className={styles.tlLine} />
-                                                    </div>
-                                                    <div className={styles.tlContent}>
-                                                        {isEditing ? (
-                                                            <>
-                                                                <input value={t.weeks} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, weeks: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(74,173,168,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', color: '#4AADA8', fontSize: '0.68rem', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.06em', width: '100%', outline: 'none', marginBottom: 4 }} />
-                                                                <input value={t.task} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, task: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#1A2535', fontSize: '0.9rem', fontWeight: 800, width: '100%', outline: 'none', marginBottom: 4 }} />
-                                                                <textarea value={t.category} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, category: e.target.value } : item))} rows={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#6b7c93', fontSize: '0.78rem', fontWeight: 600, width: '100%', outline: 'none', resize: 'vertical' as const }} />
-                                                            </>
-                                                        ) : (
-                                                            <>
-                                                                <div className={styles.tlTime}>{t.weeks}</div>
-                                                                <div className={styles.tlTitle}>{t.task}</div>
-                                                                {t.category && (() => {
-                                                                    const TAG_COLORS: Record<string, string> = { venue: '#4AADA8', vendor: '#E8896A', food: '#F7C948', music: '#7B5EA7', decor: '#3D8C6E', planning: '#2D4059', guests: '#c4880a', budget: '#E8896A', entertainment: '#7B5EA7', catering: '#F7C948', photography: '#4AADA8', logistics: '#2D4059' }
-                                                                    const isTagLike = t.category.length < 40 && /^[a-zA-Z0-9_\s&,/]+$/.test(t.category)
-                                                                    if (isTagLike) {
-                                                                        const tags = t.category.split(/[_,/]/).map(t => t.trim().toLowerCase()).filter(Boolean)
-                                                                        return (
-                                                                            <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginTop: '0.3rem' }}>
-                                                                                {tags.map((tag, ti) => (
-                                                                                    <span key={ti} style={{ background: `${TAG_COLORS[tag] || '#9aabbb'}18`, border: `1px solid ${TAG_COLORS[tag] || '#9aabbb'}30`, borderRadius: 12, padding: '0.1rem 0.55rem', fontSize: '0.68rem', fontWeight: 700, color: TAG_COLORS[tag] || '#6b7c93', textTransform: 'capitalize' }}>{tag}</span>
-                                                                                ))}
-                                                                            </div>
-                                                                        )
-                                                                    }
-                                                                    return <div className={styles.tlDesc}>{t.category}</div>
-                                                                })()}
-                                                            </>
-                                                        )}
-                                                    </div>
-                                                </div>
-                                            )
-                                        })}
-                                    </div>
+            {/* ══ MAIN GRID ══ */}
+            <div className={styles.main}>
+                {/* LEFT COLUMN */}
+                <div>
+                    {/* ── Countdown Bar ── */}
+                    {data.date && (
+                        <div className={styles.sectionCard} style={{ marginBottom: '1rem' }}>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)' }}>
+                                    ⏳ Event Countdown
                                 </div>
-
-                                {/* ── Smart Checklist ── */}
-                                <div className={styles.sectionCard}>
-                                    <div className={styles.cardHeader}>
-                                        <div className={styles.cardTitleGroup}>
-                                            <span className={styles.cardIcon}>✅</span>
-                                            <h2>Smart Checklist</h2>
-                                        </div>
-
-                                    </div>
-                                    <div className={styles.checklist}>
-                                        {checklist.map((item, i) => (
-                                            <div key={i} className={`${styles.checkItem} ${item.done ? styles.checkItemDone : ''}`} style={{ position: 'relative' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', flex: 1, cursor: 'pointer' }} onClick={() => toggleCheck(i)}>
-                                                    <div className={`${styles.checkBox} ${item.done ? styles.checkBoxDone : ''}`}>
-                                                        {item.done ? '✓' : ''}
-                                                    </div>
-                                                    <div className={`${styles.checkLabel} ${item.done ? styles.checkLabelDone : ''}`}>{item.item}</div>
-                                                    {item.due && <span className={styles.checkDue}>{item.due}</span>}
-                                                </div>
-                                                <button onClick={(e) => removeCheckItem(i, e)} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800, padding: '0.2rem 0.4rem', borderRadius: 4, transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = '#E8896A')} onMouseLeave={e => (e.currentTarget.style.color = '#ccc')} title="Remove item">✕</button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    {/* Add new checklist item */}
-                                    <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.6rem', padding: '0 0.2rem' }}>
-                                        <input
-                                            value={newCheckItem}
-                                            onChange={e => setNewCheckItem(e.target.value)}
-                                            onKeyDown={e => e.key === 'Enter' && addCheckItem()}
-                                            placeholder="Add a task..."
-                                            style={{ flex: 1, padding: '0.45rem 0.7rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.8rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }}
-                                        />
-                                        <button onClick={addCheckItem} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.45rem 0.8rem', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add</button>
-                                    </div>
+                                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: daysLeft !== null && daysLeft <= 7 ? '#E8896A' : 'var(--teal)' }}>
+                                    {daysLeft !== null ? (daysLeft === 0 ? '🎉 Today!' : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`) : 'No date set'}
                                 </div>
-
-
-
-
-
                             </div>
-
-                            {/* RIGHT SIDEBAR */}
-                            <div>
-                                {/* ── Budget Breakdown ── */}
-                                <div className={styles.sidebarCard}>
-                                    <div className={styles.sidebarTitle}>💰 Budget Breakdown</div>
-                                    <div className={styles.budgetTotal}>
-                                        <div className={styles.budgetAmount}>${allocatedAmount.toLocaleString()}</div>
-                                        <div className={styles.budgetLabel}>of ${totalBudget.toLocaleString()} allocated</div>
-                                    </div>
-                                    <div className={styles.budgetBarWrap}>
-                                        <div className={styles.budgetBar} style={{ width: `${budgetPct}%` }} />
-                                    </div>
-                                    <div className={styles.budgetSpent}>
-                                        <span>{budgetPct}% allocated</span>
-                                        <span>${remaining.toLocaleString()} remaining</span>
-                                    </div>
-                                    <div className={styles.budgetItems}>
-                                        {data.plan.budget.breakdown.map((b, i) => (
-                                            <div key={i} className={styles.budgetItem}>
-                                                <div className={styles.budgetDot} style={{ background: b.color }} />
-                                                <div className={styles.budgetName}>{b.category}</div>
-                                                <div className={styles.budgetVal}>${b.amount.toLocaleString()}</div>
-                                                <div className={styles.budgetPct}>{b.percentage}%</div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* ── Planning Progress ── */}
-                                <div className={styles.sidebarCard}>
-                                    <div className={styles.sidebarTitle}>📊 Planning Progress</div>
-                                    <div className={styles.progressList}>
-                                        {progressItems.map((p, i) => (
-                                            <div key={i} className={styles.progItem}>
-                                                <div className={styles.progTop}>
-                                                    <span className={styles.progName}>{p.name}</span>
-                                                    <span className={styles.progPct}>{p.pct}%</span>
-                                                </div>
-                                                <div className={styles.progBarWrap}>
-                                                    <div
-                                                        className={styles.progBar}
-                                                        ref={el => { if (el) progressRefs.current[i] = el }}
-                                                        data-width={`${p.pct}%`}
-                                                        style={{ width: 0, background: p.color }}
-                                                    />
-                                                </div>
-                                            </div>
-                                        ))}
-                                    </div>
-                                </div>
-
-                                {/* ── Quick Actions ── */}
-                                <div className={styles.sidebarCard}>
-                                    <div className={styles.sidebarTitle}>⚡ Quick Actions</div>
-                                    <div className={styles.quickActions}>
-                                        <button className={styles.qaBtn} onClick={() => router.push(`/vendors?cat=venue&location=${data.location}`)}>
-                                            <span>🏛️</span><span>Browse Venues Near {data.location?.split(',')[0]}</span><span>›</span>
-                                        </button>
-                                        <button className={styles.qaBtn} onClick={() => router.push('/guests')}>
-                                            <span>💌</span><span>Send Invitations Now</span><span>›</span>
-                                        </button>
-                                        <button className={styles.qaBtn} onClick={() => router.push('/budget')}>
-                                            <span>🤖</span><span>Ask AI to Adjust Budget</span><span>›</span>
-                                        </button>
-                                        <button className={styles.qaBtn} onClick={() => { showToast('Export coming soon!', 'info') }}>
-                                            <span>📋</span><span>Export Plan as PDF</span><span>›</span>
-                                        </button>
-                                    </div>
-                                </div>
+                            <div style={{ position: 'relative', height: 8, background: 'rgba(0,0,0,0.06)', borderRadius: 10, overflow: 'hidden' }}>
+                                <div style={{ height: '100%', width: `${countdownPct}%`, background: daysLeft !== null && daysLeft <= 7 ? 'linear-gradient(90deg, #E8896A, #e06040)' : 'linear-gradient(90deg, var(--teal), #3D8C6E)', borderRadius: 10, transition: 'width 0.8s ease' }} />
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.4rem' }}>
+                                <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>📋 {createdDate ? createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Plan Created'}</span>
+                                <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>📍 Today</span>
+                                <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>🎉 {eventDate ? eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Event'}</span>
                             </div>
                         </div>
-                    </>
-                )
-            }
+                    )}
+
+
+                    {/* ── Planning Timeline ── */}
+                    <div className={styles.sectionCard}>
+                        <div className={styles.cardHeader}>
+                            <div className={styles.cardTitleGroup}>
+                                <span className={styles.cardIcon}>🗓️</span>
+                                <h2>Planning Timeline</h2>
+                            </div>
+                            <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
+                        </div>
+                        <div className={styles.timeline}>
+                            {(isEditing ? editTimeline : data.plan.timeline).map((t, i, arr) => {
+                                const firstTag = t.category ? (t.category.split(/[_,/]/)[0] || '').trim().toLowerCase() : ''
+                                const icon = CATEGORY_ICONS[firstTag] || CATEGORY_ICONS.default
+                                const dotColor = CATEGORY_DOTS[firstTag] || CATEGORY_DOTS.default
+                                return (
+                                    <div
+                                        key={i}
+                                        className={styles.timelineItem}
+                                        draggable={!isEditing}
+                                        onDragStart={() => setDragIdx(i)}
+                                        onDragOver={e => e.preventDefault()}
+                                        onDrop={() => {
+                                            if (dragIdx === null || dragIdx === i) return
+                                            const items = [...(isEditing ? editTimeline : data.plan.timeline)]
+                                            const [moved] = items.splice(dragIdx, 1)
+                                            items.splice(i, 0, moved)
+                                            if (isEditing) {
+                                                setEditTimeline(items)
+                                            } else {
+                                                const updated = { ...data, plan: { ...data.plan, timeline: items } }
+                                                setData(updated)
+                                                userSetJSON('partyplan', updated)
+                                            }
+                                            setDragIdx(null)
+                                        }}
+                                        onDragEnd={() => setDragIdx(null)}
+                                        style={{ opacity: dragIdx === i ? 0.4 : 1, cursor: isEditing ? 'default' : 'grab' }}
+                                    >
+                                        {!isEditing && (
+                                            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', marginRight: 4, color: '#ccc', fontSize: '0.7rem', cursor: 'grab', userSelect: 'none' }} title="Drag to reorder">⋮⋮</div>
+                                        )}
+                                        <div className={styles.tlLeft}>
+                                            <div className={`${styles.tlDot} ${styles[`tlDot${dotColor}` as keyof typeof styles]}`}>
+                                                {icon}
+                                            </div>
+                                            <div className={styles.tlLine} />
+                                        </div>
+                                        <div className={styles.tlContent}>
+                                            {isEditing ? (
+                                                <>
+                                                    <input value={t.weeks} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, weeks: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(74,173,168,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', color: '#4AADA8', fontSize: '0.68rem', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.06em', width: '100%', outline: 'none', marginBottom: 4 }} />
+                                                    <input value={t.task} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, task: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#1A2535', fontSize: '0.9rem', fontWeight: 800, width: '100%', outline: 'none', marginBottom: 4 }} />
+                                                    <textarea value={t.category} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, category: e.target.value } : item))} rows={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#6b7c93', fontSize: '0.78rem', fontWeight: 600, width: '100%', outline: 'none', resize: 'vertical' as const }} />
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <div className={styles.tlTime}>{t.weeks}</div>
+                                                    <div className={styles.tlTitle}>{t.task}</div>
+                                                    {t.category && (() => {
+                                                        const TAG_COLORS: Record<string, string> = { venue: '#4AADA8', vendor: '#E8896A', food: '#F7C948', music: '#7B5EA7', decor: '#3D8C6E', planning: '#2D4059', guests: '#c4880a', budget: '#E8896A', entertainment: '#7B5EA7', catering: '#F7C948', photography: '#4AADA8', logistics: '#2D4059' }
+                                                        const isTagLike = t.category.length < 40 && /^[a-zA-Z0-9_\s&,/]+$/.test(t.category)
+                                                        if (isTagLike) {
+                                                            const tags = t.category.split(/[_,/]/).map(t => t.trim().toLowerCase()).filter(Boolean)
+                                                            return (
+                                                                <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginTop: '0.3rem' }}>
+                                                                    {tags.map((tag, ti) => (
+                                                                        <span key={ti} style={{ background: `${TAG_COLORS[tag] || '#9aabbb'}18`, border: `1px solid ${TAG_COLORS[tag] || '#9aabbb'}30`, borderRadius: 12, padding: '0.1rem 0.55rem', fontSize: '0.68rem', fontWeight: 700, color: TAG_COLORS[tag] || '#6b7c93', textTransform: 'capitalize' }}>{tag}</span>
+                                                                    ))}
+                                                                </div>
+                                                            )
+                                                        }
+                                                        return <div className={styles.tlDesc}>{t.category}</div>
+                                                    })()}
+                                                </>
+                                            )}
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    </div>
+
+                    {/* ── Smart Checklist ── */}
+                    <div className={styles.sectionCard}>
+                        <div className={styles.cardHeader}>
+                            <div className={styles.cardTitleGroup}>
+                                <span className={styles.cardIcon}>✅</span>
+                                <h2>Smart Checklist</h2>
+                            </div>
+
+                        </div>
+                        <div className={styles.checklist}>
+                            {checklist.map((item, i) => (
+                                <div key={i} className={`${styles.checkItem} ${item.done ? styles.checkItemDone : ''}`} style={{ position: 'relative' }}>
+                                    <div style={{ display: 'flex', alignItems: 'center', flex: 1, cursor: 'pointer' }} onClick={() => toggleCheck(i)}>
+                                        <div className={`${styles.checkBox} ${item.done ? styles.checkBoxDone : ''}`}>
+                                            {item.done ? '✓' : ''}
+                                        </div>
+                                        <div className={`${styles.checkLabel} ${item.done ? styles.checkLabelDone : ''}`}>{item.item}</div>
+                                        {item.due && <span className={styles.checkDue}>{item.due}</span>}
+                                    </div>
+                                    <button onClick={(e) => removeCheckItem(i, e)} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800, padding: '0.2rem 0.4rem', borderRadius: 4, transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = '#E8896A')} onMouseLeave={e => (e.currentTarget.style.color = '#ccc')} title="Remove item">✕</button>
+                                </div>
+                            ))}
+                        </div>
+                        {/* Add new checklist item */}
+                        <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.6rem', padding: '0 0.2rem' }}>
+                            <input
+                                value={newCheckItem}
+                                onChange={e => setNewCheckItem(e.target.value)}
+                                onKeyDown={e => e.key === 'Enter' && addCheckItem()}
+                                placeholder="Add a task..."
+                                style={{ flex: 1, padding: '0.45rem 0.7rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.8rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }}
+                            />
+                            <button onClick={addCheckItem} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.45rem 0.8rem', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add</button>
+                        </div>
+                    </div>
+
+
+
+
+
+                </div>
+
+                {/* RIGHT SIDEBAR */}
+                <div>
+                    {/* ── Budget Breakdown ── */}
+                    <div className={styles.sidebarCard}>
+                        <div className={styles.sidebarTitle}>💰 Budget Breakdown</div>
+                        <div className={styles.budgetTotal}>
+                            <div className={styles.budgetAmount}>${allocatedAmount.toLocaleString()}</div>
+                            <div className={styles.budgetLabel}>of ${totalBudget.toLocaleString()} allocated</div>
+                        </div>
+                        <div className={styles.budgetBarWrap}>
+                            <div className={styles.budgetBar} style={{ width: `${budgetPct}%` }} />
+                        </div>
+                        <div className={styles.budgetSpent}>
+                            <span>{budgetPct}% allocated</span>
+                            <span>${remaining.toLocaleString()} remaining</span>
+                        </div>
+                        <div className={styles.budgetItems}>
+                            {data.plan.budget.breakdown.map((b, i) => (
+                                <div key={i} className={styles.budgetItem}>
+                                    <div className={styles.budgetDot} style={{ background: b.color }} />
+                                    <div className={styles.budgetName}>{b.category}</div>
+                                    <div className={styles.budgetVal}>${b.amount.toLocaleString()}</div>
+                                    <div className={styles.budgetPct}>{b.percentage}%</div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ── Planning Progress ── */}
+                    <div className={styles.sidebarCard}>
+                        <div className={styles.sidebarTitle}>📊 Planning Progress</div>
+                        <div className={styles.progressList}>
+                            {progressItems.map((p, i) => (
+                                <div key={i} className={styles.progItem}>
+                                    <div className={styles.progTop}>
+                                        <span className={styles.progName}>{p.name}</span>
+                                        <span className={styles.progPct}>{p.pct}%</span>
+                                    </div>
+                                    <div className={styles.progBarWrap}>
+                                        <div
+                                            className={styles.progBar}
+                                            ref={el => { if (el) progressRefs.current[i] = el }}
+                                            data-width={`${p.pct}%`}
+                                            style={{ width: 0, background: p.color }}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+
+                    {/* ── Quick Actions ── */}
+                    <div className={styles.sidebarCard}>
+                        <div className={styles.sidebarTitle}>⚡ Quick Actions</div>
+                        <div className={styles.quickActions}>
+                            <button className={styles.qaBtn} onClick={() => router.push(`/vendors?cat=venue&location=${data.location}`)}>
+                                <span>🏛️</span><span>Browse Venues Near {data.location?.split(',')[0]}</span><span>›</span>
+                            </button>
+                            <button className={styles.qaBtn} onClick={() => router.push('/guests')}>
+                                <span>💌</span><span>Send Invitations Now</span><span>›</span>
+                            </button>
+                            <button className={styles.qaBtn} onClick={() => router.push('/budget')}>
+                                <span>🤖</span><span>Ask AI to Adjust Budget</span><span>›</span>
+                            </button>
+                            <button className={styles.qaBtn} onClick={() => { showToast('Export coming soon!', 'info') }}>
+                                <span>📋</span><span>Export Plan as PDF</span><span>›</span>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </>
+    )
+}
         </main >
     )
 }
