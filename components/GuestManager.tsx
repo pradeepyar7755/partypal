@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect } from 'react'
+import React, { useState, useEffect } from 'react'
 import { userGet, userSetJSON, userGetJSON } from '@/lib/userStorage'
 import { showToast } from '@/components/Toast'
 import styles from './GuestManager.module.css'
@@ -57,11 +57,25 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const [refineInput, setRefineInput] = useState('')
     const [isRefining, setIsRefining] = useState(false)
     const [isEditingInvite, setIsEditingInvite] = useState(false)
+    const themeChangeRef = React.useRef(false)
 
     // Persist invite to localStorage whenever it changes
     useEffect(() => {
         userSetJSON(inviteKey, invite)
-    }, [invite, inviteKey])
+        // Also sync to Firestore for RSVP page
+        if (invite && planData.eventId) {
+            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite }) }).catch(() => { })
+        }
+    }, [invite, inviteKey, planData.eventId])
+
+    // Auto-regenerate invite when theme changes (only if invite already exists)
+    useEffect(() => {
+        if (themeChangeRef.current && invite) {
+            generateInvite()
+        }
+        themeChangeRef.current = false
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [inviteTheme])
 
     const storageKey = eventId ? `partypal_eventguests_${eventId}` : 'partypal_eventguests'
 
@@ -143,7 +157,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
             const res = await fetch('/api/guests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'generate_invite', eventDetails: { ...planData, inviteTheme, hostName: 'Your Host' }, temperature: inviteTemp }) })
             const data = await res.json()
             setInvite(data); setIsEditingInvite(false)
-            if (planData.eventId) fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: data }) }).catch(() => { })
             showToast('Invite generated!', 'success')
         } catch { showToast('Failed to generate invite', 'error') }
         setLoadingInvite(false)
@@ -251,7 +264,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                             </div>
                             <div style={{ minWidth: 130 }}>
                                 <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.25rem' }}>🎨 Theme</div>
-                                <select value={inviteTheme} onChange={e => setInviteTheme(e.target.value)} className={styles.addInput} style={{ margin: 0, padding: '0.25rem 0.4rem', fontSize: '0.72rem', width: '100%' }}>
+                                <select value={inviteTheme} onChange={e => { themeChangeRef.current = true; setInviteTheme(e.target.value) }} className={styles.addInput} style={{ margin: 0, padding: '0.25rem 0.4rem', fontSize: '0.72rem', width: '100%' }}>
                                     <option>Modern & Fun</option><option>Elegant & Formal</option><option>Tropical Paradise</option><option>Rustic & Cozy</option><option>Vintage & Retro</option><option>Minimalist & Clean</option><option>Glamorous & Luxe</option>
                                 </select>
                             </div>
@@ -269,12 +282,15 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
 
             <div className={styles.mainLayout}>
                 <div>
-                    {/* Actions */}
+                    {/* Invite + Share actions */}
+                    <div className={styles.actionsRow} style={{ marginBottom: '0.4rem' }}>
+                        <button className={styles.secondaryBtn} onClick={generateInvite} disabled={loadingInvite}>{loadingInvite ? '⏳...' : '✨ Generate Invite'}</button>
+                        <button className={styles.secondaryBtn} onClick={copyRSVPLink}>{copied ? '✓ Copied!' : '🔗 RSVP Link'}</button>
+                    </div>
+                    {/* Guest management actions */}
                     <div className={styles.actionsRow}>
                         <button className={styles.actionBtn} onClick={() => { setShowAdd(!showAdd); setShowBulk(false) }}>+ Add Guest</button>
                         <button className={styles.secondaryBtn} onClick={() => { setShowBulk(!showBulk); setShowAdd(false) }}>📋 Bulk Import</button>
-                        <button className={styles.secondaryBtn} onClick={generateInvite} disabled={loadingInvite}>{loadingInvite ? '⏳...' : '✨ Generate Invite'}</button>
-                        <button className={styles.secondaryBtn} onClick={copyRSVPLink}>{copied ? '✓ Copied!' : '🔗 RSVP Link'}</button>
                     </div>
 
                     {/* Search */}
