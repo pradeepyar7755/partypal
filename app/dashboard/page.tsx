@@ -1084,10 +1084,11 @@ export default function Dashboard() {
                                                 venue: ['venue', 'location', 'space', 'hall'],
                                                 catering: ['catering', 'food', 'chef', 'caterer', 'bbq', 'taco'],
                                                 decor: ['decor', 'decoration', 'florist', 'flower', 'balloon', 'lighting'],
-                                                entertainment: ['entertainment', 'dj', 'music', 'band', 'performer', 'magician', 'comedian'],
+                                                entertainment: ['entertainment', 'performer', 'magician', 'comedian', 'game'],
                                                 photography: ['photography', 'photographer', 'photo', 'video', 'videographer'],
                                                 cake: ['cake', 'baker', 'bakery', 'dessert', 'pastry'],
                                                 misc: ['misc', 'other', 'transportation', 'favor', 'rental', 'equipment'],
+                                                music: ['music', 'dj', 'band', 'sound', 'playlist'],
                                                 'music / dj': ['dj', 'music', 'band', 'sound'],
                                                 drinks: ['drinks', 'bar', 'bartender', 'cocktail', 'beverage'],
                                             }
