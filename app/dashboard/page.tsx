@@ -129,13 +129,27 @@ export default function Dashboard() {
         if (!eventDate) return timeline
         const ev = new Date(eventDate + 'T12:00:00')
         if (isNaN(ev.getTime())) return timeline
-        return timeline.map(t => {
+        const evLabel = ev.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+
+        // Ensure an "Event Day" item exists
+        const hasEventDay = timeline.some(t => /event\s*day/i.test(t.weeks) || /event\s*day/i.test(t.task))
+        let items = hasEventDay ? timeline : [...timeline, {
+            weeks: 'Event Day',
+            task: '🎉 Event Day!',
+            category: 'The big day! Do a final walkthrough, greet your guests, and enjoy every moment.',
+            priority: 'high',
+        }]
+
+        return items.map(t => {
             let weeks = t.weeks
             // Parse week offset from label
             const wMatch = weeks.match(/(\d+)\s*w(?:ee)?ks?\s*out/i)
-            const dMatch = weeks.match(/day\s*(?:before|of)/i)
+            const dMatch = weeks.match(/day\s*(?:before)/i)
+            const eventDayMatch = /event\s*day/i.test(weeks) || /event\s*day/i.test(t.task)
             let targetDate: Date | null = null
-            if (dMatch) {
+            if (eventDayMatch) {
+                targetDate = new Date(ev) // Event day = the event date itself
+            } else if (dMatch) {
                 targetDate = new Date(ev); targetDate.setDate(targetDate.getDate() - 1)
             } else if (wMatch) {
                 const wks = parseInt(wMatch[1])
