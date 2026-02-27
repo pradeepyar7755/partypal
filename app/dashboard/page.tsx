@@ -853,10 +853,10 @@ export default function Dashboard() {
                                                 ⏳ Event Countdown
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                                <button onClick={() => setShowCollabModal(true)} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 8, padding: '0.2rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}>👥 Add/Manage Collaborators</button>
                                                 <div style={{ fontSize: '0.78rem', fontWeight: 800, color: daysLeft !== null && daysLeft <= 7 ? '#E8896A' : 'var(--teal)' }}>
                                                     {daysLeft !== null ? (daysLeft === 0 ? '🎉 Today!' : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`) : 'No date set'}
                                                 </div>
-                                                <button onClick={() => setShowCollabModal(true)} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 8, padding: '0.2rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}>👥 Add/Manage Collaborators</button>
                                             </div>
                                         </div>
                                         <div style={{ position: 'relative', height: 8, background: 'rgba(0,0,0,0.06)', borderRadius: 10, overflow: 'hidden' }}>
