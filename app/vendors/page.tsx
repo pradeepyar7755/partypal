@@ -220,7 +220,7 @@ function VendorsContent() {
           <h1 className={styles.headerTitle}>
             {activecat === 'All Vendors' ? 'Find Your Perfect Vendors 🔍' : `Find ${CAT_EMOJIS[activecat]} ${activecat} Vendors`}
           </h1>
-          <p className={styles.headerSub}>Browse {filtered.length > 0 ? filtered.length : 697} vetted vendors in {location} — ready to make your party unforgettable.</p>
+          <p className={styles.headerSub}>Browse {filtered.length > 0 ? filtered.length : 697} vetted vendors in {location} — ready to make your party memorable.</p>
           <div className={styles.filterTabs}>
             {CATS.map(c => (
               <button key={c} className={`${styles.filterTab} ${activecat === c ? styles.filterTabActive : ''}`} onClick={() => setActivecat(c)}>

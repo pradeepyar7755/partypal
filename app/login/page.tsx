@@ -74,7 +74,7 @@ export default function LoginPage() {
             <div className={styles.loginCard}>
                 <div className={styles.loginLogo}>🎊</div>
                 <div className={styles.loginTitle}>Party<span>Pal</span></div>
-                <div className={styles.loginSub}>Plan unforgettable parties with AI</div>
+                <div className={styles.loginSub}>Plan memorable parties with AI</div>
 
                 {error && <div className={styles.error}>{error}</div>}
 

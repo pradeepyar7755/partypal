@@ -400,6 +400,7 @@ export default function Dashboard() {
                         <a href="/">🏠 Home</a> › <span className="breadcrumb current">My Events</span>
                     </div>
                     <button className="back-btn" onClick={() => router.push('/')} style={{ marginTop: '0.3rem' }}>← Back to Home</button>
+                    <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '1.1rem', color: 'var(--navy)', marginTop: '0.5rem' }}>Plan your events with the help of AI ✨</div>
                 </div>
             </header>
 

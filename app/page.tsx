@@ -285,7 +285,7 @@ export default function Home() {
         <div className={styles.heroInner}>
           <div className={styles.heroBadge}>✨ AI-Powered Party Planning</div>
           <h1 className={styles.heroTitle}>Plan the <em>Perfect</em> Party,<br />Stress-Free</h1>
-          <p className={styles.heroSub}>From venue to entertainment, connect with everything you need to throw an unforgettable celebration — powered by AI.</p>
+          <p className={styles.heroSub}>From venue to entertainment, connect with everything you need to throw a memorable celebration — powered by AI.</p>
           <div className={styles.heroBtns}>
             <button className="btn-primary" onClick={scrollToWizard}>🎊 Start Planning Free</button>
             <button className="btn-secondary" onClick={openVideo}>▶ Watch how it works</button>
@@ -431,7 +431,7 @@ export default function Home() {
       {/* FOOTER */}
       <footer className={styles.footer}>
         <div className={styles.footerLogo}>🎊 Party<span>Pal</span></div>
-        <p>AI-powered party planning for unforgettable celebrations</p>
+        <p>AI-powered party planning for memorable celebrations</p>
         <div className={styles.footerLinks}>
           <a href="/#wizard">Plan a Party</a>
           <a href="/vendors">Browse Vendors</a>

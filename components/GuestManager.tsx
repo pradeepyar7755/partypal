@@ -40,7 +40,11 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const [showBulk, setShowBulk] = useState(false)
     const [bulkText, setBulkText] = useState('')
     const [newGuest, setNewGuest] = useState({ name: '', email: '', dietary: 'None', additionalGuests: [] as AdditionalGuest[] })
-    const [invite, setInvite] = useState<{ subject?: string; message?: string; smsVersion?: string } | null>(null)
+    const inviteKey = eventId ? `partypal_invite_${eventId}` : 'partypal_invite'
+    const [invite, setInvite] = useState<{ subject?: string; message?: string; smsVersion?: string } | null>(() => {
+        if (typeof window === 'undefined') return null
+        return userGetJSON<{ subject?: string; message?: string; smsVersion?: string } | null>(inviteKey, null)
+    })
     const [loadingInvite, setLoadingInvite] = useState(false)
     const [planData, setPlanData] = useState<{ eventType?: string; theme?: string; date?: string; location?: string; eventId?: string }>(propPlanData || {})
     const [copied, setCopied] = useState(false)
@@ -51,6 +55,11 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const [refineInput, setRefineInput] = useState('')
     const [isRefining, setIsRefining] = useState(false)
     const [isEditingInvite, setIsEditingInvite] = useState(false)
+
+    // Persist invite to localStorage whenever it changes
+    useEffect(() => {
+        userSetJSON(inviteKey, invite)
+    }, [invite, inviteKey])
 
     const storageKey = eventId ? `partypal_eventguests_${eventId}` : 'partypal_eventguests'
 
@@ -193,20 +202,19 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                 ))}
             </div>
 
-            {/* ── Invitation Theme (horizontal card) ── */}
-            <div className="card" style={{ padding: '1rem 1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '1.3rem' }}>✉️</span>
-                <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', margin: 0, whiteSpace: 'nowrap' }}>Invitation Theme</h3>
-                <select value={inviteTheme} onChange={e => setInviteTheme(e.target.value)} className={styles.addInput} style={{ minWidth: 150, margin: 0 }}>
+            {/* ── Invitation Theme (horizontal bar) ── */}
+            <div className="card" style={{ padding: '0.8rem 1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '1.1rem' }}>✉️</span>
+                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--navy)', whiteSpace: 'nowrap' }}>Theme</span>
+                <select value={inviteTheme} onChange={e => setInviteTheme(e.target.value)} className={styles.addInput} style={{ minWidth: 130, margin: 0, padding: '0.3rem 0.5rem', fontSize: '0.78rem' }}>
                     <option>Modern &amp; Fun</option><option>Elegant &amp; Formal</option><option>Tropical Paradise</option><option>Rustic &amp; Cozy</option><option>Vintage &amp; Retro</option><option>Minimalist &amp; Clean</option><option>Glamorous &amp; Luxe</option>
                 </select>
-                <button className={styles.actionBtn} style={{ margin: 0, whiteSpace: 'nowrap' }} onClick={generateInvite} disabled={loadingInvite}>{loadingInvite ? '⏳ Generating...' : '✨ Generate Invite'}</button>
                 {invite && (
-                    <button onClick={() => setInvite(null)} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.25rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer', whiteSpace: 'nowrap' }}>✕ Clear Invite</button>
+                    <button onClick={() => setInvite(null)} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.2rem 0.5rem', fontSize: '0.68rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer', whiteSpace: 'nowrap' }}>✕ Clear</button>
                 )}
             </div>
 
-            {/* Generated Invite (below theme bar) */}
+            {/* Generated Invite (full width card) */}
             {invite && (
                 <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
@@ -241,10 +249,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                             </button>
                         </div>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.6rem' }}>
-                        <button className={styles.copyBtn} style={{ flex: 1 }} onClick={copyRSVPLink}>{copied ? '✓ Copied!' : '🔗 Copy RSVP Link'}</button>
-                        <button onClick={shareWhatsApp} style={{ flex: 1, background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '0.4rem', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>💬 WhatsApp</button>
-                    </div>
                 </div>
             )}
 
@@ -254,6 +258,9 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                     <div className={styles.actionsRow}>
                         <button className={styles.actionBtn} onClick={() => { setShowAdd(!showAdd); setShowBulk(false) }}>+ Add Guest</button>
                         <button className={styles.secondaryBtn} onClick={() => { setShowBulk(!showBulk); setShowAdd(false) }}>📋 Bulk Import</button>
+                        <button className={styles.secondaryBtn} onClick={generateInvite} disabled={loadingInvite}>{loadingInvite ? '⏳...' : '✨ Generate Invite'}</button>
+                        <button className={styles.secondaryBtn} onClick={copyRSVPLink}>{copied ? '✓ Copied!' : '🔗 RSVP Link'}</button>
+                        <button className={styles.secondaryBtn} onClick={shareWhatsApp} style={{ background: '#25D366', color: '#fff', border: 'none' }}>💬 WhatsApp</button>
                     </div>
 
                     {/* Search */}

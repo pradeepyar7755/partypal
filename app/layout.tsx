@@ -9,7 +9,7 @@ export const metadata: Metadata = {
   description: 'Plan the perfect party with AI. Venues, vendors, guests, budget tracking, and more — all in one place.',
   openGraph: {
     title: 'PartyPal — AI-Powered Party Planning',
-    description: 'From venue to entertainment, plan unforgettable celebrations with AI.',
+    description: 'From venue to entertainment, plan memorable celebrations with AI.',
     siteName: 'PartyPal',
     type: 'website',
   },

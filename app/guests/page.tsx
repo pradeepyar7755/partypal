@@ -176,7 +176,8 @@ export default function GuestsPage() {
             <a href="/">🏠 Home</a> › <span>Guests</span>
           </div>
           <button className="back-btn" onClick={() => window.location.href = '/'} style={{ marginTop: '0.3rem' }}>← Back to Home</button>
-          <div className={styles.headerTitle}>📒 My Contacts</div>
+          <div className={styles.headerTitle}>Guest Management 👥</div>
+          <div style={{ fontSize: '0.82rem', color: '#6b7c93', fontWeight: 600, marginBottom: '0.2rem' }}>Add your friends & family to circles for faster and repeatable access</div>
           <div className={styles.headerSub}>{contacts.length} contact{contacts.length !== 1 ? 's' : ''} · {circles.length} circle{circles.length !== 1 ? 's' : ''}</div>
         </div>
       </div>
