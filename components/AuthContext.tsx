@@ -3,7 +3,8 @@ import { createContext, useContext, useState, useEffect, ReactNode } from 'react
 import {
     User,
     onAuthStateChanged,
-    signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult,
     GoogleAuthProvider,
     OAuthProvider,
     signInWithEmailAndPassword,
@@ -45,19 +46,21 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(user)
             setLoading(false)
         })
+        // Handle redirect result on mount
+        getRedirectResult(auth).catch(() => { })
         return unsubscribe
     }, [])
 
     const signInWithGoogle = async () => {
         const provider = new GoogleAuthProvider()
-        await signInWithPopup(auth, provider)
+        await signInWithRedirect(auth, provider)
     }
 
     const signInWithApple = async () => {
         const provider = new OAuthProvider('apple.com')
         provider.addScope('email')
         provider.addScope('name')
-        await signInWithPopup(auth, provider)
+        await signInWithRedirect(auth, provider)
     }
 
     const signInWithEmail = async (email: string, password: string) => {
