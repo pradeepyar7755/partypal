@@ -1,17 +1,19 @@
 'use client'
-import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/AuthContext'
 import styles from './login.module.css'
 
-export default function LoginPage() {
+function LoginContent() {
     const router = useRouter()
+    const searchParams = useSearchParams()
+    const redirectUrl = searchParams.get('redirect') || '/'
     const { user, loading: authLoading, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth()
 
     // Redirect to home if already logged in (handles Google redirect return)
     useEffect(() => {
         if (!authLoading && user) {
-            router.push('/')
+            router.push(redirectUrl)
         }
     }, [user, authLoading, router])
     const [mode, setMode] = useState<'login' | 'signup'>('signup')
@@ -26,7 +28,7 @@ export default function LoginPage() {
         setLoading(true)
         try {
             await fn()
-            router.push('/')
+            router.push(redirectUrl)
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : 'Something went wrong'
             if (msg.includes('popup-closed') || msg.includes('cancelled')) {
@@ -57,7 +59,7 @@ export default function LoginPage() {
             } else {
                 await signInWithEmail(email, password)
             }
-            router.push('/')
+            router.push(redirectUrl)
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : ''
             if (msg.includes('email-already-in-use')) setError('Email already in use. Try logging in.')
@@ -106,5 +108,13 @@ export default function LoginPage() {
                 </form>
             </div>
         </main>
+    )
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<main style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><div className="spinner" style={{ width: 40, height: 40 }} /></main>}>
+            <LoginContent />
+        </Suspense>
     )
 }

@@ -988,17 +988,44 @@ export default function Dashboard() {
                                 <option>Editor</option>
                                 <option>Viewer</option>
                             </select>
-                            <button disabled={!collabForm.email.trim() || !collabForm.name.trim()} onClick={() => {
+                            <button disabled={!collabForm.email.trim() || !collabForm.name.trim()} onClick={async () => {
                                 if (!collabForm.email.trim() || !collabForm.name.trim()) return
-                                const updated = [...collaborators, { ...collabForm }]
-                                setCollaborators(updated)
-                                if (data.eventId) {
-                                    userSetJSON(`partypal_collabs_${data.eventId}`, updated)
-                                    fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, collaborators: updated }) }).catch(() => { })
+                                try {
+                                    const res = await fetch('/api/collaborate/invite', {
+                                        method: 'POST',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({
+                                            eventId: data.eventId,
+                                            collaboratorEmail: collabForm.email,
+                                            collaboratorName: collabForm.name,
+                                            role: collabForm.role,
+                                            inviterName: data.eventType?.split("'")[0]?.trim() || 'Someone',
+                                            eventName: data.eventType,
+                                        }),
+                                    })
+                                    const result = await res.json()
+                                    const updated = [...collaborators, { ...collabForm }]
+                                    setCollaborators(updated)
+                                    if (data.eventId) {
+                                        userSetJSON(`partypal_collabs_${data.eventId}`, updated)
+                                        fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, collaborators: updated }) }).catch(() => { })
+                                    }
+                                    if (result.emailSent) {
+                                        showToast(`Invitation sent to ${collabForm.email}!`, 'success')
+                                    } else if (result.inviteLink) {
+                                        navigator.clipboard.writeText(result.inviteLink)
+                                        showToast(`Invite link copied! Share with ${collabForm.name}`, 'success')
+                                    } else {
+                                        showToast(`${collabForm.name} added as collaborator`, 'success')
+                                    }
+                                } catch {
+                                    showToast('Added locally (email service unavailable)', 'info')
+                                    const updated = [...collaborators, { ...collabForm }]
+                                    setCollaborators(updated)
+                                    if (data.eventId) userSetJSON(`partypal_collabs_${data.eventId}`, updated)
                                 }
                                 setCollabForm({ email: '', name: '', role: 'Viewer' })
-                                showToast(`${collabForm.name} invited!`, 'success')
-                            }} style={{ padding: '0.5rem 1rem', borderRadius: 8, background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap', opacity: !collabForm.email.trim() || !collabForm.name.trim() ? 0.4 : 1 }}>+ Add</button>
+                            }} style={{ padding: '0.5rem 1rem', borderRadius: 8, background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap', opacity: !collabForm.email.trim() || !collabForm.name.trim() ? 0.4 : 1 }}>+ Invite</button>
                         </div>
                         {collaborators.length > 0 ? (
                             <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
