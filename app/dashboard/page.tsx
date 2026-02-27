@@ -307,11 +307,47 @@ export default function Dashboard() {
         }
 
         // Update timeline, checklist, and tips
-        const updatedTimeline = editTimeline.map(t => ({
-            ...t,
-            task: replaceText(t.task),
-            category: replaceText(t.category),
-        }))
+        // Recalculate timeline dates if event date changed
+        const dateChanged = oldDate && newDate && oldDate !== newDate
+        const updatedTimeline = editTimeline.map((t, i) => {
+            let weeks = replaceText(t.weeks)
+            if (dateChanged) {
+                // Parse the relative offset from weeks label
+                const ev = new Date(newDate + 'T12:00:00')
+                const wMatch = t.weeks.match(/(\d+)\s*w(?:ee)?ks?\s*out/i)
+                const dMatch = t.weeks.match(/day\s*(?:before|of)/i)
+                const nowMatch = t.weeks.match(/now/i)
+                let targetDate: Date | null = null
+                if (dMatch) {
+                    targetDate = new Date(ev)
+                    targetDate.setDate(targetDate.getDate() - 1)
+                } else if (wMatch) {
+                    const wksOut = parseInt(wMatch[1])
+                    targetDate = new Date(ev)
+                    targetDate.setDate(targetDate.getDate() - wksOut * 7)
+                } else if (nowMatch) {
+                    // "Now — 6 Weeks Out": show range from today to 6 wks out
+                    const wMatch2 = t.weeks.match(/(\d+)\s*w(?:ee)?ks?\s*out/i)
+                    if (wMatch2) {
+                        const wks = parseInt(wMatch2[1])
+                        targetDate = new Date(ev)
+                        targetDate.setDate(targetDate.getDate() - wks * 7)
+                    }
+                }
+                if (targetDate && !isNaN(targetDate.getTime())) {
+                    const label = targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                    // Keep the descriptive part but prefix with the date
+                    const cleanWeeks = t.weeks.replace(/^[A-Z][a-z]{2}\s\d{1,2}\s*[—–-]\s*/i, '')
+                    weeks = `${label} — ${cleanWeeks}`
+                }
+            }
+            return {
+                ...t,
+                weeks,
+                task: replaceText(t.task),
+                category: replaceText(t.category),
+            }
+        })
         const updatedChecklist = (data.plan.checklist || []).map(c => ({
             ...c,
             item: replaceText(c.item),
