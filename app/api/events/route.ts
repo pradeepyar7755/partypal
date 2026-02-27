@@ -30,6 +30,7 @@ export async function POST(req: NextRequest) {
         if (body.time !== undefined) updateData.time = body.time
         if (body.plan !== undefined) updateData.plan = body.plan
         if (body.invite !== undefined) updateData.invite = body.invite
+        if (body.rsvpBy !== undefined) updateData.rsvpBy = body.rsvpBy
 
         await eventRef.set(updateData, { merge: true })
 
