@@ -116,6 +116,7 @@ export default function Dashboard() {
     const [refineTimelineInput, setRefineTimelineInput] = useState('')
     const [isRefiningTimeline, setIsRefiningTimeline] = useState(false)
     const [editTimelineMode, setEditTimelineMode] = useState(false)
+    const [tasksCollapsed, setTasksCollapsed] = useState(false)
     const [showCollabModal, setShowCollabModal] = useState(false)
     const [collaborators, setCollaborators] = useState<{ email: string; name: string; role: string }[]>([])
     const [collabForm, setCollabForm] = useState({ email: '', name: '', role: 'Viewer' })
@@ -1048,19 +1049,24 @@ export default function Dashboard() {
                                 )}
 
 
-                                {/* ── Planning Timeline ── */}
                                 <div className={styles.sectionCard}>
-                                    <div className={styles.cardHeader}>
-                                        <div className={styles.cardTitleGroup}>
-                                            <span className={styles.cardIcon}>🗓️</span>
-                                            <h2>Planning Timeline</h2>
+                                    <div className={styles.cardHeader} style={{ flexDirection: 'column', gap: '0.4rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', width: '100%' }}>
+                                            <div className={styles.cardTitleGroup}>
+                                                <span className={styles.cardIcon}>🗓️</span>
+                                                <h2>Planning Timeline</h2>
+                                                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#9aabbb', marginLeft: '0.2rem' }}>{checkDone}/{checkTotal} ({checkPct}%)</span>
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                <button onClick={() => setEditTimelineMode(!editTimelineMode)} title={editTimelineMode ? 'Exit edit mode' : 'Edit timeline'} style={{ background: editTimelineMode ? 'var(--teal)' : 'transparent', color: editTimelineMode ? '#fff' : '#9aabbb', border: `1.5px solid ${editTimelineMode ? 'var(--teal)' : 'var(--border)'}`, borderRadius: 6, padding: '0.2rem 0.4rem', fontSize: '0.7rem', cursor: 'pointer', transition: 'all 0.2s' }}>✏️</button>
+                                                <button onClick={() => setTasksCollapsed(!tasksCollapsed)} title={tasksCollapsed ? 'Show tasks' : 'Hide tasks'} style={{ background: tasksCollapsed ? 'rgba(74,173,168,0.1)' : 'transparent', color: tasksCollapsed ? 'var(--teal)' : '#9aabbb', border: `1.5px solid ${tasksCollapsed ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`, borderRadius: 6, padding: '0.2rem 0.4rem', fontSize: '0.7rem', cursor: 'pointer', transition: 'all 0.2s' }}>{tasksCollapsed ? '☐ Tasks' : '☑ Tasks'}</button>
+                                            </div>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                            <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
-                                            <button onClick={() => setEditTimelineMode(!editTimelineMode)} title={editTimelineMode ? 'Exit edit mode' : 'Edit timeline'} style={{ background: editTimelineMode ? 'var(--teal)' : 'transparent', color: editTimelineMode ? '#fff' : '#9aabbb', border: `1.5px solid ${editTimelineMode ? 'var(--teal)' : 'var(--border)'}`, borderRadius: 6, padding: '0.25rem 0.4rem', fontSize: '0.75rem', cursor: 'pointer', transition: 'all 0.2s' }}>✏️</button>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flex: 1, maxWidth: 280 }}>
-                                                <input value={refineTimelineInput} onChange={e => setRefineTimelineInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') refineTimeline() }} placeholder="Refine with AI..." style={{ flex: 1, padding: '0.3rem 0.6rem', borderRadius: 6, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.72rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
-                                                <button onClick={refineTimeline} disabled={isRefiningTimeline || !refineTimelineInput.trim()} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 6, padding: '0.3rem 0.6rem', fontSize: '0.68rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefiningTimeline || !refineTimelineInput.trim() ? 0.5 : 1 }}>{isRefiningTimeline ? '...' : '✨ Refine'}</button>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', width: '100%' }}>
+                                            <span className={`${styles.sourceBadge} ${styles.claudeBadge}`} style={{ fontSize: '0.6rem', padding: '0.1rem 0.4rem' }}>AI Generated</span>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flex: 1 }}>
+                                                <input value={refineTimelineInput} onChange={e => setRefineTimelineInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') refineTimeline() }} placeholder="Refine with AI..." style={{ flex: 1, padding: '0.25rem 0.5rem', borderRadius: 6, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.7rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
+                                                <button onClick={refineTimeline} disabled={isRefiningTimeline || !refineTimelineInput.trim()} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefiningTimeline || !refineTimelineInput.trim() ? 0.5 : 1 }}>{isRefiningTimeline ? '...' : '✨ Refine'}</button>
                                             </div>
                                         </div>
                                     </div>
@@ -1143,7 +1149,7 @@ export default function Dashboard() {
                                                                     return <div className={styles.tlDesc}>{t.category}</div>
                                                                 })()}
                                                                 {/* Inline checklist tasks */}
-                                                                {taskMapping[i]?.length > 0 && (
+                                                                {!tasksCollapsed && taskMapping[i]?.length > 0 && (
                                                                     <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '0.4rem' }}>
                                                                         {taskMapping[i].map(ci => {
                                                                             const c = checklist[ci]
