@@ -1,12 +1,19 @@
 'use client'
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthContext'
 import styles from './login.module.css'
 
 export default function LoginPage() {
     const router = useRouter()
-    const { signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail } = useAuth()
+    const { user, loading: authLoading, signInWithGoogle, signInWithEmail, signUpWithEmail } = useAuth()
+
+    // Redirect to home if already logged in (handles Google redirect return)
+    useEffect(() => {
+        if (!authLoading && user) {
+            router.push('/')
+        }
+    }, [user, authLoading, router])
     const [mode, setMode] = useState<'login' | 'signup'>('signup')
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
