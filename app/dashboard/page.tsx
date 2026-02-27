@@ -1079,9 +1079,11 @@ export default function Dashboard() {
                                 <div className={styles.sidebarCard}>
                                     <div className={styles.sidebarTitle}>⚡ Quick Actions</div>
                                     <div className={styles.quickActions}>
-                                        <button className={styles.qaBtn} onClick={() => router.push(`/vendors?cat=venue&location=${data.location}`)}>
-                                            <span>🏛️</span><span>Browse Venues Near {data.location?.split(',')[0]}</span><span>›</span>
-                                        </button>
+                                        {(!data.location || data.location === 'TBD') && (
+                                            <button className={styles.qaBtn} onClick={() => router.push(`/vendors?cat=venue&location=${data.location}`)}>
+                                                <span>🏛️</span><span>Browse Venues Near You</span><span>›</span>
+                                            </button>
+                                        )}
                                         <button className={styles.qaBtn} onClick={() => setSelectedTab('guests')}>
                                             <span>💌</span><span>Send Invitations Now</span><span>›</span>
                                         </button>
