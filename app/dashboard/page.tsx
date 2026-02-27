@@ -6,6 +6,7 @@ import { showToast } from '@/components/Toast'
 import { userGet, userSet, userGetJSON, userSetJSON, userRemove } from '@/lib/userStorage'
 import LocationSearch from '@/components/LocationSearch'
 import GuestManager from '@/components/GuestManager'
+import { useAuth } from '@/components/AuthContext'
 
 interface ChecklistItem { item: string; category: string; done: boolean; due?: string; urgent?: boolean }
 interface TimelineItem { weeks: string; task: string; category: string; priority: string; emoji?: string }
@@ -88,9 +89,11 @@ const DEFAULT_PLAN: PlanData = {
 
 export default function Dashboard() {
     const router = useRouter()
+    const { user } = useAuth()
     const [data, setData] = useState<PlanData>(DEFAULT_PLAN)
     const [dragIdx, setDragIdx] = useState<number | null>(null)
     const [allEvents, setAllEvents] = useState<PlanData[]>([])
+    const [sharedEvents, setSharedEvents] = useState<PlanData[]>([])
     const [checklist, setChecklist] = useState<ChecklistItem[]>([])
     const [isDemo, setIsDemo] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
@@ -165,6 +168,17 @@ export default function Dashboard() {
         }
         loadEvent(parsed, !stored)
     }, [])
+
+    // Fetch shared events from Firestore
+    useEffect(() => {
+        if (!user?.uid) return
+        fetch(`/api/events/shared?uid=${user.uid}&email=${encodeURIComponent(user.email || '')}`)
+            .then(r => r.json())
+            .then(d => {
+                if (d.events?.length > 0) setSharedEvents(d.events)
+            })
+            .catch(() => { /* silent */ })
+    }, [user])
 
     // Animate progress bars on mount
     useEffect(() => {
@@ -499,6 +513,29 @@ export default function Dashboard() {
                                     style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(232,137,106,0.1)', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.65rem', color: '#E8896A', padding: 0, lineHeight: 1 }}
                                     title="Delete event"
                                 >✕</button>
+                            </div>
+                        )
+                    })}
+                    {/* Shared events */}
+                    {sharedEvents.filter(se => !allEvents.some(e => e.eventId === se.eventId)).map((ev, idx) => {
+                        const isActive = !isDemo && data.eventId === ev.eventId
+                        return (
+                            <div
+                                key={ev.eventId}
+                                onClick={() => loadEvent(ev, false)}
+                                style={{
+                                    minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const, overflow: 'hidden',
+                                    background: isActive ? 'linear-gradient(135deg, rgba(123,94,167,0.18), rgba(100,70,150,0.12))' : 'linear-gradient(135deg, rgba(123,94,167,0.06), rgba(100,70,150,0.03))',
+                                    border: isActive ? '2px solid rgba(123,94,167,0.5)' : '1.5px solid rgba(123,94,167,0.2)',
+                                    boxShadow: isActive ? '0 4px 16px rgba(123,94,167,0.15)' : '0 1px 4px rgba(0,0,0,0.04)',
+                                }}
+                            >
+                                <div style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(123,94,167,0.15)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.55rem', fontWeight: 900, color: '#7B5EA7', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>SHARED</div>
+                                <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>{ev.eventType?.split(' ')[0] || '🎉'}</div>
+                                <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{ev.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</div>
+                                <div style={{ fontSize: '0.7rem', color: '#6b7c93', fontWeight: 700 }}>
+                                    {ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'} · {ev.guests || '?'} guests
+                                </div>
                             </div>
                         )
                     })}
