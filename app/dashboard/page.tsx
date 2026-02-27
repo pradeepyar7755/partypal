@@ -125,13 +125,43 @@ export default function Dashboard() {
     const [showBudgetTips, setShowBudgetTips] = useState(false)
     const progressRefs = useRef<HTMLDivElement[]>([])
 
+    const computeTimelineDates = (timeline: TimelineItem[], eventDate: string): TimelineItem[] => {
+        if (!eventDate) return timeline
+        const ev = new Date(eventDate + 'T12:00:00')
+        if (isNaN(ev.getTime())) return timeline
+        return timeline.map(t => {
+            let weeks = t.weeks
+            // Parse week offset from label
+            const wMatch = weeks.match(/(\d+)\s*w(?:ee)?ks?\s*out/i)
+            const dMatch = weeks.match(/day\s*(?:before|of)/i)
+            let targetDate: Date | null = null
+            if (dMatch) {
+                targetDate = new Date(ev); targetDate.setDate(targetDate.getDate() - 1)
+            } else if (wMatch) {
+                const wks = parseInt(wMatch[1])
+                targetDate = new Date(ev); targetDate.setDate(targetDate.getDate() - wks * 7)
+            }
+            if (targetDate && !isNaN(targetDate.getTime())) {
+                const label = targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                // Strip existing date prefix if present
+                const cleanWeeks = weeks.replace(/^[A-Z][a-z]{2}\s\d{1,2}\s*[—–-]\s*/i, '')
+                weeks = `${label} — ${cleanWeeks}`
+            }
+            // Strip parenthetical dates from task and category text
+            const stripParenDates = (s: string) => s.replace(/\s*\([^)]*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[^)]*\)/gi, '')
+            return { ...t, weeks, task: stripParenDates(t.task), category: stripParenDates(t.category) }
+        })
+    }
+
     const loadEvent = (plan: PlanData, demo: boolean) => {
-        setData(plan)
+        // Compute timeline dates before setting data
+        const enrichedPlan = plan.date ? { ...plan, plan: { ...plan.plan, timeline: computeTimelineDates(plan.plan.timeline, plan.date) } } : plan
+        setData(enrichedPlan)
         setIsDemo(demo)
         setSelectedTab('plan')
-        if (!demo) userSetJSON('partyplan', plan)
+        if (!demo) userSetJSON('partyplan', enrichedPlan)
         const TIMELINE_LABELS = ['6 wks out', '6 wks out', '4 wks out', '4 wks out', '3 wks out', '3 wks out', '2 wks out', '2 wks out', '1 wk out', 'Day before']
-        const enriched = (plan.plan.checklist || []).map((item, i) => ({
+        const enriched = (enrichedPlan.plan.checklist || []).map((item, i) => ({
             ...item,
             due: TIMELINE_LABELS[i] || `${Math.max(1, 6 - i)} wks out`,
         }))
@@ -307,47 +337,18 @@ export default function Dashboard() {
         }
 
         // Update timeline, checklist, and tips
-        // Recalculate timeline dates if event date changed
-        const dateChanged = oldDate && newDate && oldDate !== newDate
-        const updatedTimeline = editTimeline.map((t, i) => {
-            let weeks = replaceText(t.weeks)
-            if (dateChanged) {
-                // Parse the relative offset from weeks label
-                const ev = new Date(newDate + 'T12:00:00')
-                const wMatch = t.weeks.match(/(\d+)\s*w(?:ee)?ks?\s*out/i)
-                const dMatch = t.weeks.match(/day\s*(?:before|of)/i)
-                const nowMatch = t.weeks.match(/now/i)
-                let targetDate: Date | null = null
-                if (dMatch) {
-                    targetDate = new Date(ev)
-                    targetDate.setDate(targetDate.getDate() - 1)
-                } else if (wMatch) {
-                    const wksOut = parseInt(wMatch[1])
-                    targetDate = new Date(ev)
-                    targetDate.setDate(targetDate.getDate() - wksOut * 7)
-                } else if (nowMatch) {
-                    // "Now — 6 Weeks Out": show range from today to 6 wks out
-                    const wMatch2 = t.weeks.match(/(\d+)\s*w(?:ee)?ks?\s*out/i)
-                    if (wMatch2) {
-                        const wks = parseInt(wMatch2[1])
-                        targetDate = new Date(ev)
-                        targetDate.setDate(targetDate.getDate() - wks * 7)
-                    }
-                }
-                if (targetDate && !isNaN(targetDate.getTime())) {
-                    const label = targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
-                    // Keep the descriptive part but prefix with the date
-                    const cleanWeeks = t.weeks.replace(/^[A-Z][a-z]{2}\s\d{1,2}\s*[—–-]\s*/i, '')
-                    weeks = `${label} — ${cleanWeeks}`
-                }
-            }
-            return {
-                ...t,
-                weeks,
-                task: replaceText(t.task),
-                category: replaceText(t.category),
-            }
-        })
+        // Apply text replacements, then recalculate dates
+        const stripParenDates = (s: string) => s.replace(/\s*\([^)]*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[^)]*\)/gi, '')
+        let updatedTimeline = editTimeline.map(t => ({
+            ...t,
+            weeks: replaceText(t.weeks),
+            task: stripParenDates(replaceText(t.task)),
+            category: stripParenDates(replaceText(t.category)),
+        }))
+        // Recalculate timeline dates using new event date
+        if (editData.date) {
+            updatedTimeline = computeTimelineDates(updatedTimeline, editData.date)
+        }
         const updatedChecklist = (data.plan.checklist || []).map(c => ({
             ...c,
             item: replaceText(c.item),
