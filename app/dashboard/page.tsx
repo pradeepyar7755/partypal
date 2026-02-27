@@ -8,8 +8,8 @@ import LocationSearch from '@/components/LocationSearch'
 import GuestManager from '@/components/GuestManager'
 import { useAuth } from '@/components/AuthContext'
 
-interface ChecklistItem { item: string; category: string; done: boolean; due?: string; urgent?: boolean }
-interface TimelineItem { weeks: string; task: string; category: string; priority: string; emoji?: string }
+interface ChecklistItem { item: string; category: string; done: boolean; due?: string; urgent?: boolean; completedAt?: string }
+interface TimelineItem { weeks: string; task: string; category: string; priority: string; emoji?: string; completedAt?: string }
 interface BudgetItem { category: string; amount: number; percentage: number; color: string }
 interface EventGuest { name: string; email: string; status: 'invited' | 'confirmed' | 'declined' }
 interface EventVendor { name: string; category: string; notes: string; confirmed: boolean; costEstimate?: number }
@@ -239,23 +239,86 @@ export default function Dashboard() {
         }, 300)
         return () => clearTimeout(timer)
     }, [data])
+    // Map checklist items to timeline items by keyword matching
+    const mapChecklistToTimeline = () => {
+        const timeline = isEditing ? editTimeline : data.plan.timeline
+        const assigned = new Set<number>()
+        const mapping: Record<number, number[]> = {}
+        timeline.forEach((t, ti) => {
+            mapping[ti] = []
+            const tWords = `${t.task} ${t.category}`.toLowerCase()
+            checklist.forEach((c, ci) => {
+                if (assigned.has(ci)) return
+                const cWords = `${c.item} ${c.category}`.toLowerCase()
+                const keywords = ['venue', 'book', 'vendor', 'dj', 'music', 'photographer', 'photo', 'video',
+                    'invite', 'invitation', 'rsvp', 'guest', 'send',
+                    'decor', 'cake', 'order', 'decoration', 'flower',
+                    'food', 'drink', 'cater', 'menu', 'cocktail',
+                    'confirm', 'final', 'call', 'playlist',
+                    'budget', 'cost', 'date', 'time', 'plan', 'event day']
+                const matchScore = keywords.filter(kw => tWords.includes(kw) && cWords.includes(kw)).length
+                const catMatch = c.category && tWords.includes(c.category.toLowerCase()) ? 2 : 0
+                if (matchScore + catMatch >= 1) {
+                    mapping[ti].push(ci)
+                    assigned.add(ci)
+                }
+            })
+        })
+        const unassigned = checklist.map((_, ci) => ci).filter(ci => !assigned.has(ci))
+        return { mapping, unassigned }
+    }
 
     const toggleCheck = (i: number) => {
         setChecklist(prev => {
-            const updated = prev.map((item, idx) => idx === i ? { ...item, done: !item.done } : item)
-            if (isDemo) {
-                // Save demo edits separately
-                const demoData = { ...data, plan: { ...data.plan, checklist: updated.map(c => ({ item: c.item, category: c.category, done: c.done })) } }
-                setData(demoData)
-                userSetJSON('partypal_demo', demoData)
-            } else {
-                const stored = userGet('partyplan')
-                if (stored) {
-                    const d = JSON.parse(stored)
-                    d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done }))
-                    userSetJSON('partyplan', d)
+            const now = new Date().toISOString()
+            const updated = prev.map((item, idx) => idx === i ? { ...item, done: !item.done, completedAt: !item.done ? now : undefined } : item)
+            const saveChecklist = (cl: ChecklistItem[]) => {
+                if (isDemo) {
+                    const demoData = { ...data, plan: { ...data.plan, checklist: cl.map(c => ({ item: c.item, category: c.category, done: c.done, completedAt: c.completedAt })) } }
+                    setData(demoData)
+                    userSetJSON('partypal_demo', demoData)
+                } else {
+                    const stored = userGet('partyplan')
+                    if (stored) {
+                        const d = JSON.parse(stored)
+                        d.plan.checklist = cl.map(c => ({ item: c.item, category: c.category, done: c.done, completedAt: c.completedAt }))
+                        userSetJSON('partyplan', d)
+                    }
                 }
             }
+            saveChecklist(updated)
+
+            // Auto-complete timeline milestone if all its tasks are done
+            const timeline = data.plan.timeline
+            const { mapping } = mapChecklistToTimeline()
+            let timelineChanged = false
+            const updatedTimeline = timeline.map((t, ti) => {
+                const taskIndices = mapping[ti]
+                if (!taskIndices || taskIndices.length === 0) return t
+                const allDone = taskIndices.every(ci => updated[ci]?.done)
+                if (allDone && !t.completedAt) {
+                    timelineChanged = true
+                    return { ...t, completedAt: now }
+                } else if (!allDone && t.completedAt) {
+                    timelineChanged = true
+                    return { ...t, completedAt: undefined }
+                }
+                return t
+            })
+            if (timelineChanged) {
+                const updatedData = { ...data, plan: { ...data.plan, timeline: updatedTimeline } }
+                setData(updatedData)
+                if (isDemo) userSetJSON('partypal_demo', updatedData)
+                else {
+                    userSetJSON('partyplan', updatedData)
+                    if (updatedData.eventId) {
+                        const updatedEvents = allEvents.map(ev => ev.eventId === updatedData.eventId ? updatedData : ev)
+                        setAllEvents(updatedEvents)
+                        userSetJSON('partypal_events', updatedEvents)
+                    }
+                }
+            }
+
             showToast(updated[i].done ? `"${updated[i].item}" completed ✓` : `"${updated[i].item}" unmarked`, 'info')
             return updated
         })
@@ -269,7 +332,7 @@ export default function Dashboard() {
         const stored = userGet('partyplan')
         if (stored) {
             const d = JSON.parse(stored)
-            d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done }))
+            d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done, completedAt: c.completedAt }))
             userSetJSON('partyplan', d)
         }
         setNewCheckItem('')
@@ -284,7 +347,7 @@ export default function Dashboard() {
         const stored = userGet('partyplan')
         if (stored) {
             const d = JSON.parse(stored)
-            d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done }))
+            d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done, completedAt: c.completedAt }))
             userSetJSON('partyplan', d)
         }
         showToast(`"${removed.item}" removed`, 'info')
@@ -419,6 +482,8 @@ export default function Dashboard() {
     const checkDone = checklist.filter(c => c.done).length
     const checkTotal = checklist.length
     const checkPct = checkTotal > 0 ? Math.round((checkDone / checkTotal) * 100) : 0
+
+    const { mapping: taskMapping, unassigned: unassignedTasks } = mapChecklistToTimeline()
 
     // Auto-add venue as pending vendor when location is set and not TBD
     useEffect(() => {
@@ -1053,7 +1118,15 @@ export default function Dashboard() {
                                                         ) : (
                                                             <>
                                                                 <div className={styles.tlTime}>{t.weeks}</div>
-                                                                <div className={styles.tlTitle}>{t.task}</div>
+                                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                                                    <div className={styles.tlTitle} style={t.completedAt ? { textDecoration: 'line-through', opacity: 0.5 } : undefined}>{t.task}</div>
+                                                                    {t.completedAt && <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#3D8C6E', background: '#3D8C6E15', padding: '0.1rem 0.4rem', borderRadius: 8, whiteSpace: 'nowrap' }}>✓ {new Date(t.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                                                                    {taskMapping[i]?.length > 0 && (() => {
+                                                                        const tasks = taskMapping[i]
+                                                                        const done = tasks.filter(ci => checklist[ci]?.done).length
+                                                                        return <span style={{ fontSize: '0.6rem', fontWeight: 800, color: done === tasks.length ? '#3D8C6E' : '#9aabbb', whiteSpace: 'nowrap' }}>{done}/{tasks.length}</span>
+                                                                    })()}
+                                                                </div>
                                                                 {t.category && (() => {
                                                                     const TAG_COLORS: Record<string, string> = { venue: '#4AADA8', vendor: '#E8896A', food: '#F7C948', music: '#7B5EA7', decor: '#3D8C6E', planning: '#2D4059', guests: '#c4880a', budget: '#E8896A', entertainment: '#7B5EA7', catering: '#F7C948', photography: '#4AADA8', logistics: '#2D4059' }
                                                                     const isTagLike = t.category.length < 40 && /^[a-zA-Z0-9_\s&,/]+$/.test(t.category)
@@ -1069,6 +1142,23 @@ export default function Dashboard() {
                                                                     }
                                                                     return <div className={styles.tlDesc}>{t.category}</div>
                                                                 })()}
+                                                                {/* Inline checklist tasks */}
+                                                                {taskMapping[i]?.length > 0 && (
+                                                                    <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '0.4rem' }}>
+                                                                        {taskMapping[i].map(ci => {
+                                                                            const c = checklist[ci]
+                                                                            if (!c) return null
+                                                                            return (
+                                                                                <div key={ci} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.2rem 0', cursor: 'pointer' }} onClick={() => toggleCheck(ci)}>
+                                                                                    <div style={{ width: 16, height: 16, borderRadius: 4, border: c.done ? '2px solid #3D8C6E' : '2px solid #ccc', background: c.done ? '#3D8C6E' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: '#fff', flexShrink: 0, transition: 'all 0.2s' }}>{c.done ? '✓' : ''}</div>
+                                                                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: c.done ? '#9aabbb' : 'var(--navy)', textDecoration: c.done ? 'line-through' : 'none', flex: 1 }}>{c.item}</span>
+                                                                                    {c.completedAt && <span style={{ fontSize: '0.55rem', color: '#3D8C6E', fontWeight: 700, whiteSpace: 'nowrap' }}>{new Date(c.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                                                                                    <button onClick={(e) => removeCheckItem(ci, e)} style={{ background: 'none', border: 'none', color: '#ddd', cursor: 'pointer', fontSize: '0.6rem', padding: '0.1rem', flexShrink: 0 }} onMouseEnter={e => (e.currentTarget.style.color = '#E8896A')} onMouseLeave={e => (e.currentTarget.style.color = '#ddd')}>✕</button>
+                                                                                </div>
+                                                                            )
+                                                                        })}
+                                                                    </div>
+                                                                )}
                                                             </>
                                                         )}
                                                     </div>
@@ -1078,38 +1168,37 @@ export default function Dashboard() {
                                     </div>
                                 </div>
 
-                                {/* ── Smart Checklist ── */}
+                                {/* ── Unassigned Tasks + Add Task ── */}
                                 <div className={styles.sectionCard}>
                                     <div className={styles.cardHeader}>
                                         <div className={styles.cardTitleGroup}>
                                             <span className={styles.cardIcon}>✅</span>
-                                            <h2>Smart Checklist</h2>
+                                            <h2>Tasks</h2>
+                                            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#9aabbb', marginLeft: '0.3rem' }}>{checkDone}/{checkTotal} done ({checkPct}%)</span>
                                         </div>
-
                                     </div>
-                                    <div className={styles.checklist}>
-                                        {checklist.map((item, i) => (
-                                            <div key={i} className={`${styles.checkItem} ${item.done ? styles.checkItemDone : ''}`} style={{ position: 'relative' }}>
-                                                <div style={{ display: 'flex', alignItems: 'center', flex: 1, cursor: 'pointer' }} onClick={() => toggleCheck(i)}>
-                                                    <div className={`${styles.checkBox} ${item.done ? styles.checkBoxDone : ''}`}>
-                                                        {item.done ? '✓' : ''}
+                                    {unassignedTasks.length > 0 && (
+                                        <div className={styles.checklist}>
+                                            <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>General Tasks</div>
+                                            {unassignedTasks.map(ci => {
+                                                const item = checklist[ci]
+                                                if (!item) return null
+                                                return (
+                                                    <div key={ci} className={`${styles.checkItem} ${item.done ? styles.checkItemDone : ''}`} style={{ position: 'relative' }}>
+                                                        <div style={{ display: 'flex', alignItems: 'center', flex: 1, cursor: 'pointer' }} onClick={() => toggleCheck(ci)}>
+                                                            <div className={`${styles.checkBox} ${item.done ? styles.checkBoxDone : ''}`}>{item.done ? '✓' : ''}</div>
+                                                            <div className={`${styles.checkLabel} ${item.done ? styles.checkLabelDone : ''}`}>{item.item}</div>
+                                                            {item.completedAt && <span style={{ fontSize: '0.6rem', color: '#3D8C6E', fontWeight: 700, marginLeft: '0.3rem' }}>{new Date(item.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                                                        </div>
+                                                        <button onClick={(e) => removeCheckItem(ci, e)} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800, padding: '0.2rem 0.4rem', borderRadius: 4 }} onMouseEnter={e => (e.currentTarget.style.color = '#E8896A')} onMouseLeave={e => (e.currentTarget.style.color = '#ccc')}>✕</button>
                                                     </div>
-                                                    <div className={`${styles.checkLabel} ${item.done ? styles.checkLabelDone : ''}`}>{item.item}</div>
-                                                    {item.due && <span className={styles.checkDue}>{item.due}</span>}
-                                                </div>
-                                                <button onClick={(e) => removeCheckItem(i, e)} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800, padding: '0.2rem 0.4rem', borderRadius: 4, transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = '#E8896A')} onMouseLeave={e => (e.currentTarget.style.color = '#ccc')} title="Remove item">✕</button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    {/* Add new checklist item */}
+                                                )
+                                            })}
+                                        </div>
+                                    )}
+                                    {/* Add new task */}
                                     <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.6rem', padding: '0 0.2rem' }}>
-                                        <input
-                                            value={newCheckItem}
-                                            onChange={e => setNewCheckItem(e.target.value)}
-                                            onKeyDown={e => e.key === 'Enter' && addCheckItem()}
-                                            placeholder="Add a task..."
-                                            style={{ flex: 1, padding: '0.45rem 0.7rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.8rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }}
-                                        />
+                                        <input value={newCheckItem} onChange={e => setNewCheckItem(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCheckItem()} placeholder="Add a task..." style={{ flex: 1, padding: '0.45rem 0.7rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.8rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
                                         <button onClick={addCheckItem} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.45rem 0.8rem', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add</button>
                                     </div>
                                 </div>
