@@ -23,7 +23,8 @@ interface PlanData {
     }
 }
 
-const TIMELINE_EMOJIS = ['📋', '💌', '🎀', '🍽️', '✅', '🎉']
+const CATEGORY_ICONS: Record<string, string> = { venue: '🏠', vendor: '🤝', food: '🍽️', music: '🎵', decor: '🎀', planning: '📋', guests: '💌', budget: '💰', entertainment: '🎭', catering: '🍕', photography: '📸', logistics: '🚚', custom: '📌', default: '📅' }
+const CATEGORY_DOTS: Record<string, string> = { venue: 'Teal', vendor: 'Coral', food: 'Yellow', music: 'Navy', decor: 'Green', planning: 'Coral', guests: 'Yellow', budget: 'Coral', entertainment: 'Navy', catering: 'Yellow', photography: 'Teal', logistics: 'Navy', default: 'Teal' }
 const TIMELINE_DOTS = ['coral', 'yellow', 'teal', 'green', 'navy', 'coral']
 
 
@@ -85,6 +86,7 @@ const DEFAULT_PLAN: PlanData = {
 export default function Dashboard() {
     const router = useRouter()
     const [data, setData] = useState<PlanData>(DEFAULT_PLAN)
+    const [dragIdx, setDragIdx] = useState<number | null>(null)
     const [allEvents, setAllEvents] = useState<PlanData[]>([])
     const [checklist, setChecklist] = useState<ChecklistItem[]>([])
     const [isDemo, setIsDemo] = useState(false)
@@ -343,7 +345,7 @@ export default function Dashboard() {
                     <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
                         <button className="back-btn" onClick={() => router.push('/')}>← Back to Home</button>
                     </div>
-                    <div className={styles.eventBadge}>🤖 AI Generated Plan</div>
+
                 </div>
             </header>
 
@@ -766,6 +768,9 @@ export default function Dashboard() {
                                     </div>
                                 )}
 
+                                {/* ── AI Generated Plan Badge ── */}
+                                <div className={styles.eventBadge} style={{ marginBottom: '1rem', textAlign: 'center' }}>🤖 AI Generated Plan</div>
+
                                 {/* ── Planning Timeline ── */}
                                 <div className={styles.sectionCard}>
                                     <div className={styles.cardHeader}>
@@ -773,48 +778,77 @@ export default function Dashboard() {
                                             <span className={styles.cardIcon}>🗓️</span>
                                             <h2>Planning Timeline</h2>
                                         </div>
-                                        <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
                                     </div>
                                     <div className={styles.timeline}>
-                                        {(isEditing ? editTimeline : data.plan.timeline).map((t, i) => (
-                                            <div key={i} className={styles.timelineItem}>
-                                                <div className={styles.tlLeft}>
-                                                    <div className={`${styles.tlDot} ${styles[`tlDot${TIMELINE_DOTS[i % TIMELINE_DOTS.length].charAt(0).toUpperCase() + TIMELINE_DOTS[i % TIMELINE_DOTS.length].slice(1)}` as keyof typeof styles]}`}>
-                                                        {TIMELINE_EMOJIS[i % TIMELINE_EMOJIS.length]}
-                                                    </div>
-                                                    <div className={styles.tlLine} />
-                                                </div>
-                                                <div className={styles.tlContent}>
-                                                    {isEditing ? (
-                                                        <>
-                                                            <input value={t.weeks} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, weeks: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(74,173,168,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', color: '#4AADA8', fontSize: '0.68rem', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.06em', width: '100%', outline: 'none', marginBottom: 4 }} />
-                                                            <input value={t.task} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, task: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#1A2535', fontSize: '0.9rem', fontWeight: 800, width: '100%', outline: 'none', marginBottom: 4 }} />
-                                                            <textarea value={t.category} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, category: e.target.value } : item))} rows={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#6b7c93', fontSize: '0.78rem', fontWeight: 600, width: '100%', outline: 'none', resize: 'vertical' as const }} />
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <div className={styles.tlTime}>{t.weeks}</div>
-                                                            <div className={styles.tlTitle}>{t.task}</div>
-                                                            {t.category && (() => {
-                                                                const TAG_COLORS: Record<string, string> = { venue: '#4AADA8', vendor: '#E8896A', food: '#F7C948', music: '#7B5EA7', decor: '#3D8C6E', planning: '#2D4059', guests: '#c4880a', budget: '#E8896A', entertainment: '#7B5EA7', catering: '#F7C948', photography: '#4AADA8', logistics: '#2D4059' }
-                                                                const isTagLike = t.category.length < 40 && /^[a-zA-Z0-9_\s&,/]+$/.test(t.category)
-                                                                if (isTagLike) {
-                                                                    const tags = t.category.split(/[_,/]/).map(t => t.trim().toLowerCase()).filter(Boolean)
-                                                                    return (
-                                                                        <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginTop: '0.3rem' }}>
-                                                                            {tags.map((tag, ti) => (
-                                                                                <span key={ti} style={{ background: `${TAG_COLORS[tag] || '#9aabbb'}18`, border: `1px solid ${TAG_COLORS[tag] || '#9aabbb'}30`, borderRadius: 12, padding: '0.1rem 0.55rem', fontSize: '0.68rem', fontWeight: 700, color: TAG_COLORS[tag] || '#6b7c93', textTransform: 'capitalize' }}>{tag}</span>
-                                                                            ))}
-                                                                        </div>
-                                                                    )
-                                                                }
-                                                                return <div className={styles.tlDesc}>{t.category}</div>
-                                                            })()}
-                                                        </>
+                                        {(isEditing ? editTimeline : data.plan.timeline).map((t, i, arr) => {
+                                            const firstTag = t.category ? (t.category.split(/[_,/]/)[0] || '').trim().toLowerCase() : ''
+                                            const icon = CATEGORY_ICONS[firstTag] || CATEGORY_ICONS.default
+                                            const dotColor = CATEGORY_DOTS[firstTag] || CATEGORY_DOTS.default
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    className={styles.timelineItem}
+                                                    draggable={!isEditing}
+                                                    onDragStart={() => setDragIdx(i)}
+                                                    onDragOver={e => e.preventDefault()}
+                                                    onDrop={() => {
+                                                        if (dragIdx === null || dragIdx === i) return
+                                                        const items = [...(isEditing ? editTimeline : data.plan.timeline)]
+                                                        const [moved] = items.splice(dragIdx, 1)
+                                                        items.splice(i, 0, moved)
+                                                        if (isEditing) {
+                                                            setEditTimeline(items)
+                                                        } else {
+                                                            const updated = { ...data, plan: { ...data.plan, timeline: items } }
+                                                            setData(updated)
+                                                            localStorage.setItem('partyplan', JSON.stringify(updated))
+                                                        }
+                                                        setDragIdx(null)
+                                                    }}
+                                                    onDragEnd={() => setDragIdx(null)}
+                                                    style={{ opacity: dragIdx === i ? 0.4 : 1, cursor: isEditing ? 'default' : 'grab' }}
+                                                >
+                                                    {!isEditing && (
+                                                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', marginRight: 4, color: '#ccc', fontSize: '0.7rem', cursor: 'grab', userSelect: 'none' }} title="Drag to reorder">⋮⋮</div>
                                                     )}
+                                                    <div className={styles.tlLeft}>
+                                                        <div className={`${styles.tlDot} ${styles[`tlDot${dotColor}` as keyof typeof styles]}`}>
+                                                            {icon}
+                                                        </div>
+                                                        <div className={styles.tlLine} />
+                                                    </div>
+                                                    <div className={styles.tlContent}>
+                                                        {isEditing ? (
+                                                            <>
+                                                                <input value={t.weeks} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, weeks: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(74,173,168,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', color: '#4AADA8', fontSize: '0.68rem', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.06em', width: '100%', outline: 'none', marginBottom: 4 }} />
+                                                                <input value={t.task} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, task: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#1A2535', fontSize: '0.9rem', fontWeight: 800, width: '100%', outline: 'none', marginBottom: 4 }} />
+                                                                <textarea value={t.category} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, category: e.target.value } : item))} rows={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#6b7c93', fontSize: '0.78rem', fontWeight: 600, width: '100%', outline: 'none', resize: 'vertical' as const }} />
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <div className={styles.tlTime}>{t.weeks}</div>
+                                                                <div className={styles.tlTitle}>{t.task}</div>
+                                                                {t.category && (() => {
+                                                                    const TAG_COLORS: Record<string, string> = { venue: '#4AADA8', vendor: '#E8896A', food: '#F7C948', music: '#7B5EA7', decor: '#3D8C6E', planning: '#2D4059', guests: '#c4880a', budget: '#E8896A', entertainment: '#7B5EA7', catering: '#F7C948', photography: '#4AADA8', logistics: '#2D4059' }
+                                                                    const isTagLike = t.category.length < 40 && /^[a-zA-Z0-9_\s&,/]+$/.test(t.category)
+                                                                    if (isTagLike) {
+                                                                        const tags = t.category.split(/[_,/]/).map(t => t.trim().toLowerCase()).filter(Boolean)
+                                                                        return (
+                                                                            <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginTop: '0.3rem' }}>
+                                                                                {tags.map((tag, ti) => (
+                                                                                    <span key={ti} style={{ background: `${TAG_COLORS[tag] || '#9aabbb'}18`, border: `1px solid ${TAG_COLORS[tag] || '#9aabbb'}30`, borderRadius: 12, padding: '0.1rem 0.55rem', fontSize: '0.68rem', fontWeight: 700, color: TAG_COLORS[tag] || '#6b7c93', textTransform: 'capitalize' }}>{tag}</span>
+                                                                                ))}
+                                                                            </div>
+                                                                        )
+                                                                    }
+                                                                    return <div className={styles.tlDesc}>{t.category}</div>
+                                                                })()}
+                                                            </>
+                                                        )}
+                                                    </div>
                                                 </div>
-                                            </div>
-                                        ))}
+                                            )
+                                        })}
                                     </div>
                                 </div>
 
@@ -825,7 +859,7 @@ export default function Dashboard() {
                                             <span className={styles.cardIcon}>✅</span>
                                             <h2>Smart Checklist</h2>
                                         </div>
-                                        <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
+
                                     </div>
                                     <div className={styles.checklist}>
                                         {checklist.map((item, i) => (
