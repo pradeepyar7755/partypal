@@ -768,8 +768,6 @@ export default function Dashboard() {
                                     </div>
                                 )}
 
-                                {/* ── AI Generated Plan Badge ── */}
-                                <div className={styles.eventBadge} style={{ marginBottom: '1rem', textAlign: 'center' }}>🤖 AI Generated Plan</div>
 
                                 {/* ── Planning Timeline ── */}
                                 <div className={styles.sectionCard}>
@@ -778,6 +776,7 @@ export default function Dashboard() {
                                             <span className={styles.cardIcon}>🗓️</span>
                                             <h2>Planning Timeline</h2>
                                         </div>
+                                        <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
                                     </div>
                                     <div className={styles.timeline}>
                                         {(isEditing ? editTimeline : data.plan.timeline).map((t, i, arr) => {
