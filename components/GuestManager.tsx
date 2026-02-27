@@ -370,7 +370,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                 </div>
                             </div>
                             <div style={{ minWidth: 130 }}>
-                                <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.25rem' }}>Style</div>
+                                <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.25rem' }}>🎨 Style</div>
                                 <select value={inviteTheme} onChange={e => { themeChangeRef.current = true; setInviteTheme(e.target.value) }} className={styles.addInput} style={{ margin: 0, padding: '0.25rem 0.4rem', fontSize: '0.72rem', width: '100%' }}>
                                     <option>Modern & Fun</option><option>Elegant & Formal</option><option>Tropical Paradise</option><option>Rustic & Cozy</option><option>Vintage & Retro</option><option>Minimalist & Clean</option><option>Glamorous & Luxe</option>
                                 </select>

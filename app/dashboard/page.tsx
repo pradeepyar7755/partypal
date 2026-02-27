@@ -265,6 +265,59 @@ export default function Dashboard() {
     }
 
     const saveEdits = () => {
+        // Build replacement pairs for changed fields
+        const replacements: [string | RegExp, string][] = []
+        const oldDate = data.date
+        const newDate = editData.date
+        if (oldDate && newDate && oldDate !== newDate) {
+            // Replace date references (e.g. "March 15" -> "April 20")
+            try {
+                const oldFmt = new Date(oldDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+                const newFmt = new Date(newDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric' })
+                if (oldFmt !== newFmt) replacements.push([oldFmt, newFmt])
+                const oldShort = new Date(oldDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                const newShort = new Date(newDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+                if (oldShort !== newShort) replacements.push([oldShort, newShort])
+            } catch { /* ignore */ }
+            replacements.push([oldDate, newDate])
+        }
+        if (data.theme && editData.theme && data.theme !== editData.theme) {
+            replacements.push([data.theme, editData.theme])
+            replacements.push([data.theme.toLowerCase(), editData.theme.toLowerCase()])
+        }
+        if (data.budget && editData.budget && data.budget !== editData.budget) {
+            replacements.push([data.budget, editData.budget])
+        }
+        if (data.location && editData.location && data.location !== editData.location) {
+            replacements.push([data.location, editData.location])
+            // Also replace city part
+            const oldCity = data.location.split(',')[0]?.trim()
+            const newCity = editData.location.split(',')[0]?.trim()
+            if (oldCity && newCity && oldCity !== newCity) replacements.push([oldCity, newCity])
+        }
+
+        // Apply replacements to text fields
+        const replaceText = (text: string): string => {
+            let result = text
+            for (const [find, replace] of replacements) {
+                if (typeof find === 'string') result = result.split(find).join(replace)
+                else result = result.replace(find, replace)
+            }
+            return result
+        }
+
+        // Update timeline, checklist, and tips
+        const updatedTimeline = editTimeline.map(t => ({
+            ...t,
+            task: replaceText(t.task),
+            category: replaceText(t.category),
+        }))
+        const updatedChecklist = (data.plan.checklist || []).map(c => ({
+            ...c,
+            item: replaceText(c.item),
+        }))
+        const updatedTips = (data.plan.tips || []).map(t => replaceText(t))
+
         const updated = {
             ...data,
             eventType: editData.eventType,
@@ -274,9 +327,13 @@ export default function Dashboard() {
             theme: editData.theme,
             budget: editData.budget,
             time: editData.time,
-            plan: { ...data.plan, timeline: editTimeline },
+            plan: { ...data.plan, timeline: updatedTimeline, checklist: updatedChecklist, tips: updatedTips },
         }
         setData(updated)
+        // Also update checklist state
+        if (replacements.length > 0) {
+            setChecklist(prev => prev.map(c => ({ ...c, item: replaceText(c.item) })))
+        }
         if (isDemo) {
             userSetJSON('partypal_demo', updated)
         } else {
