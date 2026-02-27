@@ -613,240 +613,240 @@ export default function Dashboard() {
             {/* ══ GUESTS TAB ══ */}
             {selectedTab === 'guests' && (
                 <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem' }}>
-                    <GuestManager eventId={data.eventId} planData={{ eventType: data.eventType, theme: data.theme, date: data.date, location: data.location, eventId: data.eventId }} />
+                    <GuestManager eventId={data.eventId} planData={{ eventType: data.eventType, theme: data.theme, date: data.date, location: data.location, eventId: data.eventId }} isDemo={isDemo} />
                 </div>
             )}
 
-{/* ══ PLAN TAB (MAIN GRID) ══ */ }
-{
-    selectedTab === 'plan' && (
-        <>
+            {/* ══ PLAN TAB (MAIN GRID) ══ */}
+            {
+                selectedTab === 'plan' && (
+                    <>
 
-            {/* ══ MAIN GRID ══ */}
-            <div className={styles.main}>
-                {/* LEFT COLUMN */}
-                <div>
-                    {/* ── Countdown Bar ── */}
-                    {data.date && (
-                        <div className={styles.sectionCard} style={{ marginBottom: '1rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
-                                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)' }}>
-                                    ⏳ Event Countdown
-                                </div>
-                                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: daysLeft !== null && daysLeft <= 7 ? '#E8896A' : 'var(--teal)' }}>
-                                    {daysLeft !== null ? (daysLeft === 0 ? '🎉 Today!' : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`) : 'No date set'}
-                                </div>
-                            </div>
-                            <div style={{ position: 'relative', height: 8, background: 'rgba(0,0,0,0.06)', borderRadius: 10, overflow: 'hidden' }}>
-                                <div style={{ height: '100%', width: `${countdownPct}%`, background: daysLeft !== null && daysLeft <= 7 ? 'linear-gradient(90deg, #E8896A, #e06040)' : 'linear-gradient(90deg, var(--teal), #3D8C6E)', borderRadius: 10, transition: 'width 0.8s ease' }} />
-                            </div>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.4rem' }}>
-                                <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>📋 {createdDate ? createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Plan Created'}</span>
-                                <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>📍 Today</span>
-                                <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>🎉 {eventDate ? eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Event'}</span>
-                            </div>
-                        </div>
-                    )}
-
-
-                    {/* ── Planning Timeline ── */}
-                    <div className={styles.sectionCard}>
-                        <div className={styles.cardHeader}>
-                            <div className={styles.cardTitleGroup}>
-                                <span className={styles.cardIcon}>🗓️</span>
-                                <h2>Planning Timeline</h2>
-                            </div>
-                            <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
-                        </div>
-                        <div className={styles.timeline}>
-                            {(isEditing ? editTimeline : data.plan.timeline).map((t, i, arr) => {
-                                const firstTag = t.category ? (t.category.split(/[_,/]/)[0] || '').trim().toLowerCase() : ''
-                                const icon = CATEGORY_ICONS[firstTag] || CATEGORY_ICONS.default
-                                const dotColor = CATEGORY_DOTS[firstTag] || CATEGORY_DOTS.default
-                                return (
-                                    <div
-                                        key={i}
-                                        className={styles.timelineItem}
-                                        draggable={!isEditing}
-                                        onDragStart={() => setDragIdx(i)}
-                                        onDragOver={e => e.preventDefault()}
-                                        onDrop={() => {
-                                            if (dragIdx === null || dragIdx === i) return
-                                            const items = [...(isEditing ? editTimeline : data.plan.timeline)]
-                                            const [moved] = items.splice(dragIdx, 1)
-                                            items.splice(i, 0, moved)
-                                            if (isEditing) {
-                                                setEditTimeline(items)
-                                            } else {
-                                                const updated = { ...data, plan: { ...data.plan, timeline: items } }
-                                                setData(updated)
-                                                userSetJSON('partyplan', updated)
-                                            }
-                                            setDragIdx(null)
-                                        }}
-                                        onDragEnd={() => setDragIdx(null)}
-                                        style={{ opacity: dragIdx === i ? 0.4 : 1, cursor: isEditing ? 'default' : 'grab' }}
-                                    >
-                                        {!isEditing && (
-                                            <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', marginRight: 4, color: '#ccc', fontSize: '0.7rem', cursor: 'grab', userSelect: 'none' }} title="Drag to reorder">⋮⋮</div>
-                                        )}
-                                        <div className={styles.tlLeft}>
-                                            <div className={`${styles.tlDot} ${styles[`tlDot${dotColor}` as keyof typeof styles]}`}>
-                                                {icon}
+                        {/* ══ MAIN GRID ══ */}
+                        <div className={styles.main}>
+                            {/* LEFT COLUMN */}
+                            <div>
+                                {/* ── Countdown Bar ── */}
+                                {data.date && (
+                                    <div className={styles.sectionCard} style={{ marginBottom: '1rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                                            <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)' }}>
+                                                ⏳ Event Countdown
                                             </div>
-                                            <div className={styles.tlLine} />
+                                            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: daysLeft !== null && daysLeft <= 7 ? '#E8896A' : 'var(--teal)' }}>
+                                                {daysLeft !== null ? (daysLeft === 0 ? '🎉 Today!' : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`) : 'No date set'}
+                                            </div>
                                         </div>
-                                        <div className={styles.tlContent}>
-                                            {isEditing ? (
-                                                <>
-                                                    <input value={t.weeks} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, weeks: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(74,173,168,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', color: '#4AADA8', fontSize: '0.68rem', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.06em', width: '100%', outline: 'none', marginBottom: 4 }} />
-                                                    <input value={t.task} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, task: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#1A2535', fontSize: '0.9rem', fontWeight: 800, width: '100%', outline: 'none', marginBottom: 4 }} />
-                                                    <textarea value={t.category} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, category: e.target.value } : item))} rows={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#6b7c93', fontSize: '0.78rem', fontWeight: 600, width: '100%', outline: 'none', resize: 'vertical' as const }} />
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <div className={styles.tlTime}>{t.weeks}</div>
-                                                    <div className={styles.tlTitle}>{t.task}</div>
-                                                    {t.category && (() => {
-                                                        const TAG_COLORS: Record<string, string> = { venue: '#4AADA8', vendor: '#E8896A', food: '#F7C948', music: '#7B5EA7', decor: '#3D8C6E', planning: '#2D4059', guests: '#c4880a', budget: '#E8896A', entertainment: '#7B5EA7', catering: '#F7C948', photography: '#4AADA8', logistics: '#2D4059' }
-                                                        const isTagLike = t.category.length < 40 && /^[a-zA-Z0-9_\s&,/]+$/.test(t.category)
-                                                        if (isTagLike) {
-                                                            const tags = t.category.split(/[_,/]/).map(t => t.trim().toLowerCase()).filter(Boolean)
-                                                            return (
-                                                                <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginTop: '0.3rem' }}>
-                                                                    {tags.map((tag, ti) => (
-                                                                        <span key={ti} style={{ background: `${TAG_COLORS[tag] || '#9aabbb'}18`, border: `1px solid ${TAG_COLORS[tag] || '#9aabbb'}30`, borderRadius: 12, padding: '0.1rem 0.55rem', fontSize: '0.68rem', fontWeight: 700, color: TAG_COLORS[tag] || '#6b7c93', textTransform: 'capitalize' }}>{tag}</span>
-                                                                    ))}
-                                                                </div>
-                                                            )
-                                                        }
-                                                        return <div className={styles.tlDesc}>{t.category}</div>
-                                                    })()}
-                                                </>
-                                            )}
+                                        <div style={{ position: 'relative', height: 8, background: 'rgba(0,0,0,0.06)', borderRadius: 10, overflow: 'hidden' }}>
+                                            <div style={{ height: '100%', width: `${countdownPct}%`, background: daysLeft !== null && daysLeft <= 7 ? 'linear-gradient(90deg, #E8896A, #e06040)' : 'linear-gradient(90deg, var(--teal), #3D8C6E)', borderRadius: 10, transition: 'width 0.8s ease' }} />
+                                        </div>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: '0.4rem' }}>
+                                            <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>📋 {createdDate ? createdDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Plan Created'}</span>
+                                            <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>📍 Today</span>
+                                            <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>🎉 {eventDate ? eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Event'}</span>
                                         </div>
                                     </div>
-                                )
-                            })}
-                        </div>
-                    </div>
+                                )}
 
-                    {/* ── Smart Checklist ── */}
-                    <div className={styles.sectionCard}>
-                        <div className={styles.cardHeader}>
-                            <div className={styles.cardTitleGroup}>
-                                <span className={styles.cardIcon}>✅</span>
-                                <h2>Smart Checklist</h2>
+
+                                {/* ── Planning Timeline ── */}
+                                <div className={styles.sectionCard}>
+                                    <div className={styles.cardHeader}>
+                                        <div className={styles.cardTitleGroup}>
+                                            <span className={styles.cardIcon}>🗓️</span>
+                                            <h2>Planning Timeline</h2>
+                                        </div>
+                                        <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
+                                    </div>
+                                    <div className={styles.timeline}>
+                                        {(isEditing ? editTimeline : data.plan.timeline).map((t, i, arr) => {
+                                            const firstTag = t.category ? (t.category.split(/[_,/]/)[0] || '').trim().toLowerCase() : ''
+                                            const icon = CATEGORY_ICONS[firstTag] || CATEGORY_ICONS.default
+                                            const dotColor = CATEGORY_DOTS[firstTag] || CATEGORY_DOTS.default
+                                            return (
+                                                <div
+                                                    key={i}
+                                                    className={styles.timelineItem}
+                                                    draggable={!isEditing}
+                                                    onDragStart={() => setDragIdx(i)}
+                                                    onDragOver={e => e.preventDefault()}
+                                                    onDrop={() => {
+                                                        if (dragIdx === null || dragIdx === i) return
+                                                        const items = [...(isEditing ? editTimeline : data.plan.timeline)]
+                                                        const [moved] = items.splice(dragIdx, 1)
+                                                        items.splice(i, 0, moved)
+                                                        if (isEditing) {
+                                                            setEditTimeline(items)
+                                                        } else {
+                                                            const updated = { ...data, plan: { ...data.plan, timeline: items } }
+                                                            setData(updated)
+                                                            userSetJSON('partyplan', updated)
+                                                        }
+                                                        setDragIdx(null)
+                                                    }}
+                                                    onDragEnd={() => setDragIdx(null)}
+                                                    style={{ opacity: dragIdx === i ? 0.4 : 1, cursor: isEditing ? 'default' : 'grab' }}
+                                                >
+                                                    {!isEditing && (
+                                                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', marginRight: 4, color: '#ccc', fontSize: '0.7rem', cursor: 'grab', userSelect: 'none' }} title="Drag to reorder">⋮⋮</div>
+                                                    )}
+                                                    <div className={styles.tlLeft}>
+                                                        <div className={`${styles.tlDot} ${styles[`tlDot${dotColor}` as keyof typeof styles]}`}>
+                                                            {icon}
+                                                        </div>
+                                                        <div className={styles.tlLine} />
+                                                    </div>
+                                                    <div className={styles.tlContent}>
+                                                        {isEditing ? (
+                                                            <>
+                                                                <input value={t.weeks} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, weeks: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(74,173,168,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', color: '#4AADA8', fontSize: '0.68rem', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.06em', width: '100%', outline: 'none', marginBottom: 4 }} />
+                                                                <input value={t.task} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, task: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#1A2535', fontSize: '0.9rem', fontWeight: 800, width: '100%', outline: 'none', marginBottom: 4 }} />
+                                                                <textarea value={t.category} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, category: e.target.value } : item))} rows={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#6b7c93', fontSize: '0.78rem', fontWeight: 600, width: '100%', outline: 'none', resize: 'vertical' as const }} />
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <div className={styles.tlTime}>{t.weeks}</div>
+                                                                <div className={styles.tlTitle}>{t.task}</div>
+                                                                {t.category && (() => {
+                                                                    const TAG_COLORS: Record<string, string> = { venue: '#4AADA8', vendor: '#E8896A', food: '#F7C948', music: '#7B5EA7', decor: '#3D8C6E', planning: '#2D4059', guests: '#c4880a', budget: '#E8896A', entertainment: '#7B5EA7', catering: '#F7C948', photography: '#4AADA8', logistics: '#2D4059' }
+                                                                    const isTagLike = t.category.length < 40 && /^[a-zA-Z0-9_\s&,/]+$/.test(t.category)
+                                                                    if (isTagLike) {
+                                                                        const tags = t.category.split(/[_,/]/).map(t => t.trim().toLowerCase()).filter(Boolean)
+                                                                        return (
+                                                                            <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginTop: '0.3rem' }}>
+                                                                                {tags.map((tag, ti) => (
+                                                                                    <span key={ti} style={{ background: `${TAG_COLORS[tag] || '#9aabbb'}18`, border: `1px solid ${TAG_COLORS[tag] || '#9aabbb'}30`, borderRadius: 12, padding: '0.1rem 0.55rem', fontSize: '0.68rem', fontWeight: 700, color: TAG_COLORS[tag] || '#6b7c93', textTransform: 'capitalize' }}>{tag}</span>
+                                                                                ))}
+                                                                            </div>
+                                                                        )
+                                                                    }
+                                                                    return <div className={styles.tlDesc}>{t.category}</div>
+                                                                })()}
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* ── Smart Checklist ── */}
+                                <div className={styles.sectionCard}>
+                                    <div className={styles.cardHeader}>
+                                        <div className={styles.cardTitleGroup}>
+                                            <span className={styles.cardIcon}>✅</span>
+                                            <h2>Smart Checklist</h2>
+                                        </div>
+
+                                    </div>
+                                    <div className={styles.checklist}>
+                                        {checklist.map((item, i) => (
+                                            <div key={i} className={`${styles.checkItem} ${item.done ? styles.checkItemDone : ''}`} style={{ position: 'relative' }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', flex: 1, cursor: 'pointer' }} onClick={() => toggleCheck(i)}>
+                                                    <div className={`${styles.checkBox} ${item.done ? styles.checkBoxDone : ''}`}>
+                                                        {item.done ? '✓' : ''}
+                                                    </div>
+                                                    <div className={`${styles.checkLabel} ${item.done ? styles.checkLabelDone : ''}`}>{item.item}</div>
+                                                    {item.due && <span className={styles.checkDue}>{item.due}</span>}
+                                                </div>
+                                                <button onClick={(e) => removeCheckItem(i, e)} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800, padding: '0.2rem 0.4rem', borderRadius: 4, transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = '#E8896A')} onMouseLeave={e => (e.currentTarget.style.color = '#ccc')} title="Remove item">✕</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                    {/* Add new checklist item */}
+                                    <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.6rem', padding: '0 0.2rem' }}>
+                                        <input
+                                            value={newCheckItem}
+                                            onChange={e => setNewCheckItem(e.target.value)}
+                                            onKeyDown={e => e.key === 'Enter' && addCheckItem()}
+                                            placeholder="Add a task..."
+                                            style={{ flex: 1, padding: '0.45rem 0.7rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.8rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }}
+                                        />
+                                        <button onClick={addCheckItem} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.45rem 0.8rem', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add</button>
+                                    </div>
+                                </div>
+
+
+
+
+
                             </div>
 
-                        </div>
-                        <div className={styles.checklist}>
-                            {checklist.map((item, i) => (
-                                <div key={i} className={`${styles.checkItem} ${item.done ? styles.checkItemDone : ''}`} style={{ position: 'relative' }}>
-                                    <div style={{ display: 'flex', alignItems: 'center', flex: 1, cursor: 'pointer' }} onClick={() => toggleCheck(i)}>
-                                        <div className={`${styles.checkBox} ${item.done ? styles.checkBoxDone : ''}`}>
-                                            {item.done ? '✓' : ''}
-                                        </div>
-                                        <div className={`${styles.checkLabel} ${item.done ? styles.checkLabelDone : ''}`}>{item.item}</div>
-                                        {item.due && <span className={styles.checkDue}>{item.due}</span>}
+                            {/* RIGHT SIDEBAR */}
+                            <div>
+                                {/* ── Budget Breakdown ── */}
+                                <div className={styles.sidebarCard}>
+                                    <div className={styles.sidebarTitle}>💰 Budget Breakdown</div>
+                                    <div className={styles.budgetTotal}>
+                                        <div className={styles.budgetAmount}>${allocatedAmount.toLocaleString()}</div>
+                                        <div className={styles.budgetLabel}>of ${totalBudget.toLocaleString()} allocated</div>
                                     </div>
-                                    <button onClick={(e) => removeCheckItem(i, e)} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800, padding: '0.2rem 0.4rem', borderRadius: 4, transition: 'color 0.2s' }} onMouseEnter={e => (e.currentTarget.style.color = '#E8896A')} onMouseLeave={e => (e.currentTarget.style.color = '#ccc')} title="Remove item">✕</button>
-                                </div>
-                            ))}
-                        </div>
-                        {/* Add new checklist item */}
-                        <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.6rem', padding: '0 0.2rem' }}>
-                            <input
-                                value={newCheckItem}
-                                onChange={e => setNewCheckItem(e.target.value)}
-                                onKeyDown={e => e.key === 'Enter' && addCheckItem()}
-                                placeholder="Add a task..."
-                                style={{ flex: 1, padding: '0.45rem 0.7rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.8rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }}
-                            />
-                            <button onClick={addCheckItem} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.45rem 0.8rem', fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Add</button>
-                        </div>
-                    </div>
-
-
-
-
-
-                </div>
-
-                {/* RIGHT SIDEBAR */}
-                <div>
-                    {/* ── Budget Breakdown ── */}
-                    <div className={styles.sidebarCard}>
-                        <div className={styles.sidebarTitle}>💰 Budget Breakdown</div>
-                        <div className={styles.budgetTotal}>
-                            <div className={styles.budgetAmount}>${allocatedAmount.toLocaleString()}</div>
-                            <div className={styles.budgetLabel}>of ${totalBudget.toLocaleString()} allocated</div>
-                        </div>
-                        <div className={styles.budgetBarWrap}>
-                            <div className={styles.budgetBar} style={{ width: `${budgetPct}%` }} />
-                        </div>
-                        <div className={styles.budgetSpent}>
-                            <span>{budgetPct}% allocated</span>
-                            <span>${remaining.toLocaleString()} remaining</span>
-                        </div>
-                        <div className={styles.budgetItems}>
-                            {data.plan.budget.breakdown.map((b, i) => (
-                                <div key={i} className={styles.budgetItem}>
-                                    <div className={styles.budgetDot} style={{ background: b.color }} />
-                                    <div className={styles.budgetName}>{b.category}</div>
-                                    <div className={styles.budgetVal}>${b.amount.toLocaleString()}</div>
-                                    <div className={styles.budgetPct}>{b.percentage}%</div>
-                                </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    {/* ── Planning Progress ── */}
-                    <div className={styles.sidebarCard}>
-                        <div className={styles.sidebarTitle}>📊 Planning Progress</div>
-                        <div className={styles.progressList}>
-                            {progressItems.map((p, i) => (
-                                <div key={i} className={styles.progItem}>
-                                    <div className={styles.progTop}>
-                                        <span className={styles.progName}>{p.name}</span>
-                                        <span className={styles.progPct}>{p.pct}%</span>
+                                    <div className={styles.budgetBarWrap}>
+                                        <div className={styles.budgetBar} style={{ width: `${budgetPct}%` }} />
                                     </div>
-                                    <div className={styles.progBarWrap}>
-                                        <div
-                                            className={styles.progBar}
-                                            ref={el => { if (el) progressRefs.current[i] = el }}
-                                            data-width={`${p.pct}%`}
-                                            style={{ width: 0, background: p.color }}
-                                        />
+                                    <div className={styles.budgetSpent}>
+                                        <span>{budgetPct}% allocated</span>
+                                        <span>${remaining.toLocaleString()} remaining</span>
+                                    </div>
+                                    <div className={styles.budgetItems}>
+                                        {data.plan.budget.breakdown.map((b, i) => (
+                                            <div key={i} className={styles.budgetItem}>
+                                                <div className={styles.budgetDot} style={{ background: b.color }} />
+                                                <div className={styles.budgetName}>{b.category}</div>
+                                                <div className={styles.budgetVal}>${b.amount.toLocaleString()}</div>
+                                                <div className={styles.budgetPct}>{b.percentage}%</div>
+                                            </div>
+                                        ))}
                                     </div>
                                 </div>
-                            ))}
-                        </div>
-                    </div>
 
-                    {/* ── Quick Actions ── */}
-                    <div className={styles.sidebarCard}>
-                        <div className={styles.sidebarTitle}>⚡ Quick Actions</div>
-                        <div className={styles.quickActions}>
-                            <button className={styles.qaBtn} onClick={() => router.push(`/vendors?cat=venue&location=${data.location}`)}>
-                                <span>🏛️</span><span>Browse Venues Near {data.location?.split(',')[0]}</span><span>›</span>
-                            </button>
-                            <button className={styles.qaBtn} onClick={() => router.push('/guests')}>
-                                <span>💌</span><span>Send Invitations Now</span><span>›</span>
-                            </button>
-                            <button className={styles.qaBtn} onClick={() => router.push('/budget')}>
-                                <span>🤖</span><span>Ask AI to Adjust Budget</span><span>›</span>
-                            </button>
-                            <button className={styles.qaBtn} onClick={() => { showToast('Export coming soon!', 'info') }}>
-                                <span>📋</span><span>Export Plan as PDF</span><span>›</span>
-                            </button>
+                                {/* ── Planning Progress ── */}
+                                <div className={styles.sidebarCard}>
+                                    <div className={styles.sidebarTitle}>📊 Planning Progress</div>
+                                    <div className={styles.progressList}>
+                                        {progressItems.map((p, i) => (
+                                            <div key={i} className={styles.progItem}>
+                                                <div className={styles.progTop}>
+                                                    <span className={styles.progName}>{p.name}</span>
+                                                    <span className={styles.progPct}>{p.pct}%</span>
+                                                </div>
+                                                <div className={styles.progBarWrap}>
+                                                    <div
+                                                        className={styles.progBar}
+                                                        ref={el => { if (el) progressRefs.current[i] = el }}
+                                                        data-width={`${p.pct}%`}
+                                                        style={{ width: 0, background: p.color }}
+                                                    />
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+
+                                {/* ── Quick Actions ── */}
+                                <div className={styles.sidebarCard}>
+                                    <div className={styles.sidebarTitle}>⚡ Quick Actions</div>
+                                    <div className={styles.quickActions}>
+                                        <button className={styles.qaBtn} onClick={() => router.push(`/vendors?cat=venue&location=${data.location}`)}>
+                                            <span>🏛️</span><span>Browse Venues Near {data.location?.split(',')[0]}</span><span>›</span>
+                                        </button>
+                                        <button className={styles.qaBtn} onClick={() => router.push('/guests')}>
+                                            <span>💌</span><span>Send Invitations Now</span><span>›</span>
+                                        </button>
+                                        <button className={styles.qaBtn} onClick={() => router.push('/budget')}>
+                                            <span>🤖</span><span>Ask AI to Adjust Budget</span><span>›</span>
+                                        </button>
+                                        <button className={styles.qaBtn} onClick={() => { showToast('Export coming soon!', 'info') }}>
+                                            <span>📋</span><span>Export Plan as PDF</span><span>›</span>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
-                    </div>
-                </div>
-            </div>
-        </>
-    )
-}
+                    </>
+                )
+            }
         </main >
     )
 }

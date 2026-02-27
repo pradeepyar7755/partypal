@@ -19,13 +19,23 @@ const COLORS = ['#E8896A', '#4AADA8', '#F7C948', '#3D8C6E', '#7B5EA7', '#2D4059'
 const STATUS_COLORS: Record<string, string> = { going: '#3D8C6E', maybe: '#c4880a', declined: '#E8896A', pending: '#9aabbb' }
 const STATUS_BG: Record<string, string> = { going: 'rgba(61,140,110,0.1)', maybe: 'rgba(247,201,72,0.15)', declined: 'rgba(232,137,106,0.1)', pending: 'rgba(150,150,170,0.1)' }
 
+const DEFAULT_GUESTS: Guest[] = [
+    { id: '1', name: 'Sarah Anderson', email: 'sarah@email.com', status: 'going', dietary: 'None', additionalGuests: [{ id: 'a1', name: 'Mike Anderson', dietary: 'None', relationship: 'Spouse' }], avatar: 'SA', color: '#E8896A' },
+    { id: '2', name: 'Marcus Johnson', email: 'marcus@email.com', status: 'going', dietary: 'Vegetarian', additionalGuests: [], avatar: 'MJ', color: '#4AADA8' },
+    { id: '3', name: 'Lauren Park', email: 'lauren@email.com', status: 'maybe', dietary: 'Gluten-Free', additionalGuests: [{ id: 'a2', name: 'Chris Park', dietary: 'None', relationship: 'Spouse' }, { id: 'a3', name: 'Lily Park', dietary: 'Dairy-Free', relationship: 'Child' }], avatar: 'LP', color: '#F7C948' },
+    { id: '4', name: 'David Kim', email: 'david@email.com', status: 'going', dietary: 'None', additionalGuests: [], avatar: 'DK', color: '#3D8C6E' },
+    { id: '5', name: 'Tanya Robinson', email: 'tanya@email.com', status: 'pending', dietary: 'Vegan', additionalGuests: [], avatar: 'TR', color: '#7B5EA7' },
+    { id: '6', name: 'Nathan Williams', email: 'nathan@email.com', status: 'declined', dietary: 'None', additionalGuests: [], avatar: 'NW', color: '#E8896A' },
+]
+
 interface GuestManagerProps {
     eventId?: string
     planData?: { eventType?: string; theme?: string; date?: string; location?: string; eventId?: string }
+    isDemo?: boolean
 }
 
-export default function GuestManager({ eventId, planData: propPlanData }: GuestManagerProps) {
-    const [guests, setGuests] = useState<Guest[]>([])
+export default function GuestManager({ eventId, planData: propPlanData, isDemo }: GuestManagerProps) {
+    const [guests, setGuests] = useState<Guest[]>(isDemo ? DEFAULT_GUESTS : [])
     const [showAdd, setShowAdd] = useState(false)
     const [showBulk, setShowBulk] = useState(false)
     const [bulkText, setBulkText] = useState('')
@@ -45,6 +55,7 @@ export default function GuestManager({ eventId, planData: propPlanData }: GuestM
     const storageKey = eventId ? `partypal_eventguests_${eventId}` : 'partypal_eventguests'
 
     useEffect(() => {
+        if (isDemo) return
         const saved = userGetJSON<Guest[]>(storageKey, [])
         if (saved.length > 0) setGuests(saved)
         if (!propPlanData) {
@@ -57,7 +68,7 @@ export default function GuestManager({ eventId, planData: propPlanData }: GuestM
     }, [eventId, storageKey, propPlanData])
 
     useEffect(() => {
-        if (guests.length > 0) userSetJSON(storageKey, guests)
+        if (!isDemo && guests.length > 0) userSetJSON(storageKey, guests)
     }, [guests, storageKey])
 
     const totalHeadcount = guests.reduce((sum, g) => sum + 1 + g.additionalGuests.length, 0)
