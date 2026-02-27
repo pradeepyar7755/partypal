@@ -176,6 +176,17 @@ function VendorsContent() {
     setShortlist(prev => {
       const updated = prev.includes(vendorId) ? prev.filter(id => id !== vendorId) : [...prev, vendorId]
       userSetJSON('partypal_shortlist', updated)
+      // Also persist full vendor details for dashboard use
+      const vendor = vendors.find(v => v.id === vendorId)
+      if (vendor) {
+        const savedData = userGetJSON<Record<string, { name: string; category: string; price: string; emoji: string }>>('partypal_shortlist_data', {})
+        if (updated.includes(vendorId)) {
+          savedData[vendorId] = { name: vendor.name, category: vendor.category, price: vendor.price, emoji: vendor.emoji }
+        } else {
+          delete savedData[vendorId]
+        }
+        userSetJSON('partypal_shortlist_data', savedData)
+      }
       showToast(updated.includes(vendorId) ? 'Added to shortlist ❤️' : 'Removed from shortlist', updated.includes(vendorId) ? 'success' : 'info')
       return updated
     })

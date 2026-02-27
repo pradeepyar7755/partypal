@@ -11,7 +11,8 @@ interface ChecklistItem { item: string; category: string; done: boolean; due?: s
 interface TimelineItem { weeks: string; task: string; category: string; priority: string; emoji?: string }
 interface BudgetItem { category: string; amount: number; percentage: number; color: string }
 interface EventGuest { name: string; email: string; status: 'invited' | 'confirmed' | 'declined' }
-interface EventVendor { name: string; category: string; notes: string; confirmed: boolean }
+interface EventVendor { name: string; category: string; notes: string; confirmed: boolean; costEstimate?: number }
+interface SavedVendor { name: string; category: string; price: string; emoji: string }
 
 interface PlanData {
     eventId?: string; eventType: string; guests: string; location: string; theme: string; date: string; budget: string; time?: string; createdAt?: string
@@ -98,8 +99,9 @@ export default function Dashboard() {
     const [selectedTab, setSelectedTab] = useState<'plan' | 'theme' | 'vendors' | 'guests'>('plan')
     const [eventGuests, setEventGuests] = useState<EventGuest[]>([])
     const [eventVendors, setEventVendors] = useState<EventVendor[]>([])
+    const [savedVendors, setSavedVendors] = useState<Record<string, SavedVendor>>({})
     const [guestForm, setGuestForm] = useState({ name: '', email: '' })
-    const [vendorForm, setVendorForm] = useState({ name: '', category: '', notes: '' })
+    const [vendorForm, setVendorForm] = useState({ name: '', category: '', notes: '', costEstimate: '' })
     const [newCheckItem, setNewCheckItem] = useState('')
     const [guestSearch, setGuestSearch] = useState('')
     const [guestFilter, setGuestFilter] = useState<'all' | 'invited' | 'confirmed' | 'declined'>('all')
@@ -127,6 +129,8 @@ export default function Dashboard() {
             setEventGuests([])
             setEventVendors([])
         }
+        // Load shortlisted vendors from /vendors page
+        setSavedVendors(userGetJSON('partypal_shortlist_data', {}))
     }
 
     useEffect(() => {
@@ -310,12 +314,27 @@ export default function Dashboard() {
     // Vendor management
     const addVendor = () => {
         if (!vendorForm.name.trim() || !vendorForm.category.trim()) return
-        const updated = [...eventVendors, { name: vendorForm.name.trim(), category: vendorForm.category.trim(), notes: vendorForm.notes.trim(), confirmed: false }]
+        const cost = vendorForm.costEstimate ? parseFloat(vendorForm.costEstimate) : undefined
+        const updated = [...eventVendors, { name: vendorForm.name.trim(), category: vendorForm.category.trim(), notes: vendorForm.notes.trim(), confirmed: false, costEstimate: cost && !isNaN(cost) ? cost : undefined }]
         setEventVendors(updated)
         if (data.eventId) userSetJSON(`partypal_vendors_${data.eventId}`, updated)
-        setVendorForm({ name: '', category: '', notes: '' })
+        setVendorForm({ name: '', category: '', notes: '', costEstimate: '' })
         showToast('Vendor added', 'success')
     }
+    const updateVendorCost = (idx: number, cost: string) => {
+        const num = cost ? parseFloat(cost) : undefined
+        const updated = eventVendors.map((v, i) => i === idx ? { ...v, costEstimate: num && !isNaN(num) ? num : undefined } : v)
+        setEventVendors(updated)
+        if (data.eventId) userSetJSON(`partypal_vendors_${data.eventId}`, updated)
+    }
+    const addSavedVendorToEvent = (id: string, vendor: SavedVendor) => {
+        if (eventVendors.some(v => v.name === vendor.name && v.category === vendor.category)) { showToast('Already added', 'info'); return }
+        const updated = [...eventVendors, { name: vendor.name, category: vendor.category, notes: `From shortlist • ${vendor.price}`, confirmed: false }]
+        setEventVendors(updated)
+        if (data.eventId) userSetJSON(`partypal_vendors_${data.eventId}`, updated)
+        showToast(`${vendor.name} added!`, 'success')
+    }
+    const totalVendorCost = eventVendors.reduce((sum, v) => sum + (v.costEstimate || 0), 0)
     const removeVendor = (idx: number) => {
         const updated = eventVendors.filter((_, i) => i !== idx)
         setEventVendors(updated)
@@ -565,45 +584,112 @@ export default function Dashboard() {
                             </div>
                         </div>
                     ) : (
-                        <div>
-                            {/* Add Vendor Form */}
-                            <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
-                                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.8rem' }}>➕ Add Vendor</div>
-                                <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-                                    <input placeholder="Vendor name" value={vendorForm.name} onChange={e => setVendorForm(p => ({ ...p, name: e.target.value }))} style={{ flex: 1, minWidth: 150, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
-                                    <select value={vendorForm.category} onChange={e => setVendorForm(p => ({ ...p, category: e.target.value }))} style={{ padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none', color: vendorForm.category ? 'var(--navy)' : '#9aabbb' }}>
-                                        <option value="">Category...</option>
-                                        <option>Venue</option><option>Photography</option><option>Music / DJ</option><option>Catering</option><option>Baker</option><option>Florist</option><option>Decor</option><option>Other</option>
-                                    </select>
-                                    <input placeholder="Notes (optional)" value={vendorForm.notes} onChange={e => setVendorForm(p => ({ ...p, notes: e.target.value }))} style={{ flex: 1, minWidth: 120, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
-                                    <button onClick={addVendor} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 1.2rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}>Add</button>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '1.5rem' }}>
+                            <div>
+                                {/* Add Vendor Form */}
+                                <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
+                                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.8rem' }}>➕ Add Vendor</div>
+                                    <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
+                                        <input placeholder="Vendor name" value={vendorForm.name} onChange={e => setVendorForm(p => ({ ...p, name: e.target.value }))} style={{ flex: 1, minWidth: 150, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
+                                        <select value={vendorForm.category} onChange={e => setVendorForm(p => ({ ...p, category: e.target.value }))} style={{ padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none', color: vendorForm.category ? 'var(--navy)' : '#9aabbb' }}>
+                                            <option value="">Category...</option>
+                                            <option>Venue</option><option>Photography</option><option>Music / DJ</option><option>Catering</option><option>Baker</option><option>Florist</option><option>Decor</option><option>Other</option>
+                                        </select>
+                                        <input placeholder="Cost estimate $" value={vendorForm.costEstimate} onChange={e => setVendorForm(p => ({ ...p, costEstimate: e.target.value.replace(/[^0-9.]/g, '') }))} style={{ width: 110, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
+                                        <input placeholder="Notes (optional)" value={vendorForm.notes} onChange={e => setVendorForm(p => ({ ...p, notes: e.target.value }))} style={{ flex: 1, minWidth: 100, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
+                                        <button onClick={addVendor} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 1.2rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}>Add</button>
+                                    </div>
+                                </div>
+                                {/* Vendor List */}
+                                {eventVendors.length > 0 ? (
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
+                                        {eventVendors.map((v, i) => (
+                                            <div key={i} className="card" style={{ padding: '1.2rem', position: 'relative' }}>
+                                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
+                                                    <span style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '0.9rem' }}>{v.name}</span>
+                                                    <button onClick={() => toggleVendorConfirmed(i)} style={{ background: v.confirmed ? 'rgba(61,140,110,0.1)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${v.confirmed ? 'rgba(61,140,110,0.3)' : 'rgba(0,0,0,0.1)'}`, borderRadius: 6, padding: '0.2rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: v.confirmed ? '#3D8C6E' : '#9aabbb', cursor: 'pointer' }}>
+                                                        {v.confirmed ? '✅ Confirmed' : '⏳ Pending'}
+                                                    </button>
+                                                </div>
+                                                <div style={{ fontSize: '0.75rem', color: 'var(--teal)', fontWeight: 700, marginBottom: '0.2rem' }}>{v.category}</div>
+                                                {v.notes && <div style={{ fontSize: '0.72rem', color: '#9aabbb', fontWeight: 600, marginBottom: '0.4rem' }}>{v.notes}</div>}
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.4rem', borderTop: '1px solid var(--border)', paddingTop: '0.5rem' }}>
+                                                    <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#9aabbb' }}>💰 Cost:</span>
+                                                    <input type="number" placeholder="0" value={v.costEstimate || ''} onChange={e => updateVendorCost(i, e.target.value)} style={{ width: 80, padding: '0.3rem 0.5rem', borderRadius: 6, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.8rem', fontWeight: 700, color: 'var(--navy)', outline: 'none' }} />
+                                                </div>
+                                                <button onClick={() => removeVendor(i)} style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#E8896A', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800 }}>✕</button>
+                                            </div>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div className="card" style={{ padding: '2rem', textAlign: 'center', marginBottom: '1rem' }}>
+                                        <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem', opacity: 0.5 }}>🏪</div>
+                                        <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.82rem' }}>No vendors added yet. Add from your shortlist or manually above!</p>
+                                    </div>
+                                )}
+                                {/* Saved / Shortlisted Vendors */}
+                                {Object.keys(savedVendors).length > 0 && (
+                                    <div>
+                                        <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.6rem' }}>❤️ Your Shortlisted Vendors</div>
+                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.6rem', marginBottom: '1rem' }}>
+                                            {Object.entries(savedVendors).map(([id, sv]) => {
+                                                const alreadyAdded = eventVendors.some(v => v.name === sv.name && v.category === sv.category)
+                                                return (
+                                                    <div key={id} style={{ background: alreadyAdded ? 'rgba(61,140,110,0.05)' : 'white', border: `1.5px solid ${alreadyAdded ? 'rgba(61,140,110,0.2)' : 'var(--border)'}`, borderRadius: 12, padding: '0.8rem 1rem', display: 'flex', alignItems: 'center', gap: '0.6rem', cursor: alreadyAdded ? 'default' : 'pointer', transition: 'all 0.15s', opacity: alreadyAdded ? 0.7 : 1 }} onClick={() => !alreadyAdded && addSavedVendorToEvent(id, sv)}>
+                                                        <span style={{ fontSize: '1.3rem' }}>{sv.emoji}</span>
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--navy)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{sv.name}</div>
+                                                            <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>{sv.category} • {sv.price}</div>
+                                                        </div>
+                                                        {alreadyAdded ? <span style={{ fontSize: '0.7rem', fontWeight: 800, color: '#3D8C6E' }}>✓ Added</span> : <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--teal)' }}>+ Add</span>}
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                    </div>
+                                )}
+                                <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
+                                    <button onClick={() => router.push('/vendors')} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 10, padding: '0.6rem 1.5rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', color: 'var(--navy)' }}>Browse More Vendors →</button>
                                 </div>
                             </div>
-                            {/* Vendor List */}
-                            {eventVendors.length > 0 ? (
-                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
-                                    {eventVendors.map((v, i) => (
-                                        <div key={i} className="card" style={{ padding: '1.2rem', position: 'relative' }}>
-                                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                                                <span style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '0.9rem' }}>{v.name}</span>
-                                                <button onClick={() => toggleVendorConfirmed(i)} style={{ background: v.confirmed ? 'rgba(61,140,110,0.1)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${v.confirmed ? 'rgba(61,140,110,0.3)' : 'rgba(0,0,0,0.1)'}`, borderRadius: 6, padding: '0.2rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: v.confirmed ? '#3D8C6E' : '#9aabbb', cursor: 'pointer' }}>
-                                                    {v.confirmed ? '✅ Confirmed' : '⏳ Pending'}
-                                                </button>
+                            {/* Sidebar — Cost Summary */}
+                            <div>
+                                <div className="card" style={{ padding: '1.2rem', textAlign: 'center', marginBottom: '1rem' }}>
+                                    <div style={{ fontSize: '1.5rem', marginBottom: '0.2rem' }}>💰</div>
+                                    <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', marginBottom: '0.5rem' }}>Cost Estimate</h3>
+                                    <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.8rem', color: totalVendorCost > 0 ? 'var(--teal)' : '#ccc', marginBottom: '0.3rem' }}>${totalVendorCost.toLocaleString()}</div>
+                                    <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase', marginBottom: '0.6rem' }}>Total Vendor Costs</div>
+                                    {data.budget && totalVendorCost > 0 && (() => {
+                                        const budgetNum = parseFloat(data.budget.replace(/[^0-9]/g, ''))
+                                        const pct = budgetNum > 0 ? Math.round((totalVendorCost / budgetNum) * 100) : 0
+                                        const remaining = budgetNum - totalVendorCost
+                                        return (
+                                            <div>
+                                                <div style={{ height: 6, background: 'var(--border)', borderRadius: 50, overflow: 'hidden', marginBottom: '0.4rem' }}>
+                                                    <div style={{ height: '100%', width: `${Math.min(pct, 100)}%`, background: pct > 100 ? '#E8896A' : 'linear-gradient(90deg, var(--teal), #3D8C6E)', borderRadius: 50, transition: 'width 0.3s' }} />
+                                                </div>
+                                                <div style={{ fontSize: '0.72rem', fontWeight: 700, color: pct > 100 ? '#E8896A' : 'var(--navy)' }}>{pct}% of ${budgetNum.toLocaleString()} budget</div>
+                                                <div style={{ fontSize: '0.68rem', fontWeight: 700, color: remaining >= 0 ? '#3D8C6E' : '#E8896A', marginTop: '0.15rem' }}>{remaining >= 0 ? `$${remaining.toLocaleString()} remaining` : `$${Math.abs(remaining).toLocaleString()} over budget`}</div>
                                             </div>
-                                            <div style={{ fontSize: '0.75rem', color: 'var(--teal)', fontWeight: 700, marginBottom: '0.2rem' }}>{v.category}</div>
-                                            {v.notes && <div style={{ fontSize: '0.72rem', color: '#9aabbb', fontWeight: 600 }}>{v.notes}</div>}
-                                            <button onClick={() => removeVendor(i)} style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#E8896A', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800 }}>✕</button>
-                                        </div>
-                                    ))}
+                                        )
+                                    })()}
                                 </div>
-                            ) : (
-                                <div className="card" style={{ padding: '2rem', textAlign: 'center' }}>
-                                    <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem', opacity: 0.5 }}>🏪</div>
-                                    <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.82rem' }}>No vendors added yet. Add your first vendor above!</p>
-                                </div>
-                            )}
-                            <div style={{ textAlign: 'center', marginTop: '1.2rem' }}>
-                                <button onClick={() => router.push('/vendors')} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 10, padding: '0.6rem 1.5rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', color: 'var(--navy)' }}>Browse More Vendors →</button>
+                                {/* Per-category breakdown */}
+                                {eventVendors.some(v => v.costEstimate) && (
+                                    <div className="card" style={{ padding: '1.2rem' }}>
+                                        <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', marginBottom: '0.8rem' }}>📊 By Category</h3>
+                                        {Object.entries(eventVendors.reduce<Record<string, number>>((acc, v) => {
+                                            if (v.costEstimate) acc[v.category] = (acc[v.category] || 0) + v.costEstimate
+                                            return acc
+                                        }, {})).sort((a, b) => b[1] - a[1]).map(([cat, amt]) => (
+                                            <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                                                <span style={{ flex: 1, fontWeight: 700, fontSize: '0.8rem' }}>{cat}</span>
+                                                <div style={{ flex: 1, height: 5, background: 'var(--border)', borderRadius: 50, overflow: 'hidden' }}><div style={{ height: '100%', width: `${totalVendorCost > 0 ? (amt / totalVendorCost) * 100 : 0}%`, background: 'linear-gradient(90deg, var(--teal), var(--yellow))', borderRadius: 50, transition: 'width 0.3s' }} /></div>
+                                                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--navy)', minWidth: 50, textAlign: 'right' }}>${amt.toLocaleString()}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
