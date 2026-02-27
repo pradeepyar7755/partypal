@@ -51,7 +51,8 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const [search, setSearch] = useState('')
     const [filter, setFilter] = useState<string>('all')
     const [expandedGuest, setExpandedGuest] = useState<string | null>(null)
-    const [inviteTheme, setInviteTheme] = useState('Modern & Fun')
+    const [inviteTheme] = useState(propPlanData?.theme || 'Modern & Fun')
+    const [inviteTemp, setInviteTemp] = useState(0.7)
     const [refineInput, setRefineInput] = useState('')
     const [isRefining, setIsRefining] = useState(false)
     const [isEditingInvite, setIsEditingInvite] = useState(false)
@@ -138,7 +139,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const generateInvite = async () => {
         setLoadingInvite(true)
         try {
-            const res = await fetch('/api/guests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'generate_invite', eventDetails: { ...planData, inviteTheme, hostName: 'Your Host' } }) })
+            const res = await fetch('/api/guests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'generate_invite', eventDetails: { ...planData, inviteTheme, hostName: 'Your Host' }, temperature: inviteTemp }) })
             const data = await res.json()
             setInvite(data); setIsEditingInvite(false)
             if (planData.eventId) fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: data }) }).catch(() => { })
@@ -202,17 +203,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                 ))}
             </div>
 
-            {/* ── Invitation Theme (horizontal bar) ── */}
-            <div className="card" style={{ padding: '0.8rem 1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.6rem', flexWrap: 'wrap' }}>
-                <span style={{ fontSize: '1.1rem' }}>✉️</span>
-                <span style={{ fontSize: '0.78rem', fontWeight: 800, color: 'var(--navy)', whiteSpace: 'nowrap' }}>Theme</span>
-                <select value={inviteTheme} onChange={e => setInviteTheme(e.target.value)} className={styles.addInput} style={{ minWidth: 130, margin: 0, padding: '0.3rem 0.5rem', fontSize: '0.78rem' }}>
-                    <option>Modern &amp; Fun</option><option>Elegant &amp; Formal</option><option>Tropical Paradise</option><option>Rustic &amp; Cozy</option><option>Vintage &amp; Retro</option><option>Minimalist &amp; Clean</option><option>Glamorous &amp; Luxe</option>
-                </select>
-                {invite && (
-                    <button onClick={() => setInvite(null)} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.2rem 0.5rem', fontSize: '0.68rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer', whiteSpace: 'nowrap' }}>✕ Clear</button>
-                )}
-            </div>
 
             {/* Generated Invite (full width card) */}
             {invite && (
@@ -241,12 +231,26 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                         </div>
                     )}
                     <div style={{ marginTop: '0.6rem', borderTop: '1px solid #eee', paddingTop: '0.6rem' }}>
-                        <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.3rem' }}>🤖 Refine with AI</div>
-                        <div style={{ display: 'flex', gap: '0.3rem' }}>
-                            <input value={refineInput} onChange={e => setRefineInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') refineInvite() }} placeholder="e.g. Make it more formal..." className={styles.addInput} style={{ flex: 1, fontSize: '0.78rem' }} />
-                            <button onClick={refineInvite} disabled={isRefining || !refineInput.trim()} style={{ background: 'var(--teal)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.35rem 0.6rem', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefining || !refineInput.trim() ? 0.5 : 1 }}>
-                                {isRefining ? '...' : '✨ Refine'}
-                            </button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                            <div style={{ flex: 1, minWidth: 200 }}>
+                                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.3rem' }}>🤖 Refine with AI</div>
+                                <div style={{ display: 'flex', gap: '0.3rem' }}>
+                                    <input value={refineInput} onChange={e => setRefineInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') refineInvite() }} placeholder="e.g. Make it more formal..." className={styles.addInput} style={{ flex: 1, fontSize: '0.78rem' }} />
+                                    <button onClick={refineInvite} disabled={isRefining || !refineInput.trim()} style={{ background: 'var(--teal)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.35rem 0.6rem', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefining || !refineInput.trim() ? 0.5 : 1 }}>
+                                        {isRefining ? '...' : '✨ Refine'}
+                                    </button>
+                                </div>
+                            </div>
+                            <div style={{ minWidth: 120 }}>
+                                <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.25rem' }}>🌡️ Creativity</div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                    <input type="range" min="0.3" max="1.0" step="0.1" value={inviteTemp} onChange={e => setInviteTemp(parseFloat(e.target.value))} style={{ width: 70, accentColor: 'var(--teal)' }} />
+                                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--navy)' }}>{inviteTemp <= 0.4 ? '🧐' : inviteTemp <= 0.7 ? '⚖️' : '🎨'}</span>
+                                </div>
+                            </div>
+                        </div>
+                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                            <button onClick={() => setInvite(null)} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.25rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Clear Invite</button>
                         </div>
                     </div>
                 </div>
@@ -260,7 +264,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                         <button className={styles.secondaryBtn} onClick={() => { setShowBulk(!showBulk); setShowAdd(false) }}>📋 Bulk Import</button>
                         <button className={styles.secondaryBtn} onClick={generateInvite} disabled={loadingInvite}>{loadingInvite ? '⏳...' : '✨ Generate Invite'}</button>
                         <button className={styles.secondaryBtn} onClick={copyRSVPLink}>{copied ? '✓ Copied!' : '🔗 RSVP Link'}</button>
-                        <button className={styles.secondaryBtn} onClick={shareWhatsApp} style={{ background: '#25D366', color: '#fff', border: 'none' }}>💬 WhatsApp</button>
                     </div>
 
                     {/* Search */}

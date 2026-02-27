@@ -175,9 +175,9 @@ export default function GuestsPage() {
           <div className={styles.breadcrumb}>
             <a href="/">🏠 Home</a> › <span>Guests</span>
           </div>
-          <button className="back-btn" onClick={() => window.location.href = '/'} style={{ marginTop: '0.3rem' }}>← Back to Home</button>
+          <button className="back-btn" onClick={() => window.location.href = '/'} style={{ marginTop: 0 }}>← Back to Home</button>
           <div className={styles.headerTitle}>Guest Management 👥</div>
-          <div style={{ fontSize: '0.82rem', color: '#6b7c93', fontWeight: 600, marginBottom: '0.2rem' }}>Add your friends & family to circles for faster and repeatable access</div>
+          <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.2rem' }}>Add your friends & family to circles for faster and repeatable access</p>
           <div className={styles.headerSub}>{contacts.length} contact{contacts.length !== 1 ? 's' : ''} · {circles.length} circle{circles.length !== 1 ? 's' : ''}</div>
         </div>
       </div>

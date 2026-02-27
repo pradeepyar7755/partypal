@@ -6,7 +6,7 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_MAPS_API_KEY || '')
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json()
-    const { action, eventDetails, guestList } = body
+    const { action, eventDetails, guestList, temperature } = body
 
     let prompt = ''
 
@@ -62,7 +62,7 @@ Return ONLY valid JSON:
       return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { temperature: temperature || 0.7 } })
     const result = await model.generateContent(prompt)
     const text = result.response.text()
     const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()

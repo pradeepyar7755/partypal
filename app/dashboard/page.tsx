@@ -396,11 +396,12 @@ export default function Dashboard() {
             {/* ══ HEADER ══ */}
             <header className={styles.header}>
                 <div className={styles.headerInner}>
-                    <div className="breadcrumb">
-                        <a href="/">🏠 Home</a> › <span className="breadcrumb current">My Events</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', marginBottom: '0.6rem' }}>
+                        <a href="/" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>🏠 Home</a> › <span style={{ color: 'var(--yellow)' }}>My Events</span>
                     </div>
-                    <button className="back-btn" onClick={() => router.push('/')} style={{ marginTop: '0.3rem' }}>← Back to Home</button>
-                    <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '1.1rem', color: 'var(--navy)', marginTop: '0.5rem' }}>Plan your events with the help of AI ✨</div>
+                    <button className="back-btn" onClick={() => router.push('/')} style={{ marginTop: 0 }}>← Back to Home</button>
+                    <h1 style={{ fontFamily: "'Fredoka One', cursive", fontSize: '1.6rem', color: 'white', marginBottom: '0.4rem' }}>Plan your events with the help of AI ✨</h1>
+                    <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.5rem' }}>Create, manage, and share your party plans — all powered by AI.</p>
                 </div>
             </header>
 
