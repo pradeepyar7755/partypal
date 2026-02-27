@@ -295,7 +295,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                 <div>
                     {/* Invite + Share actions */}
                     <div className={styles.actionsRow} style={{ marginBottom: '0.4rem' }}>
-                        <button className={styles.secondaryBtn} onClick={generateInvite} disabled={loadingInvite}>{loadingInvite ? '⏳...' : '✨ Generate Invite'}</button>
+                        <button className={styles.actionBtn} onClick={generateInvite} disabled={loadingInvite}>{loadingInvite ? '⏳...' : '✨ Generate Invite'}</button>
                         <button className={styles.secondaryBtn} onClick={copyRSVPLink}>{copied ? '✓ Copied!' : '🔗 RSVP Link'}</button>
                     </div>
                     {/* Guest management actions */}
