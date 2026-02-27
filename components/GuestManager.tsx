@@ -364,24 +364,24 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
 
             {/* Invite card or generate prompt */}
             {!invite && (
-                <div className="card" style={{ padding: '0.8rem 1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                <div className="card" style={{ padding: '0.8rem 1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
                     <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)' }}>✉️ Invitation</h3>
-                    <div style={{ display: 'flex', gap: '0.3rem' }}>
-                        <button className={styles.actionBtn} onClick={generateInvite} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
-                        <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 RSVP'}</button>
-                    </div>
+                    <button className={styles.actionBtn} onClick={generateInvite} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
+                    <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 RSVP'}</button>
                 </div>
             )}
             {invite && (
                 <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: inviteCollapsed ? 0 : '0.8rem', cursor: 'pointer' }} onClick={() => setInviteCollapsed(c => !c)}>
-                        <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', marginBottom: inviteCollapsed ? 0 : '0.8rem', cursor: 'pointer', gap: '0.4rem', flexWrap: 'wrap' }} onClick={() => setInviteCollapsed(c => !c)}>
+                        <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap', margin: 0 }}>
                             <span style={{ fontSize: '0.7rem', transition: 'transform 0.2s', display: 'inline-block', transform: inviteCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▼</span>
                             ✉️ Invitation
                         </h3>
-                        <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', flexWrap: 'wrap', justifyContent: 'flex-end' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
                             <button className={styles.actionBtn} onClick={generateInvite} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
                             <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 RSVP'}</button>
+                        </div>
+                        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.3rem', alignItems: 'center', flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
                             {bookmarks.map((bm, idx) => (
                                 <div key={idx} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.15rem' }}>
                                     {editingBookmarkIdx === idx ? (
