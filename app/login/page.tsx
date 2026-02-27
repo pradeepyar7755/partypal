@@ -38,7 +38,7 @@ export default function LoginPage() {
             } else if (msg.includes('operation-not-allowed')) {
                 setError(`${provider} sign-in is not enabled. Enable it in Firebase Console → Authentication → Sign-in method.`)
             } else {
-                setError(`${provider} sign-in failed. Please try again.`)
+                setError(`${provider} error: ${msg}`)
             }
             setLoading(false)
         }
