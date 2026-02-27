@@ -62,9 +62,9 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     // Persist invite to localStorage whenever it changes
     useEffect(() => {
         userSetJSON(inviteKey, invite)
-        // Also sync to Firestore for RSVP page
-        if (invite && planData.eventId) {
-            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite }) }).catch(() => { })
+        // Also sync to Firestore for RSVP page (including null to clear)
+        if (planData.eventId) {
+            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: invite || null }) }).catch(() => { })
         }
     }, [invite, inviteKey, planData.eventId])
 
