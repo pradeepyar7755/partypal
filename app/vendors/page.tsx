@@ -3,6 +3,7 @@ import { userGet, userGetJSON, userSetJSON } from '@/lib/userStorage'
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import styles from './vendors.module.css'
+import LocationSearch from '@/components/LocationSearch'
 import { showToast } from '@/components/Toast'
 
 const CATS = ['All Vendors', 'Venue', 'Decor', 'Baker', 'Food', 'Photos', 'Music', 'Drinks', 'Entertain']
@@ -220,7 +221,17 @@ function VendorsContent() {
           <h1 className={styles.headerTitle}>
             {activecat === 'All Vendors' ? 'Find Your Perfect Vendors 🔍' : `Find ${CAT_EMOJIS[activecat]} ${activecat} Vendors`}
           </h1>
-          <p className={styles.headerSub}>Browse {filtered.length > 0 ? filtered.length : 697} vetted vendors in {location} — ready to make your party memorable.</p>
+          <p className={styles.headerSub}>Browse vetted vendors in your area — ready to make your party memorable.</p>
+          <div style={{ maxWidth: 400, margin: '0.6rem 0' }}>
+            <LocationSearch
+              value={detectedLocation}
+              onChange={(loc) => {
+                setDetectedLocation(loc)
+                setLocationReady(true)
+              }}
+              placeholder="📍 Change location..."
+            />
+          </div>
           <div className={styles.filterTabs}>
             {CATS.map(c => (
               <button key={c} className={`${styles.filterTab} ${activecat === c ? styles.filterTabActive : ''}`} onClick={() => setActivecat(c)}>
