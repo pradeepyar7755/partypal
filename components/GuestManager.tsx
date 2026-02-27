@@ -51,8 +51,9 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const [search, setSearch] = useState('')
     const [filter, setFilter] = useState<string>('all')
     const [expandedGuest, setExpandedGuest] = useState<string | null>(null)
-    const [inviteTheme] = useState(propPlanData?.theme || 'Modern & Fun')
+    const [inviteTheme, setInviteTheme] = useState(propPlanData?.theme || 'Modern & Fun')
     const [inviteTemp, setInviteTemp] = useState(0.7)
+    const [rsvpByDate, setRsvpByDate] = useState('')
     const [refineInput, setRefineInput] = useState('')
     const [isRefining, setIsRefining] = useState(false)
     const [isEditingInvite, setIsEditingInvite] = useState(false)
@@ -248,8 +249,18 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                     <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--navy)' }}>{inviteTemp <= 0.4 ? '🧐' : inviteTemp <= 0.7 ? '⚖️' : '🎨'}</span>
                                 </div>
                             </div>
+                            <div style={{ minWidth: 130 }}>
+                                <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.25rem' }}>🎨 Theme</div>
+                                <select value={inviteTheme} onChange={e => setInviteTheme(e.target.value)} className={styles.addInput} style={{ margin: 0, padding: '0.25rem 0.4rem', fontSize: '0.72rem', width: '100%' }}>
+                                    <option>Modern & Fun</option><option>Elegant & Formal</option><option>Tropical Paradise</option><option>Rustic & Cozy</option><option>Vintage & Retro</option><option>Minimalist & Clean</option><option>Glamorous & Luxe</option>
+                                </select>
+                            </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb' }}>📅 RSVP by</span>
+                                <input type="date" value={rsvpByDate} onChange={e => setRsvpByDate(e.target.value)} className={styles.addInput} style={{ margin: 0, padding: '0.2rem 0.4rem', fontSize: '0.72rem', width: 130 }} />
+                            </div>
                             <button onClick={() => setInvite(null)} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.25rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Clear Invite</button>
                         </div>
                     </div>

@@ -15,16 +15,15 @@ export async function POST(req: NextRequest) {
 Event: ${eventDetails?.eventType || 'Birthday Party'}
 Theme: ${eventDetails?.theme || 'Celebration'}
 Invitation Style: ${eventDetails?.inviteTheme || 'Modern & Fun'}
-Date: ${eventDetails?.date || 'TBD'}
-Location: ${eventDetails?.location || 'TBD'}
 Host: ${eventDetails?.hostName || 'Your Host'}
+
+IMPORTANT: Do NOT include the event date, time, or venue/location in the message body — those details are already displayed separately on the RSVP card. Focus purely on the excitement, vibe, and what to expect.
 
 Return ONLY valid JSON:
 {
   "subject": "Email subject line",
-  "message": "Full invitation message (2-3 paragraphs, warm and exciting, matching the invitation style)",
-  "rsvpDeadline": "Suggested RSVP deadline",
-  "smsVersion": "Short 160-char SMS version"
+  "message": "Full invitation message (2-3 paragraphs, warm and exciting, matching the invitation style. Do NOT mention date, time, or location.)",
+  "smsVersion": "Short 160-char SMS version (no date/location either)"
 }`
     } else if (action === 'refine_invite') {
       prompt = `You are refining a party invitation based on user feedback.
