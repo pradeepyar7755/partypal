@@ -126,6 +126,22 @@ export default function Dashboard() {
     const [showBudgetTips, setShowBudgetTips] = useState(false)
     const progressRefs = useRef<HTMLDivElement[]>([])
 
+    // Helper: show business name or just street name from full location
+    const shortLocation = (loc: string) => {
+        if (!loc || loc === 'TBD') return loc
+        // If it has a comma, the first part is often the business name
+        const parts = loc.split(',')
+        if (parts.length >= 3) return parts[0].trim() // business name
+        if (parts.length === 2) {
+            // Could be "Street, City" or "Business, City"
+            const first = parts[0].trim()
+            // If first part is a street-like address, trim it
+            if (/^\d+/.test(first)) return first.replace(/\s+(St|Street|Ave|Avenue|Blvd|Boulevard|Rd|Road|Dr|Drive|Ln|Lane|Way|Ct|Court|Pl|Place)$/i, '')
+            return first
+        }
+        return parts[0].trim()
+    }
+
     const computeTimelineDates = (timeline: TimelineItem[], eventDate: string): TimelineItem[] => {
         if (!eventDate) return timeline
         const ev = new Date(eventDate + 'T12:00:00')
@@ -277,6 +293,16 @@ export default function Dashboard() {
                     assigned.add(ci)
                 }
             })
+        })
+        // Ensure every deliverable has at least 1 task
+        // First pass: try to steal from unassigned pool
+        const unassignedPool = checklist.map((_, ci) => ci).filter(ci => !assigned.has(ci))
+        timeline.forEach((t, ti) => {
+            if (mapping[ti].length === 0 && unassignedPool.length > 0) {
+                const stolen = unassignedPool.shift()!
+                mapping[ti].push(stolen)
+                assigned.add(stolen)
+            }
         })
         const unassigned = checklist.map((_, ci) => ci).filter(ci => !assigned.has(ci))
         return { mapping, unassigned }
@@ -650,30 +676,33 @@ export default function Dashboard() {
             {/* ══ EVENT CARDS ══ */}
             <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1rem 1.5rem 0' }}>
                 <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'thin' }}>
-                    {/* Demo card: Maya's 30th */}
+                    {/* + Plan a Party card (always first) */}
                     <div
-                        onClick={() => {
-                            // Load user's saved demo edits if they exist, otherwise fresh default
-                            const saved = userGetJSON('partypal_demo', null)
-                            loadEvent(saved || DEFAULT_PLAN, true)
-                        }}
+                        onClick={() => router.push('/#wizard')}
                         style={{
-                            minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const, overflow: 'hidden',
-                            background: isDemo
-                                ? 'repeating-linear-gradient(135deg, rgba(0,0,0,0.03), rgba(0,0,0,0.03) 8px, rgba(0,0,0,0.06) 8px, rgba(0,0,0,0.06) 16px)'
-                                : 'rgba(0,0,0,0.03)',
-                            border: isDemo ? '2px solid rgba(155,155,155,0.4)' : '1.5px solid rgba(0,0,0,0.08)',
-                            opacity: isDemo ? 1 : 0.7,
+                            minWidth: 160, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s',
+                            background: 'rgba(0,0,0,0.02)', border: '1.5px dashed rgba(0,0,0,0.12)',
+                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.3rem',
                         }}
                     >
-                        <div style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.08)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.58rem', fontWeight: 900, color: '#888', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>DEMO</div>
-                        <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>🎂</div>
-                        <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: isDemo ? 'var(--navy)' : '#999', marginBottom: '0.2rem' }}>Maya&apos;s 30th Birthday</div>
-                        <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>Mar 15 · 50 guests</div>
+                        <div style={{ fontSize: '1.5rem', opacity: 0.5 }}>➕</div>
+                        <div style={{ fontSize: '0.78rem', color: '#9aabbb', fontWeight: 700 }}>Plan a Party</div>
                     </div>
-                    {/* User events */}
-                    {allEvents.map((ev, idx) => {
+                    {/* User events sorted: upcoming first, past after */}
+                    {[...allEvents].sort((a, b) => {
+                        const now = new Date()
+                        const aDate = a.date ? new Date(a.date + 'T12:00:00') : null
+                        const bDate = b.date ? new Date(b.date + 'T12:00:00') : null
+                        const aIsPast = aDate ? aDate < now : false
+                        const bIsPast = bDate ? bDate < now : false
+                        if (aIsPast && !bIsPast) return 1
+                        if (!aIsPast && bIsPast) return -1
+                        if (aDate && bDate) return aIsPast ? bDate.getTime() - aDate.getTime() : aDate.getTime() - bDate.getTime()
+                        return 0
+                    }).map((ev, idx) => {
                         const isActive = !isDemo && data.eventId === ev.eventId
+                        const evDate = ev.date ? new Date(ev.date + 'T12:00:00') : null
+                        const isPast = evDate ? evDate < new Date() : false
                         const palette = [
                             { bg: 'linear-gradient(135deg, rgba(74,173,168,0.18), rgba(61,140,110,0.12))', border: 'rgba(74,173,168,0.5)' },
                             { bg: 'linear-gradient(135deg, rgba(232,137,106,0.18), rgba(200,100,70,0.12))', border: 'rgba(232,137,106,0.5)' },
@@ -688,11 +717,13 @@ export default function Dashboard() {
                                 onClick={() => loadEvent(ev, false)}
                                 style={{
                                     minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const,
-                                    background: isActive ? color.bg : 'linear-gradient(135deg, rgba(0,0,0,0.03), rgba(0,0,0,0.06))',
+                                    background: isActive ? color.bg : isPast ? 'rgba(0,0,0,0.04)' : 'linear-gradient(135deg, rgba(0,0,0,0.03), rgba(0,0,0,0.06))',
                                     border: isActive ? `2px solid ${color.border}` : '1.5px solid rgba(0,0,0,0.1)',
                                     boxShadow: isActive ? `0 4px 16px ${color.border.replace('0.5', '0.2')}` : '0 1px 4px rgba(0,0,0,0.04)',
+                                    opacity: isPast && !isActive ? 0.65 : 1,
                                 }}
                             >
+                                {isPast && <div style={{ position: 'absolute', top: 6, left: 6, background: 'rgba(155,155,155,0.15)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.55rem', fontWeight: 900, color: '#888', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Past Event</div>}
                                 <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>{ev.eventType?.split(' ')[0] || '🎉'}</div>
                                 <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{ev.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</div>
                                 <div style={{ fontSize: '0.7rem', color: '#6b7c93', fontWeight: 700 }}>
@@ -729,17 +760,25 @@ export default function Dashboard() {
                             </div>
                         )
                     })}
-                    {/* + New Party card */}
+                    {/* Demo card (always last) */}
                     <div
-                        onClick={() => router.push('/#wizard')}
+                        onClick={() => {
+                            const saved = userGetJSON('partypal_demo', null)
+                            loadEvent(saved || DEFAULT_PLAN, true)
+                        }}
                         style={{
-                            minWidth: 160, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s',
-                            background: 'rgba(0,0,0,0.02)', border: '1.5px dashed rgba(0,0,0,0.12)',
-                            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.3rem',
+                            minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const, overflow: 'hidden',
+                            background: isDemo
+                                ? 'repeating-linear-gradient(135deg, rgba(0,0,0,0.03), rgba(0,0,0,0.03) 8px, rgba(0,0,0,0.06) 8px, rgba(0,0,0,0.06) 16px)'
+                                : 'rgba(0,0,0,0.03)',
+                            border: isDemo ? '2px solid rgba(155,155,155,0.4)' : '1.5px solid rgba(0,0,0,0.08)',
+                            opacity: isDemo ? 1 : 0.7,
                         }}
                     >
-                        <div style={{ fontSize: '1.5rem', opacity: 0.5 }}>➕</div>
-                        <div style={{ fontSize: '0.78rem', color: '#9aabbb', fontWeight: 700 }}>Plan a Party</div>
+                        <div style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.08)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.58rem', fontWeight: 900, color: '#888', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>DEMO</div>
+                        <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>🎂</div>
+                        <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: isDemo ? 'var(--navy)' : '#999', marginBottom: '0.2rem' }}>Maya&apos;s 30th Birthday</div>
+                        <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>Mar 15 · 50 guests</div>
                     </div>
                 </div>
             </div>
@@ -784,7 +823,7 @@ export default function Dashboard() {
                                 </div>
                                 {data.date && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>📅 {new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>}
                                 <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>👥 {data.guests} guests</div>
-                                <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>📍 {data.location}</div>
+                                <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>📍 {shortLocation(data.location)}</div>
                                 {data.theme && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>🎨 {data.theme}</div>}
                                 {data.budget && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>💰 {data.budget}</div>}
                                 <button onClick={startEditing} style={{ marginLeft: 'auto', background: 'rgba(74,173,168,0.1)', border: '1.5px solid rgba(74,173,168,0.25)', borderRadius: 8, padding: '0.3rem 0.8rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>✏️ Edit</button>
@@ -861,12 +900,8 @@ export default function Dashboard() {
                         <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
                             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎨</div>
                             <h2 style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', marginBottom: '0.5rem' }}>{data.theme ? `${data.theme} Theme` : 'Party Theme'}</h2>
-                            <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.85rem', marginBottom: '1.5rem' }}>Mood board, color palette, and decor inspiration for your event</p>
-                            <div style={{ display: 'flex', gap: '1rem', justifyContent: 'center', flexWrap: 'wrap' }}>
-                                {['🌴 Tropical Vibes', '✨ Gold Accents', '🎈 Balloon Arch', '🌺 Floral Centerpieces', '🕯️ Ambient Lighting', '🍹 Tiki Bar Setup'].map((idea, i) => (
-                                    <div key={i} style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 10, padding: '0.6rem 1rem', fontSize: '0.82rem', fontWeight: 700, color: 'var(--teal)' }}>{idea}</div>
-                                ))}
-                            </div>
+                            <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.5rem' }}>This feature will be coming soon!</p>
+                            <p style={{ color: '#ccc', fontSize: '0.78rem', fontWeight: 600 }}>Mood boards, color palettes, and AI-curated decor inspiration — stay tuned ✨</p>
                         </div>
                     </div>
                 )
@@ -924,7 +959,7 @@ export default function Dashboard() {
                                         {eventVendors.map((v, i) => (
                                             <div key={i} className="card" style={{ padding: '1.2rem', position: 'relative' }}>
                                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.4rem' }}>
-                                                    <span style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '0.9rem' }}>{v.name}</span>
+                                                    <span style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '0.9rem' }}>{v.category === 'Venue' ? shortLocation(v.name) : v.name}</span>
                                                     <button onClick={() => toggleVendorConfirmed(i)} style={{ background: v.confirmed ? 'rgba(61,140,110,0.1)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${v.confirmed ? 'rgba(61,140,110,0.3)' : 'rgba(0,0,0,0.1)'}`, borderRadius: 6, padding: '0.2rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: v.confirmed ? '#3D8C6E' : '#9aabbb', cursor: 'pointer' }}>
                                                         {v.confirmed ? '✅ Confirmed' : '⏳ Pending'}
                                                     </button>
@@ -966,6 +1001,52 @@ export default function Dashboard() {
                                         </div>
                                     </div>
                                 )}
+                                {/* Matched Vendors */}
+                                {!isDemo && (() => {
+                                    const MATCHED_VENDORS = [
+                                        { emoji: '🏠', name: 'Local Venue', cat: 'Venue', price: '$400-800', matchBase: 85 },
+                                        { emoji: '🍽️', name: 'Top Chef Catering', cat: 'Catering', price: '$300-600', matchBase: 82 },
+                                        { emoji: '📸', name: 'SnapPro Photography', cat: 'Photography', price: '$250-500', matchBase: 88 },
+                                        { emoji: '🎵', name: 'DJ SoundWave', cat: 'DJ / Music', price: '$200-400', matchBase: 80 },
+                                        { emoji: '🎂', name: 'Sweet Bliss Bakery', cat: 'Cake', price: '$80-200', matchBase: 90 },
+                                        { emoji: '🌸', name: 'Bloom Floral Co', cat: 'Decor', price: '$150-350', matchBase: 78 },
+                                        { emoji: '🎪', name: 'FunTimes Entertainment', cat: 'Entertainment', price: '$200-500', matchBase: 75 },
+                                    ]
+                                    // Adjust match scores based on user's event
+                                    const guestCount = parseInt(data.guests) || 50
+                                    const hasBudget = !!data.budget
+                                    const hasLocation = !!data.location && data.location !== 'TBD'
+                                    const matched = MATCHED_VENDORS
+                                        .filter(mv => !eventVendors.some(v => v.category.toLowerCase().includes(mv.cat.toLowerCase().split(' ')[0])))
+                                        .map(mv => {
+                                            let score = mv.matchBase
+                                            if (hasBudget) score += 3
+                                            if (hasLocation) score += 4
+                                            if (guestCount > 30) score += 2
+                                            score = Math.min(98, score + Math.floor(Math.random() * 5))
+                                            return { ...mv, match: score }
+                                        })
+                                        .sort((a, b) => b.match - a.match)
+                                        .slice(0, 4)
+                                    if (matched.length === 0) return null
+                                    return (
+                                        <div style={{ marginTop: '1rem' }}>
+                                            <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.6rem' }}>🎯 Matched Vendors</div>
+                                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.6rem', marginBottom: '1rem' }}>
+                                                {matched.map((mv, mi) => (
+                                                    <div key={mi} onClick={() => router.push(`/vendors?cat=${mv.cat.split(' ')[0].toLowerCase()}`)} style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 12, padding: '0.8rem 1rem', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                                        <span style={{ fontSize: '1.3rem' }}>{mv.emoji}</span>
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--navy)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mv.name}</div>
+                                                            <div style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 600 }}>{mv.cat} • {mv.price}</div>
+                                                        </div>
+                                                        <span style={{ background: 'rgba(74,173,168,0.1)', color: 'var(--teal)', padding: '0.15rem 0.45rem', borderRadius: 12, fontSize: '0.62rem', fontWeight: 800, whiteSpace: 'nowrap' }}>{mv.match}%</span>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                        </div>
+                                    )
+                                })()}
                                 <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
                                     <button onClick={() => router.push('/vendors')} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 10, padding: '0.6rem 1.5rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', color: 'var(--navy)' }}>Browse More Vendors →</button>
                                 </div>
@@ -998,7 +1079,24 @@ export default function Dashboard() {
                                     <div className="card" style={{ padding: '1.2rem' }}>
                                         <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '0.6rem' }}>📊 Actuals vs. Budget</h3>
                                         {data.plan.budget.breakdown.map((b, i) => {
-                                            const actual = eventVendors.filter(v => v.category.toLowerCase().includes(b.category.toLowerCase().split(' ')[0]) || b.category.toLowerCase().includes(v.category.toLowerCase().split(' ')[0])).reduce((s, v) => s + (v.costEstimate || 0), 0)
+                                            // Smart matching: map budget categories to vendor categories
+                                            const BUDGET_TO_VENDOR: Record<string, string[]> = {
+                                                venue: ['venue', 'location', 'space', 'hall'],
+                                                catering: ['catering', 'food', 'chef', 'caterer', 'bbq', 'taco'],
+                                                decor: ['decor', 'decoration', 'florist', 'flower', 'balloon', 'lighting'],
+                                                entertainment: ['entertainment', 'dj', 'music', 'band', 'performer', 'magician', 'comedian'],
+                                                photography: ['photography', 'photographer', 'photo', 'video', 'videographer'],
+                                                cake: ['cake', 'baker', 'bakery', 'dessert', 'pastry'],
+                                                misc: ['misc', 'other', 'transportation', 'favor', 'rental', 'equipment'],
+                                                'music / dj': ['dj', 'music', 'band', 'sound'],
+                                                drinks: ['drinks', 'bar', 'bartender', 'cocktail', 'beverage'],
+                                            }
+                                            const budgetKey = b.category.toLowerCase()
+                                            const matchTerms = BUDGET_TO_VENDOR[budgetKey] || [budgetKey.split(' ')[0], budgetKey]
+                                            const actual = eventVendors.filter(v => {
+                                                const vc = v.category.toLowerCase()
+                                                return matchTerms.some(term => vc.includes(term) || term.includes(vc.split(' ')[0]))
+                                            }).reduce((s, v) => s + (v.costEstimate || 0), 0)
                                             const pctUsed = b.amount > 0 ? Math.round((actual / b.amount) * 100) : 0
                                             return (
                                                 <div key={i} style={{ marginBottom: '0.5rem' }}>
@@ -1090,7 +1188,7 @@ export default function Dashboard() {
                                             <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', marginLeft: 'auto' }}>{checkDone}/{checkTotal} ({checkPct}%)</span>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', width: '100%' }}>
-                                            <span className={`${styles.sourceBadge} ${styles.claudeBadge}`} style={{ fontSize: '0.58rem', padding: '0.08rem 0.35rem' }}>AI</span>
+                                            <span className={`${styles.sourceBadge} ${styles.claudeBadge}`} style={{ fontSize: '0.58rem', padding: '0.08rem 0.35rem' }}>AI Generated</span>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flex: 1 }}>
                                                 <input value={refineTimelineInput} onChange={e => setRefineTimelineInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') refineTimeline() }} placeholder="Refine with AI..." style={{ flex: 1, padding: '0.22rem 0.5rem', borderRadius: 6, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.68rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
                                                 <button onClick={refineTimeline} disabled={isRefiningTimeline || !refineTimelineInput.trim()} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 6, padding: '0.22rem 0.45rem', fontSize: '0.62rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefiningTimeline || !refineTimelineInput.trim() ? 0.5 : 1 }}>{isRefiningTimeline ? '...' : '✨'}</button>
