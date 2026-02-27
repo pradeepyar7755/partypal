@@ -788,7 +788,8 @@ export default function Dashboard() {
                                     <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.8rem', color: totalVendorCost > 0 ? 'var(--teal)' : '#ccc', marginBottom: '0.3rem' }}>${totalVendorCost.toLocaleString()}</div>
                                     <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase', marginBottom: '0.6rem' }}>Total Vendor Costs</div>
                                     {data.budget && totalVendorCost > 0 && (() => {
-                                        const budgetNum = parseFloat(data.budget.replace(/[^0-9]/g, ''))
+                                        const nums = data.budget.match(/[\d,]+/g)?.map((n: string) => parseInt(n.replace(/,/g, ''))) || [2000]
+                                        const budgetNum = nums.length >= 2 ? Math.round((nums[0] + nums[1]) / 2) : (nums[0] || 2000)
                                         const pct = budgetNum > 0 ? Math.round((totalVendorCost / budgetNum) * 100) : 0
                                         const remaining = budgetNum - totalVendorCost
                                         return (
