@@ -997,8 +997,16 @@ export default function Dashboard() {
                                                             const val = parseInt(editBudgetValue) || 0
                                                             const updated = { ...data, plan: { ...data.plan, budget: { ...data.plan.budget, breakdown: data.plan.budget.breakdown.map((item, idx) => idx === i ? { ...item, amount: val, percentage: Math.round((val / totalBudget) * 100) } : item) } } }
                                                             setData(updated)
-                                                            if (isDemo) userSetJSON('partypal_demo', updated)
-                                                            else { userSetJSON('partyplan', updated); if (updated.eventId) fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => { }) }
+                                                            if (isDemo) { userSetJSON('partypal_demo', updated) }
+                                                            else {
+                                                                userSetJSON('partyplan', updated)
+                                                                if (updated.eventId) {
+                                                                    const updatedEvents = allEvents.map(ev => ev.eventId === updated.eventId ? updated : ev)
+                                                                    setAllEvents(updatedEvents)
+                                                                    userSetJSON('partypal_events', updatedEvents)
+                                                                    fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => { })
+                                                                }
+                                                            }
                                                             setEditBudgetIdx(null)
                                                         }}
                                                         onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
@@ -1011,7 +1019,7 @@ export default function Dashboard() {
                                                 )}
                                                 <div className={styles.budgetPct}>{b.percentage}%</div>
                                                 {editBudgetMode && (
-                                                    <button onClick={(e) => { e.stopPropagation(); const updated = { ...data, plan: { ...data.plan, budget: { ...data.plan.budget, breakdown: data.plan.budget.breakdown.filter((_, idx) => idx !== i) } } }; setData(updated); if (isDemo) userSetJSON('partypal_demo', updated); else { userSetJSON('partyplan', updated) }; showToast(`Removed ${b.category}`, 'info') }} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.65rem', padding: '0 0.2rem', marginLeft: '0.2rem' }} title="Remove">✕</button>
+                                                    <button onClick={(e) => { e.stopPropagation(); const updated = { ...data, plan: { ...data.plan, budget: { ...data.plan.budget, breakdown: data.plan.budget.breakdown.filter((_, idx) => idx !== i) } } }; setData(updated); if (isDemo) { userSetJSON('partypal_demo', updated) } else { userSetJSON('partyplan', updated); if (updated.eventId) { const ue = allEvents.map(ev => ev.eventId === updated.eventId ? updated : ev); setAllEvents(ue); userSetJSON('partypal_events', ue) } }; showToast(`Removed ${b.category}`, 'info') }} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.65rem', padding: '0 0.2rem', marginLeft: '0.2rem' }} title="Remove">✕</button>
                                                 )}
                                             </div>
                                         ))}
@@ -1026,8 +1034,15 @@ export default function Dashboard() {
                                             const newItem = { category: name, amount: amt, percentage: Math.round((amt / totalBudget) * 100), color: colors[data.plan.budget.breakdown.length % colors.length] }
                                             const updated = { ...data, plan: { ...data.plan, budget: { ...data.plan.budget, breakdown: [...data.plan.budget.breakdown, newItem] } } }
                                             setData(updated)
-                                            if (isDemo) userSetJSON('partypal_demo', updated)
-                                            else { userSetJSON('partyplan', updated) }
+                                            if (isDemo) { userSetJSON('partypal_demo', updated) }
+                                            else {
+                                                userSetJSON('partyplan', updated)
+                                                if (updated.eventId) {
+                                                    const ue = allEvents.map(ev => ev.eventId === updated.eventId ? updated : ev)
+                                                    setAllEvents(ue)
+                                                    userSetJSON('partypal_events', ue)
+                                                }
+                                            }
                                             showToast(`Added ${name}`, 'success')
                                         }} style={{ width: '100%', padding: '0.4rem', background: 'transparent', border: '1.5px dashed var(--border)', borderRadius: 8, fontSize: '0.75rem', fontWeight: 800, color: '#9aabbb', cursor: 'pointer', marginTop: '0.5rem' }}>+ Add Category</button>
                                     )}
