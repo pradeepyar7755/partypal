@@ -3,25 +3,14 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/components/AuthContext'
-import { userGet } from '@/lib/userStorage'
 
 export default function Nav() {
   const [mobileOpen, setMobileOpen] = useState(false)
-  const [eventName, setEventName] = useState<string | null>(null)
   const [showDropdown, setShowDropdown] = useState(false)
   const dropdownRef = useRef<HTMLDivElement>(null)
   const pathname = usePathname()
   const { user, loading, logout } = useAuth()
 
-  useEffect(() => {
-    const stored = userGet('partyplan')
-    if (stored) {
-      try {
-        const p = JSON.parse(stored)
-        if (p.eventType) setEventName(p.eventType)
-      } catch { /* ignore */ }
-    }
-  }, [])
 
   useEffect(() => {
     setMobileOpen(false)
@@ -65,11 +54,6 @@ export default function Nav() {
           <li key={l.href}>
             <Link href={l.href} style={pathname === l.href ? { color: 'white' } : {}}>
               {l.label}
-              {l.href === '/dashboard' && eventName && (
-                <span style={{ fontSize: '0.65rem', background: 'rgba(247,201,72,0.15)', color: '#F7C948', padding: '0.15rem 0.5rem', borderRadius: 50, marginLeft: '0.4rem', fontWeight: 800 }}>
-                  {eventName.replace(/^[^\s]+\s/, '').slice(0, 12)}
-                </span>
-              )}
             </Link>
           </li>
         ))}
