@@ -12,6 +12,7 @@ import {
     updateProfile,
 } from 'firebase/auth'
 import { auth } from '@/lib/firebase-client'
+import { setStorageUid } from '@/lib/userStorage'
 
 interface AuthContextType {
     user: User | null
@@ -40,6 +41,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     useEffect(() => {
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setUser(user)
+            setStorageUid(user?.uid || null)
             setLoading(false)
         })
         return unsubscribe

@@ -1,4 +1,5 @@
 'use client'
+import { userGet, userSetJSON } from '@/lib/userStorage'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from './guests.module.css'
@@ -48,13 +49,13 @@ export default function Guests() {
   const [isEditingInvite, setIsEditingInvite] = useState(false)
 
   useEffect(() => {
-    const stored = localStorage.getItem('partyplan')
+    const stored = userGet('partyplan')
     if (stored) {
       const p = JSON.parse(stored)
       // Ensure event has an ID
       if (!p.eventId) {
         p.eventId = Math.random().toString(36).substring(2, 10)
-        localStorage.setItem('partyplan', JSON.stringify(p))
+        userSetJSON('partyplan', p)
       }
       setPlanData({ eventType: p.eventType, theme: p.theme, date: p.date, location: p.location, eventId: p.eventId })
     }

@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from './page.module.css'
 import LocationSearch from '@/components/LocationSearch'
+import { userGet, userGetJSON, userSetJSON } from '@/lib/userStorage'
 
 const CATEGORIES = [
   { name: 'Venue', emoji: '🏛️', count: '124 options nearby', color: 'yellow', cat: 'venue' },
@@ -204,11 +205,11 @@ export default function Home() {
       data.eventId = Math.random().toString(36).substring(2, 10)
       data.createdAt = new Date().toISOString()
       // Store in events array for multi-event support
-      const existing = JSON.parse(localStorage.getItem('partypal_events') || '[]')
+      const existing = userGetJSON('partypal_events', [] as Record<string, unknown>[])
       existing.push(data)
-      localStorage.setItem('partypal_events', JSON.stringify(existing))
+      userSetJSON('partypal_events', existing)
       // Also set as active plan for backward compat
-      localStorage.setItem('partyplan', JSON.stringify(data))
+      userSetJSON('partyplan', data)
       // Save to Firestore
       fetch('/api/events', {
         method: 'POST',

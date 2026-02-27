@@ -1,4 +1,5 @@
 'use client'
+import { userGet, userSetJSON } from '@/lib/userStorage'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from './budget.module.css'
@@ -16,7 +17,7 @@ export default function Budget() {
     const [eventType, setEventType] = useState('')
 
     useEffect(() => {
-        const stored = localStorage.getItem('partyplan')
+        const stored = userGet('partyplan')
         if (!stored) { router.push('/'); return }
         const data = JSON.parse(stored)
         setBreakdown(data.plan?.budget?.breakdown || [])
@@ -47,11 +48,11 @@ export default function Budget() {
         setEditingIdx(null)
 
         // Save back to localStorage
-        const stored = localStorage.getItem('partyplan')
+        const stored = userGet('partyplan')
         if (stored) {
             const data = JSON.parse(stored)
             data.plan.budget.breakdown = updated
-            localStorage.setItem('partyplan', JSON.stringify(data))
+            userSetJSON('partyplan', data)
         }
         showToast(`${breakdown[idx].category} updated to $${val}`, 'success')
     }
@@ -70,11 +71,11 @@ export default function Budget() {
         }
         const updated = [...breakdown, newItem]
         setBreakdown(updated)
-        const stored = localStorage.getItem('partyplan')
+        const stored = userGet('partyplan')
         if (stored) {
             const data = JSON.parse(stored)
             data.plan.budget.breakdown = updated
-            localStorage.setItem('partyplan', JSON.stringify(data))
+            userSetJSON('partyplan', data)
         }
         showToast(`Added ${name} to budget`, 'success')
     }

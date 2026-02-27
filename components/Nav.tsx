@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/components/AuthContext'
+import { userGet } from '@/lib/userStorage'
 
 export default function Nav() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -13,7 +14,7 @@ export default function Nav() {
   const { user, loading, logout } = useAuth()
 
   useEffect(() => {
-    const stored = localStorage.getItem('partyplan')
+    const stored = userGet('partyplan')
     if (stored) {
       try {
         const p = JSON.parse(stored)

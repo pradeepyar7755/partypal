@@ -19,6 +19,8 @@ export async function POST(req: NextRequest) {
             eventId,
             updatedAt: new Date().toISOString(),
         }
+        // Scope event to user if uid provided
+        if (body.uid) updateData.uid = body.uid
         if (body.eventType !== undefined) updateData.eventType = body.eventType
         if (body.date !== undefined) updateData.date = body.date
         if (body.guests !== undefined) updateData.guests = body.guests

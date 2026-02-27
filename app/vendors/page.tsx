@@ -1,4 +1,5 @@
 'use client'
+import { userGet, userGetJSON, userSetJSON } from '@/lib/userStorage'
 import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import styles from './vendors.module.css'
@@ -50,9 +51,9 @@ function VendorsContent() {
 
   // Auto-detect user location on mount
   useEffect(() => {
-    const saved = JSON.parse(localStorage.getItem('partypal_shortlist') || '[]')
+    const saved = userGetJSON('partypal_shortlist', [] as string[])
     setShortlist(saved)
-    const stored = localStorage.getItem('partyplan')
+    const stored = userGet('partyplan')
     if (stored) {
       const p = JSON.parse(stored)
       setPlanData({ location: p.location, theme: p.theme, budget: p.budget, guests: p.guests })
@@ -174,7 +175,7 @@ function VendorsContent() {
     e.stopPropagation()
     setShortlist(prev => {
       const updated = prev.includes(vendorId) ? prev.filter(id => id !== vendorId) : [...prev, vendorId]
-      localStorage.setItem('partypal_shortlist', JSON.stringify(updated))
+      userSetJSON('partypal_shortlist', updated)
       showToast(updated.includes(vendorId) ? 'Added to shortlist ❤️' : 'Removed from shortlist', updated.includes(vendorId) ? 'success' : 'info')
       return updated
     })

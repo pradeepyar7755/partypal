@@ -1,4 +1,5 @@
 'use client'
+import { userGet, userGetJSON, userSetJSON } from '@/lib/userStorage'
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import styles from './rsvp.module.css'
@@ -50,7 +51,7 @@ function RSVPContent() {
         }
 
         // Fallback: localStorage then URL params
-        const stored = localStorage.getItem('partyplan')
+        const stored = userGet('partyplan')
         if (stored) {
             const p = JSON.parse(stored)
             setEventData({
@@ -93,7 +94,7 @@ function RSVPContent() {
         if (!name || !response) return
         const validAdditional = additionalGuests.filter(ag => ag.name.trim())
         // Save to localStorage
-        const rsvps = JSON.parse(localStorage.getItem('partypal_rsvps') || '[]')
+        const rsvps = userGetJSON('partypal_rsvps', [] as Record<string, unknown>[])
         rsvps.push({
             name, email, response, dietary,
             eventId: eventData.eventId,
@@ -101,7 +102,7 @@ function RSVPContent() {
             totalPartySize: 1 + validAdditional.length,
             timestamp: new Date().toISOString()
         })
-        localStorage.setItem('partypal_rsvps', JSON.stringify(rsvps))
+        userSetJSON('partypal_rsvps', rsvps)
         // Save to Firestore
         if (eventData.eventId) {
             fetch(`/api/events/${eventData.eventId}`, {

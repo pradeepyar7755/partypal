@@ -1,4 +1,5 @@
 'use client'
+import { userGet } from '@/lib/userStorage'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from './results.module.css'
@@ -57,7 +58,7 @@ export default function Results() {
   const [loadingMood, setLoadingMood] = useState(false)
 
   useEffect(() => {
-    const stored = localStorage.getItem('partyplan')
+    const stored = userGet('partyplan')
     if (!stored) { router.push('/'); return }
     const parsed: PlanData = JSON.parse(stored)
     setData(parsed)

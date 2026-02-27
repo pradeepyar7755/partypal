@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from './dashboard.module.css'
 import { showToast } from '@/components/Toast'
+import { userGet, userSet, userGetJSON, userSetJSON, userRemove } from '@/lib/userStorage'
 import LocationSearch from '@/components/LocationSearch'
 
 interface ChecklistItem { item: string; category: string; done: boolean; due?: string; urgent?: boolean }
@@ -110,7 +111,7 @@ export default function Dashboard() {
         setData(plan)
         setIsDemo(demo)
         setSelectedTab('plan')
-        if (!demo) localStorage.setItem('partyplan', JSON.stringify(plan))
+        if (!demo) userSetJSON('partyplan', plan)
         const TIMELINE_LABELS = ['6 wks out', '6 wks out', '4 wks out', '4 wks out', '3 wks out', '3 wks out', '2 wks out', '2 wks out', '1 wk out', 'Day before']
         const enriched = (plan.plan.checklist || []).map((item, i) => ({
             ...item,
@@ -119,8 +120,8 @@ export default function Dashboard() {
         setChecklist(enriched)
         // Load per-event guests & vendors
         if (!demo && plan.eventId) {
-            setEventGuests(JSON.parse(localStorage.getItem(`partypal_guests_${plan.eventId}`) || '[]'))
-            setEventVendors(JSON.parse(localStorage.getItem(`partypal_vendors_${plan.eventId}`) || '[]'))
+            setEventGuests(userGetJSON(`partypal_guests_${plan.eventId}`, []))
+            setEventVendors(userGetJSON(`partypal_vendors_${plan.eventId}`, []))
         } else {
             setEventGuests([])
             setEventVendors([])
@@ -129,7 +130,7 @@ export default function Dashboard() {
 
     useEffect(() => {
         // Load all events from localStorage
-        const storedEvents: PlanData[] = JSON.parse(localStorage.getItem('partypal_events') || '[]')
+        const storedEvents: PlanData[] = userGetJSON('partypal_events', [])
         // Ensure each event has an ID
         storedEvents.forEach(ev => {
             if (!ev.eventId) ev.eventId = Math.random().toString(36).substring(2, 10)
@@ -137,11 +138,11 @@ export default function Dashboard() {
         setAllEvents(storedEvents)
 
         // Load the active plan
-        const stored = localStorage.getItem('partyplan')
+        const stored = userGet('partyplan')
         const parsed: PlanData = stored ? JSON.parse(stored) : DEFAULT_PLAN
         if (stored && !parsed.eventId) {
             parsed.eventId = Math.random().toString(36).substring(2, 10)
-            localStorage.setItem('partyplan', JSON.stringify(parsed))
+            userSetJSON('partyplan', parsed)
         }
         loadEvent(parsed, !stored)
     }, [])
@@ -162,11 +163,11 @@ export default function Dashboard() {
     const toggleCheck = (i: number) => {
         setChecklist(prev => {
             const updated = prev.map((item, idx) => idx === i ? { ...item, done: !item.done } : item)
-            const stored = localStorage.getItem('partyplan')
+            const stored = userGet('partyplan')
             if (stored) {
                 const d = JSON.parse(stored)
                 d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done }))
-                localStorage.setItem('partyplan', JSON.stringify(d))
+                userSetJSON('partyplan', d)
             }
             showToast(updated[i].done ? `"${updated[i].item}" completed ✓` : `"${updated[i].item}" unmarked`, 'info')
             return updated
@@ -178,11 +179,11 @@ export default function Dashboard() {
         const newItem: ChecklistItem = { item: newCheckItem.trim(), category: 'Custom', done: false }
         const updated = [...checklist, newItem]
         setChecklist(updated)
-        const stored = localStorage.getItem('partyplan')
+        const stored = userGet('partyplan')
         if (stored) {
             const d = JSON.parse(stored)
             d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done }))
-            localStorage.setItem('partyplan', JSON.stringify(d))
+            userSetJSON('partyplan', d)
         }
         setNewCheckItem('')
         showToast('Item added ✓', 'success')
@@ -193,11 +194,11 @@ export default function Dashboard() {
         const removed = checklist[i]
         const updated = checklist.filter((_, idx) => idx !== i)
         setChecklist(updated)
-        const stored = localStorage.getItem('partyplan')
+        const stored = userGet('partyplan')
         if (stored) {
             const d = JSON.parse(stored)
             d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done }))
-            localStorage.setItem('partyplan', JSON.stringify(d))
+            userSetJSON('partyplan', d)
         }
         showToast(`"${removed.item}" removed`, 'info')
     }
@@ -211,7 +212,7 @@ export default function Dashboard() {
         })
         const updated = [...eventGuests, ...newGuests]
         setEventGuests(updated)
-        if (data.eventId) localStorage.setItem(`partypal_guests_${data.eventId}`, JSON.stringify(updated))
+        if (data.eventId) userSetJSON(`partypal_guests_${data.eventId}`, updated)
         setBulkText('')
         setShowBulkImport(false)
         showToast(`${newGuests.length} guest${newGuests.length > 1 ? 's' : ''} imported`, 'success')
@@ -236,12 +237,12 @@ export default function Dashboard() {
             plan: { ...data.plan, timeline: editTimeline },
         }
         setData(updated)
-        localStorage.setItem('partyplan', JSON.stringify(updated))
+        userSetJSON('partyplan', updated)
         // Sync to allEvents array
         if (updated.eventId) {
             const updatedEvents = allEvents.map(ev => ev.eventId === updated.eventId ? updated : ev)
             setAllEvents(updatedEvents)
-            localStorage.setItem('partypal_events', JSON.stringify(updatedEvents))
+            userSetJSON('partypal_events', updatedEvents)
             // Sync to Firestore
             fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => { })
         }
@@ -277,10 +278,10 @@ export default function Dashboard() {
         if (!confirm('Delete this event?')) return
         const updated = allEvents.filter(ev => ev.eventId !== eventId)
         setAllEvents(updated)
-        localStorage.setItem('partypal_events', JSON.stringify(updated))
+        userSetJSON('partypal_events', updated)
         if (data.eventId === eventId) {
             loadEvent(DEFAULT_PLAN, true)
-            localStorage.removeItem('partyplan')
+            userRemove('partyplan')
         }
         showToast('Event deleted', 'success')
     }
@@ -290,19 +291,19 @@ export default function Dashboard() {
         if (!guestForm.name.trim()) return
         const updated = [...eventGuests, { name: guestForm.name.trim(), email: guestForm.email.trim(), status: 'invited' as const }]
         setEventGuests(updated)
-        if (data.eventId) localStorage.setItem(`partypal_guests_${data.eventId}`, JSON.stringify(updated))
+        if (data.eventId) userSetJSON(`partypal_guests_${data.eventId}`, updated)
         setGuestForm({ name: '', email: '' })
         showToast('Guest added', 'success')
     }
     const removeGuest = (idx: number) => {
         const updated = eventGuests.filter((_, i) => i !== idx)
         setEventGuests(updated)
-        if (data.eventId) localStorage.setItem(`partypal_guests_${data.eventId}`, JSON.stringify(updated))
+        if (data.eventId) userSetJSON(`partypal_guests_${data.eventId}`, updated)
     }
     const updateGuestStatus = (idx: number, status: EventGuest['status']) => {
         const updated = eventGuests.map((g, i) => i === idx ? { ...g, status } : g)
         setEventGuests(updated)
-        if (data.eventId) localStorage.setItem(`partypal_guests_${data.eventId}`, JSON.stringify(updated))
+        if (data.eventId) userSetJSON(`partypal_guests_${data.eventId}`, updated)
     }
 
     // Vendor management
@@ -310,19 +311,19 @@ export default function Dashboard() {
         if (!vendorForm.name.trim() || !vendorForm.category.trim()) return
         const updated = [...eventVendors, { name: vendorForm.name.trim(), category: vendorForm.category.trim(), notes: vendorForm.notes.trim(), confirmed: false }]
         setEventVendors(updated)
-        if (data.eventId) localStorage.setItem(`partypal_vendors_${data.eventId}`, JSON.stringify(updated))
+        if (data.eventId) userSetJSON(`partypal_vendors_${data.eventId}`, updated)
         setVendorForm({ name: '', category: '', notes: '' })
         showToast('Vendor added', 'success')
     }
     const removeVendor = (idx: number) => {
         const updated = eventVendors.filter((_, i) => i !== idx)
         setEventVendors(updated)
-        if (data.eventId) localStorage.setItem(`partypal_vendors_${data.eventId}`, JSON.stringify(updated))
+        if (data.eventId) userSetJSON(`partypal_vendors_${data.eventId}`, updated)
     }
     const toggleVendorConfirmed = (idx: number) => {
         const updated = eventVendors.map((v, i) => i === idx ? { ...v, confirmed: !v.confirmed } : v)
         setEventVendors(updated)
-        if (data.eventId) localStorage.setItem(`partypal_vendors_${data.eventId}`, JSON.stringify(updated))
+        if (data.eventId) userSetJSON(`partypal_vendors_${data.eventId}`, updated)
     }
 
     // Countdown calculation
@@ -800,7 +801,7 @@ export default function Dashboard() {
                                                         } else {
                                                             const updated = { ...data, plan: { ...data.plan, timeline: items } }
                                                             setData(updated)
-                                                            localStorage.setItem('partyplan', JSON.stringify(updated))
+                                                            userSetJSON('partyplan', updated)
                                                         }
                                                         setDragIdx(null)
                                                     }}
