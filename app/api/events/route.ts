@@ -40,6 +40,7 @@ export async function POST(req: NextRequest) {
                 createdAt: new Date().toISOString(),
             }
         }
+        if (body.collaborators !== undefined) updateData.collaborators = body.collaborators
 
         await eventRef.set(updateData, { merge: true })
 

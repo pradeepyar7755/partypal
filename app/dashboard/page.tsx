@@ -112,6 +112,10 @@ export default function Dashboard() {
     const [bulkText, setBulkText] = useState('')
     const [refineTimelineInput, setRefineTimelineInput] = useState('')
     const [isRefiningTimeline, setIsRefiningTimeline] = useState(false)
+    const [editTimelineMode, setEditTimelineMode] = useState(false)
+    const [showCollabModal, setShowCollabModal] = useState(false)
+    const [collaborators, setCollaborators] = useState<{ email: string; name: string; role: string }[]>([])
+    const [collabForm, setCollabForm] = useState({ email: '', name: '', role: 'Viewer' })
     const progressRefs = useRef<HTMLDivElement[]>([])
 
     const loadEvent = (plan: PlanData, demo: boolean) => {
@@ -129,9 +133,11 @@ export default function Dashboard() {
         if (!demo && plan.eventId) {
             setEventGuests(userGetJSON(`partypal_guests_${plan.eventId}`, []))
             setEventVendors(userGetJSON(`partypal_vendors_${plan.eventId}`, []))
+            setCollaborators(userGetJSON(`partypal_collabs_${plan.eventId}`, []))
         } else {
             setEventGuests([])
             setEventVendors([])
+            setCollaborators([])
         }
         // Load shortlisted vendors from /vendors page
         setSavedVendors(userGetJSON('partypal_shortlist_data', {}))
@@ -768,6 +774,7 @@ export default function Dashboard() {
                                             <h2>Planning Timeline</h2>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <button onClick={() => setEditTimelineMode(!editTimelineMode)} title={editTimelineMode ? 'Exit edit mode' : 'Edit timeline'} style={{ background: editTimelineMode ? 'var(--teal)' : 'transparent', color: editTimelineMode ? '#fff' : '#9aabbb', border: `1.5px solid ${editTimelineMode ? 'var(--teal)' : 'var(--border)'}`, borderRadius: 6, padding: '0.25rem 0.4rem', fontSize: '0.75rem', cursor: 'pointer', transition: 'all 0.2s' }}>✏️</button>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flex: 1, maxWidth: 280 }}>
                                                 <input value={refineTimelineInput} onChange={e => setRefineTimelineInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') refineTimeline() }} placeholder="Refine with AI..." style={{ flex: 1, padding: '0.3rem 0.6rem', borderRadius: 6, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.72rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
                                                 <button onClick={refineTimeline} disabled={isRefiningTimeline || !refineTimelineInput.trim()} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 6, padding: '0.3rem 0.6rem', fontSize: '0.68rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefiningTimeline || !refineTimelineInput.trim() ? 0.5 : 1 }}>{isRefiningTimeline ? '...' : '✨ Refine'}</button>
@@ -784,11 +791,11 @@ export default function Dashboard() {
                                                 <div
                                                     key={i}
                                                     className={styles.timelineItem}
-                                                    draggable={!isEditing}
-                                                    onDragStart={() => setDragIdx(i)}
-                                                    onDragOver={e => e.preventDefault()}
+                                                    draggable={editTimelineMode}
+                                                    onDragStart={() => editTimelineMode && setDragIdx(i)}
+                                                    onDragOver={e => editTimelineMode && e.preventDefault()}
                                                     onDrop={() => {
-                                                        if (dragIdx === null || dragIdx === i) return
+                                                        if (!editTimelineMode || dragIdx === null || dragIdx === i) return
                                                         const items = [...(isEditing ? editTimeline : data.plan.timeline)]
                                                         const [moved] = items.splice(dragIdx, 1)
                                                         items.splice(i, 0, moved)
@@ -802,9 +809,9 @@ export default function Dashboard() {
                                                         setDragIdx(null)
                                                     }}
                                                     onDragEnd={() => setDragIdx(null)}
-                                                    style={{ opacity: dragIdx === i ? 0.4 : 1, cursor: isEditing ? 'default' : 'grab' }}
+                                                    style={{ opacity: dragIdx === i ? 0.4 : 1, cursor: editTimelineMode ? 'grab' : 'default' }}
                                                 >
-                                                    {!isEditing && (
+                                                    {editTimelineMode && (
                                                         <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', marginRight: 4, color: '#ccc', fontSize: '0.7rem', cursor: 'grab', userSelect: 'none' }} title="Drag to reorder">⋮⋮</div>
                                                     )}
                                                     <div className={styles.tlLeft}>
@@ -814,7 +821,13 @@ export default function Dashboard() {
                                                         <div className={styles.tlLine} />
                                                     </div>
                                                     <div className={styles.tlContent}>
-                                                        {isEditing ? (
+                                                        {editTimelineMode && !isEditing ? (
+                                                            <>
+                                                                <input value={t.weeks} onChange={e => { const items = [...data.plan.timeline]; items[i] = { ...items[i], weeks: e.target.value }; setData(prev => ({ ...prev, plan: { ...prev.plan, timeline: items } })) }} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(74,173,168,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', color: '#4AADA8', fontSize: '0.68rem', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.06em', width: '100%', outline: 'none', marginBottom: 4 }} />
+                                                                <input value={t.task} onChange={e => { const items = [...data.plan.timeline]; items[i] = { ...items[i], task: e.target.value }; setData(prev => ({ ...prev, plan: { ...prev.plan, timeline: items } })) }} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#1A2535', fontSize: '0.9rem', fontWeight: 800, width: '100%', outline: 'none', marginBottom: 4 }} />
+                                                                <textarea value={t.category} onChange={e => { const items = [...data.plan.timeline]; items[i] = { ...items[i], category: e.target.value }; setData(prev => ({ ...prev, plan: { ...prev.plan, timeline: items } })) }} rows={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#6b7c93', fontSize: '0.78rem', fontWeight: 600, width: '100%', outline: 'none', resize: 'vertical' as const }} />
+                                                            </>
+                                                        ) : isEditing ? (
                                                             <>
                                                                 <input value={t.weeks} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, weeks: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(74,173,168,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', color: '#4AADA8', fontSize: '0.68rem', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.06em', width: '100%', outline: 'none', marginBottom: 4 }} />
                                                                 <input value={t.task} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, task: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#1A2535', fontSize: '0.9rem', fontWeight: 800, width: '100%', outline: 'none', marginBottom: 4 }} />
@@ -916,6 +929,7 @@ export default function Dashboard() {
                                             </div>
                                         ))}
                                     </div>
+                                    <button onClick={() => router.push('/budget')} style={{ width: '100%', padding: '0.6rem', background: 'linear-gradient(135deg, var(--yellow), #E8896A)', color: 'var(--dark-navy)', border: 'none', borderRadius: 10, fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', marginTop: '0.8rem', transition: 'all 0.2s' }}>💰 Adjust Budget</button>
                                 </div>
 
                                 {/* ── Planning Progress ── */}
@@ -948,14 +962,11 @@ export default function Dashboard() {
                                         <button className={styles.qaBtn} onClick={() => router.push(`/vendors?cat=venue&location=${data.location}`)}>
                                             <span>🏛️</span><span>Browse Venues Near {data.location?.split(',')[0]}</span><span>›</span>
                                         </button>
-                                        <button className={styles.qaBtn} onClick={() => router.push('/guests')}>
+                                        <button className={styles.qaBtn} onClick={() => setSelectedTab('guests')}>
                                             <span>💌</span><span>Send Invitations Now</span><span>›</span>
                                         </button>
-                                        <button className={styles.qaBtn} onClick={() => router.push('/budget')}>
-                                            <span>🤖</span><span>Ask AI to Adjust Budget</span><span>›</span>
-                                        </button>
-                                        <button className={styles.qaBtn} onClick={() => { showToast('Export coming soon!', 'info') }}>
-                                            <span>📋</span><span>Export Plan as PDF</span><span>›</span>
+                                        <button className={styles.qaBtn} onClick={() => setShowCollabModal(true)}>
+                                            <span>👥</span><span>Add Collaborators</span><span>›</span>
                                         </button>
                                     </div>
                                 </div>
@@ -964,6 +975,61 @@ export default function Dashboard() {
                     </>
                 )
             }
+            {/* Collaborator Modal */}
+            {showCollabModal && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }} onClick={() => setShowCollabModal(false)}>
+                    <div className="card" style={{ padding: '2rem', width: '100%', maxWidth: 480, maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+                        <h2 style={{ fontFamily: "'Fredoka One',cursive", color: 'var(--navy)', marginBottom: '0.3rem' }}>👥 Add Collaborators</h2>
+                        <p style={{ fontSize: '0.82rem', color: '#9aabbb', fontWeight: 600, marginBottom: '1.2rem' }}>Invite team members to help plan this event. They&apos;ll be able to view progress and contribute.</p>
+                        <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
+                            <input placeholder="Name" value={collabForm.name} onChange={e => setCollabForm(p => ({ ...p, name: e.target.value }))} style={{ flex: 1, minWidth: 100, padding: '0.5rem 0.7rem', borderRadius: 8, border: '1.5px solid var(--border)', fontSize: '0.82rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
+                            <input placeholder="Email" value={collabForm.email} onChange={e => setCollabForm(p => ({ ...p, email: e.target.value }))} style={{ flex: 2, minWidth: 150, padding: '0.5rem 0.7rem', borderRadius: 8, border: '1.5px solid var(--border)', fontSize: '0.82rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
+                            <select value={collabForm.role} onChange={e => setCollabForm(p => ({ ...p, role: e.target.value }))} style={{ padding: '0.5rem', borderRadius: 8, border: '1.5px solid var(--border)', fontSize: '0.82rem', fontWeight: 700, color: 'var(--navy)', outline: 'none' }}>
+                                <option>Editor</option>
+                                <option>Viewer</option>
+                            </select>
+                            <button disabled={!collabForm.email.trim() || !collabForm.name.trim()} onClick={() => {
+                                if (!collabForm.email.trim() || !collabForm.name.trim()) return
+                                const updated = [...collaborators, { ...collabForm }]
+                                setCollaborators(updated)
+                                if (data.eventId) {
+                                    userSetJSON(`partypal_collabs_${data.eventId}`, updated)
+                                    fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, collaborators: updated }) }).catch(() => { })
+                                }
+                                setCollabForm({ email: '', name: '', role: 'Viewer' })
+                                showToast(`${collabForm.name} invited!`, 'success')
+                            }} style={{ padding: '0.5rem 1rem', borderRadius: 8, background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', whiteSpace: 'nowrap', opacity: !collabForm.email.trim() || !collabForm.name.trim() ? 0.4 : 1 }}>+ Add</button>
+                        </div>
+                        {collaborators.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                                {collaborators.map((c, i) => (
+                                    <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.6rem 0.8rem', background: 'var(--light-bg)', borderRadius: 10 }}>
+                                        <div style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--teal)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.7rem', fontWeight: 800, flexShrink: 0 }}>{c.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}</div>
+                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                            <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--navy)' }}>{c.name}</div>
+                                            <div style={{ fontSize: '0.72rem', color: '#9aabbb', fontWeight: 600 }}>{c.email}</div>
+                                        </div>
+                                        <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '0.15rem 0.5rem', borderRadius: 50, background: c.role === 'Editor' ? 'rgba(74,173,168,0.12)' : 'rgba(154,171,187,0.12)', color: c.role === 'Editor' ? 'var(--teal)' : '#9aabbb' }}>{c.role}</span>
+                                        <button onClick={() => {
+                                            const updated = collaborators.filter((_, idx) => idx !== i)
+                                            setCollaborators(updated)
+                                            if (data.eventId) {
+                                                userSetJSON(`partypal_collabs_${data.eventId}`, updated)
+                                                fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, collaborators: updated }) }).catch(() => { })
+                                            }
+                                        }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', fontSize: '0.8rem' }}>✕</button>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: '1.5rem', color: '#9aabbb', fontWeight: 700, fontSize: '0.85rem' }}>No collaborators yet. Add someone to get started!</div>
+                        )}
+                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.2rem', justifyContent: 'flex-end' }}>
+                            <button onClick={() => setShowCollabModal(false)} style={{ padding: '0.5rem 1.2rem', borderRadius: 8, background: 'transparent', border: '1.5px solid var(--border)', color: '#9aabbb', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}>Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </main >
     )
 }

@@ -15,6 +15,7 @@ export default function Budget() {
     const [editValue, setEditValue] = useState('')
     const [tips, setTips] = useState<string[]>([])
     const [eventType, setEventType] = useState('')
+    const [vendorActuals, setVendorActuals] = useState<{ category: string; cost: number }[]>([])
 
     useEffect(() => {
         const stored = userGet('partyplan')
@@ -23,8 +24,17 @@ export default function Budget() {
         setBreakdown(data.plan?.budget?.breakdown || [])
         setTips(data.plan?.tips || [])
         setEventType(data.eventType || '')
-        const parsed = parseInt(data.budget?.replace(/[^0-9]/g, '') || '2000')
-        setTotalBudget(parsed || 2000)
+        const budgetStr = data.budget || '$2,000'
+        const nums = budgetStr.match(/[\d,]+/g)?.map((n: string) => parseInt(n.replace(/,/g, ''))) || [2000]
+        const parsed = nums.length >= 2 ? Math.round((nums[0] + nums[1]) / 2) : (nums[0] || 2000)
+        setTotalBudget(parsed)
+        // Load vendor actuals
+        const eventId = data.eventId
+        if (eventId) {
+            const vendors: { category: string; costEstimate?: number; confirmed: boolean }[] = JSON.parse(localStorage.getItem(`partypal_vendors_${eventId}`) || '[]')
+            const actuals = vendors.filter(v => v.costEstimate).map(v => ({ category: v.category, cost: v.costEstimate || 0 }))
+            setVendorActuals(actuals)
+        }
     }, [router])
 
     const allocated = breakdown.reduce((s, b) => s + b.amount, 0)
@@ -191,6 +201,29 @@ export default function Budget() {
                                 <span>{pct}% used</span>
                                 <span>${remaining.toLocaleString()} left</span>
                             </div>
+                        </div>
+
+                        {/* Actuals vs Budget */}
+                        <div className={`card ${styles.statusCard}`} style={{ marginTop: '1rem' }}>
+                            <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.95rem', color: 'var(--navy)', marginBottom: '0.8rem' }}>📊 Actuals vs. Budget</h3>
+                            {breakdown.map((b, i) => {
+                                const actual = vendorActuals.filter(v => v.category.toLowerCase().includes(b.category.toLowerCase().split(' ')[0]) || b.category.toLowerCase().includes(v.category.toLowerCase().split(' ')[0])).reduce((s, v) => s + v.cost, 0)
+                                const pctUsed = b.amount > 0 ? Math.round((actual / b.amount) * 100) : 0
+                                return (
+                                    <div key={i} style={{ marginBottom: '0.6rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.78rem', fontWeight: 700, marginBottom: '0.2rem' }}>
+                                            <span style={{ color: 'var(--navy)' }}>{b.category}</span>
+                                            <span style={{ color: actual > b.amount ? 'var(--coral)' : 'var(--teal)' }}>${actual.toLocaleString()} / ${b.amount.toLocaleString()}</span>
+                                        </div>
+                                        <div style={{ height: 6, borderRadius: 3, background: 'var(--border)', overflow: 'hidden' }}>
+                                            <div style={{ height: '100%', borderRadius: 3, width: `${Math.min(100, pctUsed)}%`, background: actual > b.amount ? 'var(--coral)' : pctUsed >= 80 ? '#c4880a' : b.color, transition: 'width 0.4s ease' }} />
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                            {vendorActuals.length === 0 && (
+                                <p style={{ fontSize: '0.78rem', color: '#9aabbb', fontWeight: 600, textAlign: 'center', padding: '0.5rem 0' }}>No vendor costs recorded yet. Add costs in the Vendors tab.</p>
+                            )}
                         </div>
 
                         {/* Quick Actions */}
