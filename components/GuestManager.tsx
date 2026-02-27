@@ -38,6 +38,11 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const [guests, setGuests] = useState<Guest[]>(isDemo ? DEFAULT_GUESTS : [])
     const [showAdd, setShowAdd] = useState(false)
     const [showBulk, setShowBulk] = useState(false)
+    const [showCircles, setShowCircles] = useState(false)
+    const [circleContacts, setCircleContacts] = useState<{ id: string; name: string; email: string; phone: string; circles: string[]; avatar: string; color: string }[]>([])
+    const [savedCircles, setSavedCircles] = useState<string[]>([])
+    const [selectedCircleFilter, setSelectedCircleFilter] = useState<string | null>(null)
+    const [selectedContactIds, setSelectedContactIds] = useState<Set<string>>(new Set())
     const [bulkText, setBulkText] = useState('')
     const [newGuest, setNewGuest] = useState({ name: '', email: '', dietary: 'None', additionalGuests: [] as AdditionalGuest[] })
     const inviteKey = eventId ? `partypal_invite_${eventId}` : 'partypal_invite'
@@ -91,6 +96,12 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
             }
         }
     }, [eventId, storageKey, propPlanData])
+
+    // Load contacts & circles from localStorage
+    useEffect(() => {
+        setCircleContacts(userGetJSON('partypal_contacts', []))
+        setSavedCircles(userGetJSON('partypal_circles', ['Family', 'Close Friends', 'Work', 'College', 'Neighbors', 'Kids']))
+    }, [])
 
     useEffect(() => {
         if (!isDemo && guests.length > 0) userSetJSON(storageKey, guests)
@@ -289,8 +300,9 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                     </div>
                     {/* Guest management actions */}
                     <div className={styles.actionsRow}>
-                        <button className={styles.actionBtn} onClick={() => { setShowAdd(!showAdd); setShowBulk(false) }}>+ Add Guest</button>
-                        <button className={styles.secondaryBtn} onClick={() => { setShowBulk(!showBulk); setShowAdd(false) }}>📋 Bulk Import</button>
+                        <button className={styles.actionBtn} onClick={() => { setShowAdd(!showAdd); setShowBulk(false); setShowCircles(false) }}>+ Add Guest</button>
+                        <button className={styles.secondaryBtn} onClick={() => { setShowBulk(!showBulk); setShowAdd(false); setShowCircles(false) }}>📋 Bulk Import</button>
+                        <button className={styles.secondaryBtn} onClick={() => { setShowCircles(!showCircles); setShowAdd(false); setShowBulk(false); setSelectedContactIds(new Set()); setSelectedCircleFilter(null) }}>👥 From Circles</button>
                     </div>
 
                     {/* Search */}
@@ -350,6 +362,76 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                             </div>
                         </div>
                     )}
+
+                    {/* Select from Circles */}
+                    {showCircles && (
+                        <div className={styles.addForm}>
+                            <h4 style={{ fontFamily: "'Fredoka One',cursive", marginBottom: '0.4rem', color: 'var(--navy)', fontSize: '0.95rem' }}>👥 Select from Circles</h4>
+                            <p style={{ fontSize: '0.78rem', color: '#9aabbb', fontWeight: 600, marginBottom: '0.6rem' }}>Pick contacts from your saved circles to add as guests</p>
+                            {circleContacts.length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '1.5rem', color: '#9aabbb', fontWeight: 700 }}>
+                                    <p>No contacts saved yet.</p>
+                                    <a href="/guests" style={{ color: 'var(--teal)', fontWeight: 800, textDecoration: 'underline' }}>Go to Guest Management →</a>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Circle filter pills */}
+                                    <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginBottom: '0.6rem' }}>
+                                        <button onClick={() => setSelectedCircleFilter(null)} style={{ padding: '0.2rem 0.6rem', borderRadius: 50, border: `1.5px solid ${!selectedCircleFilter ? 'var(--teal)' : 'var(--border)'}`, background: !selectedCircleFilter ? 'rgba(74,173,168,0.1)' : 'transparent', color: !selectedCircleFilter ? 'var(--teal)' : '#9aabbb', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer' }}>All</button>
+                                        {savedCircles.map(c => {
+                                            const count = circleContacts.filter(ct => ct.circles.includes(c)).length
+                                            if (count === 0) return null
+                                            return <button key={c} onClick={() => setSelectedCircleFilter(c)} style={{ padding: '0.2rem 0.6rem', borderRadius: 50, border: `1.5px solid ${selectedCircleFilter === c ? 'var(--teal)' : 'var(--border)'}`, background: selectedCircleFilter === c ? 'rgba(74,173,168,0.1)' : 'transparent', color: selectedCircleFilter === c ? 'var(--teal)' : '#9aabbb', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer' }}>{c} ({count})</button>
+                                        })}
+                                    </div>
+                                    {/* Contact list */}
+                                    <div style={{ maxHeight: 220, overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: '0.3rem' }}>
+                                        {circleContacts
+                                            .filter(c => !selectedCircleFilter || c.circles.includes(selectedCircleFilter))
+                                            .map(c => {
+                                                const alreadyAdded = guests.some(g => g.email === c.email)
+                                                const selected = selectedContactIds.has(c.id)
+                                                return (
+                                                    <label key={c.id} style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', padding: '0.45rem 0.6rem', borderRadius: 8, background: selected ? 'rgba(74,173,168,0.08)' : 'var(--light-bg)', border: `1.5px solid ${selected ? 'var(--teal)' : 'transparent'}`, cursor: alreadyAdded ? 'default' : 'pointer', opacity: alreadyAdded ? 0.5 : 1 }}>
+                                                        <input type="checkbox" disabled={alreadyAdded} checked={selected || alreadyAdded} onChange={() => {
+                                                            setSelectedContactIds(prev => {
+                                                                const next = new Set(prev)
+                                                                if (next.has(c.id)) next.delete(c.id); else next.add(c.id)
+                                                                return next
+                                                            })
+                                                        }} style={{ accentColor: 'var(--teal)', width: 16, height: 16 }} />
+                                                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: c.color, display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontSize: '0.65rem', fontWeight: 800, flexShrink: 0 }}>{c.avatar}</div>
+                                                        <div style={{ flex: 1, minWidth: 0 }}>
+                                                            <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{c.name}</div>
+                                                            <div style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 600 }}>{c.email || c.phone || 'No email'}{alreadyAdded ? ' • Already added' : ''}</div>
+                                                        </div>
+                                                        <div style={{ display: 'flex', gap: '0.2rem', flexShrink: 0 }}>
+                                                            {c.circles.map(ci => <span key={ci} style={{ fontSize: '0.58rem', fontWeight: 800, padding: '0.1rem 0.35rem', borderRadius: 50, background: 'rgba(74,173,168,0.1)', color: 'var(--teal)' }}>{ci}</span>)}
+                                                        </div>
+                                                    </label>
+                                                )
+                                            })}
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
+                                        <button className={styles.actionBtn} disabled={selectedContactIds.size === 0} onClick={() => {
+                                            const toAdd = circleContacts.filter(c => selectedContactIds.has(c.id) && !guests.some(g => g.email === c.email))
+                                            const newGs: Guest[] = toAdd.map((c, i) => ({
+                                                id: (Date.now() + i).toString(), name: c.name, email: c.email,
+                                                status: 'pending' as const, dietary: 'None', additionalGuests: [],
+                                                avatar: c.avatar, color: c.color
+                                            }))
+                                            setGuests(prev => [...prev, ...newGs])
+                                            setShowCircles(false)
+                                            setSelectedContactIds(new Set())
+                                            showToast(`${newGs.length} guest${newGs.length !== 1 ? 's' : ''} added from circles`, 'success')
+                                        }}>Add {selectedContactIds.size} Guest{selectedContactIds.size !== 1 ? 's' : ''}</button>
+                                        <button onClick={() => { setShowCircles(false); setSelectedContactIds(new Set()) }} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9aabbb', fontWeight: 700, fontSize: '0.85rem' }}>Cancel</button>
+                                    </div>
+                                </>
+                            )}
+                        </div>
+                    )}
+
 
                     {/* Guest Table */}
                     <div className={styles.guestTable}>
