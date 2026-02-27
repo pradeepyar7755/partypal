@@ -115,6 +115,68 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
         if (!isDemo && guests.length > 0) userSetJSON(storageKey, guests)
     }, [guests, storageKey])
 
+    // Fetch RSVPs from Firestore and merge into guest list
+    useEffect(() => {
+        if (isDemo || !eventId) return
+        const fetchRsvps = () => {
+            fetch(`/api/events/${eventId}?include=rsvps`)
+                .then(r => r.json())
+                .then(data => {
+                    if (!data.rsvps || data.rsvps.length === 0) return
+                    setGuests(prev => {
+                        let updated = [...prev]
+                        let changed = false
+                        for (const rsvp of data.rsvps) {
+                            const rName = (rsvp.name || '').trim().toLowerCase()
+                            const rEmail = (rsvp.email || '').trim().toLowerCase()
+                            // Find matching guest
+                            const existingIdx = updated.findIndex(g =>
+                                (rEmail && g.email.toLowerCase() === rEmail) ||
+                                g.name.toLowerCase() === rName
+                            )
+                            const rsvpStatus = rsvp.response === 'going' ? 'going' : rsvp.response === 'maybe' ? 'maybe' : rsvp.response === 'declined' ? 'declined' : 'pending'
+                            if (existingIdx >= 0) {
+                                // Update status if changed
+                                if (updated[existingIdx].status !== rsvpStatus) {
+                                    updated[existingIdx] = { ...updated[existingIdx], status: rsvpStatus as Guest['status'], dietary: rsvp.dietary || updated[existingIdx].dietary }
+                                    changed = true
+                                }
+                            } else {
+                                // Add new guest from RSVP
+                                const avatar = rsvp.name ? rsvp.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() : '??'
+                                const additionalGuests = (rsvp.additionalGuests || []).map((ag: { name: string; dietary?: string; relationship?: string }, i: number) => ({
+                                    id: `rsvp_${rsvp.id}_${i}`,
+                                    name: ag.name,
+                                    dietary: ag.dietary || 'None',
+                                    relationship: ag.relationship || 'Friend',
+                                }))
+                                updated.push({
+                                    id: `rsvp_${rsvp.id}`,
+                                    name: rsvp.name || 'Unknown',
+                                    email: rsvp.email || '',
+                                    status: rsvpStatus as Guest['status'],
+                                    dietary: rsvp.dietary || 'None',
+                                    additionalGuests,
+                                    avatar,
+                                    color: COLORS[updated.length % COLORS.length],
+                                })
+                                changed = true
+                            }
+                        }
+                        if (changed) {
+                            userSetJSON(storageKey, updated)
+                            return updated
+                        }
+                        return prev
+                    })
+                })
+                .catch(() => { })
+        }
+        fetchRsvps()
+        const interval = setInterval(fetchRsvps, 30000) // Poll every 30s
+        return () => clearInterval(interval)
+    }, [eventId, isDemo, storageKey])
+
     const totalHeadcount = guests.reduce((sum, g) => sum + 1 + g.additionalGuests.length, 0)
     const goingHeadcount = guests.filter(g => g.status === 'going').reduce((sum, g) => sum + 1 + g.additionalGuests.length, 0)
 
