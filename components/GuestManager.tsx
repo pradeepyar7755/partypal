@@ -68,6 +68,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const [editingBookmarkIdx, setEditingBookmarkIdx] = useState<number | null>(null)
     const [isRefining, setIsRefining] = useState(false)
     const [isEditingInvite, setIsEditingInvite] = useState(false)
+    const [inviteCollapsed, setInviteCollapsed] = useState(false)
     const themeChangeRef = React.useRef(false)
     const customInviteRef = React.useRef<HTMLInputElement>(null)
     const coverPhotoRef = React.useRef<HTMLInputElement>(null)
@@ -365,106 +366,113 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
             {/* Generated Invite (full width card) */}
             {invite && (
                 <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
-                        <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)' }}>✉️ Your Invitation</h3>
-                        <button onClick={() => setIsEditingInvite(!isEditingInvite)} style={{ background: 'none', border: '1px solid var(--teal)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--teal)', cursor: 'pointer' }}>
-                            {isEditingInvite ? '✕ Cancel' : '✏️ Edit'}
-                        </button>
-                    </div>
-                    {isEditingInvite ? (
-                        <>
-                            <input value={invite.subject || ''} onChange={e => setInvite(prev => prev ? { ...prev, subject: e.target.value } : prev)} className={styles.addInput} style={{ width: '100%', marginBottom: '0.4rem', fontWeight: 700 }} placeholder="Subject line" />
-                            <textarea value={invite.message || ''} onChange={e => setInvite(prev => prev ? { ...prev, message: e.target.value } : prev)} className={styles.addInput} style={{ width: '100%', minHeight: 100, marginBottom: '0.4rem', resize: 'vertical', lineHeight: 1.5 }} />
-                        </>
-                    ) : isRefining ? (
-                        <div style={{ position: 'relative' }}>
-                            <div className={styles.inviteSubject} style={{ opacity: 0.3 }}>{invite.subject}</div>
-                            <p className={styles.inviteMessage} style={{ opacity: 0.3 }}>{invite.message}</p>
-                            <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
-                                <div className="spinner" style={{ width: 28, height: 28, borderWidth: 2 }} />
-                                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--teal)' }}>Refining your invite...</span>
-                            </div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: inviteCollapsed ? 0 : '0.8rem', cursor: 'pointer' }} onClick={() => setInviteCollapsed(c => !c)}>
+                        <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                            <span style={{ fontSize: '0.7rem', transition: 'transform 0.2s', display: 'inline-block', transform: inviteCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▼</span>
+                            ✉️ Your Invitation
+                        </h3>
+                        <div style={{ display: 'flex', gap: '0.3rem' }} onClick={e => e.stopPropagation()}>
+                            {!inviteCollapsed && <button onClick={() => setIsEditingInvite(!isEditingInvite)} style={{ background: 'none', border: '1px solid var(--teal)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--teal)', cursor: 'pointer' }}>
+                                {isEditingInvite ? '✕ Cancel' : '✏️ Edit'}
+                            </button>}
                         </div>
-                    ) : (
-                        <>
-                            <div className={styles.inviteSubject}>{invite.subject}</div>
-                            <p className={styles.inviteMessage}>{invite.message}</p>
-                        </>
-                    )}
-                    {invite.smsVersion && (
-                        <div className={styles.smsBox}>
-                            <div style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--teal)', marginBottom: '0.2rem' }}>SMS VERSION</div>
-                            <p style={{ fontSize: '0.78rem', color: 'var(--navy)', fontWeight: 600, margin: 0 }}>{invite.smsVersion}</p>
-                        </div>
-                    )}
-                    {/* Upload options */}
-                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', flexWrap: 'wrap', paddingTop: '0.6rem', borderTop: '1px solid #eee' }}>
-                        <input ref={customInviteRef} type="file" accept="image/*" onChange={handleCustomInviteUpload} style={{ display: 'none' }} />
-                        <input ref={coverPhotoRef} type="file" accept="image/*" onChange={handleCoverPhotoUpload} style={{ display: 'none' }} />
-                        <button onClick={() => customInviteRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 8, padding: '0.3rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>
-                            {invite.customImage ? '✓ Custom Invite' : '🖼️ Upload Custom Invite'}
-                        </button>
-                        <button onClick={() => coverPhotoRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 8, padding: '0.3rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>
-                            {invite.coverPhoto ? '✓ Cover Photo' : '📸 Upload Cover Photo'}
-                        </button>
-                        {invite.customImage && (
-                            <button onClick={() => { setInvite(prev => prev ? { ...prev, customImage: undefined } : prev); showToast('Custom invite removed', 'info') }} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.68rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Remove Invite Image</button>
-                        )}
-                        {invite.coverPhoto && (
-                            <button onClick={() => { setInvite(prev => prev ? { ...prev, coverPhoto: undefined } : prev); showToast('Cover photo removed', 'info') }} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.68rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Remove Cover</button>
-                        )}
                     </div>
-                    {/* Preview uploaded images */}
-                    {(invite.customImage || invite.coverPhoto) && (
-                        <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
-                            {invite.customImage && (
-                                <div>
-                                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.2rem' }}>Custom Invite Preview</div>
-                                    <img src={invite.customImage} alt="Custom invite" style={{ maxWidth: 200, borderRadius: 8, border: '1.5px solid var(--border)' }} />
+                    {!inviteCollapsed && (<>
+                        {isEditingInvite ? (
+                            <>
+                                <input value={invite.subject || ''} onChange={e => setInvite(prev => prev ? { ...prev, subject: e.target.value } : prev)} className={styles.addInput} style={{ width: '100%', marginBottom: '0.4rem', fontWeight: 700 }} placeholder="Subject line" />
+                                <textarea value={invite.message || ''} onChange={e => setInvite(prev => prev ? { ...prev, message: e.target.value } : prev)} className={styles.addInput} style={{ width: '100%', minHeight: 100, marginBottom: '0.4rem', resize: 'vertical', lineHeight: 1.5 }} />
+                            </>
+                        ) : isRefining ? (
+                            <div style={{ position: 'relative' }}>
+                                <div className={styles.inviteSubject} style={{ opacity: 0.3 }}>{invite.subject}</div>
+                                <p className={styles.inviteMessage} style={{ opacity: 0.3 }}>{invite.message}</p>
+                                <div style={{ position: 'absolute', inset: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: '0.5rem' }}>
+                                    <div className="spinner" style={{ width: 28, height: 28, borderWidth: 2 }} />
+                                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--teal)' }}>Refining your invite...</span>
                                 </div>
+                            </div>
+                        ) : (
+                            <>
+                                <div className={styles.inviteSubject}>{invite.subject}</div>
+                                <p className={styles.inviteMessage}>{invite.message}</p>
+                            </>
+                        )}
+                        {invite.smsVersion && (
+                            <div className={styles.smsBox}>
+                                <div style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--teal)', marginBottom: '0.2rem' }}>SMS VERSION</div>
+                                <p style={{ fontSize: '0.78rem', color: 'var(--navy)', fontWeight: 600, margin: 0 }}>{invite.smsVersion}</p>
+                            </div>
+                        )}
+                        {/* Upload options */}
+                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', flexWrap: 'wrap', paddingTop: '0.6rem', borderTop: '1px solid #eee' }}>
+                            <input ref={customInviteRef} type="file" accept="image/*" onChange={handleCustomInviteUpload} style={{ display: 'none' }} />
+                            <input ref={coverPhotoRef} type="file" accept="image/*" onChange={handleCoverPhotoUpload} style={{ display: 'none' }} />
+                            <button onClick={() => customInviteRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 8, padding: '0.3rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>
+                                {invite.customImage ? '✓ Custom Invite' : '🖼️ Upload Custom Invite'}
+                            </button>
+                            <button onClick={() => coverPhotoRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 8, padding: '0.3rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>
+                                {invite.coverPhoto ? '✓ Cover Photo' : '📸 Upload Cover Photo'}
+                            </button>
+                            {invite.customImage && (
+                                <button onClick={() => { setInvite(prev => prev ? { ...prev, customImage: undefined } : prev); showToast('Custom invite removed', 'info') }} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.68rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Remove Invite Image</button>
                             )}
                             {invite.coverPhoto && (
-                                <div>
-                                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.2rem' }}>Cover Photo Preview</div>
-                                    <img src={invite.coverPhoto} alt="Cover" style={{ maxWidth: 200, borderRadius: 8, border: '1.5px solid var(--border)' }} />
-                                </div>
+                                <button onClick={() => { setInvite(prev => prev ? { ...prev, coverPhoto: undefined } : prev); showToast('Cover photo removed', 'info') }} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.68rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Remove Cover</button>
                             )}
                         </div>
-                    )}
-                    <div style={{ marginTop: '0.6rem', borderTop: '1px solid #eee', paddingTop: '0.6rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
-                            <div style={{ flex: 1, minWidth: 200 }}>
-                                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.3rem' }}>🤖 Refine with AI</div>
-                                <div style={{ display: 'flex', gap: '0.3rem' }}>
-                                    <input value={refineInput} onChange={e => setRefineInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') refineInvite() }} placeholder="e.g. Make it more formal..." className={styles.addInput} style={{ flex: 1, fontSize: '0.78rem' }} />
-                                    <button onClick={refineInvite} disabled={isRefining || !refineInput.trim()} style={{ background: 'var(--teal)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.35rem 0.6rem', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefining || !refineInput.trim() ? 0.5 : 1 }}>
-                                        {isRefining ? '...' : '✨ Refine'}
-                                    </button>
+                        {/* Preview uploaded images */}
+                        {(invite.customImage || invite.coverPhoto) && (
+                            <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
+                                {invite.customImage && (
+                                    <div>
+                                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.2rem' }}>Custom Invite Preview</div>
+                                        <img src={invite.customImage} alt="Custom invite" style={{ maxWidth: 200, borderRadius: 8, border: '1.5px solid var(--border)' }} />
+                                    </div>
+                                )}
+                                {invite.coverPhoto && (
+                                    <div>
+                                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.2rem' }}>Cover Photo Preview</div>
+                                        <img src={invite.coverPhoto} alt="Cover" style={{ maxWidth: 200, borderRadius: 8, border: '1.5px solid var(--border)' }} />
+                                    </div>
+                                )}
+                            </div>
+                        )}
+                        <div style={{ marginTop: '0.6rem', borderTop: '1px solid #eee', paddingTop: '0.6rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                                <div style={{ flex: 1, minWidth: 200 }}>
+                                    <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.3rem' }}>🤖 Refine with AI</div>
+                                    <div style={{ display: 'flex', gap: '0.3rem' }}>
+                                        <input value={refineInput} onChange={e => setRefineInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') refineInvite() }} placeholder="e.g. Make it more formal..." className={styles.addInput} style={{ flex: 1, fontSize: '0.78rem' }} />
+                                        <button onClick={refineInvite} disabled={isRefining || !refineInput.trim()} style={{ background: 'var(--teal)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.35rem 0.6rem', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefining || !refineInput.trim() ? 0.5 : 1 }}>
+                                            {isRefining ? '...' : '✨ Refine'}
+                                        </button>
+                                    </div>
+                                </div>
+                                <div style={{ minWidth: 120 }}>
+                                    <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.25rem' }}>🌡️ Creativity</div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                                        <input type="range" min="0.3" max="1.0" step="0.1" value={inviteTemp} onChange={e => setInviteTemp(parseFloat(e.target.value))} style={{ width: 70, accentColor: 'var(--teal)' }} />
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--navy)' }}>{inviteTemp <= 0.4 ? '🧐' : inviteTemp <= 0.7 ? '⚖️' : '🎨'}</span>
+                                    </div>
+                                </div>
+                                <div style={{ minWidth: 130 }}>
+                                    <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.25rem' }}>🎨 Style</div>
+                                    <select value={inviteTheme} onChange={e => { themeChangeRef.current = true; setInviteTheme(e.target.value) }} className={styles.addInput} style={{ margin: 0, padding: '0.25rem 0.4rem', fontSize: '0.72rem', width: '100%' }}>
+                                        <option>Modern & Fun</option><option>Elegant & Formal</option><option>Tropical Paradise</option><option>Rustic & Cozy</option><option>Vintage & Retro</option><option>Minimalist & Clean</option><option>Glamorous & Luxe</option>
+                                    </select>
                                 </div>
                             </div>
-                            <div style={{ minWidth: 120 }}>
-                                <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.25rem' }}>🌡️ Creativity</div>
+                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    <input type="range" min="0.3" max="1.0" step="0.1" value={inviteTemp} onChange={e => setInviteTemp(parseFloat(e.target.value))} style={{ width: 70, accentColor: 'var(--teal)' }} />
-                                    <span style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--navy)' }}>{inviteTemp <= 0.4 ? '🧐' : inviteTemp <= 0.7 ? '⚖️' : '🎨'}</span>
+                                    <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb' }}>📅 RSVP by</span>
+                                    <input type="date" value={rsvpByDate} onChange={e => setRsvpByDate(e.target.value)} className={styles.addInput} style={{ margin: 0, padding: '0.2rem 0.4rem', fontSize: '0.72rem', width: 130 }} />
                                 </div>
-                            </div>
-                            <div style={{ minWidth: 130 }}>
-                                <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.25rem' }}>🎨 Style</div>
-                                <select value={inviteTheme} onChange={e => { themeChangeRef.current = true; setInviteTheme(e.target.value) }} className={styles.addInput} style={{ margin: 0, padding: '0.25rem 0.4rem', fontSize: '0.72rem', width: '100%' }}>
-                                    <option>Modern & Fun</option><option>Elegant & Formal</option><option>Tropical Paradise</option><option>Rustic & Cozy</option><option>Vintage & Retro</option><option>Minimalist & Clean</option><option>Glamorous & Luxe</option>
-                                </select>
+                                <button onClick={() => setInvite(null)} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.25rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Clear Invite</button>
+                                <button disabled={bookmarks.length >= 3} onClick={() => { if (invite && bookmarks.length < 3) { setBookmarks(prev => [...prev, { name: `Saved ${prev.length + 1}`, invite: { ...invite } }]); showToast('Invite bookmarked!', 'success') } }} style={{ background: 'none', border: '1px solid var(--yellow)', borderRadius: 6, padding: '0.25rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: 'var(--yellow)', cursor: bookmarks.length >= 3 ? 'not-allowed' : 'pointer', opacity: bookmarks.length >= 3 ? 0.4 : 1 }}>⭐ Bookmark{bookmarks.length >= 3 ? ' (3/3)' : ` (${bookmarks.length}/3)`}</button>
                             </div>
                         </div>
-                        <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb' }}>📅 RSVP by</span>
-                                <input type="date" value={rsvpByDate} onChange={e => setRsvpByDate(e.target.value)} className={styles.addInput} style={{ margin: 0, padding: '0.2rem 0.4rem', fontSize: '0.72rem', width: 130 }} />
-                            </div>
-                            <button onClick={() => setInvite(null)} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.25rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Clear Invite</button>
-                            <button disabled={bookmarks.length >= 3} onClick={() => { if (invite && bookmarks.length < 3) { setBookmarks(prev => [...prev, { name: `Saved ${prev.length + 1}`, invite: { ...invite } }]); showToast('Invite bookmarked!', 'success') } }} style={{ background: 'none', border: '1px solid var(--yellow)', borderRadius: 6, padding: '0.25rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: 'var(--yellow)', cursor: bookmarks.length >= 3 ? 'not-allowed' : 'pointer', opacity: bookmarks.length >= 3 ? 0.4 : 1 }}>⭐ Bookmark{bookmarks.length >= 3 ? ' (3/3)' : ` (${bookmarks.length}/3)`}</button>
-                        </div>
-                    </div>
+                    </>)}
                 </div>
             )}
 
