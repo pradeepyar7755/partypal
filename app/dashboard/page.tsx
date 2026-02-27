@@ -147,8 +147,11 @@ export default function Dashboard() {
                 const cleanWeeks = weeks.replace(/^[A-Z][a-z]{2}\s\d{1,2}\s*[—–-]\s*/i, '')
                 weeks = `${label} — ${cleanWeeks}`
             }
-            // Strip parenthetical dates from task and category text
-            const stripParenDates = (s: string) => s.replace(/\s*\([^)]*(?:Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[^)]*\)/gi, '')
+            // Strip parenthetical dates from all text fields
+            const stripParenDates = (s: string) => s
+                .replace(/\s*\([^)]*(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s*\d{0,2}[^)]*\)/gi, '')
+                .replace(/\s*\(\d{1,2}\/\d{1,2}[^)]*\)/g, '')
+            weeks = stripParenDates(weeks)
             return { ...t, weeks, task: stripParenDates(t.task), category: stripParenDates(t.category) }
         })
     }
