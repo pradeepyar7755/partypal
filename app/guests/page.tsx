@@ -1,577 +1,348 @@
 'use client'
-import { userGet, userSetJSON } from '@/lib/userStorage'
 import { useState, useEffect } from 'react'
-import { useRouter } from 'next/navigation'
+import { useAuth } from '@/components/AuthContext'
+import { userGetJSON, userSetJSON } from '@/lib/userStorage'
 import styles from './guests.module.css'
 import { showToast } from '@/components/Toast'
 
-interface AdditionalGuest {
-  id: string; name: string; dietary: string; relationship: string
+interface Contact {
+  id: string
+  name: string
+  email: string
+  phone: string
+  circles: string[]
+  avatar: string
+  color: string
 }
 
-interface Guest {
-  id: string; name: string; email: string; status: 'going' | 'maybe' | 'declined' | 'pending'
-  dietary: string; additionalGuests: AdditionalGuest[]; avatar: string; color: string
+const AVATAR_COLORS = ['#4AADA8', '#E8896A', '#7B5EA7', '#F7C948', '#3D8C6E', '#c4880a', '#D35E8D', '#5B8AF5']
+const DEFAULT_CIRCLES = ['Family', 'Close Friends', 'Work', 'College', 'Neighbors', 'Kids']
+
+function getInitials(name: string) {
+  return name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2)
 }
 
-const DIETARY_OPTIONS = ['None', 'Vegetarian', 'Vegan', 'Gluten-Free', 'Nut Allergy', 'Kosher', 'Halal', 'Dairy-Free', 'Shellfish Allergy']
-const RELATIONSHIP_OPTIONS = ['Partner', 'Spouse', 'Child', 'Family', 'Friend', 'Other']
-
-const DEFAULT_GUESTS: Guest[] = [
-  { id: '1', name: 'Sarah Anderson', email: 'sarah@email.com', status: 'going', dietary: 'None', additionalGuests: [{ id: 'a1', name: 'Mike Anderson', dietary: 'None', relationship: 'Spouse' }], avatar: 'SA', color: '#E8896A' },
-  { id: '2', name: 'Marcus Johnson', email: 'marcus@email.com', status: 'going', dietary: 'Vegetarian', additionalGuests: [], avatar: 'MJ', color: '#4AADA8' },
-  { id: '3', name: 'Lauren Park', email: 'lauren@email.com', status: 'maybe', dietary: 'Gluten-Free', additionalGuests: [{ id: 'a2', name: 'Chris Park', dietary: 'None', relationship: 'Spouse' }, { id: 'a3', name: 'Lily Park', dietary: 'Dairy-Free', relationship: 'Child' }], avatar: 'LP', color: '#F7C948' },
-  { id: '4', name: 'David Kim', email: 'david@email.com', status: 'going', dietary: 'None', additionalGuests: [], avatar: 'DK', color: '#3D8C6E' },
-  { id: '5', name: 'Tanya Robinson', email: 'tanya@email.com', status: 'pending', dietary: 'Vegan', additionalGuests: [], avatar: 'TR', color: '#7B5EA7' },
-  { id: '6', name: 'Nathan Williams', email: 'nathan@email.com', status: 'declined', dietary: 'None', additionalGuests: [], avatar: 'NW', color: '#E8896A' },
-]
-
-const STATUS_COLORS: Record<string, string> = { going: '#3D8C6E', maybe: '#c4880a', declined: '#E8896A', pending: '#9aabbb' }
-const STATUS_BG: Record<string, string> = { going: 'rgba(61,140,110,0.1)', maybe: 'rgba(247,201,72,0.15)', declined: 'rgba(232,137,106,0.1)', pending: 'rgba(150,150,170,0.1)' }
-
-export default function Guests() {
-  const router = useRouter()
-  const [guests, setGuests] = useState<Guest[]>(DEFAULT_GUESTS)
+export default function GuestsPage() {
+  const { user } = useAuth()
+  const [contacts, setContacts] = useState<Contact[]>([])
+  const [circles, setCircles] = useState<string[]>(DEFAULT_CIRCLES)
+  const [selectedCircle, setSelectedCircle] = useState<string | null>(null)
+  const [search, setSearch] = useState('')
   const [showAdd, setShowAdd] = useState(false)
   const [showBulk, setShowBulk] = useState(false)
+  const [showNewCircle, setShowNewCircle] = useState(false)
+  const [newCircleName, setNewCircleName] = useState('')
+  const [editingId, setEditingId] = useState<string | null>(null)
+  const [form, setForm] = useState({ name: '', email: '', phone: '', circles: [] as string[] })
   const [bulkText, setBulkText] = useState('')
-  const [newGuest, setNewGuest] = useState({ name: '', email: '', dietary: 'None', additionalGuests: [] as AdditionalGuest[] })
-  const [invite, setInvite] = useState<{ subject?: string; message?: string; smsVersion?: string; shareableLink?: string } | null>(null)
-  const [loadingInvite, setLoadingInvite] = useState(false)
-  const [planData, setPlanData] = useState<{ eventType?: string; theme?: string; date?: string; location?: string; eventId?: string }>({})
-  const [copied, setCopied] = useState(false)
-  const [search, setSearch] = useState('')
-  const [filter, setFilter] = useState<string>('all')
-  const [expandedGuest, setExpandedGuest] = useState<string | null>(null)
-  const [inviteTheme, setInviteTheme] = useState('Modern & Fun')
-  const [refineInput, setRefineInput] = useState('')
-  const [isRefining, setIsRefining] = useState(false)
-  const [isEditingInvite, setIsEditingInvite] = useState(false)
 
+  // Load contacts and circles from localStorage
   useEffect(() => {
-    const stored = userGet('partyplan')
-    if (stored) {
-      const p = JSON.parse(stored)
-      // Ensure event has an ID
-      if (!p.eventId) {
-        p.eventId = Math.random().toString(36).substring(2, 10)
-        userSetJSON('partyplan', p)
-      }
-      setPlanData({ eventType: p.eventType, theme: p.theme, date: p.date, location: p.location, eventId: p.eventId })
+    const saved = userGetJSON<Contact[]>('partypal_contacts', [])
+    setContacts(saved)
+    const savedCircles = userGetJSON<string[]>('partypal_circles', DEFAULT_CIRCLES)
+    setCircles(savedCircles)
+  }, [user])
+
+  // Save contacts
+  const saveContacts = (c: Contact[]) => {
+    setContacts(c)
+    userSetJSON('partypal_contacts', c)
+  }
+
+  // Save circles
+  const saveCircles = (c: string[]) => {
+    setCircles(c)
+    userSetJSON('partypal_circles', c)
+  }
+
+  // Add a single contact
+  const addContact = () => {
+    if (!form.name.trim()) return
+    const newContact: Contact = {
+      id: Date.now().toString(36),
+      name: form.name.trim(),
+      email: form.email.trim(),
+      phone: form.phone.trim(),
+      circles: form.circles,
+      avatar: getInitials(form.name),
+      color: AVATAR_COLORS[contacts.length % AVATAR_COLORS.length],
     }
-  }, [])
-
-  const totalHeadcount = guests.reduce((sum, g) => sum + 1 + g.additionalGuests.length, 0)
-  const goingHeadcount = guests.filter(g => g.status === 'going').reduce((sum, g) => sum + 1 + g.additionalGuests.length, 0)
-
-  const stats = {
-    total: guests.length,
-    headcount: totalHeadcount,
-    going: guests.filter(g => g.status === 'going').length,
-    goingHeadcount,
-    maybe: guests.filter(g => g.status === 'maybe').length,
-    declined: guests.filter(g => g.status === 'declined').length,
-    pending: guests.filter(g => g.status === 'pending').length,
-  }
-
-  const addAdditionalToNew = () => {
-    setNewGuest(prev => ({
-      ...prev,
-      additionalGuests: [...prev.additionalGuests, { id: Date.now().toString(), name: '', dietary: 'None', relationship: 'Partner' }]
-    }))
-  }
-
-  const updateAdditionalNew = (idx: number, field: string, value: string) => {
-    setNewGuest(prev => ({
-      ...prev,
-      additionalGuests: prev.additionalGuests.map((ag, i) => i === idx ? { ...ag, [field]: value } : ag)
-    }))
-  }
-
-  const removeAdditionalNew = (idx: number) => {
-    setNewGuest(prev => ({
-      ...prev,
-      additionalGuests: prev.additionalGuests.filter((_, i) => i !== idx)
-    }))
-  }
-
-  const addGuest = () => {
-    if (!newGuest.name || !newGuest.email) return
-    const initials = newGuest.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
-    const colors = ['#E8896A', '#4AADA8', '#F7C948', '#3D8C6E', '#7B5EA7', '#2D4059']
-    const validAdditional = newGuest.additionalGuests.filter(ag => ag.name.trim())
-    setGuests(prev => [...prev, {
-      id: Date.now().toString(), name: newGuest.name, email: newGuest.email,
-      status: 'pending', dietary: newGuest.dietary, additionalGuests: validAdditional,
-      avatar: initials, color: colors[Math.floor(Math.random() * colors.length)]
-    }])
-    const count = 1 + validAdditional.length
-    setNewGuest({ name: '', email: '', dietary: 'None', additionalGuests: [] })
+    saveContacts([...contacts, newContact])
+    setForm({ name: '', email: '', phone: '', circles: [] })
     setShowAdd(false)
-    showToast(`${newGuest.name}${count > 1 ? ` + ${count - 1} guest${count > 2 ? 's' : ''}` : ''} added`, 'success')
+    showToast(`${newContact.name} added`, 'success')
   }
 
+  // Update contact (from edit)
+  const updateContact = () => {
+    if (!editingId || !form.name.trim()) return
+    const updated = contacts.map(c =>
+      c.id === editingId ? { ...c, name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim(), circles: form.circles, avatar: getInitials(form.name) } : c
+    )
+    saveContacts(updated)
+    setEditingId(null)
+    setForm({ name: '', email: '', phone: '', circles: [] })
+    showToast('Contact updated', 'success')
+  }
+
+  // Delete contact
+  const deleteContact = (id: string) => {
+    saveContacts(contacts.filter(c => c.id !== id))
+    showToast('Contact removed', 'success')
+  }
+
+  // Toggle circle on a contact
+  const toggleCircle = (contactId: string, circle: string) => {
+    const updated = contacts.map(c => {
+      if (c.id !== contactId) return c
+      const has = c.circles.includes(circle)
+      return { ...c, circles: has ? c.circles.filter(ci => ci !== circle) : [...c.circles, circle] }
+    })
+    saveContacts(updated)
+  }
+
+  // Bulk import
   const bulkImport = () => {
     const lines = bulkText.split('\n').filter(l => l.trim())
-    const colors = ['#E8896A', '#4AADA8', '#F7C948', '#3D8C6E', '#7B5EA7', '#2D4059']
-    const newGuests: Guest[] = lines.map((line, i) => {
+    const newContacts: Contact[] = lines.map((line, i) => {
       const parts = line.split(/[,\t]/).map(s => s.trim())
-      const name = parts[0] || 'Guest'
-      const email = parts[1] || ''
-      const initials = name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
       return {
-        id: (Date.now() + i).toString(), name, email,
-        status: 'pending' as const, dietary: 'None', additionalGuests: [],
-        avatar: initials, color: colors[i % colors.length]
+        id: Date.now().toString(36) + i,
+        name: parts[0] || '',
+        email: parts[1] || '',
+        phone: parts[2] || '',
+        circles: selectedCircle ? [selectedCircle] : [],
+        avatar: getInitials(parts[0] || ''),
+        color: AVATAR_COLORS[(contacts.length + i) % AVATAR_COLORS.length],
       }
-    })
-    setGuests(prev => [...prev, ...newGuests])
+    }).filter(c => c.name)
+    saveContacts([...contacts, ...newContacts])
     setBulkText('')
     setShowBulk(false)
-    showToast(`${newGuests.length} guests imported!`, 'success')
+    showToast(`${newContacts.length} contact${newContacts.length > 1 ? 's' : ''} imported`, 'success')
   }
 
-  const updateStatus = (id: string, status: Guest['status']) => {
-    setGuests(prev => prev.map(g => g.id === id ? { ...g, status } : g))
-    showToast(`RSVP status updated`, 'info')
+  // Add new circle
+  const addCircle = () => {
+    if (!newCircleName.trim() || circles.includes(newCircleName.trim())) return
+    saveCircles([...circles, newCircleName.trim()])
+    setNewCircleName('')
+    setShowNewCircle(false)
+    showToast('Circle created', 'success')
   }
 
-  const removeGuest = (id: string) => {
-    const guest = guests.find(g => g.id === id)
-    setGuests(prev => prev.filter(g => g.id !== id))
-    showToast(`${guest?.name || 'Guest'} removed`, 'info')
+  // Delete circle (remove from contacts too)
+  const deleteCircle = (circle: string) => {
+    saveCircles(circles.filter(c => c !== circle))
+    const updated = contacts.map(c => ({ ...c, circles: c.circles.filter(ci => ci !== circle) }))
+    saveContacts(updated)
+    if (selectedCircle === circle) setSelectedCircle(null)
+    showToast('Circle removed', 'success')
   }
 
-  const addAdditionalToExisting = (guestId: string) => {
-    setGuests(prev => prev.map(g => g.id === guestId ? {
-      ...g,
-      additionalGuests: [...g.additionalGuests, { id: Date.now().toString(), name: '', dietary: 'None', relationship: 'Partner' }]
-    } : g))
+  // Toggle circle in form
+  const toggleFormCircle = (circle: string) => {
+    setForm(f => ({
+      ...f,
+      circles: f.circles.includes(circle) ? f.circles.filter(c => c !== circle) : [...f.circles, circle]
+    }))
   }
 
-  const updateAdditionalExisting = (guestId: string, addId: string, field: string, value: string) => {
-    setGuests(prev => prev.map(g => g.id === guestId ? {
-      ...g,
-      additionalGuests: g.additionalGuests.map(ag => ag.id === addId ? { ...ag, [field]: value } : ag)
-    } : g))
+  // Start editing
+  const startEdit = (c: Contact) => {
+    setEditingId(c.id)
+    setForm({ name: c.name, email: c.email, phone: c.phone, circles: c.circles })
+    setShowAdd(false)
   }
 
-  const removeAdditionalExisting = (guestId: string, addId: string) => {
-    setGuests(prev => prev.map(g => g.id === guestId ? {
-      ...g,
-      additionalGuests: g.additionalGuests.filter(ag => ag.id !== addId)
-    } : g))
-  }
-
-  const updateGuestDietary = (guestId: string, dietary: string) => {
-    setGuests(prev => prev.map(g => g.id === guestId ? { ...g, dietary } : g))
-  }
-
-  const generateInvite = async () => {
-    setLoadingInvite(true)
-    try {
-      const res = await fetch('/api/guests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate_invite', eventDetails: { ...planData, inviteTheme, hostName: 'Your Host' } }),
-      })
-      const data = await res.json()
-      setInvite(data)
-      setIsEditingInvite(false)
-      // Save invite to Firestore
-      if (planData.eventId) {
-        fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: data }) }).catch(() => { })
-      }
-      showToast('Invite generated!', 'success')
-    } catch { showToast('Failed to generate invite', 'error') }
-    setLoadingInvite(false)
-  }
-
-  const refineInvite = async () => {
-    if (!refineInput.trim() || !invite) return
-    setIsRefining(true)
-    try {
-      const res = await fetch('/api/guests', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'refine_invite', currentSubject: invite.subject, currentMessage: invite.message, instruction: refineInput }),
-      })
-      const data = await res.json()
-      if (data.subject) {
-        setInvite(prev => ({ ...prev, subject: data.subject, message: data.message, smsVersion: data.smsVersion || prev?.smsVersion }))
-        setRefineInput('')
-        setIsEditingInvite(false)
-        showToast('Invite refined!', 'success')
-      }
-    } catch { showToast('Failed to refine invite', 'error') }
-    setIsRefining(false)
-  }
-
-  const getRSVPLink = () => {
-    const origin = typeof window !== 'undefined' ? window.location.origin : 'https://partypal.social'
-    const eventId = planData.eventId || Math.random().toString(36).substring(2, 10)
-    const params = new URLSearchParams({ e: eventId })
-    if (planData.eventType) params.set('n', planData.eventType)
-    if (planData.date) params.set('d', planData.date)
-    if (planData.location) params.set('l', planData.location)
-    if (planData.theme) params.set('t', planData.theme)
-    return `${origin}/rsvp?${params.toString()}`
-  }
-
-  const copyRSVPLink = () => {
-    navigator.clipboard.writeText(getRSVPLink())
-    setCopied(true)
-    setTimeout(() => setCopied(false), 2000)
-    showToast('RSVP link copied!', 'success')
-  }
-
-  const shareWhatsApp = () => {
-    const text = invite
-      ? `${invite.subject}\n\n${invite.message}\n\nRSVP here: ${getRSVPLink()}`
-      : `You're invited! RSVP here: ${getRSVPLink()}`
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
-  }
-
-  // Compute dietary counts including additional guests
-  const dietaryCounts: Record<string, number> = {}
-  guests.forEach(g => {
-    dietaryCounts[g.dietary] = (dietaryCounts[g.dietary] || 0) + 1
-    g.additionalGuests.forEach(ag => {
-      dietaryCounts[ag.dietary] = (dietaryCounts[ag.dietary] || 0) + 1
-    })
+  // Filtered contacts
+  const filtered = contacts.filter(c => {
+    const matchCircle = !selectedCircle || c.circles.includes(selectedCircle)
+    const matchSearch = !search || c.name.toLowerCase().includes(search.toLowerCase()) || c.email.toLowerCase().includes(search.toLowerCase())
+    return matchCircle && matchSearch
   })
 
-  const filteredGuests = guests.filter(g => {
-    if (filter !== 'all' && g.status !== filter) return false
-    if (search && !g.name.toLowerCase().includes(search.toLowerCase()) && !g.email.toLowerCase().includes(search.toLowerCase())) return false
-    return true
-  })
+  const circleStats = circles.map(circle => ({
+    name: circle,
+    count: contacts.filter(c => c.circles.includes(circle)).length,
+  }))
 
   return (
-    <main className="page-enter">
-      <header className={styles.header}>
+    <>
+      <div className={styles.header}>
         <div className={styles.headerInner}>
-          <button className="back-btn" onClick={() => router.back()}>← Back</button>
           <div className={styles.breadcrumb}>
-            <a href="/">Home</a> › {planData.eventType && <><a href="/results">{planData.eventType}</a> › </>}<span>Guests</span>
+            <a href="/">Home</a> <span>/</span> <span>Contacts</span>
           </div>
-          <h1 className={styles.headerTitle}>Guest Management 💌</h1>
-          <p className={styles.headerSub}>{planData.eventType ? `${planData.eventType} · ` : ''}{planData.location || 'Your Venue'}{planData.date ? ` · ${new Date(planData.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}` : ''}</p>
-        </div>
-      </header>
-
-      <div className={styles.content}>
-        {/* Stats */}
-        <div className={styles.statsRow}>
-          {[
-            { label: 'Invitations', val: stats.total, sub: `${stats.headcount} total people`, color: 'var(--navy)' },
-            { label: 'Going ✓', val: stats.going, sub: `${stats.goingHeadcount} people`, color: 'var(--green)' },
-            { label: 'Maybe', val: stats.maybe, sub: '', color: '#c4880a' },
-            { label: 'Declined', val: stats.declined, sub: '', color: 'var(--coral)' },
-            { label: 'Pending', val: stats.pending, sub: '', color: '#9aabbb' },
-          ].map(s => (
-            <div key={s.label} className={styles.statCard} onClick={() => setFilter(s.label === 'Invitations' ? 'all' : s.label.replace(' ✓', '').toLowerCase())} style={{ cursor: 'pointer', borderColor: filter === s.label.replace(' ✓', '').toLowerCase() ? s.color : undefined }}>
-              <div className={styles.statNum} style={{ color: s.color }}>{s.val}</div>
-              <div className={styles.statLabel}>{s.label}</div>
-              {s.sub && <div className={styles.statSub}>{s.sub}</div>}
-            </div>
-          ))}
-        </div>
-
-        <div className={styles.mainLayout}>
-          <div className={styles.guestCol}>
-            {/* Actions */}
-            <div className={styles.actionsRow}>
-              <button className="btn-primary" style={{ padding: '0.6rem 1.2rem', fontSize: '0.9rem' }} onClick={() => setShowAdd(!showAdd)}>+ Add Guest</button>
-              <button className={styles.inviteBtn} onClick={() => setShowBulk(!showBulk)}>📋 Bulk Import</button>
-              <button className={styles.inviteBtn} onClick={generateInvite} disabled={loadingInvite}>
-                {loadingInvite ? '⏳ Generating...' : '✉️ Generate Invite'}
-              </button>
-              <button className={styles.inviteBtn} onClick={copyRSVPLink}>
-                {copied ? '✓ Copied!' : '🔗 RSVP Link'}
-              </button>
-            </div>
-
-            {/* Search */}
-            <div style={{ marginBottom: '1rem' }}>
-              <input
-                className={styles.addInput}
-                style={{ width: '100%', borderRadius: '50px', padding: '0.6rem 1.2rem' }}
-                placeholder="🔍 Search guests..."
-                value={search}
-                onChange={e => setSearch(e.target.value)}
-              />
-            </div>
-
-            {/* Add Guest Form */}
-            {showAdd && (
-              <div className={`card ${styles.addForm}`}>
-                <h4 style={{ fontFamily: "'Fredoka One',cursive", marginBottom: '1rem', color: 'var(--navy)' }}>Add New Guest</h4>
-                <div className={styles.addRow}>
-                  <input placeholder="Full Name *" value={newGuest.name} onChange={e => setNewGuest({ ...newGuest, name: e.target.value })} className={styles.addInput} />
-                  <input placeholder="Email *" value={newGuest.email} onChange={e => setNewGuest({ ...newGuest, email: e.target.value })} className={styles.addInput} />
-                </div>
-                <div className={styles.addRow}>
-                  <div>
-                    <label className={styles.fieldLabel}>Dietary Restrictions</label>
-                    <select value={newGuest.dietary} onChange={e => setNewGuest({ ...newGuest, dietary: e.target.value })} className={styles.addInput}>
-                      {DIETARY_OPTIONS.map(d => <option key={d}>{d}</option>)}
-                    </select>
-                  </div>
-                </div>
-
-                {/* Additional Guests Section */}
-                <div className={styles.additionalSection}>
-                  <div className={styles.additionalHeader}>
-                    <span className={styles.additionalTitle}>👥 Additional Guests</span>
-                    <button type="button" className={styles.addMemberBtn} onClick={addAdditionalToNew}>+ Add Person</button>
-                  </div>
-                  {newGuest.additionalGuests.map((ag, idx) => (
-                    <div key={ag.id} className={styles.additionalRow}>
-                      <input placeholder="Name" value={ag.name} onChange={e => updateAdditionalNew(idx, 'name', e.target.value)} className={styles.addInputSmall} />
-                      <select value={ag.relationship} onChange={e => updateAdditionalNew(idx, 'relationship', e.target.value)} className={styles.addInputSmall}>
-                        {RELATIONSHIP_OPTIONS.map(r => <option key={r}>{r}</option>)}
-                      </select>
-                      <select value={ag.dietary} onChange={e => updateAdditionalNew(idx, 'dietary', e.target.value)} className={styles.addInputSmall}>
-                        {DIETARY_OPTIONS.map(d => <option key={d}>{d}</option>)}
-                      </select>
-                      <button className={styles.removeBtn} onClick={() => removeAdditionalNew(idx)} title="Remove">✕</button>
-                    </div>
-                  ))}
-                  {newGuest.additionalGuests.length === 0 && (
-                    <p className={styles.additionalHint}>No additional guests. Click &quot;+ Add Person&quot; to bring family or friends.</p>
-                  )}
-                </div>
-
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.8rem' }}>
-                  <button className="btn-primary" style={{ padding: '0.5rem 1.2rem', fontSize: '0.85rem' }} onClick={addGuest}>Add Guest{newGuest.additionalGuests.length > 0 ? ` + ${newGuest.additionalGuests.length}` : ''}</button>
-                  <button onClick={() => setShowAdd(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9aabbb', fontWeight: 700 }}>Cancel</button>
-                </div>
-              </div>
-            )}
-
-            {/* Bulk Import */}
-            {showBulk && (
-              <div className={`card ${styles.addForm}`}>
-                <h4 style={{ fontFamily: "'Fredoka One',cursive", marginBottom: '0.5rem', color: 'var(--navy)' }}>Bulk Import Guests</h4>
-                <p style={{ fontSize: '0.8rem', color: '#9aabbb', fontWeight: 600, marginBottom: '0.8rem' }}>Paste names and emails, one per line. Use comma or tab to separate: <br /><strong>Name, Email</strong></p>
-                <textarea
-                  className={styles.addInput}
-                  style={{ minHeight: '120px', resize: 'vertical', fontFamily: 'monospace', fontSize: '0.82rem' }}
-                  placeholder={"John Doe, john@email.com\nJane Smith, jane@email.com\nBob Wilson, bob@email.com"}
-                  value={bulkText}
-                  onChange={e => setBulkText(e.target.value)}
-                />
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem' }}>
-                  <button className="btn-primary" style={{ padding: '0.5rem 1.2rem', fontSize: '0.85rem' }} onClick={bulkImport} disabled={!bulkText.trim()}>Import {bulkText.split('\n').filter(l => l.trim()).length} Guests</button>
-                  <button onClick={() => setShowBulk(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#9aabbb', fontWeight: 700 }}>Cancel</button>
-                </div>
-              </div>
-            )}
-
-            {/* Guest Table */}
-            <div className={styles.guestTable}>
-              {filteredGuests.length === 0 ? (
-                <div style={{ padding: '2rem', textAlign: 'center', color: '#9aabbb', fontWeight: 700 }}>
-                  {search || filter !== 'all' ? 'No guests match your filters' : 'No guests yet — add some above!'}
-                </div>
-              ) : filteredGuests.map(g => (
-                <div key={g.id} className={styles.guestEntry}>
-                  <div className={styles.guestRow} onClick={() => setExpandedGuest(expandedGuest === g.id ? null : g.id)} style={{ cursor: 'pointer' }}>
-                    <div className={styles.guestAvatar} style={{ background: g.color }}>{g.avatar}</div>
-                    <div className={styles.guestInfo}>
-                      <div className={styles.guestName}>{g.name}</div>
-                      <div className={styles.guestEmail}>{g.email}</div>
-                    </div>
-                    {g.dietary !== 'None' && <span className={styles.dietary}>{g.dietary}</span>}
-                    {g.additionalGuests.length > 0 && (
-                      <span className={styles.partySize} title={`${g.additionalGuests.map(ag => ag.name || 'Guest').join(', ')}`}>
-                        👥 +{g.additionalGuests.length}
-                      </span>
-                    )}
-                    <select
-                      value={g.status}
-                      onChange={e => { e.stopPropagation(); updateStatus(g.id, e.target.value as Guest['status']) }}
-                      onClick={e => e.stopPropagation()}
-                      className={styles.statusSelect}
-                      style={{ background: STATUS_BG[g.status], color: STATUS_COLORS[g.status] }}
-                    >
-                      <option value="going">✓ Going</option>
-                      <option value="maybe">? Maybe</option>
-                      <option value="declined">✗ Declined</option>
-                      <option value="pending">⏳ Pending</option>
-                    </select>
-                    <button className={styles.removeBtn} onClick={(e) => { e.stopPropagation(); removeGuest(g.id) }}>✕</button>
-                    <span className={styles.expandIcon}>{expandedGuest === g.id ? '▾' : '▸'}</span>
-                  </div>
-
-                  {/* Expanded Details */}
-                  {expandedGuest === g.id && (
-                    <div className={styles.guestExpanded}>
-                      {/* Primary Guest Dietary */}
-                      <div className={styles.expandedSection}>
-                        <div className={styles.expandedLabel}>🍽️ {g.name}&apos;s Dietary Restrictions</div>
-                        <select
-                          value={g.dietary}
-                          onChange={e => updateGuestDietary(g.id, e.target.value)}
-                          className={styles.addInputSmall}
-                          style={{ maxWidth: '200px' }}
-                        >
-                          {DIETARY_OPTIONS.map(d => <option key={d}>{d}</option>)}
-                        </select>
-                      </div>
-
-                      {/* Additional Guests */}
-                      <div className={styles.expandedSection}>
-                        <div className={styles.expandedLabelRow}>
-                          <span className={styles.expandedLabel}>👥 Additional Guests ({g.additionalGuests.length})</span>
-                          <button className={styles.addMemberBtn} onClick={() => addAdditionalToExisting(g.id)}>+ Add Person</button>
-                        </div>
-                        {g.additionalGuests.map(ag => (
-                          <div key={ag.id} className={styles.additionalRow}>
-                            <input
-                              placeholder="Name"
-                              value={ag.name}
-                              onChange={e => updateAdditionalExisting(g.id, ag.id, 'name', e.target.value)}
-                              className={styles.addInputSmall}
-                            />
-                            <select
-                              value={ag.relationship}
-                              onChange={e => updateAdditionalExisting(g.id, ag.id, 'relationship', e.target.value)}
-                              className={styles.addInputSmall}
-                            >
-                              {RELATIONSHIP_OPTIONS.map(r => <option key={r}>{r}</option>)}
-                            </select>
-                            <select
-                              value={ag.dietary}
-                              onChange={e => updateAdditionalExisting(g.id, ag.id, 'dietary', e.target.value)}
-                              className={styles.addInputSmall}
-                            >
-                              {DIETARY_OPTIONS.map(d => <option key={d}>{d}</option>)}
-                            </select>
-                            <button className={styles.removeBtn} onClick={() => removeAdditionalExisting(g.id, ag.id)}>✕</button>
-                          </div>
-                        ))}
-                        {g.additionalGuests.length === 0 && (
-                          <p className={styles.additionalHint}>No additional guests yet.</p>
-                        )}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Sidebar */}
-          <div className={styles.guestSidebar}>
-            {/* Headcount Summary */}
-            <div className="card" style={{ marginBottom: '1.5rem', textAlign: 'center', padding: '1.5rem' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.3rem' }}>👥</div>
-              <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1rem', color: 'var(--navy)', marginBottom: '0.5rem' }}>Total Headcount</h3>
-              <div style={{ display: 'flex', justifyContent: 'center', gap: '1.5rem' }}>
-                <div>
-                  <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.8rem', color: 'var(--navy)' }}>{totalHeadcount}</div>
-                  <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' }}>Total</div>
-                </div>
-                <div>
-                  <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.8rem', color: 'var(--green)' }}>{goingHeadcount}</div>
-                  <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' }}>Confirmed</div>
-                </div>
-              </div>
-            </div>
-
-            {/* Dietary */}
-            <div className="card" style={{ marginBottom: '1.5rem' }}>
-              <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1rem', color: 'var(--navy)', marginBottom: '1rem' }}>🥗 Dietary Needs</h3>
-              <p style={{ fontSize: '0.72rem', color: '#9aabbb', fontWeight: 600, marginBottom: '0.8rem' }}>Includes all guests & their party members</p>
-              {Object.entries(dietaryCounts).sort((a, b) => b[1] - a[1]).map(([diet, count]) => (
-                <div key={diet} className={styles.dietRow}>
-                  <span style={{ flex: 1, fontWeight: 700, fontSize: '0.85rem' }}>{diet}</span>
-                  <div className={styles.dietBar}>
-                    <div className={styles.dietFill} style={{ width: `${(count / totalHeadcount) * 100}%` }} />
-                  </div>
-                  <span style={{ fontSize: '0.8rem', fontWeight: 800, color: 'var(--navy)', minWidth: 20, textAlign: 'right' }}>{count}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* RSVP Link Card */}
-            <div className="card" style={{ marginBottom: '1.5rem', textAlign: 'center', padding: '1.5rem' }}>
-              <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✉️</div>
-              <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1rem', color: 'var(--navy)', marginBottom: '0.5rem' }}>Invitation Theme</h3>
-              <select value={inviteTheme} onChange={e => setInviteTheme(e.target.value)} className={styles.addInput} style={{ width: '100%', marginBottom: '0.8rem', textAlign: 'center' }}>
-                <option>Modern & Fun</option>
-                <option>Elegant & Formal</option>
-                <option>Tropical Paradise</option>
-                <option>Rustic & Cozy</option>
-                <option>Vintage & Retro</option>
-                <option>Minimalist & Clean</option>
-                <option>Whimsical & Playful</option>
-                <option>Glamorous & Luxe</option>
-              </select>
-              <button className="btn-primary" style={{ fontSize: '0.85rem', padding: '0.6rem 1.2rem', width: '100%' }} onClick={generateInvite} disabled={loadingInvite}>
-                {loadingInvite ? '⏳ Generating...' : '✨ Generate Invite'}
-              </button>
-            </div>
-
-            {/* Generated Invite */}
-            {invite && (
-              <div className="card" style={{ marginBottom: '1.5rem' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
-                  <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1rem', color: 'var(--navy)' }}>✉️ Your Invitation</h3>
-                  <button onClick={() => setIsEditingInvite(!isEditingInvite)} style={{ background: 'none', border: '1px solid var(--teal)', borderRadius: 6, padding: '0.2rem 0.6rem', fontSize: '0.72rem', fontWeight: 700, color: 'var(--teal)', cursor: 'pointer' }}>
-                    {isEditingInvite ? '✕ Cancel' : '✏️ Edit'}
-                  </button>
-                </div>
-                {isEditingInvite ? (
-                  <>
-                    <input value={invite.subject || ''} onChange={e => setInvite(prev => prev ? { ...prev, subject: e.target.value } : prev)} className={styles.addInput} style={{ width: '100%', marginBottom: '0.5rem', fontWeight: 700 }} placeholder="Subject line" />
-                    <textarea value={invite.message || ''} onChange={e => setInvite(prev => prev ? { ...prev, message: e.target.value } : prev)} className={styles.addInput} style={{ width: '100%', minHeight: 120, marginBottom: '0.5rem', resize: 'vertical', lineHeight: 1.5 }} />
-                  </>
-                ) : (
-                  <>
-                    <div className={styles.inviteSubject}>{invite.subject}</div>
-                    <p className={styles.inviteMessage}>{invite.message}</p>
-                  </>
-                )}
-                {invite.smsVersion && (
-                  <div className={styles.smsBox}>
-                    <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)', marginBottom: '0.3rem' }}>SMS VERSION</div>
-                    <p style={{ fontSize: '0.8rem', color: 'var(--navy)', fontWeight: 600 }}>{invite.smsVersion}</p>
-                  </div>
-                )}
-
-                {/* AI Refinement Chat */}
-                <div style={{ marginTop: '0.8rem', borderTop: '1px solid #eee', paddingTop: '0.8rem' }}>
-                  <div style={{ fontSize: '0.72rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.4rem' }}>🤖 Refine with AI</div>
-                  <div style={{ display: 'flex', gap: '0.4rem' }}>
-                    <input
-                      value={refineInput}
-                      onChange={e => setRefineInput(e.target.value)}
-                      onKeyDown={e => { if (e.key === 'Enter') refineInvite() }}
-                      placeholder="e.g. Make it more formal, Add dress code..."
-                      className={styles.addInput}
-                      style={{ flex: 1, fontSize: '0.8rem' }}
-                    />
-                    <button onClick={refineInvite} disabled={isRefining || !refineInput.trim()} style={{ background: 'var(--teal)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.4rem 0.8rem', fontSize: '0.75rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefining || !refineInput.trim() ? 0.5 : 1 }}>
-                      {isRefining ? '...' : '✨ Refine'}
-                    </button>
-                  </div>
-                </div>
-
-                {/* Share actions */}
-                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.8rem' }}>
-                  <button className={styles.copyBtn} style={{ flex: 1 }} onClick={copyRSVPLink}>{copied ? '✓ Copied!' : '🔗 Copy RSVP Link'}</button>
-                  <button onClick={shareWhatsApp} style={{ flex: 1, background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem', fontSize: '0.82rem', fontWeight: 700, cursor: 'pointer' }}>
-                    💬 WhatsApp
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
+          <div className={styles.headerTitle}>📒 My Contacts</div>
+          <div className={styles.headerSub}>{contacts.length} contact{contacts.length !== 1 ? 's' : ''} · {circles.length} circle{circles.length !== 1 ? 's' : ''}</div>
         </div>
       </div>
-    </main>
+
+      <div className={styles.content}>
+        {/* Circles Bar */}
+        <div className={styles.circlesBar}>
+          <button
+            className={`${styles.circleChip} ${!selectedCircle ? styles.circleChipActive : ''}`}
+            onClick={() => setSelectedCircle(null)}
+          >All ({contacts.length})</button>
+          {circleStats.map(cs => (
+            <button
+              key={cs.name}
+              className={`${styles.circleChip} ${selectedCircle === cs.name ? styles.circleChipActive : ''}`}
+              onClick={() => setSelectedCircle(selectedCircle === cs.name ? null : cs.name)}
+            >
+              {cs.name} ({cs.count})
+              <span className={styles.circleRemove} onClick={e => { e.stopPropagation(); deleteCircle(cs.name) }}>×</span>
+            </button>
+          ))}
+          {showNewCircle ? (
+            <div className={styles.newCircleInline}>
+              <input
+                className={styles.newCircleInput}
+                value={newCircleName}
+                onChange={e => setNewCircleName(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && addCircle()}
+                placeholder="Circle name..."
+                autoFocus
+              />
+              <button className={styles.newCircleSave} onClick={addCircle}>✓</button>
+              <button className={styles.newCircleCancel} onClick={() => { setShowNewCircle(false); setNewCircleName('') }}>✕</button>
+            </div>
+          ) : (
+            <button className={styles.addCircleBtn} onClick={() => setShowNewCircle(true)}>+ Circle</button>
+          )}
+        </div>
+
+        {/* Actions */}
+        <div className={styles.actionsRow}>
+          <input
+            className={styles.searchInput}
+            type="text"
+            placeholder="🔍  Search contacts..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+          <button className={styles.actionBtn} onClick={() => { setShowAdd(!showAdd); setEditingId(null); setForm({ name: '', email: '', phone: '', circles: [] }) }}>
+            {showAdd ? '✕ Cancel' : '+ Add Contact'}
+          </button>
+          <button className={styles.secondaryBtn} onClick={() => setShowBulk(!showBulk)}>
+            {showBulk ? '✕ Cancel' : '📋 Bulk Import'}
+          </button>
+        </div>
+
+        {/* Add / Edit Form */}
+        {(showAdd || editingId) && (
+          <div className={styles.addForm}>
+            <div className={styles.addRow}>
+              <div>
+                <label className={styles.fieldLabel}>Name *</label>
+                <input className={styles.addInput} type="text" placeholder="Full name" value={form.name} onChange={e => setForm({ ...form, name: e.target.value })} autoFocus />
+              </div>
+              <div>
+                <label className={styles.fieldLabel}>Email</label>
+                <input className={styles.addInput} type="email" placeholder="email@example.com" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })} />
+              </div>
+            </div>
+            <div className={styles.addRow}>
+              <div>
+                <label className={styles.fieldLabel}>Phone</label>
+                <input className={styles.addInput} type="tel" placeholder="+1 (555) 000-0000" value={form.phone} onChange={e => setForm({ ...form, phone: e.target.value })} />
+              </div>
+              <div>
+                <label className={styles.fieldLabel}>Circles</label>
+                <div className={styles.circleSelect}>
+                  {circles.map(c => (
+                    <button
+                      key={c}
+                      className={`${styles.circleOption} ${form.circles.includes(c) ? styles.circleOptionActive : ''}`}
+                      onClick={() => toggleFormCircle(c)}
+                      type="button"
+                    >{c}</button>
+                  ))}
+                </div>
+              </div>
+            </div>
+            <button className={styles.submitBtn} onClick={editingId ? updateContact : addContact}>
+              {editingId ? '✓ Save Changes' : '+ Add Contact'}
+            </button>
+          </div>
+        )}
+
+        {/* Bulk Import */}
+        {showBulk && (
+          <div className={styles.bulkBox}>
+            <p style={{ fontSize: '0.8rem', color: '#9aabbb', fontWeight: 600, margin: '0 0 0.5rem' }}>
+              Paste contacts, one per line: <strong>Name, Email, Phone</strong>
+            </p>
+            <textarea
+              className={styles.bulkTextarea}
+              value={bulkText}
+              onChange={e => setBulkText(e.target.value)}
+              placeholder={"John Doe, john@email.com, 555-1234\nJane Smith, jane@email.com"}
+              rows={5}
+            />
+            <button className={styles.submitBtn} onClick={bulkImport} disabled={!bulkText.trim()}>
+              Import {bulkText.split('\n').filter(l => l.trim()).length} Contact{bulkText.split('\n').filter(l => l.trim()).length !== 1 ? 's' : ''}
+            </button>
+          </div>
+        )}
+
+        {/* Contacts List */}
+        <div className={styles.guestTable}>
+          {filtered.length === 0 ? (
+            <div style={{ padding: '3rem 2rem', textAlign: 'center' }}>
+              <div style={{ fontSize: '2.5rem', marginBottom: '0.8rem' }}>📇</div>
+              <p style={{ color: '#9aabbb', fontWeight: 700, fontSize: '0.9rem' }}>
+                {contacts.length === 0 ? 'No contacts yet. Add your first contact or bulk import!' : 'No contacts match your filter.'}
+              </p>
+            </div>
+          ) : (
+            filtered.map(contact => (
+              <div key={contact.id} className={styles.guestEntry}>
+                <div className={styles.guestRow}>
+                  <div className={styles.guestAvatar} style={{ background: contact.color }}>{contact.avatar}</div>
+                  <div className={styles.guestInfo}>
+                    <div className={styles.guestName}>{contact.name}</div>
+                    <div className={styles.guestEmail}>
+                      {contact.email && <span>{contact.email}</span>}
+                      {contact.email && contact.phone && <span style={{ margin: '0 0.4rem', opacity: 0.4 }}>·</span>}
+                      {contact.phone && <span>{contact.phone}</span>}
+                    </div>
+                  </div>
+                  <div className={styles.circleTags}>
+                    {contact.circles.map(c => (
+                      <span key={c} className={styles.circleTag}>{c}</span>
+                    ))}
+                    {contact.circles.length === 0 && <span className={styles.noCircle}>No circle</span>}
+                  </div>
+                  <div className={styles.contactActions}>
+                    {/* Circle quick-add dropdown */}
+                    <div className={styles.circleDropdown}>
+                      <button className={styles.circleAddBtn} title="Add to circle">🏷️</button>
+                      <div className={styles.circleDropdownContent}>
+                        {circles.map(c => (
+                          <label key={c} className={styles.circleDropdownItem}>
+                            <input
+                              type="checkbox"
+                              checked={contact.circles.includes(c)}
+                              onChange={() => toggleCircle(contact.id, c)}
+                            />
+                            {c}
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+                    <button className={styles.editBtn} onClick={() => startEdit(contact)} title="Edit">✏️</button>
+                    <button className={styles.removeBtn} onClick={() => deleteContact(contact.id)} title="Remove">🗑️</button>
+                  </div>
+                </div>
+              </div>
+            ))
+          )}
+        </div>
+      </div>
+    </>
   )
 }
