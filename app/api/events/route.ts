@@ -31,6 +31,15 @@ export async function POST(req: NextRequest) {
         if (body.plan !== undefined) updateData.plan = body.plan
         if (body.invite !== undefined) updateData.invite = body.invite
         if (body.rsvpBy !== undefined) updateData.rsvpBy = body.rsvpBy
+        if (body.inviteVersion) {
+            // Store versioned invite: inviteVersions.{versionId} = { subject, message, smsVersion, createdAt }
+            updateData[`inviteVersions.${body.inviteVersion.id}`] = {
+                subject: body.inviteVersion.subject || '',
+                message: body.inviteVersion.message || '',
+                smsVersion: body.inviteVersion.smsVersion || '',
+                createdAt: new Date().toISOString(),
+            }
+        }
 
         await eventRef.set(updateData, { merge: true })
 

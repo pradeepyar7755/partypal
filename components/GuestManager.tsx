@@ -192,13 +192,30 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
         setIsRefining(false)
     }
 
-    const getRSVPLink = () => {
+    const getRSVPLink = (versionId?: string) => {
         const origin = typeof window !== 'undefined' ? window.location.origin : 'https://partypal.social'
         const eid = planData.eventId || eventId || ''
-        return `${origin}/rsvp?e=${eid}`
+        return versionId ? `${origin}/rsvp?e=${eid}&v=${versionId}` : `${origin}/rsvp?e=${eid}`
     }
 
-    const copyRSVPLink = () => { navigator.clipboard.writeText(getRSVPLink()); setCopied(true); setTimeout(() => setCopied(false), 2000); showToast('RSVP link copied!', 'success') }
+    const copyRSVPLink = async () => {
+        const eid = planData.eventId || eventId || ''
+        if (invite && eid) {
+            // Snapshot current invite as a version
+            const vId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+            try {
+                await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: eid, inviteVersion: { id: vId, subject: invite.subject, message: invite.message, smsVersion: invite.smsVersion } }) })
+            } catch { /* best effort */ }
+            const link = getRSVPLink(vId)
+            navigator.clipboard.writeText(link)
+            setCopied(true); setTimeout(() => setCopied(false), 2000)
+            showToast('RSVP link copied with frozen invite!', 'success')
+        } else {
+            navigator.clipboard.writeText(getRSVPLink())
+            setCopied(true); setTimeout(() => setCopied(false), 2000)
+            showToast('RSVP link copied!', 'success')
+        }
+    }
 
     const shareWhatsApp = () => {
         const text = invite ? `${invite.subject}\n\n${invite.message}\n\nRSVP here: ${getRSVPLink()}` : `You're invited! RSVP here: ${getRSVPLink()}`

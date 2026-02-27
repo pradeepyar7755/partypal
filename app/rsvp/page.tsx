@@ -28,12 +28,22 @@ function RSVPContent() {
         const location = params.get('l') || params.get('location') || undefined
         const theme = params.get('t') || params.get('theme') || undefined
 
+        const versionId = params.get('v') || undefined
+
         // Try Firestore first (for guests who don't have localStorage)
         if (eventId) {
             fetch(`/api/events/${eventId}`)
                 .then(res => res.json())
                 .then(data => {
                     if (data && !data.error) {
+                        // If version ID specified, load that frozen version; otherwise fall back to live invite
+                        let invSubject = data.invite?.subject
+                        let invMessage = data.invite?.message
+                        if (versionId && data.inviteVersions && data.inviteVersions[versionId]) {
+                            const ver = data.inviteVersions[versionId]
+                            invSubject = ver.subject
+                            invMessage = ver.message
+                        }
                         setEventData({
                             eventId,
                             eventType: data.eventType || eventType || 'Party',
@@ -41,8 +51,8 @@ function RSVPContent() {
                             time: data.time,
                             location: data.location || location || '',
                             theme: data.theme || theme || '',
-                            inviteSubject: data.invite?.subject,
-                            inviteMessage: data.invite?.message,
+                            inviteSubject: invSubject,
+                            inviteMessage: invMessage,
                             rsvpBy: data.rsvpBy,
                         })
                         return
