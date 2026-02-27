@@ -75,9 +75,9 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
         userSetJSON(inviteKey, invite)
         // Also sync to Firestore for RSVP page (including null to clear)
         if (planData.eventId) {
-            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: invite || null }) }).catch(() => { })
+            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: invite || null, rsvpBy: rsvpByDate || null }) }).catch(() => { })
         }
-    }, [invite, inviteKey, planData.eventId])
+    }, [invite, inviteKey, planData.eventId, rsvpByDate])
 
     useEffect(() => { userSetJSON(bookmarkKey, bookmarks) }, [bookmarks, bookmarkKey])
 

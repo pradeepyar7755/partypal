@@ -13,7 +13,7 @@ const RELATIONSHIP_OPTIONS = ['Partner', 'Spouse', 'Child', 'Family', 'Friend', 
 
 function RSVPContent() {
     const params = useSearchParams()
-    const [eventData, setEventData] = useState<{ eventType?: string; date?: string; time?: string; location?: string; theme?: string; eventId?: string; inviteSubject?: string; inviteMessage?: string }>({})
+    const [eventData, setEventData] = useState<{ eventType?: string; date?: string; time?: string; location?: string; theme?: string; eventId?: string; inviteSubject?: string; inviteMessage?: string; rsvpBy?: string }>({})
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
     const [response, setResponse] = useState<'going' | 'maybe' | 'declined' | ''>('')
@@ -43,6 +43,7 @@ function RSVPContent() {
                             theme: data.theme || theme || '',
                             inviteSubject: data.invite?.subject,
                             inviteMessage: data.invite?.message,
+                            rsvpBy: data.rsvpBy,
                         })
                         return
                     }
@@ -132,6 +133,11 @@ function RSVPContent() {
                     <p className={styles.rsvpDetails}>
                         📍 {eventData.location || 'Location TBD'}
                     </p>
+                    {eventData.rsvpBy && (
+                        <p className={styles.rsvpDetails} style={{ marginTop: '0.2rem' }}>
+                            ⏰ RSVP by {new Date(eventData.rsvpBy + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                        </p>
+                    )}
                 </div>
 
                 {/* Show invite message if present */}
