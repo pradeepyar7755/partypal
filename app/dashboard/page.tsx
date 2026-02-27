@@ -852,8 +852,11 @@ export default function Dashboard() {
                                             <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)' }}>
                                                 ⏳ Event Countdown
                                             </div>
-                                            <div style={{ fontSize: '0.78rem', fontWeight: 800, color: daysLeft !== null && daysLeft <= 7 ? '#E8896A' : 'var(--teal)' }}>
-                                                {daysLeft !== null ? (daysLeft === 0 ? '🎉 Today!' : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`) : 'No date set'}
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                                <div style={{ fontSize: '0.78rem', fontWeight: 800, color: daysLeft !== null && daysLeft <= 7 ? '#E8896A' : 'var(--teal)' }}>
+                                                    {daysLeft !== null ? (daysLeft === 0 ? '🎉 Today!' : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`) : 'No date set'}
+                                                </div>
+                                                <button onClick={() => setShowCollabModal(true)} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 8, padding: '0.2rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s' }}>👥 Add/Manage Collaborators</button>
                                             </div>
                                         </div>
                                         <div style={{ position: 'relative', height: 8, background: 'rgba(0,0,0,0.06)', borderRadius: 10, overflow: 'hidden' }}>
@@ -1124,9 +1127,7 @@ export default function Dashboard() {
                                         <button className={styles.qaBtn} onClick={() => setSelectedTab('guests')}>
                                             <span>💌</span><span>Send Invitations Now</span><span>›</span>
                                         </button>
-                                        <button className={styles.qaBtn} onClick={() => setShowCollabModal(true)}>
-                                            <span>👥</span><span>Add Collaborators</span><span>›</span>
-                                        </button>
+
                                     </div>
                                 </div>
                             </div>
@@ -1138,7 +1139,7 @@ export default function Dashboard() {
             {showCollabModal && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }} onClick={() => setShowCollabModal(false)}>
                     <div className="card" style={{ padding: '2rem', width: '100%', maxWidth: 480, maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
-                        <h2 style={{ fontFamily: "'Fredoka One',cursive", color: 'var(--navy)', marginBottom: '0.3rem' }}>👥 Add Collaborators</h2>
+                        <h2 style={{ fontFamily: "'Fredoka One',cursive", color: 'var(--navy)', marginBottom: '0.3rem' }}>👥 Add/Manage Collaborators</h2>
                         <p style={{ fontSize: '0.82rem', color: '#9aabbb', fontWeight: 600, marginBottom: '1.2rem' }}>Invite team members to help plan this event. They&apos;ll be able to view progress and contribute.</p>
                         <div style={{ display: 'flex', gap: '0.4rem', marginBottom: '1rem', flexWrap: 'wrap' }}>
                             <input placeholder="Name" value={collabForm.name} onChange={e => setCollabForm(p => ({ ...p, name: e.target.value }))} style={{ flex: 1, minWidth: 100, padding: '0.5rem 0.7rem', borderRadius: 8, border: '1.5px solid var(--border)', fontSize: '0.82rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
