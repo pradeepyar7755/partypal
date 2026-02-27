@@ -5,7 +5,7 @@ import { useSearchParams } from 'next/navigation'
 import styles from './rsvp.module.css'
 
 interface AdditionalGuest {
-    id: string; name: string; dietary: string; relationship: string
+    id: string; name: string; dietary: string; relationship: string; isChild: boolean
 }
 
 const DIETARY_OPTIONS = ['None', 'Vegetarian', 'Vegan', 'Gluten-Free', 'Nut Allergy', 'Kosher', 'Halal', 'Dairy-Free', 'Shellfish Allergy']
@@ -91,7 +91,8 @@ function RSVPContent() {
             id: Date.now().toString(),
             name: '',
             dietary: 'None',
-            relationship: 'Partner'
+            relationship: 'Partner',
+            isChild: false
         }])
     }
 
@@ -108,11 +109,13 @@ function RSVPContent() {
         const validAdditional = additionalGuests.filter(ag => ag.name.trim())
         // Save to localStorage
         const rsvps = userGetJSON('partypal_rsvps', [] as Record<string, unknown>[])
+        const kidCount = validAdditional.filter(ag => ag.isChild).length
         rsvps.push({
             name, email, response, dietary,
             eventId: eventData.eventId,
             additionalGuests: validAdditional,
             totalPartySize: 1 + validAdditional.length,
+            kidCount,
             timestamp: new Date().toISOString()
         })
         userSetJSON('partypal_rsvps', rsvps)
@@ -121,7 +124,7 @@ function RSVPContent() {
             fetch(`/api/events/${eventData.eventId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, response, dietary, additionalGuests: validAdditional, totalPartySize: 1 + validAdditional.length }),
+                body: JSON.stringify({ name, email, response, dietary, additionalGuests: validAdditional, totalPartySize: 1 + validAdditional.length, kidCount: validAdditional.filter(ag => ag.isChild).length }),
             }).catch(() => { })
         }
         setSubmitted(true)
@@ -222,7 +225,7 @@ function RSVPContent() {
                                         <button key={n} onClick={() => {
                                             if (additionalGuests.length < n) {
                                                 const toAdd = n - additionalGuests.length
-                                                setAdditionalGuests(prev => [...prev, ...Array.from({ length: toAdd }, (_, i) => ({ id: (Date.now() + i).toString(), name: `Guest ${prev.length + i + 2}`, dietary: 'None', relationship: 'Friend' }))])
+                                                setAdditionalGuests(prev => [...prev, ...Array.from({ length: toAdd }, (_, i) => ({ id: (Date.now() + i).toString(), name: `Guest ${prev.length + i + 2}`, dietary: 'None', relationship: 'Friend', isChild: false }))])
                                             } else if (additionalGuests.length > n) {
                                                 setAdditionalGuests(prev => prev.slice(0, n))
                                             }
@@ -253,6 +256,22 @@ function RSVPContent() {
                                                 </select>
                                             </div>
                                         </div>
+                                        <div style={{ marginTop: '0.5rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <button
+                                                onClick={() => setAdditionalGuests(prev => prev.map(g => g.id === ag.id ? { ...g, isChild: !g.isChild } : g))}
+                                                style={{
+                                                    padding: '0.3rem 0.8rem', borderRadius: 16,
+                                                    border: `1.5px solid ${ag.isChild ? 'rgba(247,201,72,0.5)' : 'rgba(0,0,0,0.1)'}`,
+                                                    background: ag.isChild ? 'rgba(247,201,72,0.12)' : 'white',
+                                                    color: ag.isChild ? '#c4880a' : '#9aabbb',
+                                                    fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.15s',
+                                                    display: 'flex', alignItems: 'center', gap: '0.3rem',
+                                                }}
+                                            >
+                                                {ag.isChild ? '👶 Child' : '👶 Child?'}
+                                            </button>
+                                            {ag.isChild && <span style={{ fontSize: '0.68rem', color: '#c4880a', fontWeight: 600 }}>Under 12</span>}
+                                        </div>
                                     </div>
                                 </div>
                             ))}
@@ -265,11 +284,16 @@ function RSVPContent() {
                             )}
                         </div>
 
-                        {totalPartySize > 1 && (
-                            <div className={styles.partySummary}>
-                                🎟️ Party size: <strong>{totalPartySize} {totalPartySize === 1 ? 'person' : 'people'}</strong>
-                            </div>
-                        )}
+                        {totalPartySize > 1 && (() => {
+                            const kidCount = additionalGuests.filter(ag => ag.isChild).length
+                            const adultCount = totalPartySize - kidCount
+                            return (
+                                <div className={styles.partySummary}>
+                                    🎟️ Party size: <strong>{totalPartySize} {totalPartySize === 1 ? 'person' : 'people'}</strong>
+                                    {kidCount > 0 && <span style={{ marginLeft: '0.4rem', fontSize: '0.78rem', color: '#c4880a', fontWeight: 700 }}>({adultCount} adult{adultCount !== 1 ? 's' : ''}, {kidCount} kid{kidCount !== 1 ? 's' : ''})</span>}
+                                </div>
+                            )
+                        })()}
 
                         <button className={styles.rsvpSubmit} onClick={handleSubmit} disabled={!name || !response}>
                             Send My RSVP {totalPartySize > 1 ? `(${totalPartySize} people)` : ''} 🎊
