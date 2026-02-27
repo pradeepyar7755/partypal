@@ -213,10 +213,10 @@ function VendorsContent() {
       {/* ══ HEADER ══ */}
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <button className="back-btn" onClick={() => router.back()}>← Back</button>
           <div className={styles.breadcrumb}>
             <a href="/">🏠 Home</a> › <span>{activecat === 'All Vendors' ? 'Vendors' : activecat + ' Vendors'}</span>
           </div>
+          <button className="back-btn" onClick={() => router.push('/')} style={{ marginTop: '0.3rem' }}>← Back to Home</button>
           <h1 className={styles.headerTitle}>
             {activecat === 'All Vendors' ? 'Find Your Perfect Vendors 🔍' : `Find ${CAT_EMOJIS[activecat]} ${activecat} Vendors`}
           </h1>

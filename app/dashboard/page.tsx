@@ -399,10 +399,7 @@ export default function Dashboard() {
                     <div className="breadcrumb">
                         <a href="/">🏠 Home</a> › <span className="breadcrumb current">My Events</span>
                     </div>
-                    <div style={{ display: 'flex', gap: '0.6rem', alignItems: 'center' }}>
-                        <button className="back-btn" onClick={() => router.push('/')}>← Back to Home</button>
-                    </div>
-
+                    <button className="back-btn" onClick={() => router.push('/')} style={{ marginTop: '0.3rem' }}>← Back to Home</button>
                 </div>
             </header>
 
