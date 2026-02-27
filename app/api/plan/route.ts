@@ -5,12 +5,30 @@ const genAI = new GoogleGenerativeAI(process.env.GOOGLE_MAPS_API_KEY || '')
 
 export async function POST(req: NextRequest) {
   try {
-    const { eventType, date, guests, location, theme, budget } = await req.json()
+    const { eventType, date, guests, location, theme, budget, refinement, existingTimeline } = await req.json()
     if (!eventType || !guests || !location) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    const prompt = `You are PartyPal, an expert party planner AI. Generate a comprehensive party plan.
+    const isRefinement = refinement && existingTimeline
+
+    const prompt = isRefinement ? `You are PartyPal, an expert party planner AI. Refine the planning timeline below based on user feedback.
+
+Event: ${eventType} | Date: ${date || 'TBD'} | Guests: ${guests} | Location: ${location} | Theme: ${theme || 'Open'} | Budget: ${budget || 'Flexible'}
+
+Current Timeline:
+${existingTimeline}
+
+User's refinement request: "${refinement}"
+
+Return ONLY valid JSON with the updated timeline applying the user's feedback. Keep items that don't need changing. The format must be:
+{
+  "timeline": [
+    {"weeks":"time period","task":"description","category":"category","priority":"high|medium|low"}
+  ]
+}
+
+Return ONLY valid JSON, no markdown, no backticks.` : `You are PartyPal, an expert party planner AI. Generate a comprehensive party plan.
 
 Event: ${eventType} | Date: ${date || 'TBD'} | Guests: ${guests} | Location: ${location} | Theme: ${theme || 'Open'} | Budget: ${budget || 'Flexible'}
 
@@ -72,6 +90,11 @@ Make ALL content specific to the actual event details provided. Adjust budget pe
     const text = result.response.text()
     const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const plan = JSON.parse(cleaned)
+    // For refinements, the response only contains { timeline: [...] }
+    // but the dashboard expects { plan: { timeline: [...] } }
+    if (isRefinement) {
+      return NextResponse.json({ plan: { timeline: plan.timeline || plan }, eventType, guests, location, theme, date, budget })
+    }
     return NextResponse.json({ plan, eventType, guests, location, theme, date, budget })
   } catch (error: unknown) {
     console.error('Plan error:', error)

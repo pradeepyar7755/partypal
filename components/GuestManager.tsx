@@ -197,6 +197,61 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                 ))}
             </div>
 
+            {/* ── Invitation Theme (horizontal card) ── */}
+            <div className="card" style={{ padding: '1rem 1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap' }}>
+                <span style={{ fontSize: '1.3rem' }}>✉️</span>
+                <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', margin: 0, whiteSpace: 'nowrap' }}>Invitation Theme</h3>
+                <select value={inviteTheme} onChange={e => setInviteTheme(e.target.value)} className={styles.addInput} style={{ minWidth: 150, margin: 0 }}>
+                    <option>Modern &amp; Fun</option><option>Elegant &amp; Formal</option><option>Tropical Paradise</option><option>Rustic &amp; Cozy</option><option>Vintage &amp; Retro</option><option>Minimalist &amp; Clean</option><option>Glamorous &amp; Luxe</option>
+                </select>
+                <button className={styles.actionBtn} style={{ margin: 0, whiteSpace: 'nowrap' }} onClick={generateInvite} disabled={loadingInvite}>{loadingInvite ? '⏳ Generating...' : '✨ Generate Invite'}</button>
+                {invite && (
+                    <button onClick={() => setInvite(null)} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.25rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer', whiteSpace: 'nowrap' }}>✕ Clear Invite</button>
+                )}
+            </div>
+
+            {/* Generated Invite (below theme bar) */}
+            {invite && (
+                <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                        <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)' }}>✉️ Your Invitation</h3>
+                        <button onClick={() => setIsEditingInvite(!isEditingInvite)} style={{ background: 'none', border: '1px solid var(--teal)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--teal)', cursor: 'pointer' }}>
+                            {isEditingInvite ? '✕ Cancel' : '✏️ Edit'}
+                        </button>
+                    </div>
+                    {isEditingInvite ? (
+                        <>
+                            <input value={invite.subject || ''} onChange={e => setInvite(prev => prev ? { ...prev, subject: e.target.value } : prev)} className={styles.addInput} style={{ width: '100%', marginBottom: '0.4rem', fontWeight: 700 }} placeholder="Subject line" />
+                            <textarea value={invite.message || ''} onChange={e => setInvite(prev => prev ? { ...prev, message: e.target.value } : prev)} className={styles.addInput} style={{ width: '100%', minHeight: 100, marginBottom: '0.4rem', resize: 'vertical', lineHeight: 1.5 }} />
+                        </>
+                    ) : (
+                        <>
+                            <div className={styles.inviteSubject}>{invite.subject}</div>
+                            <p className={styles.inviteMessage}>{invite.message}</p>
+                        </>
+                    )}
+                    {invite.smsVersion && (
+                        <div className={styles.smsBox}>
+                            <div style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--teal)', marginBottom: '0.2rem' }}>SMS VERSION</div>
+                            <p style={{ fontSize: '0.78rem', color: 'var(--navy)', fontWeight: 600, margin: 0 }}>{invite.smsVersion}</p>
+                        </div>
+                    )}
+                    <div style={{ marginTop: '0.6rem', borderTop: '1px solid #eee', paddingTop: '0.6rem' }}>
+                        <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.3rem' }}>🤖 Refine with AI</div>
+                        <div style={{ display: 'flex', gap: '0.3rem' }}>
+                            <input value={refineInput} onChange={e => setRefineInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') refineInvite() }} placeholder="e.g. Make it more formal..." className={styles.addInput} style={{ flex: 1, fontSize: '0.78rem' }} />
+                            <button onClick={refineInvite} disabled={isRefining || !refineInput.trim()} style={{ background: 'var(--teal)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.35rem 0.6rem', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefining || !refineInput.trim() ? 0.5 : 1 }}>
+                                {isRefining ? '...' : '✨ Refine'}
+                            </button>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.6rem' }}>
+                        <button className={styles.copyBtn} style={{ flex: 1 }} onClick={copyRSVPLink}>{copied ? '✓ Copied!' : '🔗 Copy RSVP Link'}</button>
+                        <button onClick={shareWhatsApp} style={{ flex: 1, background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '0.4rem', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>💬 WhatsApp</button>
+                    </div>
+                </div>
+            )}
+
             <div className={styles.mainLayout}>
                 <div>
                     {/* Actions */}
@@ -355,57 +410,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                         ))}
                     </div>
 
-                    {/* Invite Theme */}
-                    <div className="card" style={{ marginBottom: '1rem', textAlign: 'center', padding: '1.2rem' }}>
-                        <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>✉️</div>
-                        <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', marginBottom: '0.4rem' }}>Invitation Theme</h3>
-                        <select value={inviteTheme} onChange={e => setInviteTheme(e.target.value)} className={styles.addInput} style={{ width: '100%', marginBottom: '0.6rem', textAlign: 'center' }}>
-                            <option>Modern &amp; Fun</option><option>Elegant &amp; Formal</option><option>Tropical Paradise</option><option>Rustic &amp; Cozy</option><option>Vintage &amp; Retro</option><option>Minimalist &amp; Clean</option><option>Glamorous &amp; Luxe</option>
-                        </select>
-                        <button className={styles.actionBtn} style={{ width: '100%' }} onClick={generateInvite} disabled={loadingInvite}>{loadingInvite ? '⏳ Generating...' : '✨ Generate Invite'}</button>
-                    </div>
-
-                    {/* Generated Invite */}
-                    {invite && (
-                        <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
-                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
-                                <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)' }}>✉️ Your Invitation</h3>
-                                <button onClick={() => setIsEditingInvite(!isEditingInvite)} style={{ background: 'none', border: '1px solid var(--teal)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.7rem', fontWeight: 700, color: 'var(--teal)', cursor: 'pointer' }}>
-                                    {isEditingInvite ? '✕ Cancel' : '✏️ Edit'}
-                                </button>
-                            </div>
-                            {isEditingInvite ? (
-                                <>
-                                    <input value={invite.subject || ''} onChange={e => setInvite(prev => prev ? { ...prev, subject: e.target.value } : prev)} className={styles.addInput} style={{ width: '100%', marginBottom: '0.4rem', fontWeight: 700 }} placeholder="Subject line" />
-                                    <textarea value={invite.message || ''} onChange={e => setInvite(prev => prev ? { ...prev, message: e.target.value } : prev)} className={styles.addInput} style={{ width: '100%', minHeight: 100, marginBottom: '0.4rem', resize: 'vertical', lineHeight: 1.5 }} />
-                                </>
-                            ) : (
-                                <>
-                                    <div className={styles.inviteSubject}>{invite.subject}</div>
-                                    <p className={styles.inviteMessage}>{invite.message}</p>
-                                </>
-                            )}
-                            {invite.smsVersion && (
-                                <div className={styles.smsBox}>
-                                    <div style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--teal)', marginBottom: '0.2rem' }}>SMS VERSION</div>
-                                    <p style={{ fontSize: '0.78rem', color: 'var(--navy)', fontWeight: 600, margin: 0 }}>{invite.smsVersion}</p>
-                                </div>
-                            )}
-                            <div style={{ marginTop: '0.6rem', borderTop: '1px solid #eee', paddingTop: '0.6rem' }}>
-                                <div style={{ fontSize: '0.7rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.3rem' }}>🤖 Refine with AI</div>
-                                <div style={{ display: 'flex', gap: '0.3rem' }}>
-                                    <input value={refineInput} onChange={e => setRefineInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') refineInvite() }} placeholder="e.g. Make it more formal..." className={styles.addInput} style={{ flex: 1, fontSize: '0.78rem' }} />
-                                    <button onClick={refineInvite} disabled={isRefining || !refineInput.trim()} style={{ background: 'var(--teal)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.35rem 0.6rem', fontSize: '0.72rem', fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefining || !refineInput.trim() ? 0.5 : 1 }}>
-                                        {isRefining ? '...' : '✨ Refine'}
-                                    </button>
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: '0.4rem', marginTop: '0.6rem' }}>
-                                <button className={styles.copyBtn} style={{ flex: 1 }} onClick={copyRSVPLink}>{copied ? '✓ Copied!' : '🔗 Copy RSVP Link'}</button>
-                                <button onClick={shareWhatsApp} style={{ flex: 1, background: '#25D366', color: '#fff', border: 'none', borderRadius: 8, padding: '0.4rem', fontSize: '0.78rem', fontWeight: 700, cursor: 'pointer' }}>💬 WhatsApp</button>
-                            </div>
-                        </div>
-                    )}
                 </div>
             </div>
         </div>

@@ -102,12 +102,16 @@ export default function Dashboard() {
     const [savedVendors, setSavedVendors] = useState<Record<string, SavedVendor>>({})
     const [guestForm, setGuestForm] = useState({ name: '', email: '' })
     const [vendorForm, setVendorForm] = useState({ name: '', category: '', notes: '', costEstimate: '' })
+    const ALL_VENDOR_CATS = ['Venue', 'Photography', 'Music / DJ', 'Catering', 'Baker', 'Florist', 'Decor', 'Other']
+    const [enabledCats, setEnabledCats] = useState<string[]>(ALL_VENDOR_CATS)
     const [newCheckItem, setNewCheckItem] = useState('')
     const [guestSearch, setGuestSearch] = useState('')
     const [guestFilter, setGuestFilter] = useState<'all' | 'invited' | 'confirmed' | 'declined'>('all')
     const [showAddGuest, setShowAddGuest] = useState(false)
     const [showBulkImport, setShowBulkImport] = useState(false)
     const [bulkText, setBulkText] = useState('')
+    const [refineTimelineInput, setRefineTimelineInput] = useState('')
+    const [isRefiningTimeline, setIsRefiningTimeline] = useState(false)
     const progressRefs = useRef<HTMLDivElement[]>([])
 
     const loadEvent = (plan: PlanData, demo: boolean) => {
@@ -344,6 +348,38 @@ export default function Dashboard() {
         const updated = eventVendors.map((v, i) => i === idx ? { ...v, confirmed: !v.confirmed } : v)
         setEventVendors(updated)
         if (data.eventId) userSetJSON(`partypal_vendors_${data.eventId}`, updated)
+    }
+    const toggleCat = (cat: string) => setEnabledCats(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat])
+
+    // Refine timeline with AI
+    const refineTimeline = async () => {
+        if (!refineTimelineInput.trim() || isRefiningTimeline) return
+        setIsRefiningTimeline(true)
+        try {
+            const res = await fetch('/api/plan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    eventType: data.eventType, date: data.date, guests: data.guests, location: data.location, theme: data.theme, budget: data.budget,
+                    refinement: refineTimelineInput.trim(),
+                    existingTimeline: JSON.stringify(data.plan.timeline)
+                })
+            })
+            if (!res.ok) throw new Error('Failed')
+            const result = await res.json()
+            if (result.plan?.timeline) {
+                const updated = { ...data, plan: { ...data.plan, timeline: result.plan.timeline } }
+                setData(updated)
+                if (data.eventId) {
+                    const events = userGetJSON<PlanData[]>('partypal_events', [])
+                    const idx = events.findIndex(e => e.eventId === data.eventId)
+                    if (idx >= 0) { events[idx] = updated; userSetJSON('partypal_events', events) }
+                }
+                showToast('Timeline refined! ✨', 'success')
+                setRefineTimelineInput('')
+            }
+        } catch { showToast('Could not refine timeline', 'error') }
+        setIsRefiningTimeline(false)
     }
 
     // Countdown calculation
@@ -589,11 +625,17 @@ export default function Dashboard() {
                                 {/* Add Vendor Form */}
                                 <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
                                     <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.8rem' }}>➕ Add Vendor</div>
+                                    {/* Category Toggles */}
+                                    <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.8rem' }}>
+                                        {ALL_VENDOR_CATS.map(cat => (
+                                            <button key={cat} onClick={() => toggleCat(cat)} style={{ padding: '0.25rem 0.7rem', borderRadius: 20, border: `1.5px solid ${enabledCats.includes(cat) ? 'rgba(74,173,168,0.4)' : 'var(--border)'}`, background: enabledCats.includes(cat) ? 'rgba(74,173,168,0.08)' : 'transparent', color: enabledCats.includes(cat) ? 'var(--teal)' : '#9aabbb', fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.15s' }}>{enabledCats.includes(cat) ? '✓' : ''} {cat}</button>
+                                        ))}
+                                    </div>
                                     <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
                                         <input placeholder="Vendor name" value={vendorForm.name} onChange={e => setVendorForm(p => ({ ...p, name: e.target.value }))} style={{ flex: 1, minWidth: 150, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
                                         <select value={vendorForm.category} onChange={e => setVendorForm(p => ({ ...p, category: e.target.value }))} style={{ padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none', color: vendorForm.category ? 'var(--navy)' : '#9aabbb' }}>
                                             <option value="">Category...</option>
-                                            <option>Venue</option><option>Photography</option><option>Music / DJ</option><option>Catering</option><option>Baker</option><option>Florist</option><option>Decor</option><option>Other</option>
+                                            {enabledCats.map(c => <option key={c}>{c}</option>)}
                                         </select>
                                         <input placeholder="Cost estimate $" value={vendorForm.costEstimate} onChange={e => setVendorForm(p => ({ ...p, costEstimate: e.target.value.replace(/[^0-9.]/g, '') }))} style={{ width: 110, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
                                         <input placeholder="Notes (optional)" value={vendorForm.notes} onChange={e => setVendorForm(p => ({ ...p, notes: e.target.value }))} style={{ flex: 1, minWidth: 100, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
@@ -674,22 +716,6 @@ export default function Dashboard() {
                                         )
                                     })()}
                                 </div>
-                                {/* Per-category breakdown */}
-                                {eventVendors.some(v => v.costEstimate) && (
-                                    <div className="card" style={{ padding: '1.2rem' }}>
-                                        <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', marginBottom: '0.8rem' }}>📊 By Category</h3>
-                                        {Object.entries(eventVendors.reduce<Record<string, number>>((acc, v) => {
-                                            if (v.costEstimate) acc[v.category] = (acc[v.category] || 0) + v.costEstimate
-                                            return acc
-                                        }, {})).sort((a, b) => b[1] - a[1]).map(([cat, amt]) => (
-                                            <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                                                <span style={{ flex: 1, fontWeight: 700, fontSize: '0.8rem' }}>{cat}</span>
-                                                <div style={{ flex: 1, height: 5, background: 'var(--border)', borderRadius: 50, overflow: 'hidden' }}><div style={{ height: '100%', width: `${totalVendorCost > 0 ? (amt / totalVendorCost) * 100 : 0}%`, background: 'linear-gradient(90deg, var(--teal), var(--yellow))', borderRadius: 50, transition: 'width 0.3s' }} /></div>
-                                                <span style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--navy)', minWidth: 50, textAlign: 'right' }}>${amt.toLocaleString()}</span>
-                                            </div>
-                                        ))}
-                                    </div>
-                                )}
                             </div>
                         </div>
                     )}
@@ -742,7 +768,13 @@ export default function Dashboard() {
                                             <span className={styles.cardIcon}>🗓️</span>
                                             <h2>Planning Timeline</h2>
                                         </div>
-                                        <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flex: 1, maxWidth: 280 }}>
+                                                <input value={refineTimelineInput} onChange={e => setRefineTimelineInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') refineTimeline() }} placeholder="Refine with AI..." style={{ flex: 1, padding: '0.3rem 0.6rem', borderRadius: 6, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.72rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
+                                                <button onClick={refineTimeline} disabled={isRefiningTimeline || !refineTimelineInput.trim()} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 6, padding: '0.3rem 0.6rem', fontSize: '0.68rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefiningTimeline || !refineTimelineInput.trim() ? 0.5 : 1 }}>{isRefiningTimeline ? '...' : '✨ Refine'}</button>
+                                            </div>
+                                            <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
+                                        </div>
                                     </div>
                                     <div className={styles.timeline}>
                                         {(isEditing ? editTimeline : data.plan.timeline).map((t, i, arr) => {
