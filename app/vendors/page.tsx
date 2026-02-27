@@ -235,14 +235,16 @@ function VendorsContent() {
       {/* ══ SEARCH BAR ══ */}
       <div className={styles.searchBarWrap}>
         <div className={styles.searchBarInner}>
-          <div style={{ minWidth: 200, maxWidth: 260, flex: '0 0 auto' }}>
+          <div className={styles.searchInputWrap} style={{ maxWidth: 280, flex: '0 0 auto' }}>
+            <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontSize: '1rem', zIndex: 2, pointerEvents: 'none' }}>📍</span>
             <LocationSearch
               value={detectedLocation}
               onChange={(loc) => {
                 setDetectedLocation(loc)
                 setLocationReady(true)
               }}
-              placeholder="📍 Location..."
+              placeholder="Location..."
+              className={styles.searchInput}
             />
           </div>
           <div className={styles.searchInputWrap}>
