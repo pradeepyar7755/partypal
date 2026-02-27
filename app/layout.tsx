@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import './globals.css'
 import Nav from '@/components/Nav'
 import ToastContainer from '@/components/Toast'
+import { AuthProvider } from '@/components/AuthContext'
 
 export const metadata: Metadata = {
   title: 'PartyPal — AI Party Planning',
@@ -24,9 +25,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
       </head>
       <body>
-        <Nav />
-        <ToastContainer />
-        {children}
+        <AuthProvider>
+          <Nav />
+          <ToastContainer />
+          {children}
+        </AuthProvider>
       </body>
     </html>
   )
