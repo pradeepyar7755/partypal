@@ -795,7 +795,21 @@ export default function Dashboard() {
                                                         <>
                                                             <div className={styles.tlTime}>{t.weeks}</div>
                                                             <div className={styles.tlTitle}>{t.task}</div>
-                                                            {t.category && <div className={styles.tlDesc}>{t.category}</div>}
+                                                            {t.category && (() => {
+                                                                const TAG_COLORS: Record<string, string> = { venue: '#4AADA8', vendor: '#E8896A', food: '#F7C948', music: '#7B5EA7', decor: '#3D8C6E', planning: '#2D4059', guests: '#c4880a', budget: '#E8896A', entertainment: '#7B5EA7', catering: '#F7C948', photography: '#4AADA8', logistics: '#2D4059' }
+                                                                const isTagLike = t.category.length < 40 && /^[a-zA-Z0-9_\s&,/]+$/.test(t.category)
+                                                                if (isTagLike) {
+                                                                    const tags = t.category.split(/[_,/]/).map(t => t.trim().toLowerCase()).filter(Boolean)
+                                                                    return (
+                                                                        <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap', marginTop: '0.3rem' }}>
+                                                                            {tags.map((tag, ti) => (
+                                                                                <span key={ti} style={{ background: `${TAG_COLORS[tag] || '#9aabbb'}18`, border: `1px solid ${TAG_COLORS[tag] || '#9aabbb'}30`, borderRadius: 12, padding: '0.1rem 0.55rem', fontSize: '0.68rem', fontWeight: 700, color: TAG_COLORS[tag] || '#6b7c93', textTransform: 'capitalize' }}>{tag}</span>
+                                                                            ))}
+                                                                        </div>
+                                                                    )
+                                                                }
+                                                                return <div className={styles.tlDesc}>{t.category}</div>
+                                                            })()}
                                                         </>
                                                     )}
                                                 </div>
