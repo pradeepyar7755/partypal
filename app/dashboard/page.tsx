@@ -688,8 +688,8 @@ export default function Dashboard() {
                         <div style={{ fontSize: '1.5rem', opacity: 0.5 }}>➕</div>
                         <div style={{ fontSize: '0.78rem', color: '#9aabbb', fontWeight: 700 }}>Plan a Party</div>
                     </div>
-                    {/* User events sorted: upcoming first, past after */}
-                    {[...allEvents].sort((a, b) => {
+                    {/* All events (own + shared) sorted by date: upcoming first, past after */}
+                    {[...allEvents.map(e => ({ ...e, _shared: false })), ...sharedEvents.filter(se => !allEvents.some(e => e.eventId === se.eventId)).map(e => ({ ...e, _shared: true }))].sort((a, b) => {
                         const now = new Date()
                         const aDate = a.date ? new Date(a.date + 'T12:00:00') : null
                         const bDate = b.date ? new Date(b.date + 'T12:00:00') : null
@@ -703,6 +703,7 @@ export default function Dashboard() {
                         const isActive = !isDemo && data.eventId === ev.eventId
                         const evDate = ev.date ? new Date(ev.date + 'T12:00:00') : null
                         const isPast = evDate ? evDate < new Date() : false
+                        const isShared = (ev as any)._shared
                         const palette = [
                             { bg: 'linear-gradient(135deg, rgba(74,173,168,0.18), rgba(61,140,110,0.12))', border: 'rgba(74,173,168,0.5)' },
                             { bg: 'linear-gradient(135deg, rgba(232,137,106,0.18), rgba(200,100,70,0.12))', border: 'rgba(232,137,106,0.5)' },
@@ -724,39 +725,17 @@ export default function Dashboard() {
                                 }}
                             >
                                 {isPast && <div style={{ position: 'absolute', top: 6, left: 6, background: 'rgba(155,155,155,0.15)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.55rem', fontWeight: 900, color: '#888', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Past Event</div>}
+                                {isShared && <div style={{ position: 'absolute', top: 6, right: 28, background: 'rgba(123,94,167,0.15)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.55rem', fontWeight: 900, color: '#7B5EA7', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Shared</div>}
                                 <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>{ev.eventType?.split(' ')[0] || '🎉'}</div>
                                 <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{ev.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</div>
                                 <div style={{ fontSize: '0.7rem', color: '#6b7c93', fontWeight: 700 }}>
                                     {ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'} · {ev.guests || '?'} guests
                                 </div>
-                                <button
+                                {!isShared && <button
                                     onClick={(e) => deleteEvent(ev.eventId!, e)}
                                     style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(232,137,106,0.1)', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.65rem', color: '#E8896A', padding: 0, lineHeight: 1 }}
                                     title="Delete event"
-                                >✕</button>
-                            </div>
-                        )
-                    })}
-                    {/* Shared events */}
-                    {sharedEvents.filter(se => !allEvents.some(e => e.eventId === se.eventId)).map((ev, idx) => {
-                        const isActive = !isDemo && data.eventId === ev.eventId
-                        return (
-                            <div
-                                key={ev.eventId}
-                                onClick={() => loadEvent(ev, false)}
-                                style={{
-                                    minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const, overflow: 'hidden',
-                                    background: isActive ? 'linear-gradient(135deg, rgba(123,94,167,0.18), rgba(100,70,150,0.12))' : 'linear-gradient(135deg, rgba(123,94,167,0.06), rgba(100,70,150,0.03))',
-                                    border: isActive ? '2px solid rgba(123,94,167,0.5)' : '1.5px solid rgba(123,94,167,0.2)',
-                                    boxShadow: isActive ? '0 4px 16px rgba(123,94,167,0.15)' : '0 1px 4px rgba(0,0,0,0.04)',
-                                }}
-                            >
-                                <div style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(123,94,167,0.15)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.55rem', fontWeight: 900, color: '#7B5EA7', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>SHARED</div>
-                                <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>{ev.eventType?.split(' ')[0] || '🎉'}</div>
-                                <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{ev.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</div>
-                                <div style={{ fontSize: '0.7rem', color: '#6b7c93', fontWeight: 700 }}>
-                                    {ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'} · {ev.guests || '?'} guests
-                                </div>
+                                >✕</button>}
                             </div>
                         )
                     })}
