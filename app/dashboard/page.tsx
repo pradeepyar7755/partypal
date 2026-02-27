@@ -116,6 +116,10 @@ export default function Dashboard() {
     const [showCollabModal, setShowCollabModal] = useState(false)
     const [collaborators, setCollaborators] = useState<{ email: string; name: string; role: string }[]>([])
     const [collabForm, setCollabForm] = useState({ email: '', name: '', role: 'Viewer' })
+    const [editBudgetMode, setEditBudgetMode] = useState(false)
+    const [editBudgetIdx, setEditBudgetIdx] = useState<number | null>(null)
+    const [editBudgetValue, setEditBudgetValue] = useState('')
+    const [showBudgetTips, setShowBudgetTips] = useState(false)
     const progressRefs = useRef<HTMLDivElement[]>([])
 
     const loadEvent = (plan: PlanData, demo: boolean) => {
@@ -797,12 +801,12 @@ export default function Dashboard() {
                                             <h2>Planning Timeline</h2>
                                         </div>
                                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                            <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
                                             <button onClick={() => setEditTimelineMode(!editTimelineMode)} title={editTimelineMode ? 'Exit edit mode' : 'Edit timeline'} style={{ background: editTimelineMode ? 'var(--teal)' : 'transparent', color: editTimelineMode ? '#fff' : '#9aabbb', border: `1.5px solid ${editTimelineMode ? 'var(--teal)' : 'var(--border)'}`, borderRadius: 6, padding: '0.25rem 0.4rem', fontSize: '0.75rem', cursor: 'pointer', transition: 'all 0.2s' }}>✏️</button>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flex: 1, maxWidth: 280 }}>
                                                 <input value={refineTimelineInput} onChange={e => setRefineTimelineInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') refineTimeline() }} placeholder="Refine with AI..." style={{ flex: 1, padding: '0.3rem 0.6rem', borderRadius: 6, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.72rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
                                                 <button onClick={refineTimeline} disabled={isRefiningTimeline || !refineTimelineInput.trim()} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 6, padding: '0.3rem 0.6rem', fontSize: '0.68rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefiningTimeline || !refineTimelineInput.trim() ? 0.5 : 1 }}>{isRefiningTimeline ? '...' : '✨ Refine'}</button>
                                             </div>
-                                            <span className={`${styles.sourceBadge} ${styles.claudeBadge}`}>AI Generated</span>
                                         </div>
                                     </div>
                                     <div className={styles.timeline}>
@@ -944,15 +948,55 @@ export default function Dashboard() {
                                     </div>
                                     <div className={styles.budgetItems}>
                                         {data.plan.budget.breakdown.map((b, i) => (
-                                            <div key={i} className={styles.budgetItem}>
+                                            <div key={i} className={styles.budgetItem} style={{ cursor: editBudgetMode ? 'pointer' : 'default' }} onClick={() => { if (editBudgetMode) { setEditBudgetIdx(i); setEditBudgetValue(b.amount.toString()) } }}>
                                                 <div className={styles.budgetDot} style={{ background: b.color }} />
                                                 <div className={styles.budgetName}>{b.category}</div>
-                                                <div className={styles.budgetVal}>${b.amount.toLocaleString()}</div>
+                                                {editBudgetMode && editBudgetIdx === i ? (
+                                                    <input
+                                                        value={editBudgetValue}
+                                                        onChange={e => setEditBudgetValue(e.target.value)}
+                                                        onBlur={() => {
+                                                            const val = parseInt(editBudgetValue) || 0
+                                                            const updated = { ...data, plan: { ...data.plan, budget: { ...data.plan.budget, breakdown: data.plan.budget.breakdown.map((item, idx) => idx === i ? { ...item, amount: val, percentage: Math.round((val / totalBudget) * 100) } : item) } } }
+                                                            setData(updated)
+                                                            if (isDemo) userSetJSON('partypal_demo', updated)
+                                                            else { userSetJSON('partyplan', updated); if (updated.eventId) fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => { }) }
+                                                            setEditBudgetIdx(null)
+                                                        }}
+                                                        onKeyDown={e => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
+                                                        autoFocus
+                                                        onClick={e => e.stopPropagation()}
+                                                        style={{ width: 60, padding: '0.15rem 0.3rem', borderRadius: 6, border: '1.5px solid var(--teal)', fontSize: '0.72rem', fontWeight: 800, textAlign: 'right', outline: 'none', color: 'var(--navy)' }}
+                                                    />
+                                                ) : (
+                                                    <div className={styles.budgetVal}>${b.amount.toLocaleString()}</div>
+                                                )}
                                                 <div className={styles.budgetPct}>{b.percentage}%</div>
+                                                {editBudgetMode && (
+                                                    <button onClick={(e) => { e.stopPropagation(); const updated = { ...data, plan: { ...data.plan, budget: { ...data.plan.budget, breakdown: data.plan.budget.breakdown.filter((_, idx) => idx !== i) } } }; setData(updated); if (isDemo) userSetJSON('partypal_demo', updated); else { userSetJSON('partyplan', updated) }; showToast(`Removed ${b.category}`, 'info') }} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.65rem', padding: '0 0.2rem', marginLeft: '0.2rem' }} title="Remove">✕</button>
+                                                )}
                                             </div>
                                         ))}
                                     </div>
-                                    <button onClick={() => router.push('/budget')} style={{ width: '100%', padding: '0.6rem', background: 'linear-gradient(135deg, var(--yellow), #E8896A)', color: 'var(--dark-navy)', border: 'none', borderRadius: 10, fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', marginTop: '0.8rem', transition: 'all 0.2s' }}>💰 Adjust Budget</button>
+                                    {editBudgetMode && (
+                                        <button onClick={() => {
+                                            const name = prompt('Category name:')
+                                            if (!name) return
+                                            const amtStr = prompt('Amount ($):')
+                                            const amt = parseInt(amtStr || '0') || 0
+                                            const colors = ['#E8896A', '#4AADA8', '#F7C948', '#7B5EA7', '#3D8C6E', '#C4A882', '#2D4059']
+                                            const newItem = { category: name, amount: amt, percentage: Math.round((amt / totalBudget) * 100), color: colors[data.plan.budget.breakdown.length % colors.length] }
+                                            const updated = { ...data, plan: { ...data.plan, budget: { ...data.plan.budget, breakdown: [...data.plan.budget.breakdown, newItem] } } }
+                                            setData(updated)
+                                            if (isDemo) userSetJSON('partypal_demo', updated)
+                                            else { userSetJSON('partyplan', updated) }
+                                            showToast(`Added ${name}`, 'success')
+                                        }} style={{ width: '100%', padding: '0.4rem', background: 'transparent', border: '1.5px dashed var(--border)', borderRadius: 8, fontSize: '0.75rem', fontWeight: 800, color: '#9aabbb', cursor: 'pointer', marginTop: '0.5rem' }}>+ Add Category</button>
+                                    )}
+                                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.8rem' }}>
+                                        <button onClick={() => setEditBudgetMode(!editBudgetMode)} style={{ flex: 1, padding: '0.5rem', background: editBudgetMode ? 'var(--teal)' : 'linear-gradient(135deg, var(--yellow), #E8896A)', color: editBudgetMode ? '#fff' : 'var(--dark-navy)', border: 'none', borderRadius: 10, fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', transition: 'all 0.2s' }}>{editBudgetMode ? '✓ Done' : '💰 Adjust Budget'}</button>
+                                        <button onClick={() => setShowBudgetTips(true)} style={{ flex: 1, padding: '0.5rem', background: 'transparent', color: 'var(--navy)', border: '1.5px solid var(--border)', borderRadius: 10, fontFamily: "'Nunito',sans-serif", fontWeight: 800, fontSize: '0.78rem', cursor: 'pointer', transition: 'all 0.2s' }}>💡 Budget Tips</button>
+                                    </div>
                                 </div>
 
                                 {/* ── Planning Progress ── */}
@@ -1076,6 +1120,33 @@ export default function Dashboard() {
                         )}
                         <div style={{ display: 'flex', gap: '0.5rem', marginTop: '1.2rem', justifyContent: 'flex-end' }}>
                             <button onClick={() => setShowCollabModal(false)} style={{ padding: '0.5rem 1.2rem', borderRadius: 8, background: 'transparent', border: '1.5px solid var(--border)', color: '#9aabbb', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}>Close</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Budget Tips Modal */}
+            {showBudgetTips && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }} onClick={() => setShowBudgetTips(false)}>
+                    <div className="card" style={{ padding: '2rem', width: '100%', maxWidth: 440, maxHeight: '80vh', overflowY: 'auto' }} onClick={e => e.stopPropagation()}>
+                        <h2 style={{ fontFamily: "'Fredoka One',cursive", color: 'var(--navy)', marginBottom: '0.3rem' }}>💡 Budget Tips</h2>
+                        <p style={{ fontSize: '0.78rem', color: '#9aabbb', fontWeight: 600, marginBottom: '1.2rem' }}>Smart suggestions to help you stay on target and get the most from your budget.</p>
+                        {data.plan.tips && data.plan.tips.length > 0 ? (
+                            <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+                                {data.plan.tips.map((tip, i) => (
+                                    <div key={i} style={{ display: 'flex', gap: '0.7rem', padding: '0.8rem', background: 'var(--light-bg)', borderRadius: 10 }}>
+                                        <div style={{ width: 28, height: 28, borderRadius: '50%', background: ['rgba(74,173,168,0.15)', 'rgba(247,201,72,0.15)', 'rgba(232,137,106,0.15)', 'rgba(123,94,167,0.15)'][i % 4], display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.75rem', fontWeight: 900, color: ['var(--teal)', '#c4880a', '#E8896A', '#7B5EA7'][i % 4], flexShrink: 0 }}>{i + 1}</div>
+                                        <div style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--navy)', lineHeight: 1.5 }}>{tip}</div>
+                                    </div>
+                                ))}
+                            </div>
+                        ) : (
+                            <div style={{ textAlign: 'center', padding: '2rem', color: '#9aabbb', fontWeight: 700 }}>
+                                <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🤔</div>
+                                No tips available yet. Generate a plan with AI to get smart budget suggestions!
+                            </div>
+                        )}
+                        <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.2rem' }}>
+                            <button onClick={() => setShowBudgetTips(false)} style={{ padding: '0.5rem 1.2rem', borderRadius: 8, background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}>Got it!</button>
                         </div>
                     </div>
                 </div>
