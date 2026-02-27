@@ -222,16 +222,6 @@ function VendorsContent() {
             {activecat === 'All Vendors' ? 'Find Your Perfect Vendors 🔍' : `Find ${CAT_EMOJIS[activecat]} ${activecat} Vendors`}
           </h1>
           <p className={styles.headerSub}>Browse vetted vendors in your area — ready to make your party memorable.</p>
-          <div style={{ maxWidth: 400, margin: '0.6rem 0' }}>
-            <LocationSearch
-              value={detectedLocation}
-              onChange={(loc) => {
-                setDetectedLocation(loc)
-                setLocationReady(true)
-              }}
-              placeholder="📍 Change location..."
-            />
-          </div>
           <div className={styles.filterTabs}>
             {CATS.map(c => (
               <button key={c} className={`${styles.filterTab} ${activecat === c ? styles.filterTabActive : ''}`} onClick={() => setActivecat(c)}>
@@ -245,6 +235,16 @@ function VendorsContent() {
       {/* ══ SEARCH BAR ══ */}
       <div className={styles.searchBarWrap}>
         <div className={styles.searchBarInner}>
+          <div style={{ minWidth: 200, maxWidth: 260, flex: '0 0 auto' }}>
+            <LocationSearch
+              value={detectedLocation}
+              onChange={(loc) => {
+                setDetectedLocation(loc)
+                setLocationReady(true)
+              }}
+              placeholder="📍 Location..."
+            />
+          </div>
           <div className={styles.searchInputWrap}>
             <input className={styles.searchInput} type="text" placeholder="Search vendors, styles, services…" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
