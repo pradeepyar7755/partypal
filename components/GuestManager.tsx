@@ -46,9 +46,9 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const [bulkText, setBulkText] = useState('')
     const [newGuest, setNewGuest] = useState({ name: '', email: '', dietary: 'None', additionalGuests: [] as AdditionalGuest[] })
     const inviteKey = eventId ? `partypal_invite_${eventId}` : 'partypal_invite'
-    const [invite, setInvite] = useState<{ subject?: string; message?: string; smsVersion?: string } | null>(() => {
+    const [invite, setInvite] = useState<{ subject?: string; message?: string; smsVersion?: string; customImage?: string; coverPhoto?: string } | null>(() => {
         if (typeof window === 'undefined') return null
-        return userGetJSON<{ subject?: string; message?: string; smsVersion?: string } | null>(inviteKey, null)
+        return userGetJSON<{ subject?: string; message?: string; smsVersion?: string; customImage?: string; coverPhoto?: string } | null>(inviteKey, null)
     })
     const [loadingInvite, setLoadingInvite] = useState(false)
     const [planData, setPlanData] = useState<{ eventType?: string; theme?: string; date?: string; location?: string; eventId?: string }>(propPlanData || {})
@@ -69,6 +69,46 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const [isRefining, setIsRefining] = useState(false)
     const [isEditingInvite, setIsEditingInvite] = useState(false)
     const themeChangeRef = React.useRef(false)
+    const customInviteRef = React.useRef<HTMLInputElement>(null)
+    const coverPhotoRef = React.useRef<HTMLInputElement>(null)
+
+    const resizeImage = (file: File, maxW: number): Promise<string> => {
+        return new Promise((resolve) => {
+            const reader = new FileReader()
+            reader.onload = (e) => {
+                const img = new Image()
+                img.onload = () => {
+                    const canvas = document.createElement('canvas')
+                    const ratio = Math.min(maxW / img.width, maxW / img.height, 1)
+                    canvas.width = img.width * ratio
+                    canvas.height = img.height * ratio
+                    const ctx = canvas.getContext('2d')!
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+                    resolve(canvas.toDataURL('image/jpeg', 0.75))
+                }
+                img.src = e.target?.result as string
+            }
+            reader.readAsDataURL(file)
+        })
+    }
+
+    const handleCustomInviteUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        const dataUrl = await resizeImage(file, 800)
+        setInvite(prev => prev ? { ...prev, customImage: dataUrl } : { customImage: dataUrl })
+        showToast('Custom invite image uploaded!', 'success')
+        e.target.value = ''
+    }
+
+    const handleCoverPhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+        const file = e.target.files?.[0]
+        if (!file) return
+        const dataUrl = await resizeImage(file, 1200)
+        setInvite(prev => prev ? { ...prev, coverPhoto: dataUrl } : { coverPhoto: dataUrl })
+        showToast('Cover photo uploaded!', 'success')
+        e.target.value = ''
+    }
 
     // Persist invite to localStorage whenever it changes
     useEffect(() => {
@@ -349,6 +389,40 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                         <div className={styles.smsBox}>
                             <div style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--teal)', marginBottom: '0.2rem' }}>SMS VERSION</div>
                             <p style={{ fontSize: '0.78rem', color: 'var(--navy)', fontWeight: 600, margin: 0 }}>{invite.smsVersion}</p>
+                        </div>
+                    )}
+                    {/* Upload options */}
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', flexWrap: 'wrap', paddingTop: '0.6rem', borderTop: '1px solid #eee' }}>
+                        <input ref={customInviteRef} type="file" accept="image/*" onChange={handleCustomInviteUpload} style={{ display: 'none' }} />
+                        <input ref={coverPhotoRef} type="file" accept="image/*" onChange={handleCoverPhotoUpload} style={{ display: 'none' }} />
+                        <button onClick={() => customInviteRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 8, padding: '0.3rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>
+                            {invite.customImage ? '✓ Custom Invite' : '🖼️ Upload Custom Invite'}
+                        </button>
+                        <button onClick={() => coverPhotoRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 8, padding: '0.3rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>
+                            {invite.coverPhoto ? '✓ Cover Photo' : '📸 Upload Cover Photo'}
+                        </button>
+                        {invite.customImage && (
+                            <button onClick={() => { setInvite(prev => prev ? { ...prev, customImage: undefined } : prev); showToast('Custom invite removed', 'info') }} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.68rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Remove Invite Image</button>
+                        )}
+                        {invite.coverPhoto && (
+                            <button onClick={() => { setInvite(prev => prev ? { ...prev, coverPhoto: undefined } : prev); showToast('Cover photo removed', 'info') }} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.68rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Remove Cover</button>
+                        )}
+                    </div>
+                    {/* Preview uploaded images */}
+                    {(invite.customImage || invite.coverPhoto) && (
+                        <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
+                            {invite.customImage && (
+                                <div>
+                                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.2rem' }}>Custom Invite Preview</div>
+                                    <img src={invite.customImage} alt="Custom invite" style={{ maxWidth: 200, borderRadius: 8, border: '1.5px solid var(--border)' }} />
+                                </div>
+                            )}
+                            {invite.coverPhoto && (
+                                <div>
+                                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.2rem' }}>Cover Photo Preview</div>
+                                    <img src={invite.coverPhoto} alt="Cover" style={{ maxWidth: 200, borderRadius: 8, border: '1.5px solid var(--border)' }} />
+                                </div>
+                            )}
                         </div>
                     )}
                     <div style={{ marginTop: '0.6rem', borderTop: '1px solid #eee', paddingTop: '0.6rem' }}>

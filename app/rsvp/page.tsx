@@ -13,7 +13,7 @@ const RELATIONSHIP_OPTIONS = ['Partner', 'Spouse', 'Child', 'Family', 'Friend', 
 
 function RSVPContent() {
     const params = useSearchParams()
-    const [eventData, setEventData] = useState<{ eventType?: string; date?: string; time?: string; location?: string; theme?: string; eventId?: string; inviteSubject?: string; inviteMessage?: string; rsvpBy?: string }>({})
+    const [eventData, setEventData] = useState<{ eventType?: string; date?: string; time?: string; location?: string; theme?: string; eventId?: string; inviteSubject?: string; inviteMessage?: string; rsvpBy?: string; customImage?: string; coverPhoto?: string }>({})
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
     const [response, setResponse] = useState<'going' | 'maybe' | 'declined' | ''>('')
@@ -54,6 +54,8 @@ function RSVPContent() {
                             inviteSubject: invSubject,
                             inviteMessage: invMessage,
                             rsvpBy: data.rsvpBy,
+                            customImage: data.invite?.customImage,
+                            coverPhoto: data.invite?.coverPhoto,
                         })
                         return
                     }
@@ -132,26 +134,33 @@ function RSVPContent() {
     return (
         <div className={styles.rsvpPage}>
             <div className={styles.rsvpCard}>
-                <div className={styles.rsvpHeader}>
-                    <span className={styles.rsvpEmoji}>{eventEmoji}</span>
-                    <h1 className={styles.rsvpEventName}>{eventName}</h1>
-                    {eventData.date && (
-                        <p className={styles.rsvpDetails} style={{ marginBottom: '0.2rem' }}>
-                            📅 {new Date(eventData.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                <div className={styles.rsvpHeader} style={eventData.coverPhoto ? { backgroundImage: `url(${eventData.coverPhoto})`, backgroundSize: 'cover', backgroundPosition: 'center', position: 'relative' as const } : undefined}>
+                    {eventData.coverPhoto && <div style={{ position: 'absolute', inset: 0, background: 'rgba(26,37,53,0.65)', borderRadius: 'inherit' }} />}
+                    <div style={{ position: 'relative', zIndex: 1 }}>
+                        <span className={styles.rsvpEmoji}>{eventEmoji}</span>
+                        <h1 className={styles.rsvpEventName} style={eventData.coverPhoto ? { color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.4)' } : undefined}>{eventName}</h1>
+                        {eventData.date && (
+                            <p className={styles.rsvpDetails} style={eventData.coverPhoto ? { color: 'rgba(255,255,255,0.9)' } : { marginBottom: '0.2rem' }}>
+                                📅 {new Date(eventData.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                            </p>
+                        )}
+                        <p className={styles.rsvpDetails} style={eventData.coverPhoto ? { color: 'rgba(255,255,255,0.9)' } : undefined}>
+                            📍 {eventData.location || 'Location TBD'}
                         </p>
-                    )}
-                    <p className={styles.rsvpDetails}>
-                        📍 {eventData.location || 'Location TBD'}
-                    </p>
-                    {eventData.rsvpBy && (
-                        <p className={styles.rsvpDetails} style={{ marginTop: '0.2rem' }}>
-                            ⏰ RSVP by {new Date(eventData.rsvpBy + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
-                        </p>
-                    )}
+                        {eventData.rsvpBy && (
+                            <p className={styles.rsvpDetails} style={eventData.coverPhoto ? { color: 'rgba(255,255,255,0.85)', marginTop: '0.2rem' } : { marginTop: '0.2rem' }}>
+                                ⏰ RSVP by {new Date(eventData.rsvpBy + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                            </p>
+                        )}
+                    </div>
                 </div>
 
-                {/* Show invite message if present */}
-                {eventData.inviteMessage && (
+                {/* Show custom invite image if uploaded, otherwise show text */}
+                {eventData.customImage ? (
+                    <div style={{ padding: '0.5rem', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
+                        <img src={eventData.customImage} alt="Event Invitation" style={{ width: '100%', borderRadius: 8, display: 'block' }} />
+                    </div>
+                ) : eventData.inviteMessage && (
                     <div style={{ padding: '1.2rem 1.5rem', background: 'rgba(247,201,72,0.08)', borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                         {eventData.inviteSubject && <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.95rem', color: 'var(--navy)', marginBottom: '0.6rem' }}>{eventData.inviteSubject}</div>}
                         {eventData.inviteMessage.split('\n').map((line, i) => (
