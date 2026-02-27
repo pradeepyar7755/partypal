@@ -32,8 +32,10 @@ export default function LoginPage() {
                 setError(`${provider} sign-in is not enabled. Enable it in Firebase Console → Authentication → Sign-in method.`)
             } else if (msg.includes('network-request-failed')) {
                 setError('Network error. Please check your connection.')
+            } else if (msg.includes('iframe') || msg.includes('popup')) {
+                setError(`${provider} popup was blocked. Please allow popups for this site and try again.`)
             } else {
-                setError(`${provider} sign-in failed: ${msg.split('/').pop()?.replace(/[-)]/g, ' ').trim() || 'Unknown error'}`)
+                setError(`${provider} sign-in failed. Please try again.`)
             }
         } finally {
             setLoading(false)
