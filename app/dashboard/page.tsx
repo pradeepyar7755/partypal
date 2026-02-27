@@ -102,7 +102,7 @@ export default function Dashboard() {
     const [savedVendors, setSavedVendors] = useState<Record<string, SavedVendor>>({})
     const [guestForm, setGuestForm] = useState({ name: '', email: '' })
     const [vendorForm, setVendorForm] = useState({ name: '', category: '', notes: '', costEstimate: '' })
-    const ALL_VENDOR_CATS = ['Venue', 'Photography', 'Music / DJ', 'Catering', 'Baker', 'Florist', 'Decor', 'Other']
+    const ALL_VENDOR_CATS = ['Venue', 'Decor', 'Baker', 'Food', 'Photos', 'Music', 'Drinks', 'Entertain']
     const [enabledCats, setEnabledCats] = useState<string[]>(ALL_VENDOR_CATS)
     const [newCheckItem, setNewCheckItem] = useState('')
     const [guestSearch, setGuestSearch] = useState('')
@@ -295,9 +295,26 @@ export default function Dashboard() {
     const checkTotal = checklist.length
     const checkPct = checkTotal > 0 ? Math.round((checkDone / checkTotal) * 100) : 0
 
+    // Auto-add venue as pending vendor when location is set and not TBD
+    useEffect(() => {
+        if (!isDemo && data.location && data.location !== 'TBD' && data.eventId) {
+            const hasVenue = eventVendors.some(v => v.category === 'Venue')
+            if (!hasVenue) {
+                const updated = [{ name: data.location, category: 'Venue', notes: 'From your event details', confirmed: false }, ...eventVendors]
+                setEventVendors(updated)
+                userSetJSON(`partypal_vendors_${data.eventId}`, updated)
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [data.location, data.eventId, isDemo])
+
+    const venueVendor = eventVendors.find(v => v.category === 'Venue')
+    const vendorsBookedPct = enabledCats.length > 0 ? Math.round((eventVendors.filter(v => enabledCats.includes(v.category)).length / enabledCats.length) * 100) : 0
+    const venuePct = venueVendor?.confirmed ? 100 : (venueVendor ? 50 : 0)
+
     const progressItems = [
-        { name: 'Venue', pct: 0, color: '#4AADA8' },
-        { name: 'Vendors Booked', pct: 25, color: '#E8896A' },
+        { name: 'Venue', pct: venuePct, color: '#4AADA8' },
+        { name: 'Vendors Booked', pct: Math.min(100, vendorsBookedPct), color: '#E8896A' },
         { name: 'Invitations', pct: 0, color: '#F7C948' },
         { name: 'Checklist', pct: checkPct, color: '#3D8C6E' },
         { name: 'Budget Set', pct: 100, color: '#7B5EA7' },
@@ -748,6 +765,27 @@ export default function Dashboard() {
                                         )
                                     })()}
                                 </div>
+                                {/* Actuals vs Budget */}
+                                {data.plan?.budget?.breakdown?.length > 0 && (
+                                    <div className="card" style={{ padding: '1.2rem' }}>
+                                        <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '0.6rem' }}>📊 Actuals vs. Budget</h3>
+                                        {data.plan.budget.breakdown.map((b, i) => {
+                                            const actual = eventVendors.filter(v => v.category.toLowerCase().includes(b.category.toLowerCase().split(' ')[0]) || b.category.toLowerCase().includes(v.category.toLowerCase().split(' ')[0])).reduce((s, v) => s + (v.costEstimate || 0), 0)
+                                            const pctUsed = b.amount > 0 ? Math.round((actual / b.amount) * 100) : 0
+                                            return (
+                                                <div key={i} style={{ marginBottom: '0.5rem' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', fontWeight: 700, marginBottom: '0.15rem' }}>
+                                                        <span style={{ color: 'var(--navy)' }}>{b.category}</span>
+                                                        <span style={{ color: actual > b.amount ? '#E8896A' : 'var(--teal)' }}>${actual.toLocaleString()} / ${b.amount.toLocaleString()}</span>
+                                                    </div>
+                                                    <div style={{ height: 5, borderRadius: 3, background: 'var(--border)', overflow: 'hidden' }}>
+                                                        <div style={{ height: '100%', borderRadius: 3, width: `${Math.min(100, pctUsed)}%`, background: actual > b.amount ? '#E8896A' : pctUsed >= 80 ? '#c4880a' : b.color, transition: 'width 0.4s ease' }} />
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
                             </div>
                         </div>
                     )}
