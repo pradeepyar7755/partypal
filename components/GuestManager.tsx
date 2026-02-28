@@ -392,6 +392,12 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                             ? <button onClick={publishInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', background: 'rgba(74,173,168,0.12)', border: '1.5px solid rgba(74,173,168,0.4)', borderRadius: 6, fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>📤 Publish</button>
                             : <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
                         }
+                        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
+                            <input ref={customInviteRef} type="file" accept="image/*" onChange={handleCustomInviteUpload} style={{ display: 'none' }} />
+                            <input ref={coverPhotoRef} type="file" accept="image/*" onChange={handleCoverPhotoUpload} style={{ display: 'none' }} />
+                            <button onClick={() => customInviteRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>🖼️ Invite</button>
+                            <button onClick={() => coverPhotoRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>📸 Cover</button>
+                        </div>
                     </div>
                 )}
                 {invite && (
@@ -410,6 +416,10 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                 }
                             </div>
                             <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.3rem', alignItems: 'center', flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
+                                <input ref={customInviteRef} type="file" accept="image/*" onChange={handleCustomInviteUpload} style={{ display: 'none' }} />
+                                <input ref={coverPhotoRef} type="file" accept="image/*" onChange={handleCoverPhotoUpload} style={{ display: 'none' }} />
+                                <button onClick={() => customInviteRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>🖼️ Invite</button>
+                                <button onClick={() => coverPhotoRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>📸 Cover</button>
                                 {bookmarks.map((bm, idx) => (
                                     <div key={idx} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.15rem' }}>
                                         {editingBookmarkIdx === idx ? (
@@ -457,36 +467,21 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                     <p style={{ fontSize: '0.78rem', color: 'var(--navy)', fontWeight: 600, margin: 0 }}>{invite.smsVersion}</p>
                                 </div>
                             )}
-                            {/* Upload options */}
-                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', flexWrap: 'wrap', paddingTop: '0.6rem', borderTop: '1px solid #eee' }}>
-                                <input ref={customInviteRef} type="file" accept="image/*" onChange={handleCustomInviteUpload} style={{ display: 'none' }} />
-                                <input ref={coverPhotoRef} type="file" accept="image/*" onChange={handleCoverPhotoUpload} style={{ display: 'none' }} />
-                                <button onClick={() => customInviteRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 8, padding: '0.3rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>
-                                    {invite.customImage ? '✓ Custom Invite' : '🖼️ Upload Custom Invite'}
-                                </button>
-                                <button onClick={() => coverPhotoRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 8, padding: '0.3rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>
-                                    {invite.coverPhoto ? '✓ Cover Photo' : '📸 Upload Cover Photo'}
-                                </button>
-                                {invite.customImage && (
-                                    <button onClick={() => { setInvite(prev => prev ? { ...prev, customImage: undefined } : prev); showToast('Custom invite removed', 'info') }} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.68rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Remove Invite Image</button>
-                                )}
-                                {invite.coverPhoto && (
-                                    <button onClick={() => { setInvite(prev => prev ? { ...prev, coverPhoto: undefined } : prev); showToast('Cover photo removed', 'info') }} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', fontSize: '0.68rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Remove Cover</button>
-                                )}
-                            </div>
-                            {/* Preview uploaded images */}
+                            {/* Upload image previews & remove buttons */}
                             {(invite.customImage || invite.coverPhoto) && (
-                                <div style={{ display: 'flex', gap: '0.6rem', marginTop: '0.6rem', flexWrap: 'wrap' }}>
+                                <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', flexWrap: 'wrap', paddingTop: '0.6rem', borderTop: '1px solid #eee', alignItems: 'flex-start' }}>
                                     {invite.customImage && (
                                         <div>
-                                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.2rem' }}>Custom Invite Preview</div>
-                                            <img src={invite.customImage} alt="Custom invite" style={{ maxWidth: 200, borderRadius: 8, border: '1.5px solid var(--border)' }} />
+                                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.2rem' }}>Custom Invite</div>
+                                            <img src={invite.customImage} alt="Custom invite" style={{ maxWidth: 160, borderRadius: 8, border: '1.5px solid var(--border)' }} />
+                                            <div><button onClick={() => { setInvite(prev => prev ? { ...prev, customImage: undefined } : prev); showToast('Custom invite removed', 'info') }} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.15rem 0.4rem', fontSize: '0.62rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer', marginTop: '0.3rem' }}>✕ Remove</button></div>
                                         </div>
                                     )}
                                     {invite.coverPhoto && (
                                         <div>
-                                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.2rem' }}>Cover Photo Preview</div>
-                                            <img src={invite.coverPhoto} alt="Cover" style={{ maxWidth: 200, borderRadius: 8, border: '1.5px solid var(--border)' }} />
+                                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.2rem' }}>Cover Photo</div>
+                                            <img src={invite.coverPhoto} alt="Cover" style={{ maxWidth: 160, borderRadius: 8, border: '1.5px solid var(--border)' }} />
+                                            <div><button onClick={() => { setInvite(prev => prev ? { ...prev, coverPhoto: undefined } : prev); showToast('Cover photo removed', 'info') }} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.15rem 0.4rem', fontSize: '0.62rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer', marginTop: '0.3rem' }}>✕ Remove</button></div>
                                         </div>
                                     )}
                                 </div>
