@@ -142,6 +142,46 @@ export default function Dashboard() {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [polls, setPolls] = useState<any[]>([])
     const [pollShareLink, setPollShareLink] = useState<string | null>(null)
+    const [pollsLoading, setPollsLoading] = useState(false)
+    const [pollDeletingId, setPollDeletingId] = useState<string | null>(null)
+
+    // Fetch polls from Firestore for current event
+    const fetchPolls = useCallback(async (eid?: string) => {
+        const id = eid || data.eventId
+        if (!id) return
+        setPollsLoading(true)
+        try {
+            const res = await fetch(`/api/polls?eventId=${id}`)
+            const d = await res.json()
+            setPolls(d.polls || [])
+        } catch { /* silent */ }
+        setPollsLoading(false)
+    }, [data.eventId])
+
+    // Fetch polls when event changes
+    useEffect(() => {
+        if (data.eventId) fetchPolls(data.eventId)
+    }, [data.eventId, fetchPolls])
+
+    // Auto-refresh polls every 30s when on polls tab
+    useEffect(() => {
+        if (selectedTab !== 'polls' || !data.eventId) return
+        const iv = setInterval(() => fetchPolls(), 30000)
+        return () => clearInterval(iv)
+    }, [selectedTab, data.eventId, fetchPolls])
+
+    const deletePoll = async (pollId: string) => {
+        if (!confirm('Delete this poll? All votes will be lost.')) return
+        setPollDeletingId(pollId)
+        try {
+            await fetch(`/api/polls?id=${pollId}`, { method: 'DELETE' })
+            setPolls(prev => prev.filter(p => p.id !== pollId))
+            showToast('Poll deleted', 'success')
+        } catch {
+            showToast('Failed to delete', 'error')
+        }
+        setPollDeletingId(null)
+    }
 
     // Helper: show business name or just street name from full location
     const shortLocation = (loc: string) => {
@@ -1239,8 +1279,74 @@ export default function Dashboard() {
                         </div>
                     )}
 
-                    {/* Poll List */}
-                    <PollList eventId={data.eventId} polls={polls} setPolls={setPolls} />
+                    {/* Poll Results */}
+                    {pollsLoading ? (
+                        <div style={{ textAlign: 'center', padding: '2rem' }}>
+                            <div className="spinner" style={{ width: 30, height: 30, margin: '0 auto 0.5rem' }} />
+                            <div style={{ color: '#9aabbb', fontSize: '0.82rem', fontWeight: 600 }}>Loading polls...</div>
+                        </div>
+                    ) : polls.length === 0 ? (
+                        <div className="card" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
+                            <div style={{ fontSize: '3rem', marginBottom: '0.8rem' }}>🗳️</div>
+                            <div style={{ fontFamily: "'Fredoka One',cursive", color: 'var(--navy)', fontSize: '1.1rem', marginBottom: '0.3rem' }}>No polls yet</div>
+                            <div style={{ color: '#9aabbb', fontSize: '0.82rem', fontWeight: 600 }}>Create a poll to let friends & family vote on dates, venues, themes, and more!</div>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                            {polls.map((poll) => {
+                                const maxVotes = Math.max(...poll.options.map((o: { votes: number }) => o.votes), 1)
+                                const sortedOptions = [...poll.options].sort((a: { votes: number }, b: { votes: number }) => b.votes - a.votes)
+                                return (
+                                    <div key={poll.id} className="card" style={{ padding: '1.2rem 1.5rem', opacity: pollDeletingId === poll.id ? 0.4 : 1, transition: 'opacity 0.3s' }}>
+                                        {/* Poll Header */}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                                            <div style={{ flex: 1 }}>
+                                                <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.05rem', color: 'var(--navy)', margin: '0 0 0.25rem' }}>{poll.question}</h3>
+                                                <div style={{ fontSize: '0.75rem', color: '#9aabbb', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                                    <span>{poll.totalVotes} {poll.totalVotes === 1 ? 'vote' : 'votes'}</span>
+                                                    <span style={{ color: '#ddd' }}>·</span>
+                                                    <span>by {poll.creatorName}</span>
+                                                    {poll.allowMultiple && <span style={{ padding: '0.08rem 0.35rem', borderRadius: 4, background: 'rgba(74,173,168,0.08)', color: 'var(--teal)', fontSize: '0.68rem', fontWeight: 800 }}>Multi</span>}
+                                                    {poll.closed && <span style={{ padding: '0.08rem 0.35rem', borderRadius: 4, background: 'rgba(232,137,106,0.08)', color: '#E8896A', fontSize: '0.68rem', fontWeight: 800 }}>Closed</span>}
+                                                </div>
+                                            </div>
+                                            <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
+                                                <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/poll/${poll.id}`); showToast('Poll link copied!', 'success') }} style={{ padding: '0.3rem 0.55rem', borderRadius: 6, background: 'rgba(74,173,168,0.06)', border: '1px solid rgba(74,173,168,0.15)', color: 'var(--teal)', fontWeight: 700, fontSize: '0.7rem', cursor: 'pointer' }}>🔗</button>
+                                                <button onClick={() => deletePoll(poll.id)} style={{ padding: '0.3rem 0.55rem', borderRadius: 6, background: 'rgba(232,137,106,0.06)', border: '1px solid rgba(232,137,106,0.15)', color: '#E8896A', fontWeight: 700, fontSize: '0.7rem', cursor: 'pointer' }}>🗑</button>
+                                            </div>
+                                        </div>
+                                        {/* Result bars */}
+                                        {sortedOptions.map((opt: { id: string; text: string; votes: number; voters: string[] }, idx: number) => {
+                                            const pct = poll.totalVotes > 0 ? Math.round((opt.votes / poll.totalVotes) * 100) : 0
+                                            const isLeader = idx === 0 && opt.votes > 0
+                                            const barW = poll.totalVotes > 0 ? Math.max(2, (opt.votes / maxVotes) * 100) : 0
+                                            return (
+                                                <div key={opt.id} style={{ position: 'relative', marginBottom: '0.5rem', padding: '0.55rem 0.8rem', borderRadius: 10, border: `1.5px solid ${isLeader ? 'rgba(247,201,72,0.3)' : 'var(--border)'}`, overflow: 'hidden' }}>
+                                                    <div style={{ position: 'absolute', top: 0, left: 0, bottom: 0, borderRadius: 10, width: `${barW}%`, transition: 'width 0.5s ease', background: isLeader ? 'linear-gradient(90deg, rgba(247,201,72,0.12), rgba(232,137,106,0.08))' : 'rgba(74,173,168,0.06)' }} />
+                                                    <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--navy)' }}>{isLeader && '👑 '}{opt.text}</span>
+                                                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: isLeader ? '#E8896A' : 'var(--teal)', minWidth: 35, textAlign: 'right' }}>{pct}%</span>
+                                                    </div>
+                                                    {opt.voters.length > 0 && (
+                                                        <div style={{ position: 'relative', display: 'flex', flexWrap: 'wrap', gap: '0.15rem', marginTop: '0.25rem' }}>
+                                                            {opt.voters.slice(0, 10).map((v: string, vi: number) => (
+                                                                <span key={vi} style={{ padding: '0.05rem 0.3rem', borderRadius: 4, background: 'rgba(74,173,168,0.06)', color: 'var(--teal)', fontSize: '0.62rem', fontWeight: 700 }}>{v}</span>
+                                                            ))}
+                                                            {opt.voters.length > 10 && <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#9aabbb' }}>+{opt.voters.length - 10}</span>}
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        })}
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border)' }}>
+                                            <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 600 }}>Created {new Date(poll.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
+                                            <button onClick={() => fetchPolls()} style={{ padding: '0.25rem 0.6rem', borderRadius: 6, background: 'transparent', border: '1px solid var(--border)', color: '#9aabbb', fontWeight: 700, fontSize: '0.68rem', cursor: 'pointer', fontFamily: 'inherit' }}>🔄 Refresh</button>
+                                        </div>
+                                    </div>
+                                )
+                            })}
+                        </div>
+                    )}
                 </div>
             )}
 
@@ -1735,13 +1841,7 @@ export default function Dashboard() {
                     onCreated={({ shareUrl }) => {
                         setPollShareLink(shareUrl)
                         setShowPollCreator(false)
-                        // Refresh polls
-                        if (data.eventId) {
-                            fetch(`/api/polls?eventId=${data.eventId}`)
-                                .then(r => r.json())
-                                .then(d => setPolls(d.polls || []))
-                                .catch(() => { })
-                        }
+                        fetchPolls()
                     }}
                 />
             )}
@@ -2036,179 +2136,3 @@ export default function Dashboard() {
     )
 }
 
-// ── Poll List Component ───────────────────────────────
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function PollList({ eventId, polls, setPolls }: { eventId?: string; polls: any[]; setPolls: (p: any[]) => void }) {
-    const [loading, setLoading] = useState(true)
-    const [deletingId, setDeletingId] = useState<string | null>(null)
-
-    const fetchPolls = useCallback(async () => {
-        if (!eventId) { setLoading(false); return }
-        try {
-            const res = await fetch(`/api/polls?eventId=${eventId}`)
-            const data = await res.json()
-            setPolls(data.polls || [])
-        } catch { /* silent */ }
-        setLoading(false)
-    }, [eventId, setPolls])
-
-    useEffect(() => { fetchPolls() }, [fetchPolls])
-
-    // Auto-refresh every 30s
-    useEffect(() => {
-        if (!eventId) return
-        const iv = setInterval(fetchPolls, 30000)
-        return () => clearInterval(iv)
-    }, [eventId, fetchPolls])
-
-    const deletePoll = async (pollId: string) => {
-        if (!confirm('Delete this poll? All votes will be lost.')) return
-        setDeletingId(pollId)
-        try {
-            await fetch(`/api/polls?id=${pollId}`, { method: 'DELETE' })
-            setPolls(polls.filter(p => p.id !== pollId))
-            showToast('Poll deleted', 'success')
-        } catch {
-            showToast('Failed to delete', 'error')
-        }
-        setDeletingId(null)
-    }
-
-    if (loading) {
-        return <div style={{ textAlign: 'center', padding: '2rem' }}>
-            <div className="spinner" style={{ width: 30, height: 30, margin: '0 auto 0.5rem' }} />
-            <div style={{ color: '#9aabbb', fontSize: '0.82rem', fontWeight: 600 }}>Loading polls...</div>
-        </div>
-    }
-
-    if (polls.length === 0) {
-        return (
-            <div className="card" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
-                <div style={{ fontSize: '3rem', marginBottom: '0.8rem' }}>🗳️</div>
-                <div style={{ fontFamily: "'Fredoka One',cursive", color: 'var(--navy)', fontSize: '1.1rem', marginBottom: '0.3rem' }}>
-                    No polls yet
-                </div>
-                <div style={{ color: '#9aabbb', fontSize: '0.82rem', fontWeight: 600 }}>
-                    Create a poll to let friends & family vote on dates, venues, themes, and more!
-                </div>
-            </div>
-        )
-    }
-
-    return (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
-            {polls.map((poll) => {
-                const maxVotes = Math.max(...poll.options.map((o: { votes: number }) => o.votes), 1)
-                const sortedOptions = [...poll.options].sort((a: { votes: number }, b: { votes: number }) => b.votes - a.votes)
-                return (
-                    <div key={poll.id} className="card" style={{ padding: '1.2rem 1.5rem', opacity: deletingId === poll.id ? 0.4 : 1, transition: 'opacity 0.3s' }}>
-                        {/* Poll Header */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                            <div style={{ flex: 1 }}>
-                                <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.05rem', color: 'var(--navy)', margin: '0 0 0.25rem' }}>
-                                    {poll.question}
-                                </h3>
-                                <div style={{ fontSize: '0.75rem', color: '#9aabbb', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
-                                    <span>{poll.totalVotes} {poll.totalVotes === 1 ? 'vote' : 'votes'}</span>
-                                    <span style={{ color: '#ddd' }}>·</span>
-                                    <span>by {poll.creatorName}</span>
-                                    {poll.allowMultiple && (
-                                        <span style={{ padding: '0.08rem 0.35rem', borderRadius: 4, background: 'rgba(74,173,168,0.08)', color: 'var(--teal)', fontSize: '0.68rem', fontWeight: 800 }}>Multi</span>
-                                    )}
-                                    {poll.closed && (
-                                        <span style={{ padding: '0.08rem 0.35rem', borderRadius: 4, background: 'rgba(232,137,106,0.08)', color: '#E8896A', fontSize: '0.68rem', fontWeight: 800 }}>Closed</span>
-                                    )}
-                                </div>
-                            </div>
-                            <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
-                                <button
-                                    onClick={() => {
-                                        navigator.clipboard.writeText(`${window.location.origin}/poll/${poll.id}`)
-                                        showToast('Poll link copied!', 'success')
-                                    }}
-                                    style={{
-                                        padding: '0.3rem 0.55rem', borderRadius: 6,
-                                        background: 'rgba(74,173,168,0.06)', border: '1px solid rgba(74,173,168,0.15)',
-                                        color: 'var(--teal)', fontWeight: 700, fontSize: '0.7rem',
-                                        cursor: 'pointer',
-                                    }}
-                                >🔗</button>
-                                <button
-                                    onClick={() => deletePoll(poll.id)}
-                                    style={{
-                                        padding: '0.3rem 0.55rem', borderRadius: 6,
-                                        background: 'rgba(232,137,106,0.06)', border: '1px solid rgba(232,137,106,0.15)',
-                                        color: '#E8896A', fontWeight: 700, fontSize: '0.7rem',
-                                        cursor: 'pointer',
-                                    }}
-                                >🗑</button>
-                            </div>
-                        </div>
-
-                        {/* WhatsApp-style result bars */}
-                        {sortedOptions.map((opt: { id: string; text: string; votes: number; voters: string[] }, i: number) => {
-                            const pct = poll.totalVotes > 0 ? Math.round((opt.votes / poll.totalVotes) * 100) : 0
-                            const isLeader = i === 0 && opt.votes > 0
-                            const barWidth = poll.totalVotes > 0 ? Math.max(2, (opt.votes / maxVotes) * 100) : 0
-                            return (
-                                <div key={opt.id} style={{
-                                    position: 'relative', marginBottom: '0.5rem', padding: '0.55rem 0.8rem',
-                                    borderRadius: 10, border: `1.5px solid ${isLeader ? 'rgba(247,201,72,0.3)' : 'var(--border)'}`,
-                                    overflow: 'hidden',
-                                }}>
-                                    {/* Background bar */}
-                                    <div style={{
-                                        position: 'absolute', top: 0, left: 0, bottom: 0, borderRadius: 10,
-                                        width: `${barWidth}%`, transition: 'width 0.5s ease',
-                                        background: isLeader
-                                            ? 'linear-gradient(90deg, rgba(247,201,72,0.12), rgba(232,137,106,0.08))'
-                                            : 'rgba(74,173,168,0.06)',
-                                    }} />
-                                    {/* Content */}
-                                    <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--navy)' }}>
-                                            {isLeader && '👑 '}{opt.text}
-                                        </span>
-                                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: isLeader ? '#E8896A' : 'var(--teal)', minWidth: 35, textAlign: 'right' }}>
-                                            {pct}%
-                                        </span>
-                                    </div>
-                                    {/* Voter chips */}
-                                    {opt.voters.length > 0 && (
-                                        <div style={{ position: 'relative', display: 'flex', flexWrap: 'wrap', gap: '0.15rem', marginTop: '0.25rem' }}>
-                                            {opt.voters.slice(0, 10).map((v: string, vi: number) => (
-                                                <span key={vi} style={{
-                                                    padding: '0.05rem 0.3rem', borderRadius: 4,
-                                                    background: 'rgba(74,173,168,0.06)', color: 'var(--teal)',
-                                                    fontSize: '0.62rem', fontWeight: 700,
-                                                }}>{v}</span>
-                                            ))}
-                                            {opt.voters.length > 10 && (
-                                                <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#9aabbb' }}>+{opt.voters.length - 10}</span>
-                                            )}
-                                        </div>
-                                    )}
-                                </div>
-                            )
-                        })}
-
-                        {/* Footer actions */}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border)' }}>
-                            <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 600 }}>
-                                Created {new Date(poll.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
-                            </span>
-                            <button
-                                onClick={fetchPolls}
-                                style={{
-                                    padding: '0.25rem 0.6rem', borderRadius: 6, background: 'transparent',
-                                    border: '1px solid var(--border)', color: '#9aabbb', fontWeight: 700,
-                                    fontSize: '0.68rem', cursor: 'pointer', fontFamily: 'inherit',
-                                }}
-                            >🔄 Refresh</button>
-                        </div>
-                    </div>
-                )
-            })}
-        </div>
-    )
-}
