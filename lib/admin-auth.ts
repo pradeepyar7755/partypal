@@ -1,4 +1,3 @@
-import { getApps } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 
 // Admin email whitelist — only these accounts can access /admin
@@ -16,8 +15,9 @@ export async function verifyAdmin(authHeader: string | null): Promise<{ uid: str
     if (!token) return null
 
     try {
-        // Ensure Firebase Admin is initialized
-        if (getApps().length === 0) return null
+        // Ensure Firebase Admin is initialized by triggering getDb
+        const { getDb } = await import('@/lib/firebase')
+        getDb()
 
         const decoded = await getAuth().verifyIdToken(token)
         const email = decoded.email || ''
