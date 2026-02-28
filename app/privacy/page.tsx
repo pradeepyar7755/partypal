@@ -150,9 +150,10 @@ export default function PrivacyPolicy() {
                         <div>
                             <h4>AI Request Processing</h4>
                             <p>
-                                When you generate a plan or use AI features, your event details are sent to our AI provider
-                                (Anthropic Claude) to generate responses. This data is <strong>not stored by the AI provider</strong>
-                                and is used solely to fulfill your request. We do not use your data to train AI models.
+                                When you generate a plan or use AI features, your event details are sent to <strong>Google
+                                    Gemini AI</strong> to generate responses. This data is processed to fulfill your request
+                                and is subject to <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer">Google&apos;s AI terms</a>.
+                                We do not use your data to train custom AI models.
                             </p>
                         </div>
                     </div>
@@ -171,17 +172,19 @@ export default function PrivacyPolicy() {
                             </p>
                         </div>
                         <div className={styles.storageCard}>
-                            <h4>💻 Local Storage</h4>
+                            <h4>💻 Browser Storage</h4>
                             <p>
-                                AI preferences — learned only from how you use PartyPal — are stored in your <strong>browser&apos;s
-                                    local storage</strong>. This data stays within your PartyPal session and is never synced to our servers.
+                                Some data is also cached in your <strong>browser&apos;s local storage</strong> for
+                                performance and offline access, including AI behavioral preferences, vendor shortlists,
+                                and planning checklists. This cached data supplements — but does not replace — the
+                                server-side copies.
                             </p>
                         </div>
                         <div className={styles.storageCard}>
                             <h4>🔑 Authentication</h4>
                             <p>
                                 Passwords are <strong>never stored</strong> by PartyPal. Authentication is handled entirely
-                                by Firebase Authentication using industry-standard bcrypt hashing and secure token management.
+                                by Firebase Authentication using industry-standard hashing and secure token management.
                             </p>
                         </div>
                         <div className={styles.storageCard}>
@@ -323,8 +326,8 @@ export default function PrivacyPolicy() {
                             <p>Authentication, database, and hosting. <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy →</a></p>
                         </div>
                         <div className={styles.thirdPartyCard}>
-                            <strong>Anthropic (Claude AI)</strong>
-                            <p>AI plan generation. Data is not retained. <a href="https://www.anthropic.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy →</a></p>
+                            <strong>Google Gemini AI</strong>
+                            <p>AI-powered plan generation, guest invitations, and vendor summaries. <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer">Terms →</a></p>
                         </div>
                         <div className={styles.thirdPartyCard}>
                             <strong>Vercel</strong>
