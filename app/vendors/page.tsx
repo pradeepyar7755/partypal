@@ -371,7 +371,7 @@ function VendorsContent() {
                         <div className={styles.priceFrom}>Starting from</div>
                         <div className={styles.priceAmount}>{v.price} {v.priceLabel}</div>
                       </div>
-                      <button className={styles.bookBtn} onClick={(e) => { e.stopPropagation(); showToast(`Booking request sent for ${v.name}!`, 'success') }}>Book Now →</button>
+                      <a href={v.websiteUri || v.googleMapsUri || '#'} target="_blank" rel="noopener noreferrer" className={styles.bookBtn} onClick={(e) => e.stopPropagation()} style={{ textDecoration: 'none', color: 'inherit' }}>View →</a>
                     </div>
                   </div>
                 </div>

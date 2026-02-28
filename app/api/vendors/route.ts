@@ -69,7 +69,7 @@ export async function POST(req: NextRequest) {
     if (cat === 'All') {
       const categories = ['Venue', 'Baker', 'Food', 'Music', 'Drinks', 'Photos']
       const allVendors = await Promise.all(
-        categories.map(c => searchPlaces(c, loc, 2))
+        categories.map(c => searchPlaces(c, loc, 4))
       )
       const merged = allVendors.flat()
       // Shuffle for variety
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ vendors: merged, source: 'google' })
     }
 
-    const vendors = await searchPlaces(cat, loc, 8)
+    const vendors = await searchPlaces(cat, loc, 15)
     return NextResponse.json({ vendors, source: 'google' })
   } catch (error) {
     console.error('Vendors error:', error)
