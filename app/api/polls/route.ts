@@ -74,14 +74,18 @@ export async function GET(req: NextRequest) {
         if (eventId) {
             const snap = await db.collection('polls')
                 .where('eventId', '==', eventId)
-                .orderBy('createdAt', 'desc')
-                .limit(20)
+                .limit(50)
                 .get()
-            return NextResponse.json({ polls: snap.docs.map(d => d.data()) })
+            // Sort client-side to avoid needing a composite index
+            const polls = snap.docs
+                .map(d => d.data())
+                .sort((a, b) => (b.createdAt || '').localeCompare(a.createdAt || ''))
+            return NextResponse.json({ polls })
         }
 
         return NextResponse.json({ error: 'Provide id or eventId' }, { status: 400 })
     } catch (error) {
+        console.error('[polls GET]', error)
         const msg = error instanceof Error ? error.message : String(error)
         return NextResponse.json({ error: msg }, { status: 500 })
     }
