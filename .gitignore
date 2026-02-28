@@ -33,3 +33,10 @@ Thumbs.db
 *.swp
 .vercel
 .env*.local
+
+# Capacitor native build artifacts
+ios/App/App/public/
+android/app/src/main/assets/public/
+ios/App/Pods/
+android/.gradle/
+android/app/build/

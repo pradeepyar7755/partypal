@@ -806,13 +806,13 @@ export default function Dashboard() {
             </header>
 
             {/* ══ EVENT CARDS ══ */}
-            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1rem 1.5rem 0' }}>
-                <div style={{ display: 'flex', gap: '1rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'thin' }}>
+            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1rem 0.75rem 0' }}>
+                <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'thin', WebkitOverflowScrolling: 'touch' }}>
                     {/* + Plan a Party card (always first) */}
                     <div
                         onClick={() => router.push('/#wizard')}
                         style={{
-                            minWidth: 160, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s',
+                            minWidth: 120, padding: '0.8rem 1rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s',
                             background: 'rgba(0,0,0,0.02)', border: '1.5px dashed rgba(0,0,0,0.12)',
                             display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.3rem',
                         }}
@@ -849,7 +849,7 @@ export default function Dashboard() {
                                 key={ev.eventId}
                                 onClick={() => loadEvent(ev, false)}
                                 style={{
-                                    minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const,
+                                    minWidth: 150, padding: '0.8rem 1rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const,
                                     background: isActive ? color.bg : isPast ? 'rgba(0,0,0,0.04)' : 'linear-gradient(135deg, rgba(0,0,0,0.03), rgba(0,0,0,0.06))',
                                     border: isActive ? `2px solid ${color.border}` : '1.5px solid rgba(0,0,0,0.1)',
                                     boxShadow: isActive ? `0 4px 16px ${color.border.replace('0.5', '0.2')}` : '0 1px 4px rgba(0,0,0,0.04)',
@@ -859,7 +859,7 @@ export default function Dashboard() {
                                 {isPast && <div style={{ position: 'absolute', top: 6, left: 6, background: 'rgba(155,155,155,0.15)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.55rem', fontWeight: 900, color: '#888', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Past Event</div>}
                                 {isShared && <div style={{ position: 'absolute', top: 6, right: 28, background: 'rgba(123,94,167,0.15)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.55rem', fontWeight: 900, color: '#7B5EA7', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Shared</div>}
                                 <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>{ev.eventType?.split(' ')[0] || '🎉'}</div>
-                                <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: 'var(--navy)', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 180 }}>{ev.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</div>
+                                <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.8rem', color: 'var(--navy)', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>{ev.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</div>
                                 <div style={{ fontSize: '0.7rem', color: '#6b7c93', fontWeight: 700 }}>
                                     {ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'} · {ev.guests || '?'} guests
                                 </div>
@@ -878,7 +878,7 @@ export default function Dashboard() {
                             loadEvent(saved || DEFAULT_PLAN, true)
                         }}
                         style={{
-                            minWidth: 200, padding: '1rem 1.2rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const, overflow: 'hidden',
+                            minWidth: 150, padding: '0.8rem 1rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const, overflow: 'hidden',
                             background: isDemo
                                 ? 'repeating-linear-gradient(135deg, rgba(0,0,0,0.03), rgba(0,0,0,0.03) 8px, rgba(0,0,0,0.06) 8px, rgba(0,0,0,0.06) 16px)'
                                 : 'rgba(0,0,0,0.03)',
@@ -895,7 +895,7 @@ export default function Dashboard() {
             </div>
 
             {/* ══ EVENT DETAILS STRIP ══ */}
-            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0.5rem 1.5rem 0' }}>
+            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0.5rem 0.75rem 0' }}>
                 {isDemo ? (
                     /* Demo: compact disclaimer banner */
                     <div style={{
@@ -984,14 +984,14 @@ export default function Dashboard() {
                 )}
             </div>
 
-            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0.8rem 1.5rem 0' }}>
-                <div style={{ display: 'flex', gap: '0.3rem', borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: 0 }}>
+            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0.8rem 0.75rem 0' }}>
+                <div style={{ display: 'flex', gap: '0.2rem', borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: 0, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
                     {([['plan', '📋 Plan'], ['theme', '🎨 Theme'], ['vendors', '🏪 Vendors'], ['guests', '👥 Guests'], ['polls', '🗳️ Polls']] as const).map(([key, label]) => (
                         <button
                             key={key}
                             onClick={() => setSelectedTab(key)}
                             style={{
-                                padding: '0.6rem 1.2rem', border: 'none', borderBottom: selectedTab === key ? '2.5px solid var(--teal)' : '2.5px solid transparent',
+                                padding: '0.6rem 0.8rem', border: 'none', borderBottom: selectedTab === key ? '2.5px solid var(--teal)' : '2.5px solid transparent', whiteSpace: 'nowrap' as const,
                                 background: 'transparent', color: selectedTab === key ? 'var(--navy)' : '#9aabbb',
                                 fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', transition: 'all 0.2s', borderRadius: '8px 8px 0 0',
                             }}
@@ -1007,7 +1007,7 @@ export default function Dashboard() {
             {/* ══ THEME TAB ══ */}
             {
                 selectedTab === 'theme' && (
-                    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem' }}>
+                    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1rem 0.75rem' }}>
                         <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
                             <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎨</div>
                             <h2 style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', marginBottom: '0.5rem' }}>{data.theme ? `${data.theme} Theme` : 'Party Theme'}</h2>
@@ -1020,7 +1020,7 @@ export default function Dashboard() {
 
             {/* ══ VENDORS TAB ══ */}
             {selectedTab === 'vendors' && (
-                <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem' }}>
+                <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1rem 0.75rem' }}>
                     {isDemo ? (
                         <div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
@@ -1042,7 +1042,7 @@ export default function Dashboard() {
                             </div>
                         </div>
                     ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 280px', gap: '1.5rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: '1.5rem' }}>
                             <div>
                                 {/* Add Vendor Form */}
                                 <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
@@ -1232,7 +1232,7 @@ export default function Dashboard() {
 
             {/* ══ GUESTS TAB ══ */}
             {selectedTab === 'guests' && (
-                <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem' }}>
+                <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1rem 0.75rem' }}>
                     <GuestManager eventId={data.eventId} planData={{ eventType: data.eventType, theme: data.theme, date: data.date, location: data.location, eventId: data.eventId }} isDemo={isDemo} />
                 </div>
             )}

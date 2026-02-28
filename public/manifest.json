@@ -1,0 +1,27 @@
+{
+    "name": "PartyPal — AI Party Planning",
+    "short_name": "PartyPal",
+    "description": "Plan the perfect party with AI. Venues, vendors, guests, budget tracking, and more.",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#0a0a1a",
+    "theme_color": "#7c3aed",
+    "orientation": "portrait-primary",
+    "categories": [
+        "lifestyle",
+        "entertainment",
+        "social"
+    ],
+    "icons": [
+        {
+            "src": "/app-icon.png",
+            "sizes": "512x512",
+            "type": "image/png",
+            "purpose": "any maskable"
+        }
+    ],
+    "screenshots": [],
+    "lang": "en",
+    "dir": "ltr",
+    "scope": "/"
+}
