@@ -4,16 +4,16 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || ''
 const genAI = new GoogleGenerativeAI(GOOGLE_MAPS_API_KEY)
 
-// Category → search query + type filter mapping (improved for better results)
-const CATEGORY_MAP: Record<string, { query: string; types?: string[] }> = {
-  'Venue': { query: 'best event venue banquet hall party venue' },
-  'Decor': { query: 'event decorator party decorations balloon artist floral design' },
-  'Baker': { query: 'best bakery custom cakes birthday cakes celebration cakes', types: ['bakery'] },
-  'Food': { query: 'best catering restaurant food service party catering' },
-  'Photos': { query: 'best event photographer portrait photography studio' },
-  'Music': { query: 'best DJ service party DJ live music entertainment' },
-  'Drinks': { query: 'best cocktail bar sports bar lounge taproom' },
-  'Entertain': { query: 'party entertainment kids entertainment magician face painting' },
+// Category → search query + relevant Google place types for post-search filtering
+const CATEGORY_MAP: Record<string, { query: string; types?: string[]; relevantTypes: string[] }> = {
+  'Venue': { query: 'best event venue banquet hall party venue', relevantTypes: ['event_venue', 'banquet_hall', 'wedding_venue', 'community_center', 'convention_center', 'meeting_room', 'cultural_center'] },
+  'Decor': { query: 'event decorator party decorations balloon artist floral design', relevantTypes: ['florist', 'home_goods_store', 'furniture_store', 'interior_designer', 'art_studio'] },
+  'Baker': { query: 'best bakery custom cakes birthday cakes celebration cakes', types: ['bakery'], relevantTypes: ['bakery', 'cake_shop', 'dessert_shop', 'pastry_shop'] },
+  'Food': { query: 'best catering restaurant food service party catering', relevantTypes: ['restaurant', 'meal_delivery', 'meal_takeaway', 'food_court', 'catering_service', 'caterer'] },
+  'Photos': { query: 'best event photographer portrait photography studio', relevantTypes: ['photographer', 'photo_studio', 'photography_studio', 'portrait_studio'] },
+  'Music': { query: 'best DJ service party DJ live music entertainment', relevantTypes: ['night_club', 'performing_arts_theater', 'music_store', 'recording_studio', 'karaoke', 'concert_hall'] },
+  'Drinks': { query: 'best cocktail bar sports bar lounge taproom', relevantTypes: ['bar', 'night_club', 'pub', 'wine_bar', 'cocktail_bar', 'lounge', 'brewery', 'winery'] },
+  'Entertain': { query: 'party entertainment kids entertainment magician face painting', relevantTypes: ['amusement_center', 'amusement_park', 'bowling_alley', 'arcade', 'trampoline_park', 'escape_room', 'laser_tag', 'miniature_golf'] },
 }
 
 const CAT_EMOJIS: Record<string, string> = {
@@ -119,7 +119,7 @@ async function searchPlaces(category: string, location: string, maxResults: numb
 
   const body: Record<string, unknown> = {
     textQuery,
-    maxResultCount: maxResults,
+    maxResultCount: 20,
     languageCode: 'en',
     rankPreference: 'RELEVANCE',
   }
@@ -163,7 +163,16 @@ async function searchPlaces(category: string, location: string, maxResults: numb
   }
 
   const data = await res.json()
-  const places = data.places || []
+  let places = data.places || []
+
+  // Post-filter: only keep places whose Google types overlap with this category's relevant types
+  if (mapping.relevantTypes.length > 0) {
+    const relevant = new Set(mapping.relevantTypes)
+    places = places.filter((p: Record<string, unknown>) => {
+      const types = (p.types as string[]) || []
+      return types.some(t => relevant.has(t))
+    })
+  }
 
   // Sort by popularity (reviews * rating) to surface best vendors
   places.sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
@@ -171,6 +180,8 @@ async function searchPlaces(category: string, location: string, maxResults: numb
     const scoreB = ((b.rating as number) || 0) * Math.log2(((b.userRatingCount as number) || 1) + 1)
     return scoreB - scoreA
   })
+  // Cap at requested max after filtering
+  places = places.slice(0, maxResults)
 
   // Process all vendors, with AI summaries running in parallel
   const vendorPromises = places.map(async (place: Record<string, unknown>, idx: number) => {
