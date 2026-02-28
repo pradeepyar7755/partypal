@@ -1,24 +1,69 @@
 'use client'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { showToast } from './Toast'
+
+interface EventContext {
+    eventType: string
+    date?: string
+    location?: string
+    theme?: string
+}
 
 interface CreatePollProps {
     eventId?: string
     creatorName: string
+    eventContext?: EventContext
     onCreated?: (poll: { id: string; shareUrl: string }) => void
     onClose: () => void
 }
 
 const PRESET_POLLS = [
-    { icon: '📅', label: 'Best date', question: 'Which date works best for you?', placeholder: 'e.g. Saturday March 15, Friday March 21, Sunday March 23' },
-    { icon: '📍', label: 'Venue choice', question: "Which venue do you prefer?", placeholder: 'e.g. Rooftop Bar, Community Center, My backyard' },
-    { icon: '🎭', label: 'Theme vote', question: "Which party theme sounds best?", placeholder: 'e.g. 80s Retro, Tropical Luau, Black & Gold, Masquerade' },
-    { icon: '🍽️', label: 'Food preference', question: "What food should we serve?", placeholder: 'e.g. BBQ, Italian, Mexican, Sushi' },
-    { icon: '🎵', label: 'Music style', question: "What music vibe do you want?", placeholder: 'e.g. DJ/Dance, Live band, Chill acoustic, Mixed playlist' },
-    { icon: '⏰', label: 'Start time', question: "What time works best?", placeholder: 'e.g. 2:00 PM, 5:00 PM, 7:00 PM' },
+    { icon: '📅', label: 'Best date', question: 'Which date works best for you?', placeholder: 'e.g. Saturday March 15, Friday March 21, Sunday March 23', field: 'date' as const },
+    { icon: '📍', label: 'Venue choice', question: "Which venue do you prefer?", placeholder: 'e.g. Rooftop Bar, Community Center, My backyard', field: 'location' as const },
+    { icon: '🎭', label: 'Theme vote', question: "Which party theme sounds best?", placeholder: 'e.g. 80s Retro, Tropical Luau, Black & Gold, Masquerade', field: 'theme' as const },
+    { icon: '🍽️', label: 'Food preference', question: "What food should we serve?", placeholder: 'e.g. BBQ, Italian, Mexican, Sushi', field: null },
+    { icon: '🎵', label: 'Music style', question: "What music vibe do you want?", placeholder: 'e.g. DJ/Dance, Live band, Chill acoustic, Mixed playlist', field: null },
+    { icon: '⏰', label: 'Start time', question: "What time works best?", placeholder: 'e.g. 2:00 PM, 5:00 PM, 7:00 PM', field: null },
 ]
 
-export default function CreatePoll({ eventId, creatorName, onCreated, onClose }: CreatePollProps) {
+// Smart context hint based on poll topic
+function getContextHint(question: string, ctx?: EventContext): string | null {
+    if (!ctx) return null
+    const q = question.toLowerCase()
+    // Date polls
+    if ((q.includes('date') || q.includes('when') || q.includes('day')) && ctx.date && ctx.date !== 'TBD') {
+        const d = new Date(ctx.date + 'T12:00:00')
+        const formatted = d.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+        return `📅 Planned date: ${formatted}`
+    }
+    // Venue / location polls
+    if ((q.includes('venue') || q.includes('location') || q.includes('where') || q.includes('place')) && ctx.location && ctx.location !== 'TBD') {
+        return `📍 Current venue: ${ctx.location}`
+    }
+    // Theme polls
+    if ((q.includes('theme') || q.includes('vibe') || q.includes('style')) && ctx.theme) {
+        return `🎭 Current theme: ${ctx.theme}`
+    }
+    return null
+}
+
+// Format the event banner text
+function formatEventBanner(ctx?: EventContext): string | null {
+    if (!ctx?.eventType) return null
+    const parts = [ctx.eventType]
+    if (ctx.date && ctx.date !== 'TBD') {
+        const d = new Date(ctx.date + 'T12:00:00')
+        parts.push(d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }))
+    }
+    if (ctx.location && ctx.location !== 'TBD') {
+        // Show just first part of location (business name)
+        const short = ctx.location.split(',')[0].trim()
+        if (short.length <= 30) parts.push(short)
+    }
+    return parts.join(' · ')
+}
+
+export default function CreatePoll({ eventId, creatorName, eventContext, onCreated, onClose }: CreatePollProps) {
     const [question, setQuestion] = useState('')
     const [optionsText, setOptionsText] = useState('')
     const [allowMultiple, setAllowMultiple] = useState(false)
@@ -37,6 +82,9 @@ export default function CreatePoll({ eventId, creatorName, onCreated, onClose }:
 
     const isValid = question.trim().length > 0 && parsedOptions.length >= 2
 
+    const contextHint = useMemo(() => getContextHint(question, eventContext), [question, eventContext])
+    const eventBanner = useMemo(() => formatEventBanner(eventContext), [eventContext])
+
     const createPoll = async () => {
         if (!isValid) {
             showToast('Need a question and at least 2 options', 'error')
@@ -54,6 +102,14 @@ export default function CreatePoll({ eventId, creatorName, onCreated, onClose }:
                     eventId,
                     creatorName,
                     allowMultiple,
+                    // Include event context — API will store it
+                    eventContext: eventContext ? {
+                        eventType: eventContext.eventType,
+                        date: (eventContext.date && eventContext.date !== 'TBD') ? eventContext.date : undefined,
+                        location: (eventContext.location && eventContext.location !== 'TBD') ? eventContext.location : undefined,
+                        theme: eventContext.theme || undefined,
+                    } : undefined,
+                    contextHint: contextHint || undefined,
                 }),
             })
             const data = await res.json()
@@ -102,7 +158,6 @@ export default function CreatePoll({ eventId, creatorName, onCreated, onClose }:
                 {showPreview ? (
                     /* ── PREVIEW MODE ── */
                     <div style={{ padding: '1.2rem 2rem 1.5rem' }}>
-                        {/* Simulated poll card */}
                         <div style={{
                             border: '2px solid var(--border)', borderRadius: 16, overflow: 'hidden',
                             background: '#fafbfc',
@@ -113,18 +168,42 @@ export default function CreatePoll({ eventId, creatorName, onCreated, onClose }:
                                     display: 'inline-block', padding: '0.2rem 0.7rem', borderRadius: 16,
                                     background: 'linear-gradient(135deg, rgba(247,201,72,0.15), rgba(74,173,168,0.1))',
                                     border: '1px solid rgba(247,201,72,0.3)',
-                                    fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.6rem',
+                                    fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.4rem',
                                 }}>🎊 PartyPal Poll</div>
+
+                                {/* Event context banner */}
+                                {eventBanner && (
+                                    <div style={{
+                                        padding: '0.3rem 0.7rem', borderRadius: 8, marginBottom: '0.5rem',
+                                        background: 'rgba(74,173,168,0.06)', border: '1px solid rgba(74,173,168,0.12)',
+                                        fontSize: '0.68rem', fontWeight: 700, color: 'var(--teal)',
+                                    }}>
+                                        🎉 {eventBanner}
+                                    </div>
+                                )}
+
                                 <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.1rem', color: 'var(--navy)', margin: '0 0 0.3rem', lineHeight: 1.3 }}>
                                     {question}
                                 </h3>
+
+                                {/* Smart context hint */}
+                                {contextHint && (
+                                    <div style={{
+                                        fontSize: '0.7rem', fontWeight: 700, color: '#E8896A',
+                                        background: 'rgba(232,137,106,0.06)', padding: '0.2rem 0.6rem',
+                                        borderRadius: 6, display: 'inline-block', marginBottom: '0.3rem',
+                                    }}>
+                                        {contextHint}
+                                    </div>
+                                )}
+
                                 <div style={{ fontSize: '0.72rem', color: '#9aabbb', fontWeight: 600 }}>
                                     by <strong>{creatorName}</strong> · 0 votes
                                     {allowMultiple && <span style={{ marginLeft: 6, padding: '0.08rem 0.35rem', borderRadius: 4, background: 'rgba(74,173,168,0.1)', color: 'var(--teal)', fontSize: '0.62rem', fontWeight: 800 }}>Multi-select</span>}
                                 </div>
                             </div>
 
-                            {/* Poll options — simulated tap-to-vote */}
+                            {/* Options */}
                             <div style={{ padding: '0.8rem 1.2rem 1rem' }}>
                                 {parsedOptions.map((opt, i) => (
                                     <div key={i} style={{
@@ -139,13 +218,12 @@ export default function CreatePoll({ eventId, creatorName, onCreated, onClose }:
                                 ))}
                             </div>
 
-                            {/* Footer */}
                             <div style={{ padding: '0.6rem 1.2rem', borderTop: '1px solid var(--border)', background: 'white', textAlign: 'center' }}>
                                 <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}>🎊 Powered by PartyPal</span>
                             </div>
                         </div>
 
-                        {/* Preview action buttons */}
+                        {/* Action buttons */}
                         <div style={{ display: 'flex', gap: '0.6rem', marginTop: '1.2rem' }}>
                             <button onClick={() => setShowPreview(false)} style={{
                                 flex: 1, padding: '0.75rem', borderRadius: 12,
@@ -169,6 +247,22 @@ export default function CreatePoll({ eventId, creatorName, onCreated, onClose }:
                 ) : (
                     /* ── EDIT MODE ── */
                     <>
+                        {/* Event context banner */}
+                        {eventBanner && (
+                            <div style={{
+                                margin: '0.8rem 2rem 0', padding: '0.5rem 0.8rem', borderRadius: 10,
+                                background: 'linear-gradient(135deg, rgba(74,173,168,0.06), rgba(247,201,72,0.04))',
+                                border: '1px solid rgba(74,173,168,0.15)',
+                                display: 'flex', alignItems: 'center', gap: '0.5rem',
+                            }}>
+                                <span style={{ fontSize: '1rem' }}>🎉</span>
+                                <div>
+                                    <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--navy)' }}>Creating poll for:</div>
+                                    <div style={{ fontSize: '0.72rem', fontWeight: 700, color: 'var(--teal)' }}>{eventBanner}</div>
+                                </div>
+                            </div>
+                        )}
+
                         {/* Presets */}
                         <div style={{ padding: '1rem 2rem 0' }}>
                             <div style={{ fontSize: '0.78rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
@@ -209,6 +303,16 @@ export default function CreatePoll({ eventId, creatorName, onCreated, onClose }:
                                     onFocus={e => e.target.style.borderColor = 'var(--teal)'}
                                     onBlur={e => e.target.style.borderColor = 'var(--border)'}
                                 />
+                                {/* Smart context hint */}
+                                {contextHint && (
+                                    <div style={{
+                                        marginTop: '0.35rem', padding: '0.25rem 0.6rem', borderRadius: 6,
+                                        background: 'rgba(232,137,106,0.06)', border: '1px solid rgba(232,137,106,0.12)',
+                                        fontSize: '0.72rem', fontWeight: 700, color: '#E8896A',
+                                    }}>
+                                        {contextHint} — this info will show on the poll
+                                    </div>
+                                )}
                             </div>
 
                             <div style={{ marginBottom: '1rem' }}>
@@ -230,7 +334,6 @@ export default function CreatePoll({ eventId, creatorName, onCreated, onClose }:
                                     onFocus={e => e.target.style.borderColor = 'var(--teal)'}
                                     onBlur={e => e.target.style.borderColor = 'var(--border)'}
                                 />
-                                {/* Live options count */}
                                 {optionsText.trim() && (
                                     <div style={{ fontSize: '0.72rem', fontWeight: 700, color: parsedOptions.length >= 2 ? 'var(--teal)' : '#E8896A', marginTop: '0.3rem' }}>
                                         {parsedOptions.length} option{parsedOptions.length !== 1 ? 's' : ''} detected
@@ -253,7 +356,6 @@ export default function CreatePoll({ eventId, creatorName, onCreated, onClose }:
                                 Allow voters to select multiple options
                             </label>
 
-                            {/* Two buttons: Preview + Create */}
                             <div style={{ display: 'flex', gap: '0.6rem' }}>
                                 <button
                                     onClick={() => isValid && setShowPreview(true)}

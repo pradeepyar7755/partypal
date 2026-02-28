@@ -1871,6 +1871,12 @@ export default function Dashboard() {
                 <CreatePoll
                     eventId={data.eventId}
                     creatorName={user?.displayName || user?.email?.split('@')[0] || 'Host'}
+                    eventContext={{
+                        eventType: data.eventType,
+                        date: data.date,
+                        location: data.location,
+                        theme: data.theme,
+                    }}
                     onClose={() => setShowPollCreator(false)}
                     onCreated={({ shareUrl }) => {
                         setPollShareLink(shareUrl)

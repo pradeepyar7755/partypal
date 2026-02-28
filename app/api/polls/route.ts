@@ -5,7 +5,7 @@ import { getDb } from '@/lib/firebase'
 export async function POST(req: NextRequest) {
     try {
         const body = await req.json()
-        const { question, options, eventId, creatorName, type, allowMultiple } = body
+        const { question, options, eventId, creatorName, type, allowMultiple, eventContext, contextHint } = body
 
         if (!question || !options || options.length < 2) {
             return NextResponse.json({ error: 'Need a question and at least 2 options' }, { status: 400 })
@@ -30,6 +30,9 @@ export async function POST(req: NextRequest) {
             createdAt: new Date().toISOString(),
             closed: false,
             totalVotes: 0,
+            // Event context (optional)
+            ...(eventContext ? { eventContext } : {}),
+            ...(contextHint ? { contextHint } : {}),
         }
 
         await db.collection('polls').doc(pollId).set(pollData)

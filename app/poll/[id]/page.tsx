@@ -20,6 +20,13 @@ interface Poll {
     createdAt: string
     closed: boolean
     totalVotes: number
+    eventContext?: {
+        eventType?: string
+        date?: string
+        location?: string
+        theme?: string
+    }
+    contextHint?: string
 }
 
 export default function PollPage() {
@@ -138,7 +145,35 @@ export default function PollPage() {
                 {/* Header */}
                 <div className={styles.pollHeader}>
                     <div className={styles.pollBadge}>🎊 PartyPal Poll</div>
+
+                    {/* Event context banner */}
+                    {poll.eventContext?.eventType && (
+                        <div style={{
+                            padding: '0.35rem 0.8rem', borderRadius: 8, marginBottom: '0.5rem',
+                            background: 'rgba(74,173,168,0.06)', border: '1px solid rgba(74,173,168,0.12)',
+                            fontSize: '0.72rem', fontWeight: 700, color: 'var(--teal)',
+                            display: 'inline-block',
+                        }}>
+                            🎉 {[poll.eventContext.eventType,
+                            poll.eventContext.date && poll.eventContext.date !== 'TBD' ? new Date(poll.eventContext.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : null,
+                            poll.eventContext.location && poll.eventContext.location !== 'TBD' ? poll.eventContext.location.split(',')[0].trim() : null,
+                            ].filter(Boolean).join(' · ')}
+                        </div>
+                    )}
+
                     <h1 className={styles.pollQuestion}>{poll.question}</h1>
+
+                    {/* Smart context hint */}
+                    {poll.contextHint && (
+                        <div style={{
+                            fontSize: '0.72rem', fontWeight: 700, color: '#E8896A',
+                            background: 'rgba(232,137,106,0.06)', padding: '0.25rem 0.7rem',
+                            borderRadius: 6, display: 'inline-block', marginBottom: '0.4rem',
+                        }}>
+                            {poll.contextHint}
+                        </div>
+                    )}
+
                     <p className={styles.pollMeta}>
                         by <strong>{poll.creatorName}</strong> · {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'}
                         {poll.allowMultiple && <span className={styles.multiTag}>Multi-select</span>}
