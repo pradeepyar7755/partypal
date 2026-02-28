@@ -60,12 +60,95 @@ export async function GET(req: NextRequest) {
         // Admin stats mode
         if (stats === 'true') {
             const snap = await db.collection('polls').get()
-            const allPolls = snap.docs.map(d => d.data())
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const allPolls = snap.docs.map(d => d.data()) as any[]
             const totalPolls = allPolls.length
             const totalVotes = allPolls.reduce((sum, p) => sum + (p.totalVotes || 0), 0)
             const activePolls = allPolls.filter(p => !p.closed).length
             const eventsWithPolls = new Set(allPolls.map(p => p.eventId).filter(Boolean)).size
-            return NextResponse.json({ totalPolls, totalVotes, activePolls, eventsWithPolls })
+
+            // Unique voters across all polls
+            const allVoters = new Set<string>()
+            allPolls.forEach(p => {
+                (p.options || []).forEach((o: { voters?: string[] }) => {
+                    (o.voters || []).forEach((v: string) => allVoters.add(v))
+                })
+            })
+
+            // Average options per poll
+            const avgOptions = totalPolls > 0
+                ? (allPolls.reduce((sum, p) => sum + (p.options?.length || 0), 0) / totalPolls).toFixed(1)
+                : '0'
+
+            // Top poll questions (most voted)
+            const topPolls = [...allPolls]
+                .sort((a, b) => (b.totalVotes || 0) - (a.totalVotes || 0))
+                .slice(0, 5)
+                .map(p => ({
+                    question: p.question,
+                    votes: p.totalVotes || 0,
+                    options: p.options?.length || 0,
+                    eventType: p.eventContext?.eventType || null,
+                    createdAt: p.createdAt,
+                }))
+
+            // Poll question categories (based on keywords)
+            const categories: Record<string, number> = {}
+            allPolls.forEach(p => {
+                const q = (p.question || '').toLowerCase()
+                if (q.includes('date') || q.includes('when') || q.includes('day')) categories['Date/Time'] = (categories['Date/Time'] || 0) + 1
+                else if (q.includes('venue') || q.includes('location') || q.includes('where') || q.includes('place')) categories['Venue'] = (categories['Venue'] || 0) + 1
+                else if (q.includes('food') || q.includes('menu') || q.includes('eat') || q.includes('serve')) categories['Food'] = (categories['Food'] || 0) + 1
+                else if (q.includes('theme') || q.includes('vibe') || q.includes('style')) categories['Theme'] = (categories['Theme'] || 0) + 1
+                else if (q.includes('music') || q.includes('dj') || q.includes('playlist')) categories['Music'] = (categories['Music'] || 0) + 1
+                else if (q.includes('time') || q.includes('start') || q.includes('begin')) categories['Start Time'] = (categories['Start Time'] || 0) + 1
+                else categories['Other'] = (categories['Other'] || 0) + 1
+            })
+
+            // Polls created per day (last 14 days)
+            const pollsByDay: Record<string, number> = {}
+            const votesByDay: Record<string, number> = {}
+            allPolls.forEach(p => {
+                if (p.createdAt) {
+                    const day = p.createdAt.split('T')[0]
+                    pollsByDay[day] = (pollsByDay[day] || 0) + 1
+                }
+            })
+
+            // Event types using polls
+            const eventTypes: Record<string, number> = {}
+            allPolls.forEach(p => {
+                const et = p.eventContext?.eventType || 'Unknown'
+                eventTypes[et] = (eventTypes[et] || 0) + 1
+            })
+
+            // Voter engagement distribution
+            const voteDist = { '0 votes': 0, '1-3 votes': 0, '4-10 votes': 0, '10+ votes': 0 }
+            allPolls.forEach(p => {
+                const v = p.totalVotes || 0
+                if (v === 0) voteDist['0 votes']++
+                else if (v <= 3) voteDist['1-3 votes']++
+                else if (v <= 10) voteDist['4-10 votes']++
+                else voteDist['10+ votes']++
+            })
+
+            // Multi-select usage
+            const multiSelectPolls = allPolls.filter(p => p.allowMultiple).length
+
+            return NextResponse.json({
+                totalPolls, totalVotes, activePolls, eventsWithPolls,
+                uniqueVoters: allVoters.size,
+                avgOptions,
+                avgVotesPerPoll: totalPolls > 0 ? (totalVotes / totalPolls).toFixed(1) : '0',
+                topPolls,
+                categories,
+                pollsByDay,
+                votesByDay,
+                eventTypes,
+                voteDist,
+                multiSelectPolls,
+                multiSelectRate: totalPolls > 0 ? `${Math.round((multiSelectPolls / totalPolls) * 100)}%` : '0%',
+            })
         }
 
         if (pollId) {

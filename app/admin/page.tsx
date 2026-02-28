@@ -105,7 +105,17 @@ export default function AdminDashboard() {
     const [error, setError] = useState('')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [usageData, setUsageData] = useState<any>(null)
-    const [pollStats, setPollStats] = useState<{ totalPolls: number; totalVotes: number; activePolls: number; eventsWithPolls: number } | null>(null)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [pollStats, setPollStats] = useState<{
+        totalPolls: number; totalVotes: number; activePolls: number; eventsWithPolls: number
+        uniqueVoters: number; avgOptions: string; avgVotesPerPoll: string
+        topPolls: { question: string; votes: number; options: number; eventType: string | null; createdAt: string }[]
+        categories: Record<string, number>
+        pollsByDay: Record<string, number>
+        eventTypes: Record<string, number>
+        voteDist: Record<string, number>
+        multiSelectPolls: number; multiSelectRate: string
+    } | null>(null)
 
     const isAdmin = user && ADMIN_EMAILS.includes(user.email || '')
 
@@ -670,40 +680,210 @@ export default function AdminDashboard() {
                             </>
                         )}
 
-                        {/* ══ POLL STATS ══ */}
+                        {/* ══ POLL ANALYTICS ══ */}
                         {pollStats && (
                             <>
                                 <div className={styles.sectionHeader} style={{ marginTop: '1.5rem' }}>
                                     <span className={styles.sectionEmoji}>🗳️</span>
                                     <span className={styles.sectionTitle}>Polls & Engagement</span>
                                 </div>
+
+                                {/* KPI Cards Row */}
                                 <div className={styles.kpiGrid}>
                                     <KPICard label="Total Polls" value={pollStats.totalPolls} icon="🗳️" />
                                     <KPICard label="Total Votes" value={pollStats.totalVotes} icon="✋" color="#4AADA8" />
+                                    <KPICard label="Unique Voters" value={pollStats.uniqueVoters} icon="👥" color="#3D8C6E" />
                                     <KPICard label="Active Polls" value={pollStats.activePolls} icon="📊" color="#F7C948" />
                                     <KPICard label="Events w/ Polls" value={pollStats.eventsWithPolls} icon="🎉" color="#7B5EA7" />
+                                    <KPICard label="Multi-Select Rate" value={pollStats.multiSelectRate} icon="☑️" color="#C4A882" />
                                 </div>
+
                                 {pollStats.totalPolls > 0 && (
-                                    <div className={styles.chartCard}>
-                                        <div className={styles.chartTitle}>Poll Engagement</div>
-                                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', padding: '0.5rem 0' }}>
-                                            <MetricBox
-                                                emoji="📈"
-                                                label="Avg Votes/Poll"
-                                                value={pollStats.totalPolls > 0 ? (pollStats.totalVotes / pollStats.totalPolls).toFixed(1) : '0'}
-                                            />
-                                            <MetricBox
-                                                emoji="🎯"
-                                                label="Poll Adoption"
-                                                value={`${pollStats.eventsWithPolls} events`}
-                                            />
-                                            <MetricBox
-                                                emoji="🟢"
-                                                label="Active Rate"
-                                                value={pollStats.totalPolls > 0 ? `${Math.round((pollStats.activePolls / pollStats.totalPolls) * 100)}%` : '0%'}
-                                            />
+                                    <>
+                                        {/* Engagement Metrics Row */}
+                                        <div className={styles.chartCard}>
+                                            <div className={styles.chartTitle}>Engagement Overview</div>
+                                            <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', padding: '0.5rem 0' }}>
+                                                <MetricBox emoji="📈" label="Avg Votes / Poll" value={pollStats.avgVotesPerPoll} />
+                                                <MetricBox emoji="🔢" label="Avg Options / Poll" value={pollStats.avgOptions} />
+                                                <MetricBox emoji="🟢" label="Active Rate" value={pollStats.totalPolls > 0 ? `${Math.round((pollStats.activePolls / pollStats.totalPolls) * 100)}%` : '0%'} />
+                                                <MetricBox emoji="🎯" label="Poll Adoption" value={`${pollStats.eventsWithPolls} events`} />
+                                            </div>
                                         </div>
-                                    </div>
+
+                                        {/* Two-column: Categories + Vote Distribution */}
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', marginTop: '0.8rem' }}>
+                                            {/* Poll Categories Bar Chart */}
+                                            <div className={styles.chartCard}>
+                                                <div className={styles.chartTitle}>Poll Categories</div>
+                                                <div style={{ padding: '0.3rem 0' }}>
+                                                    {Object.entries(pollStats.categories)
+                                                        .sort((a, b) => b[1] - a[1])
+                                                        .map(([cat, count], i) => {
+                                                            const max = Math.max(...Object.values(pollStats.categories))
+                                                            const pct = max > 0 ? (count / max) * 100 : 0
+                                                            const icons: Record<string, string> = { 'Date/Time': '📅', 'Venue': '📍', 'Food': '🍽️', 'Theme': '🎭', 'Music': '🎵', 'Start Time': '⏰', 'Other': '💬' }
+                                                            return (
+                                                                <div key={cat} style={{ marginBottom: '0.5rem' }}>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, color: 'var(--navy)', marginBottom: '0.15rem' }}>
+                                                                        <span>{icons[cat] || '📊'} {cat}</span>
+                                                                        <span style={{ color: '#9aabbb' }}>{count}</span>
+                                                                    </div>
+                                                                    <div style={{ height: 8, borderRadius: 4, background: 'rgba(0,0,0,0.04)' }}>
+                                                                        <div style={{
+                                                                            height: '100%', borderRadius: 4, width: `${pct}%`,
+                                                                            background: DONUT_COLORS[i % DONUT_COLORS.length],
+                                                                            transition: 'width 0.6s ease',
+                                                                        }} />
+                                                                    </div>
+                                                                </div>
+                                                            )
+                                                        })}
+                                                </div>
+                                            </div>
+
+                                            {/* Voter Engagement Distribution */}
+                                            <div className={styles.chartCard}>
+                                                <div className={styles.chartTitle}>Voter Engagement Distribution</div>
+                                                <div style={{ padding: '0.3rem 0' }}>
+                                                    {Object.entries(pollStats.voteDist).map(([label, count], i) => {
+                                                        const total = pollStats.totalPolls
+                                                        const pct = total > 0 ? Math.round((count / total) * 100) : 0
+                                                        const colors = ['#E8896A', '#F7C948', '#4AADA8', '#3D8C6E']
+                                                        return (
+                                                            <div key={label} style={{ marginBottom: '0.5rem' }}>
+                                                                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, color: 'var(--navy)', marginBottom: '0.15rem' }}>
+                                                                    <span>{label}</span>
+                                                                    <span style={{ color: '#9aabbb' }}>{count} polls ({pct}%)</span>
+                                                                </div>
+                                                                <div style={{ height: 8, borderRadius: 4, background: 'rgba(0,0,0,0.04)' }}>
+                                                                    <div style={{
+                                                                        height: '100%', borderRadius: 4, width: `${pct}%`,
+                                                                        background: colors[i] || '#9aabbb',
+                                                                        transition: 'width 0.6s ease',
+                                                                    }} />
+                                                                </div>
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Two-column: Top Polls + Event Types */}
+                                        <div style={{ display: 'grid', gridTemplateColumns: '1.5fr 1fr', gap: '1rem', marginTop: '0.8rem' }}>
+                                            {/* Top Polls Leaderboard */}
+                                            <div className={styles.chartCard}>
+                                                <div className={styles.chartTitle}>🏆 Top Polls (by Votes)</div>
+                                                <div style={{ padding: '0.3rem 0' }}>
+                                                    {pollStats.topPolls.length > 0 ? pollStats.topPolls.map((p, i) => (
+                                                        <div key={i} style={{
+                                                            display: 'flex', alignItems: 'center', gap: '0.6rem',
+                                                            padding: '0.5rem 0.6rem', borderRadius: 10, marginBottom: '0.35rem',
+                                                            background: i === 0 ? 'rgba(247,201,72,0.06)' : 'transparent',
+                                                            border: i === 0 ? '1px solid rgba(247,201,72,0.2)' : '1px solid transparent',
+                                                        }}>
+                                                            <span style={{
+                                                                fontSize: '0.9rem', fontWeight: 900, width: 24, textAlign: 'center',
+                                                                color: i === 0 ? '#F7C948' : i === 1 ? '#9aabbb' : i === 2 ? '#C4A882' : '#ccc',
+                                                            }}>
+                                                                {i === 0 ? '👑' : `#${i + 1}`}
+                                                            </span>
+                                                            <div style={{ flex: 1, minWidth: 0 }}>
+                                                                <div style={{
+                                                                    fontSize: '0.78rem', fontWeight: 700, color: 'var(--navy)',
+                                                                    whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis',
+                                                                }}>
+                                                                    {p.question}
+                                                                </div>
+                                                                <div style={{ fontSize: '0.65rem', color: '#9aabbb', fontWeight: 600 }}>
+                                                                    {p.options} options
+                                                                    {p.eventType && <span> · {p.eventType}</span>}
+                                                                </div>
+                                                            </div>
+                                                            <div style={{
+                                                                padding: '0.15rem 0.5rem', borderRadius: 6,
+                                                                background: 'rgba(74,173,168,0.08)',
+                                                                fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)',
+                                                            }}>
+                                                                {p.votes} {p.votes === 1 ? 'vote' : 'votes'}
+                                                            </div>
+                                                        </div>
+                                                    )) : (
+                                                        <div style={{ fontSize: '0.78rem', color: '#9aabbb', padding: '1rem', textAlign: 'center' }}>
+                                                            No polls with votes yet
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            </div>
+
+                                            {/* Event Types Using Polls */}
+                                            <div className={styles.chartCard}>
+                                                <div className={styles.chartTitle}>🎉 Event Types</div>
+                                                <div style={{ padding: '0.3rem 0' }}>
+                                                    {Object.entries(pollStats.eventTypes)
+                                                        .sort((a, b) => b[1] - a[1])
+                                                        .slice(0, 6)
+                                                        .map(([type, count], i) => {
+                                                            const max = Math.max(...Object.values(pollStats.eventTypes))
+                                                            const pct = max > 0 ? (count / max) * 100 : 0
+                                                            return (
+                                                                <div key={type} style={{ marginBottom: '0.5rem' }}>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.73rem', fontWeight: 700, color: 'var(--navy)', marginBottom: '0.15rem' }}>
+                                                                        <span style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: '70%' }}>{type}</span>
+                                                                        <span style={{ color: '#9aabbb', flexShrink: 0 }}>{count}</span>
+                                                                    </div>
+                                                                    <div style={{ height: 8, borderRadius: 4, background: 'rgba(0,0,0,0.04)' }}>
+                                                                        <div style={{
+                                                                            height: '100%', borderRadius: 4, width: `${pct}%`,
+                                                                            background: DONUT_COLORS[i % DONUT_COLORS.length],
+                                                                            transition: 'width 0.6s ease',
+                                                                        }} />
+                                                                    </div>
+                                                                </div>
+                                                            )
+                                                        })}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        {/* Poll Creation Timeline */}
+                                        {Object.keys(pollStats.pollsByDay).length > 0 && (
+                                            <div className={styles.chartCard} style={{ marginTop: '0.8rem' }}>
+                                                <div className={styles.chartTitle}>📈 Poll Creation Timeline</div>
+                                                <div style={{ display: 'flex', gap: 2, alignItems: 'flex-end', height: 80, padding: '0.5rem 0' }}>
+                                                    {(() => {
+                                                        const days14: string[] = []
+                                                        for (let i = 13; i >= 0; i--) {
+                                                            const d = new Date()
+                                                            d.setDate(d.getDate() - i)
+                                                            days14.push(d.toISOString().split('T')[0])
+                                                        }
+                                                        const maxDay = Math.max(...days14.map(d => pollStats.pollsByDay[d] || 0), 1)
+                                                        return days14.map((day, j) => {
+                                                            const count = pollStats.pollsByDay[day] || 0
+                                                            const h = maxDay > 0 ? Math.max(2, (count / maxDay) * 100) : 2
+                                                            return (
+                                                                <div key={day} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                                                                    <div style={{
+                                                                        width: '100%', maxWidth: 24, borderRadius: 3,
+                                                                        height: `${h}%`, minHeight: 2,
+                                                                        background: count > 0 ? '#4AADA8' : 'rgba(0,0,0,0.05)',
+                                                                        transition: 'height 0.5s ease',
+                                                                    }} />
+                                                                    {j % 2 === 0 && (
+                                                                        <span style={{ fontSize: '0.5rem', color: '#9aabbb', fontWeight: 600 }}>
+                                                                            {new Date(day + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                                        </span>
+                                                                    )}
+                                                                </div>
+                                                            )
+                                                        })
+                                                    })()}
+                                                </div>
+                                            </div>
+                                        )}
+                                    </>
                                 )}
                             </>
                         )}
