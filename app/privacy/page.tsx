@@ -190,8 +190,8 @@ export default function PrivacyPolicy() {
                         <div className={styles.storageCard}>
                             <h4>🌐 Data Location</h4>
                             <p>
-                                All data is stored and processed in <strong>United States</strong> data centers
-                                operated by Google Cloud Platform.
+                                All data is stored and processed on <strong>Google Cloud Platform</strong> infrastructure
+                                via Firebase and Vercel.
                             </p>
                         </div>
                     </div>
@@ -206,10 +206,10 @@ export default function PrivacyPolicy() {
                     <div className={styles.dataCard}>
                         <h3>What we track</h3>
                         <ul>
-                            <li>Page views and navigation patterns (anonymized after aggregation)</li>
+                            <li>Page views and navigation patterns (associated with your account while active, anonymized on account deletion)</li>
                             <li>Feature usage counts (plan generation, vendor searches, etc.)</li>
                             <li>Error occurrences for debugging</li>
-                            <li>Session-level engagement metrics</li>
+                            <li>Session-level engagement metrics (time on page, pages visited)</li>
                         </ul>
                     </div>
 
@@ -225,8 +225,8 @@ export default function PrivacyPolicy() {
                     </div>
 
                     <p className={styles.note}>
-                        We use essential cookies only for authentication session management via Firebase Auth.
-                        No tracking cookies are deployed.
+                        Firebase Auth uses token-based authentication stored in your browser (IndexedDB).
+                        We do not deploy tracking cookies of any kind.
                     </p>
                 </section>
 
@@ -292,8 +292,8 @@ export default function PrivacyPolicy() {
                         <div className={styles.deletionStep}>
                             <div className={styles.stepNumber}>3</div>
                             <div>
-                                <h4>AI Context Erased</h4>
-                                <p>Your PartyPal AI preferences — learned from your in-app interactions — are cleared from your browser. Since these were never sent to our servers, no server-side cleanup is needed.</p>
+                                <h4>AI Preferences Cleared</h4>
+                                <p>Your browser-side AI behavioral preferences are cleared from local storage. These preferences were never stored on our servers.</p>
                             </div>
                         </div>
                         <div className={styles.deletionStep}>
