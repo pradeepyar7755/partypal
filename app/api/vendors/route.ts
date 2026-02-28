@@ -6,13 +6,13 @@ const genAI = new GoogleGenerativeAI(GOOGLE_MAPS_API_KEY)
 
 // Category → search query + type filter mapping (improved for better results)
 const CATEGORY_MAP: Record<string, { query: string; types?: string[] }> = {
-  'Venue': { query: 'best event venue banquet hall party venue', types: ['event_venue'] },
+  'Venue': { query: 'best event venue banquet hall party venue' },
   'Decor': { query: 'event decorator party decorations balloon artist floral design' },
   'Baker': { query: 'best bakery custom cakes birthday cakes celebration cakes', types: ['bakery'] },
-  'Food': { query: 'best catering service party catering food catering', types: ['meal_delivery'] },
+  'Food': { query: 'best catering restaurant food service party catering' },
   'Photos': { query: 'best event photographer portrait photography studio' },
   'Music': { query: 'best DJ service party DJ live music entertainment' },
-  'Drinks': { query: 'cocktail bar mobile bartender bar catering', types: ['bar'] },
+  'Drinks': { query: 'best cocktail bar sports bar lounge taproom' },
   'Entertain': { query: 'party entertainment kids entertainment magician face painting' },
 }
 
