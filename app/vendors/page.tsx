@@ -253,29 +253,6 @@ function VendorsContent() {
               ))}
             </div>
           )}
-          {(() => {
-            const igCats: Record<string, string[]> = {
-              Baker: ['CustomCakes', 'CakeDecorating', 'BirthdayCake', 'CakeArt'],
-              Decor: ['EventDecor', 'PartyDecorations', 'BalloonArch', 'EventStyling'],
-              Photos: ['EventPhotographer', 'PartyPhotography', 'PortraitPhotography'],
-              Music: ['PartyDJ', 'WeddingDJ', 'EventDJ', 'LiveMusic'],
-              Entertain: ['KidsEntertainment', 'PartyEntertainment', 'FacePainting', 'Magician'],
-            }
-            const tags = igCats[activecat]
-            if (!tags) return null
-            const cityTag = location.split(',')[0].replace(/[^a-zA-Z]/g, '')
-            const igUrl = `https://www.instagram.com/explore/tags/${cityTag}${tags[0]}/`
-            return (
-              <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                <a href={igUrl} target="_blank" rel="noopener noreferrer" style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem', padding: '0.35rem 0.8rem', borderRadius: 20, background: 'linear-gradient(45deg, #f09433, #e6683c, #dc2743, #cc2366, #bc1888)', color: 'white', fontSize: '0.75rem', fontWeight: 700, textDecoration: 'none', transition: 'all 0.15s' }}>
-                  📸 Browse on Instagram
-                </a>
-                <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.6)' }}>
-                  Try: {tags.slice(0, 3).map(t => `#${cityTag}${t}`).join('  ')}
-                </span>
-              </div>
-            )
-          })()}
         </div>
       </header>
 
