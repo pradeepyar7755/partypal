@@ -384,7 +384,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
 
                 {/* Invite card or generate prompt */}
                 {!invite && (
-                    <div className="card" style={{ padding: '0.8rem 1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <div className="card" style={{ padding: '0.8rem 1.2rem', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                         <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)' }}>✉️ Invitation</h3>
                         <button className={styles.actionBtn} onClick={generateInvite} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
                         <button className={styles.secondaryBtn} onClick={() => setShowPreview(true)} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>👁️ Preview</button>
@@ -392,20 +392,11 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                             ? <button onClick={publishInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', background: 'rgba(74,173,168,0.12)', border: '1.5px solid rgba(74,173,168,0.4)', borderRadius: 6, fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>📤 Publish</button>
                             : <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
                         }
-                        <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.3rem', alignItems: 'center' }}>
-                            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb' }}>RSVP by</span>
-                            <input type="date" value={rsvpByDate} onChange={e => setRsvpByDate(e.target.value)} className={styles.addInput} style={{ margin: 0, padding: '0.15rem 0.35rem', fontSize: '0.68rem', width: 120 }} />
-                            <input ref={customInviteRef} type="file" accept="image/*" onChange={handleCustomInviteUpload} style={{ display: 'none' }} />
-                            <input ref={coverPhotoRef} type="file" accept="image/*" onChange={handleCoverPhotoUpload} style={{ display: 'none' }} />
-                            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb' }}>Upload</span>
-                            <button onClick={() => customInviteRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>🖼️ Invite</button>
-                            <button onClick={() => coverPhotoRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>📸 Cover</button>
-                        </div>
                     </div>
                 )}
                 {invite && (
-                    <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
-                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: inviteCollapsed ? 0 : '0.8rem', cursor: 'pointer', gap: '0.4rem', flexWrap: 'wrap' }} onClick={() => setInviteCollapsed(c => !c)}>
+                    <div className="card" style={{ padding: '1.2rem', paddingBottom: 0, marginBottom: 0 }}>
+                        <div style={{ display: 'flex', alignItems: 'center', marginBottom: 0, cursor: 'pointer', gap: '0.4rem', flexWrap: 'wrap' }} onClick={() => setInviteCollapsed(c => !c)}>
                             <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', display: 'flex', alignItems: 'center', gap: '0.4rem', whiteSpace: 'nowrap', margin: 0 }}>
                                 <span style={{ fontSize: '0.7rem', transition: 'transform 0.2s', display: 'inline-block', transform: inviteCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▼</span>
                                 ✉️ Invitation
@@ -417,17 +408,8 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                     ? <button onClick={publishInvite} style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', background: 'rgba(74,173,168,0.12)', border: '1.5px solid rgba(74,173,168,0.4)', borderRadius: 6, fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>📤 Publish</button>
                                     : <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
                                 }
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }} onClick={e => e.stopPropagation()}>
-                                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb' }}>RSVP by</span>
-                                    <input type="date" value={rsvpByDate} onChange={e => setRsvpByDate(e.target.value)} className={styles.addInput} style={{ margin: 0, padding: '0.15rem 0.35rem', fontSize: '0.68rem', width: 120 }} onClick={e => e.stopPropagation()} />
-                                </div>
                             </div>
                             <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.3rem', alignItems: 'center', flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
-                                <input ref={customInviteRef} type="file" accept="image/*" onChange={handleCustomInviteUpload} style={{ display: 'none' }} />
-                                <input ref={coverPhotoRef} type="file" accept="image/*" onChange={handleCoverPhotoUpload} style={{ display: 'none' }} />
-                                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb' }}>Upload</span>
-                                <button onClick={() => customInviteRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>🖼️ Invite</button>
-                                <button onClick={() => coverPhotoRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>📸 Cover</button>
                                 {!inviteCollapsed && <button onClick={() => setIsEditingInvite(!isEditingInvite)} style={{ background: 'none', border: '1px solid var(--teal)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.68rem', fontWeight: 700, color: 'var(--teal)', cursor: 'pointer' }}>
                                     {isEditingInvite ? '✕ Cancel' : '✏️ Edit'}
                                 </button>}
@@ -522,6 +504,15 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                         </>)}
                     </div>
                 )}
+                {/* RSVP by + Upload — always visible below invitation */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1.2rem', marginBottom: '1rem', background: '#fff', borderRadius: '0 0 12px 12px', borderTop: '1px solid var(--border)' }}>
+                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb' }}>RSVP by</span>
+                    <input type="date" value={rsvpByDate} onChange={e => setRsvpByDate(e.target.value)} className={styles.addInput} style={{ margin: 0, padding: '0.15rem 0.35rem', fontSize: '0.68rem', width: 120 }} />
+                    <input ref={customInviteRef} type="file" accept="image/*" onChange={handleCustomInviteUpload} style={{ display: 'none' }} />
+                    <input ref={coverPhotoRef} type="file" accept="image/*" onChange={handleCoverPhotoUpload} style={{ display: 'none' }} />
+                    <button onClick={() => customInviteRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>🖼️ Invite</button>
+                    <button onClick={() => coverPhotoRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>📸 Cover</button>
+                </div>
 
                 <div className={styles.mainLayout}>
                     <div>
