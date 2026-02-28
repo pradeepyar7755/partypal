@@ -85,7 +85,7 @@ export default function PrivacyPolicy() {
                         <div className={styles.usageCard}>
                             <span className={styles.usageEmoji}>🧠</span>
                             <h4>Personalize AI</h4>
-                            <p>As you use PartyPal, your AI preferences are learned from your interactions within the app — stored only in your browser and never shared.</p>
+                            <p>Your event data (stored in your account) helps AI generate tailored plans and recommendations. Additionally, behavioral preferences are learned locally in your browser.</p>
                         </div>
                         <div className={styles.usageCard}>
                             <span className={styles.usageEmoji}>🔧</span>
@@ -103,17 +103,31 @@ export default function PrivacyPolicy() {
                 <section id="ai-privacy" className={styles.section}>
                     <div className={styles.sectionIcon}>🤖</div>
                     <h2 className={styles.sectionTitle}>AI & Your Privacy</h2>
-                    <p>PartyPal uses AI to generate party plans, vendor suggestions, and personalized recommendations. Here&apos;s what you should know:</p>
+                    <p>PartyPal uses AI to generate party plans, vendor suggestions, and personalized recommendations. Your AI experience is powered by two types of data:</p>
 
                     <div className={styles.highlight}>
-                        <div className={styles.highlightIcon}>🔒</div>
+                        <div className={styles.highlightIcon}>☁️</div>
                         <div>
-                            <h4>Your AI Context is Private</h4>
+                            <h4>Event Data Powers Recommendations</h4>
                             <p>
-                                AI learning preferences (planning style, budget tendency, tone preference, favorite categories)
-                                are built <strong>solely from your interactions within PartyPal</strong> — we never pull data from
-                                other AI tools or external services. These preferences are stored exclusively in your browser&apos;s
-                                local storage and are never transmitted to our servers.
+                                Your event details (event type, date, guest count, budget, theme, guest lists) are
+                                stored <strong>securely in your PartyPal account</strong> on our servers. The AI uses
+                                this context to generate personalized plans, vendor suggestions, and recommendations
+                                tailored to your specific event. This data is accessible only to you (and any collaborators
+                                you invite) and is deleted when you delete your account.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div className={styles.highlight}>
+                        <div className={styles.highlightIcon}>💻</div>
+                        <div>
+                            <h4>Behavioral Preferences Stay Local</h4>
+                            <p>
+                                As you interact with PartyPal, the app learns your style preferences
+                                (planning style, budget tendency, tone preference, favorite categories).
+                                These behavioral signals are stored <strong>exclusively in your browser&apos;s
+                                    local storage</strong> and are never sent to our servers. Even admins cannot access this data.
                             </p>
                         </div>
                     </div>
@@ -121,11 +135,12 @@ export default function PrivacyPolicy() {
                     <div className={styles.highlight}>
                         <div className={styles.highlightIcon}>🚫</div>
                         <div>
-                            <h4>No Admin Access to AI Context</h4>
+                            <h4>Your Data is Never Shared</h4>
                             <p>
-                                Even PartyPal administrators <strong>cannot access your AI learning data</strong>.
-                                It exists only in your browser. When you clear your browser data or delete your account,
-                                this information is permanently erased.
+                                Neither your event data nor your behavioral preferences are shared with other users,
+                                sold to third parties, or used to build advertising profiles.
+                                Admins can see <strong>aggregate analytics only</strong> (total events, page views) —
+                                never individual event details or personal context.
                             </p>
                         </div>
                     </div>
