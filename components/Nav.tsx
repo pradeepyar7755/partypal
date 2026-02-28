@@ -32,6 +32,7 @@ export default function Nav() {
     { href: '/dashboard', label: 'My Events' },
     { href: '/vendors', label: 'Vendors' },
     { href: '/guests', label: 'Guests' },
+    { href: '/contact', label: 'Contact' },
   ]
 
   const getInitials = () => {

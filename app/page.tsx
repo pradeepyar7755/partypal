@@ -430,15 +430,32 @@ export default function Home() {
 
       {/* FOOTER */}
       <footer className={styles.footer}>
-        <div className={styles.footerLogo}>🎊 Party<span>Pal</span></div>
-        <p>AI-powered party planning for memorable celebrations</p>
-        <div className={styles.footerLinks}>
-          <a href="/#wizard">Plan a Party</a>
-          <a href="/vendors">Browse Vendors</a>
-          <a href="/guests">Guest Management</a>
-          <a href="/dashboard">My Events</a>
+        <div className={styles.footerTop}>
+          <div className={styles.footerAbout}>
+            <div className={styles.footerLogo}>🎊 Party<span>Pal</span></div>
+            <p className={styles.footerAboutText}>
+              PartyPal is your AI-powered party planning companion. We help you plan unforgettable celebrations by connecting you with the best vendors, managing your guests, and keeping your budget on track — all in one place.
+            </p>
+          </div>
+          <div className={styles.footerNav}>
+            <div className={styles.footerCol}>
+              <h4>Plan</h4>
+              <a href="/#wizard">Plan a Party</a>
+              <a href="/vendors">Browse Vendors</a>
+              <a href="/guests">Guest Management</a>
+              <a href="/dashboard">My Events</a>
+            </div>
+            <div className={styles.footerCol}>
+              <h4>Support</h4>
+              <a href="/contact">Contact Us</a>
+              <a href="/contact">FAQs</a>
+              <a href="/contact">Send Feedback</a>
+            </div>
+          </div>
         </div>
-        <p style={{ marginTop: '1rem', fontSize: '0.75rem' }}>partypal.social</p>
+        <div className={styles.footerBottom}>
+          <p>© 2026 PartyPal · partypal.social</p>
+        </div>
       </footer>
     </main>
   )

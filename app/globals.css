@@ -25,6 +25,36 @@ body {
   font-family: 'Nunito', sans-serif;
   background: var(--light-bg);
   color: var(--navy);
+  position: relative;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background:
+    radial-gradient(ellipse 60% 50% at 10% 20%, rgba(74, 173, 168, 0.08) 0%, transparent 70%),
+    radial-gradient(ellipse 50% 40% at 90% 80%, rgba(247, 201, 72, 0.07) 0%, transparent 70%),
+    radial-gradient(ellipse 45% 50% at 50% 50%, rgba(232, 137, 106, 0.05) 0%, transparent 60%),
+    radial-gradient(ellipse 40% 30% at 80% 10%, rgba(123, 94, 167, 0.04) 0%, transparent 60%);
+  animation: gradientShift 12s ease-in-out infinite alternate;
+  pointer-events: none;
+}
+
+@keyframes gradientShift {
+  0% {
+    opacity: 1;
+    transform: scale(1) translate(0, 0);
+  }
+  50% {
+    opacity: 0.85;
+    transform: scale(1.05) translate(-1%, 1%);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) translate(1%, -1%);
+  }
 }
 
 a {

@@ -1,0 +1,391 @@
+.contactPage {
+    background: var(--dark-navy);
+    min-height: calc(100vh - 64px);
+    padding: 3rem 2.5rem 4rem;
+}
+
+.contactInner {
+    max-width: 780px;
+    margin: 0 auto;
+}
+
+/* ── Header ── */
+.contactBadge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--yellow);
+    background: rgba(247, 201, 72, 0.1);
+    border: 1px solid rgba(247, 201, 72, 0.25);
+    padding: 0.35rem 1rem;
+    border-radius: 50px;
+    margin-bottom: 1.2rem;
+}
+
+.contactTitle {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    color: white;
+    margin-bottom: 0.6rem;
+}
+
+.contactTitle em {
+    color: var(--yellow);
+    font-style: normal;
+}
+
+.contactSub {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.6;
+    margin-bottom: 2.5rem;
+    max-width: 520px;
+}
+
+/* ── Tabs ── */
+.tabs {
+    display: flex;
+    gap: 0.5rem;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+}
+
+.tab {
+    background: rgba(255, 255, 255, 0.05);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.55);
+    padding: 0.6rem 1.4rem;
+    border-radius: 50px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.tab:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: rgba(255, 255, 255, 0.8);
+}
+
+.tabActive {
+    background: rgba(247, 201, 72, 0.12);
+    border-color: rgba(247, 201, 72, 0.4);
+    color: var(--yellow);
+}
+
+.tabContent {
+    animation: tabFadeIn 0.35s ease;
+}
+
+@keyframes tabFadeIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+/* ── FAQ Accordion ── */
+.faqList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.75rem;
+}
+
+.faqItem {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    overflow: hidden;
+    transition: border-color 0.3s;
+}
+
+.faqItem:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.faqQuestion {
+    width: 100%;
+    background: none;
+    border: none;
+    padding: 1.1rem 1.3rem;
+    color: white;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 800;
+    text-align: left;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    transition: color 0.2s;
+}
+
+.faqQuestion:hover {
+    color: var(--yellow);
+}
+
+.faqChevron {
+    font-size: 0.8rem;
+    transition: transform 0.3s;
+    flex-shrink: 0;
+    color: rgba(255, 255, 255, 0.35);
+}
+
+.faqChevronOpen {
+    transform: rotate(180deg);
+    color: var(--yellow);
+}
+
+.faqAnswer {
+    max-height: 0;
+    overflow: hidden;
+    transition: max-height 0.35s ease, padding 0.35s ease;
+}
+
+.faqAnswerOpen {
+    max-height: 300px;
+    padding: 0 1.3rem 1.2rem;
+}
+
+.faqAnswer p {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.7;
+}
+
+/* ── Email Section ── */
+.emailSection {
+    text-align: center;
+    padding: 2rem 0;
+}
+
+.emailIcon {
+    font-size: 3.5rem;
+    margin-bottom: 1.2rem;
+    display: block;
+}
+
+.emailLabel {
+    font-size: 0.78rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 0.8rem;
+}
+
+.emailAddress {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.5rem;
+    color: var(--yellow);
+    display: block;
+    margin-bottom: 1.5rem;
+    word-break: break-all;
+}
+
+.emailActions {
+    display: flex;
+    gap: 0.8rem;
+    justify-content: center;
+    flex-wrap: wrap;
+}
+
+.emailBtn {
+    background: rgba(247, 201, 72, 0.12);
+    border: 1.5px solid rgba(247, 201, 72, 0.3);
+    color: var(--yellow);
+    padding: 0.65rem 1.5rem;
+    border-radius: 50px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.25s;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.emailBtn:hover {
+    background: rgba(247, 201, 72, 0.2);
+    transform: translateY(-2px);
+}
+
+.emailBtnSecondary {
+    background: rgba(255, 255, 255, 0.06);
+    border-color: rgba(255, 255, 255, 0.15);
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.emailBtnSecondary:hover {
+    background: rgba(255, 255, 255, 0.12);
+}
+
+.copiedToast {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.4rem;
+    background: var(--green);
+    color: white;
+    padding: 0.4rem 1rem;
+    border-radius: 50px;
+    font-size: 0.8rem;
+    font-weight: 800;
+    margin-top: 1rem;
+    animation: tabFadeIn 0.3s ease;
+}
+
+/* ── Feedback Form ── */
+.feedbackForm {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 20px;
+    padding: 2rem;
+}
+
+.formGroup {
+    margin-bottom: 1.2rem;
+}
+
+.formGroup label {
+    display: block;
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.6);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.45rem;
+}
+
+.formGroup select,
+.formGroup input,
+.formGroup textarea {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-radius: 10px;
+    padding: 0.75rem 1rem;
+    color: white;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.95rem;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.formGroup select:focus,
+.formGroup input:focus,
+.formGroup textarea:focus {
+    border-color: var(--yellow);
+}
+
+.formGroup input::placeholder,
+.formGroup textarea::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+.formGroup select option {
+    background: var(--dark-navy);
+    color: white;
+}
+
+.formGroup textarea {
+    min-height: 130px;
+    resize: vertical;
+    line-height: 1.6;
+}
+
+.formRow {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+@media (max-width: 600px) {
+    .formRow {
+        grid-template-columns: 1fr;
+    }
+}
+
+.submitBtn {
+    width: 100%;
+    background: var(--yellow);
+    color: var(--dark-navy);
+    border: none;
+    padding: 0.9rem 2rem;
+    border-radius: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 1rem;
+    font-weight: 800;
+    cursor: pointer;
+    margin-top: 0.5rem;
+    transition: all 0.2s;
+}
+
+.submitBtn:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(247, 201, 72, 0.4);
+}
+
+.submitBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.successMessage {
+    text-align: center;
+    padding: 2rem;
+    animation: tabFadeIn 0.4s ease;
+}
+
+.successIcon {
+    font-size: 3rem;
+    display: block;
+    margin-bottom: 1rem;
+}
+
+.successMessage h3 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.4rem;
+    color: white;
+    margin-bottom: 0.5rem;
+}
+
+.successMessage p {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.92rem;
+    font-weight: 600;
+}
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+    .contactPage {
+        padding: 2rem 1.25rem 3rem;
+    }
+
+    .emailAddress {
+        font-size: 1.15rem;
+    }
+
+    .feedbackForm {
+        padding: 1.5rem;
+    }
+}
