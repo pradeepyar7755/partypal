@@ -1,19 +1,24 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
+import { assembleContext, hasContext } from '@/lib/ai-context-server'
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_MAPS_API_KEY || '')
 
 export async function POST(req: NextRequest) {
   try {
-    const { eventType, date, guests, location, theme, budget, refinement, existingTimeline } = await req.json()
+    const body = await req.json()
+    const { eventType, date, guests, location, theme, budget, refinement, existingTimeline } = body
     if (!eventType || !guests || !location) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
+    // Build cross-portal context injection
+    const contextBlock = hasContext(body) ? `\n${assembleContext(body, 'party planning')}\nUse the above intelligence to make your plan deeply informed by the user's full situation.\n\n` : ''
+
     const isRefinement = refinement && existingTimeline
 
     const prompt = isRefinement ? `You are PartyPal, an expert party planner AI. Refine the planning timeline below based on user feedback.
-
+${contextBlock}
 Event: ${eventType} | Date: ${date || 'TBD'} | Guests: ${guests} | Location: ${location} | Theme: ${theme || 'Open'} | Budget: ${budget || 'Flexible'}
 Today's date: ${new Date().toISOString().split('T')[0]}
 
@@ -30,7 +35,7 @@ Return ONLY valid JSON with the updated timeline applying the user's feedback. K
 }
 
 Return ONLY valid JSON, no markdown, no backticks.` : `You are PartyPal, an expert party planner AI. Generate a comprehensive party plan.
-
+${contextBlock}
 Event: ${eventType} | Date: ${date || 'TBD'} | Guests: ${guests} | Location: ${location} | Theme: ${theme || 'Open'} | Budget: ${budget || 'Flexible'}
 Today's date: ${new Date().toISOString().split('T')[0]}
 
@@ -42,6 +47,13 @@ IMPORTANT TIMELINE RULES:
 - Do NOT use a generic "6 weeks out" format if the event is sooner than that
 - Keep deliverables CONCISE (4-6 milestones max, not 10+). Each milestone should be a clear action.
 - Always include a "Day before" or final prep milestone and an "Event Day" milestone
+
+CROSS-PORTAL INTELLIGENCE RULES:
+- If guest dietary data is provided, reflect that in food/catering budget allocation and checklist items
+- If vendors are already shortlisted, reference them by name in relevant timeline tasks
+- If the user has a moodboard vibe, align tip language and decor suggestions to match
+- If budget is mostly spent, focus tips on cost-saving and DIY options
+- If user preferences indicate a planning style, match the detail level (minimal = fewer items, detailed = comprehensive)
 
 Return ONLY valid JSON, no markdown, no backticks:
 {

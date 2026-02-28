@@ -1,0 +1,591 @@
+.adminPage {
+    min-height: 100vh;
+    background: #0d1117;
+    padding: 0;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Header */
+.header {
+    background: linear-gradient(135deg, #1a2535 0%, #2D4059 100%);
+    padding: 1.5rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(20px);
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.logo {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.3rem;
+    color: white;
+}
+
+.logo span {
+    color: #F7C948;
+}
+
+.adminBadge {
+    background: rgba(232, 137, 106, 0.15);
+    color: #E8896A;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.25rem 0.65rem;
+    border-radius: 50px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.headerRight {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.periodSelect {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+}
+
+.refreshBtn {
+    background: rgba(74, 173, 168, 0.15);
+    color: #4AADA8;
+    border: 1px solid rgba(74, 173, 168, 0.3);
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.refreshBtn:hover {
+    background: rgba(74, 173, 168, 0.25);
+}
+
+.backLink {
+    color: rgba(255, 255, 255, 0.5);
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 700;
+    transition: color 0.2s;
+}
+
+.backLink:hover {
+    color: white;
+}
+
+/* Content */
+.content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem 2rem 3rem;
+}
+
+/* Section Headers */
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin: 2rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.sectionHeader:first-child {
+    margin-top: 0;
+}
+
+.sectionEmoji {
+    font-size: 1.3rem;
+}
+
+.sectionTitle {
+    font-size: 1rem;
+    font-weight: 800;
+    color: white;
+    letter-spacing: -0.3px;
+}
+
+.sectionSub {
+    font-size: 0.75rem;
+    color: rgba(255, 255, 255, 0.35);
+    font-weight: 600;
+    margin-left: auto;
+}
+
+/* KPI Grid */
+.kpiGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.8rem;
+}
+
+.kpiCard {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 1.2rem;
+    transition: all 0.2s;
+}
+
+.kpiCard:hover {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    transform: translateY(-2px);
+}
+
+.kpiLabel {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.5rem;
+}
+
+.kpiValue {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.8rem;
+    color: white;
+    line-height: 1;
+    margin-bottom: 0.3rem;
+}
+
+.kpiTrend {
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.kpiTrendUp {
+    color: #3D8C6E;
+}
+
+.kpiTrendDown {
+    color: #E8896A;
+}
+
+.kpiTrendNeutral {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* Chart Area */
+.chartCard {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 1.2rem;
+    margin-bottom: 0.8rem;
+}
+
+.chartTitle {
+    font-size: 0.75rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 1rem;
+}
+
+.barChart {
+    display: flex;
+    align-items: flex-end;
+    gap: 3px;
+    height: 120px;
+    padding-bottom: 20px;
+    position: relative;
+}
+
+.bar {
+    flex: 1;
+    min-width: 8px;
+    background: linear-gradient(180deg, #4AADA8, rgba(74, 173, 168, 0.3));
+    border-radius: 4px 4px 0 0;
+    position: relative;
+    transition: all 0.3s;
+    cursor: pointer;
+}
+
+.bar:hover {
+    background: linear-gradient(180deg, #F7C948, rgba(247, 201, 72, 0.5));
+}
+
+.barLabel {
+    position: absolute;
+    bottom: -18px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 0.55rem;
+    color: rgba(255, 255, 255, 0.25);
+    font-weight: 700;
+    white-space: nowrap;
+}
+
+.barTooltip {
+    position: absolute;
+    top: -22px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: #F7C948;
+    color: #1a2535;
+    font-size: 0.6rem;
+    font-weight: 800;
+    padding: 2px 6px;
+    border-radius: 4px;
+    white-space: nowrap;
+    opacity: 0;
+    transition: opacity 0.2s;
+    pointer-events: none;
+}
+
+.bar:hover .barTooltip {
+    opacity: 1;
+}
+
+/* Two Column Layout */
+.twoCol {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+}
+
+/* Funnel */
+.funnelCard {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 1.2rem;
+}
+
+.funnelStep {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.7rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+}
+
+.funnelStep:last-child {
+    border-bottom: none;
+}
+
+.funnelBar {
+    height: 8px;
+    border-radius: 4px;
+    transition: width 0.5s ease;
+}
+
+.funnelLabel {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+    min-width: 100px;
+}
+
+.funnelBarWrap {
+    flex: 1;
+    height: 8px;
+    background: rgba(255, 255, 255, 0.04);
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.funnelValue {
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: white;
+    min-width: 50px;
+    text-align: right;
+}
+
+.funnelRate {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: #4AADA8;
+    min-width: 40px;
+    text-align: right;
+}
+
+/* Table */
+.tableCard {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    overflow: hidden;
+}
+
+.tableHeader {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    padding: 0.7rem 1.2rem;
+    background: rgba(255, 255, 255, 0.03);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.tableHeaderCell {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.35);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.tableRow {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    padding: 0.6rem 1.2rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+    transition: background 0.2s;
+}
+
+.tableRow:hover {
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.tableCell {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.7);
+    display: flex;
+    align-items: center;
+}
+
+.tableCellBold {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: white;
+    display: flex;
+    align-items: center;
+}
+
+/* Error List */
+.errorCard {
+    background: rgba(232, 137, 106, 0.05);
+    border: 1px solid rgba(232, 137, 106, 0.12);
+    border-radius: 14px;
+    padding: 1.2rem;
+}
+
+.errorItem {
+    padding: 0.6rem 0;
+    border-bottom: 1px solid rgba(232, 137, 106, 0.08);
+}
+
+.errorItem:last-child {
+    border-bottom: none;
+}
+
+.errorMsg {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #E8896A;
+    margin-bottom: 0.2rem;
+    font-family: 'SF Mono', 'Fira Code', monospace;
+    word-break: break-all;
+}
+
+.errorMeta {
+    font-size: 0.68rem;
+    font-weight: 600;
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* Activity Feed */
+.feedCard {
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 14px;
+    padding: 1.2rem;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.feedItem {
+    display: flex;
+    gap: 0.7rem;
+    padding: 0.5rem 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.feedItem:last-child {
+    border-bottom: none;
+}
+
+.feedDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    margin-top: 5px;
+    flex-shrink: 0;
+}
+
+.feedContent {
+    flex: 1;
+}
+
+.feedEvent {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.7);
+}
+
+.feedTime {
+    font-size: 0.65rem;
+    color: rgba(255, 255, 255, 0.25);
+    font-weight: 600;
+}
+
+/* Donut Chart (CSS-only) */
+.donutWrap {
+    display: flex;
+    align-items: center;
+    gap: 1.5rem;
+    padding: 0.5rem 0;
+}
+
+.donutChart {
+    width: 100px;
+    height: 100px;
+    border-radius: 50%;
+    position: relative;
+    flex-shrink: 0;
+}
+
+.donutCenter {
+    position: absolute;
+    inset: 20px;
+    background: #0d1117;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.1rem;
+    color: white;
+}
+
+.donutLegend {
+    display: flex;
+    flex-direction: column;
+    gap: 0.4rem;
+}
+
+.legendItem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.legendDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Loading */
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 1rem;
+}
+
+.loadingText {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Access Denied */
+.accessDenied {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    gap: 1rem;
+    text-align: center;
+}
+
+.accessTitle {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.accessSub {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* Stat Pill */
+.statPill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+    padding: 0.4rem 0.7rem;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.6);
+}
+
+/* Responsive */
+@media (max-width: 900px) {
+    .twoCol {
+        grid-template-columns: 1fr;
+    }
+
+    .kpiGrid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+
+    .header {
+        padding: 1rem;
+    }
+
+    .content {
+        padding: 1rem;
+    }
+}
+
+@media (max-width: 600px) {
+    .kpiGrid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .tableHeader,
+    .tableRow {
+        grid-template-columns: 2fr 1fr 1fr;
+    }
+
+    .tableHeaderCell:last-child,
+    .tableCell:last-child {
+        display: none;
+    }
+}

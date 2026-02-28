@@ -736,3 +736,105 @@
     padding: 1.5rem;
   }
 }
+
+/* ══ PAGINATION ══ */
+.pagination {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  margin-top: 2.5rem;
+  padding: 1.5rem 0;
+}
+
+.pageBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.6rem 1.2rem;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--navy);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pageBtn:hover:not(:disabled) {
+  border-color: var(--teal);
+  color: var(--teal);
+  background: rgba(74, 173, 168, 0.05);
+  transform: translateY(-1px);
+}
+
+.pageBtn:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+.pageNumbers {
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+.pageNum {
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  border: 1.5px solid var(--border);
+  background: var(--white);
+  font-family: 'Nunito', sans-serif;
+  font-weight: 800;
+  font-size: 0.85rem;
+  color: var(--navy);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.pageNum:hover {
+  border-color: var(--teal);
+  color: var(--teal);
+}
+
+.pageNumActive {
+  background: linear-gradient(135deg, var(--teal), #3D8C6E);
+  color: white;
+  border-color: transparent;
+  box-shadow: 0 4px 12px rgba(74, 173, 168, 0.3);
+}
+
+.pageNumActive:hover {
+  color: white;
+}
+
+.pageDots {
+  width: 24px;
+  text-align: center;
+  font-weight: 800;
+  color: #9aabbb;
+  font-size: 0.9rem;
+}
+
+@media (max-width: 600px) {
+  .pagination {
+    gap: 0.3rem;
+  }
+
+  .pageBtn {
+    padding: 0.5rem 0.8rem;
+    font-size: 0.78rem;
+  }
+
+  .pageNum {
+    width: 32px;
+    height: 32px;
+    font-size: 0.78rem;
+  }
+}

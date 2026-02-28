@@ -4,7 +4,9 @@ import { useState, useEffect, Suspense } from 'react'
 import { useRouter, useSearchParams } from 'next/navigation'
 import styles from './vendors.module.css'
 import LocationSearch from '@/components/LocationSearch'
+import { recordInteraction } from '@/lib/ai-memory'
 import { showToast } from '@/components/Toast'
+import { trackVendorSearch, trackVendorShortlisted } from '@/lib/analytics'
 
 const CATS = ['All Vendors', 'Venue', 'Decor', 'Baker', 'Food', 'Photos', 'Music', 'Drinks', 'Entertain']
 const CAT_EMOJIS: Record<string, string> = {
@@ -44,6 +46,8 @@ function VendorsContent() {
   const [shortlist, setShortlist] = useState<string[]>([])
   const [showShortlistOnly, setShowShortlistOnly] = useState(false)
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
+  const [currentPage, setCurrentPage] = useState(1)
+  const VENDORS_PER_PAGE = 6
   const [showSidebar, setShowSidebar] = useState(true)
   const [priceMax, setPriceMax] = useState(1000)
   const [ratingFilter, setRatingFilter] = useState(4)
@@ -178,6 +182,7 @@ function VendorsContent() {
       })
       const data = await res.json()
       setVendors(data.vendors || [])
+      trackVendorSearch(cat, detectedLocation || planData.location || 'unknown')
     } catch { /* keep current vendors */ }
     setLoading(false)
   }
@@ -199,6 +204,10 @@ function VendorsContent() {
         userSetJSON('partypal_shortlist_data', savedData)
       }
       showToast(updated.includes(vendorId) ? 'Added to shortlist ❤️' : 'Removed from shortlist', updated.includes(vendorId) ? 'success' : 'info')
+      if (vendor && updated.includes(vendorId)) {
+        recordInteraction({ type: 'vendor_shortlisted', category: vendor.category, vendorName: vendor.name })
+        trackVendorShortlisted(vendor.name, vendor.category)
+      }
       return updated
     })
   }
@@ -221,6 +230,16 @@ function VendorsContent() {
     if (sort === 'Most Reviews') return b.reviews - a.reviews
     return b.matchScore - a.matchScore
   })
+
+  // Pagination
+  const totalPages = Math.max(1, Math.ceil(filtered.length / VENDORS_PER_PAGE))
+  const safePage = Math.min(currentPage, totalPages)
+  const paginatedVendors = filtered.slice((safePage - 1) * VENDORS_PER_PAGE, safePage * VENDORS_PER_PAGE)
+  const startItem = filtered.length > 0 ? (safePage - 1) * VENDORS_PER_PAGE + 1 : 0
+  const endItem = Math.min(safePage * VENDORS_PER_PAGE, filtered.length)
+
+  // Reset page when filters change
+  useEffect(() => { setCurrentPage(1) }, [activecat, search, sort, ratingFilter, priceMax, showShortlistOnly, cuisine])
 
   const location = (() => { const l = detectedLocation || params.get('location') || planData.location || ''; return l && l !== 'TBD' ? l : 'Atlanta, GA' })()
 
@@ -320,7 +339,7 @@ function VendorsContent() {
 
         {/* ── Vendor Cards ── */}
         <div>
-          <div className={styles.resultsCount}>Showing <span>{filtered.length} of {vendors.length}</span> vendors near {isAutoDetected ? 'Current Location' : location}</div>
+          <div className={styles.resultsCount}>Showing <span>{startItem}–{endItem} of {filtered.length}</span> vendors near {isAutoDetected ? 'Current Location' : location}{totalPages > 1 && <span style={{ marginLeft: '0.5rem', color: '#9aabbb' }}>• Page {safePage} of {totalPages}</span>}</div>
 
           {loading ? (
             <div className={styles.loading}>
@@ -329,7 +348,7 @@ function VendorsContent() {
             </div>
           ) : (
             <div className={styles.vendorGrid}>
-              {filtered.map(v => (
+              {paginatedVendors.map(v => (
                 <div key={v.id} className={`${styles.vendorCard} ${v.featured ? `${styles.featured} ${styles.featuredRow}` : ''}`} onClick={() => setSelectedVendor(v)}>
                   {/* Image Area */}
                   <div className={styles.vendorCardImg} style={v.photoUrl ? { background: '#1A2535', padding: 0 } : { background: GRADIENTS[v.category] || 'linear-gradient(135deg, #2D4059, #1A2535)' }}>
@@ -375,6 +394,48 @@ function VendorsContent() {
                   </div>
                 </div>
               ))}
+            </div>
+          )}
+
+          {/* ── Pagination Controls ── */}
+          {totalPages > 1 && (
+            <div className={styles.pagination}>
+              <button
+                className={styles.pageBtn}
+                disabled={safePage <= 1}
+                onClick={() => { setCurrentPage(p => Math.max(1, p - 1)); window.scrollTo({ top: 300, behavior: 'smooth' }) }}
+              >
+                ← Prev
+              </button>
+              <div className={styles.pageNumbers}>
+                {Array.from({ length: totalPages }, (_, i) => i + 1)
+                  .filter(p => p === 1 || p === totalPages || Math.abs(p - safePage) <= 1)
+                  .reduce<(number | 'dots')[]>((acc, p, i, arr) => {
+                    if (i > 0 && p - (arr[i - 1] as number) > 1) acc.push('dots')
+                    acc.push(p)
+                    return acc
+                  }, [])
+                  .map((p, i) =>
+                    p === 'dots' ? (
+                      <span key={`dots-${i}`} className={styles.pageDots}>…</span>
+                    ) : (
+                      <button
+                        key={p}
+                        className={`${styles.pageNum} ${safePage === p ? styles.pageNumActive : ''}`}
+                        onClick={() => { setCurrentPage(p); window.scrollTo({ top: 300, behavior: 'smooth' }) }}
+                      >
+                        {p}
+                      </button>
+                    )
+                  )}
+              </div>
+              <button
+                className={styles.pageBtn}
+                disabled={safePage >= totalPages}
+                onClick={() => { setCurrentPage(p => Math.min(totalPages, p + 1)); window.scrollTo({ top: 300, behavior: 'smooth' }) }}
+              >
+                Next →
+              </button>
             </div>
           )}
         </div>

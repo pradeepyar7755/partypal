@@ -7,6 +7,7 @@ import { userGet, userSet, userGetJSON, userSetJSON, userRemove } from '@/lib/us
 import LocationSearch from '@/components/LocationSearch'
 import GuestManager from '@/components/GuestManager'
 import { useAuth } from '@/components/AuthContext'
+import { useAIContext } from '@/lib/useAIContext'
 
 interface ChecklistItem { item: string; category: string; done: boolean; due?: string; urgent?: boolean; completedAt?: string }
 interface TimelineItem { weeks: string; task: string; category: string; priority: string; emoji?: string; completedAt?: string }
@@ -125,6 +126,13 @@ export default function Dashboard() {
     const [editBudgetValue, setEditBudgetValue] = useState('')
     const [showBudgetTips, setShowBudgetTips] = useState(false)
     const progressRefs = useRef<HTMLDivElement[]>([])
+    // Cross-portal AI context
+    const { getContextPayload, learn } = useAIContext(data, eventGuests)
+    // Notification state
+    const [showNotifyModal, setShowNotifyModal] = useState(false)
+    const [pendingChanges, setPendingChanges] = useState<{ field: string; oldValue: string; newValue: string }[]>([])
+    const [isSendingNotifications, setIsSendingNotifications] = useState(false)
+    const [notifyResult, setNotifyResult] = useState<{ sent: number; total: number; message: string } | null>(null)
 
     // Helper: show business name or just street name from full location
     const shortLocation = (loc: string) => {
@@ -506,6 +514,51 @@ export default function Dashboard() {
         }
         setIsEditing(false)
         showToast('Plan updated ✓', 'success')
+
+        // Check for logistics changes and offer to notify guests
+        if (!isDemo) {
+            const logisticsChanges: { field: string; oldValue: string; newValue: string }[] = []
+            if (data.date && editData.date && data.date !== editData.date) {
+                const oldFmt = new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                const newFmt = new Date(editData.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+                logisticsChanges.push({ field: '📅 Date', oldValue: oldFmt, newValue: newFmt })
+            }
+            if (data.location && editData.location && data.location !== editData.location) {
+                logisticsChanges.push({ field: '📍 Venue', oldValue: data.location, newValue: editData.location })
+            }
+            if (data.theme && editData.theme && data.theme !== editData.theme) {
+                logisticsChanges.push({ field: '🎨 Theme', oldValue: data.theme, newValue: editData.theme })
+            }
+            if (data.time && editData.time && data.time !== editData.time) {
+                logisticsChanges.push({ field: '🕐 Time', oldValue: data.time || 'Not set', newValue: editData.time || 'Not set' })
+            }
+            if (data.budget && editData.budget && data.budget !== editData.budget) {
+                logisticsChanges.push({ field: '💰 Budget', oldValue: data.budget, newValue: editData.budget })
+            }
+
+            // Get guests from GuestManager storage
+            const guestManagerGuests = (() => {
+                try {
+                    const storageKey = updated.eventId ? `partypal_eventguests_${updated.eventId}` : 'partypal_eventguests'
+                    const stored = localStorage.getItem(storageKey)
+                    if (stored) {
+                        const parsed = JSON.parse(stored)
+                        return Array.isArray(parsed) ? parsed.filter((g: { email?: string }) => g.email && g.email.includes('@')) : []
+                    }
+                } catch { /* silent */ }
+                return []
+            })()
+
+            // Also check dashboard event guests
+            const dashboardWithEmails = eventGuests.filter(g => g.email && g.email.includes('@'))
+            const allGuestsWithEmails = [...guestManagerGuests, ...dashboardWithEmails.filter(dg => !guestManagerGuests.some((gg: { email: string }) => gg.email === dg.email))]
+
+            if (logisticsChanges.length > 0 && allGuestsWithEmails.length > 0) {
+                setPendingChanges(logisticsChanges)
+                setNotifyResult(null)
+                setShowNotifyModal(true)
+            }
+        }
     }
 
     const cancelEdits = () => setIsEditing(false)
@@ -630,7 +683,8 @@ export default function Dashboard() {
                 body: JSON.stringify({
                     eventType: data.eventType, date: data.date, guests: data.guests, location: data.location, theme: data.theme, budget: data.budget,
                     refinement: refineTimelineInput.trim(),
-                    existingTimeline: JSON.stringify(data.plan.timeline)
+                    existingTimeline: JSON.stringify(data.plan.timeline),
+                    ...getContextPayload(),
                 })
             })
             if (!res.ok) throw new Error('Failed')
@@ -645,6 +699,7 @@ export default function Dashboard() {
                 }
                 showToast('Timeline refined! ✨', 'success')
                 setRefineTimelineInput('')
+                learn({ type: 'plan_refined', refinementText: refineTimelineInput.trim() })
             }
         } catch { showToast('Could not refine timeline', 'error') }
         setIsRefiningTimeline(false)
@@ -1554,6 +1609,184 @@ export default function Dashboard() {
                         )}
                         <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '1.2rem' }}>
                             <button onClick={() => setShowBudgetTips(false)} style={{ padding: '0.5rem 1.2rem', borderRadius: 8, background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}>Got it!</button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* ══ NOTIFY GUESTS MODAL ══ */}
+            {showNotifyModal && (
+                <div onClick={() => { if (!isSendingNotifications) { setShowNotifyModal(false) } }} style={{
+                    position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)',
+                    backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem',
+                }}>
+                    <div onClick={e => e.stopPropagation()} style={{
+                        background: 'white', borderRadius: 20, maxWidth: 480, width: '100%', maxHeight: '85vh',
+                        overflow: 'auto', boxShadow: '0 30px 80px rgba(0,0,0,0.25)',
+                        animation: 'slideUp 0.3s cubic-bezier(0.16, 1, 0.3, 1)',
+                    }}>
+                        {/* Header */}
+                        <div style={{
+                            background: 'linear-gradient(135deg, #1a2535, #2D4059)', padding: '1.5rem 1.8rem',
+                            borderRadius: '20px 20px 0 0', textAlign: 'center',
+                        }}>
+                            <div style={{ fontSize: '2rem', marginBottom: '0.3rem' }}>📧</div>
+                            <h2 style={{ fontFamily: "'Fredoka One', cursive", color: '#fff', fontSize: '1.1rem', margin: '0 0 0.3rem' }}>
+                                Notify Your Guests?
+                            </h2>
+                            <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem', fontWeight: 600, margin: 0 }}>
+                                Event details have changed — let your guests know
+                            </p>
+                        </div>
+
+                        <div style={{ padding: '1.5rem 1.8rem' }}>
+                            {notifyResult ? (
+                                /* Success state */
+                                <div style={{ textAlign: 'center', padding: '1rem 0' }}>
+                                    <div style={{ fontSize: '3rem', marginBottom: '0.5rem' }}>
+                                        {notifyResult.sent > 0 ? '✅' : '📋'}
+                                    </div>
+                                    <h3 style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '1rem', margin: '0 0 0.5rem' }}>
+                                        {notifyResult.sent > 0 ? 'Notifications Sent!' : 'Preview Ready'}
+                                    </h3>
+                                    <p style={{ color: '#6b7c93', fontSize: '0.85rem', fontWeight: 600, margin: '0 0 1rem' }}>
+                                        {notifyResult.message}
+                                    </p>
+                                    <button onClick={() => setShowNotifyModal(false)} style={{
+                                        background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff',
+                                        border: 'none', borderRadius: 10, padding: '0.6rem 1.5rem',
+                                        fontWeight: 800, fontSize: '0.85rem', cursor: 'pointer',
+                                    }}>Done</button>
+                                </div>
+                            ) : (
+                                <>
+                                    {/* Changes table */}
+                                    <h4 style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: 'var(--navy)', margin: '0 0 0.6rem' }}>
+                                        What Changed
+                                    </h4>
+                                    <div style={{
+                                        border: '1.5px solid #e2e6ea', borderRadius: 12, overflow: 'hidden',
+                                        marginBottom: '1.2rem',
+                                    }}>
+                                        {pendingChanges.map((c, i) => (
+                                            <div key={i} style={{
+                                                display: 'grid', gridTemplateColumns: '90px 1fr 1fr',
+                                                borderBottom: i < pendingChanges.length - 1 ? '1px solid #f0f2f5' : 'none',
+                                            }}>
+                                                <div style={{ padding: '0.6rem 0.8rem', fontWeight: 800, fontSize: '0.78rem', color: 'var(--navy)', background: '#f7f8fa' }}>
+                                                    {c.field}
+                                                </div>
+                                                <div style={{ padding: '0.6rem 0.8rem', fontSize: '0.78rem', color: '#9aabbb', textDecoration: 'line-through', fontWeight: 600 }}>
+                                                    {c.oldValue.length > 30 ? c.oldValue.slice(0, 30) + '…' : c.oldValue}
+                                                </div>
+                                                <div style={{ padding: '0.6rem 0.8rem', fontSize: '0.78rem', color: 'var(--teal)', fontWeight: 800 }}>
+                                                    {c.newValue.length > 30 ? c.newValue.slice(0, 30) + '…' : c.newValue}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+
+                                    {/* Guest count */}
+                                    <div style={{
+                                        background: 'rgba(74,173,168,0.06)', border: '1.5px solid rgba(74,173,168,0.15)',
+                                        borderRadius: 12, padding: '0.8rem 1rem', marginBottom: '1.2rem',
+                                        display: 'flex', alignItems: 'center', gap: '0.7rem',
+                                    }}>
+                                        <span style={{ fontSize: '1.3rem' }}>👥</span>
+                                        <div>
+                                            <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--navy)' }}>
+                                                {(() => {
+                                                    const storageKey = data.eventId ? `partypal_eventguests_${data.eventId}` : 'partypal_eventguests'
+                                                    try {
+                                                        const stored = localStorage.getItem(storageKey)
+                                                        const parsed = stored ? JSON.parse(stored) : []
+                                                        const withEmails = Array.isArray(parsed) ? parsed.filter((g: { email?: string }) => g.email?.includes('@')) : []
+                                                        const dashboardWithEmails = eventGuests.filter(g => g.email?.includes('@'))
+                                                        const total = new Set([...withEmails.map((g: { email: string }) => g.email), ...dashboardWithEmails.map(g => g.email)]).size
+                                                        return `${total} guest${total !== 1 ? 's' : ''} will be notified`
+                                                    } catch { return 'Guests will be notified' }
+                                                })()}
+                                            </div>
+                                            <div style={{ fontSize: '0.72rem', color: '#9aabbb', fontWeight: 600 }}>
+                                                Only guests with valid email addresses
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Actions */}
+                                    <div style={{ display: 'flex', gap: '0.6rem' }}>
+                                        <button
+                                            onClick={() => setShowNotifyModal(false)}
+                                            style={{
+                                                flex: 1, padding: '0.65rem', borderRadius: 10,
+                                                border: '1.5px solid #e2e6ea', background: '#fff',
+                                                fontWeight: 800, fontSize: '0.82rem', color: '#9aabbb',
+                                                cursor: 'pointer',
+                                            }}
+                                        >
+                                            Skip
+                                        </button>
+                                        <button
+                                            disabled={isSendingNotifications}
+                                            onClick={async () => {
+                                                setIsSendingNotifications(true)
+                                                try {
+                                                    // Gather all guests with emails
+                                                    const storageKey = data.eventId ? `partypal_eventguests_${data.eventId}` : 'partypal_eventguests'
+                                                    const stored = localStorage.getItem(storageKey)
+                                                    const guestManagerGuests = stored ? JSON.parse(stored) : []
+                                                    const allGuests = [
+                                                        ...(Array.isArray(guestManagerGuests) ? guestManagerGuests : []),
+                                                        ...eventGuests.filter(dg => !(guestManagerGuests || []).some((gg: { email: string }) => gg.email === dg.email)),
+                                                    ].filter((g: { email?: string }) => g.email?.includes('@'))
+
+                                                    const res = await fetch('/api/notify', {
+                                                        method: 'POST',
+                                                        headers: { 'Content-Type': 'application/json' },
+                                                        body: JSON.stringify({
+                                                            guests: allGuests.map((g: { name: string; email: string }) => ({ name: g.name, email: g.email })),
+                                                            eventName: data.eventType,
+                                                            changes: pendingChanges.map(c => ({
+                                                                field: c.field.replace(/^[^\w]*/, '').trim(),
+                                                                oldValue: c.oldValue,
+                                                                newValue: c.newValue,
+                                                            })),
+                                                            eventDate: data.date,
+                                                            eventLocation: data.location,
+                                                            eventTheme: data.theme,
+                                                            hostName: user?.displayName || 'Your Host',
+                                                        }),
+                                                    })
+                                                    const result = await res.json()
+                                                    setNotifyResult(result)
+                                                    if (result.sent > 0) {
+                                                        showToast(`📧 Notified ${result.sent} guest${result.sent !== 1 ? 's' : ''}!`, 'success')
+                                                    } else {
+                                                        showToast(result.message || 'Notification preview ready', 'info')
+                                                    }
+                                                } catch {
+                                                    showToast('Failed to send notifications', 'error')
+                                                }
+                                                setIsSendingNotifications(false)
+                                            }}
+                                            style={{
+                                                flex: 2, padding: '0.65rem', borderRadius: 10,
+                                                border: 'none',
+                                                background: isSendingNotifications ? '#9aabbb' : 'linear-gradient(135deg, var(--teal), #3D8C6E)',
+                                                fontWeight: 800, fontSize: '0.82rem', color: '#fff',
+                                                cursor: isSendingNotifications ? 'wait' : 'pointer',
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem',
+                                            }}
+                                        >
+                                            {isSendingNotifications ? (
+                                                <><div className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} /> Sending...</>
+                                            ) : (
+                                                <>📧 Notify Guests</>
+                                            )}
+                                        </button>
+                                    </div>
+                                </>
+                            )}
                         </div>
                     </div>
                 </div>

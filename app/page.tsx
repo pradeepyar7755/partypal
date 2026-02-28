@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import styles from './page.module.css'
 import LocationSearch from '@/components/LocationSearch'
 import { userGet, userGetJSON, userSetJSON } from '@/lib/userStorage'
+import { trackPlanGenerated, trackError, trackFeatureUsed } from '@/lib/analytics'
 
 const CATEGORIES = [
   { name: 'Venue', emoji: '🏛️', count: '124 options nearby', color: 'yellow', cat: 'venue' },
@@ -216,8 +217,10 @@ export default function Home() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data),
       }).catch(() => { })
+      trackPlanGenerated(form.eventType, form.guests, form.budget)
       router.push('/dashboard')
     } catch {
+      trackError('Plan generation failed', { eventType: form.eventType })
       alert('Failed to generate plan. Please try again.')
       setLoading(false)
     }

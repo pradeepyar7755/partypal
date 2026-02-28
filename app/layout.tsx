@@ -3,6 +3,7 @@ import './globals.css'
 import Nav from '@/components/Nav'
 import ToastContainer from '@/components/Toast'
 import { AuthProvider } from '@/components/AuthContext'
+import AnalyticsProvider from '@/components/AnalyticsProvider'
 
 export const metadata: Metadata = {
   title: 'PartyPal — AI Party Planning',
@@ -26,9 +27,11 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <AuthProvider>
-          <Nav />
-          <ToastContainer />
-          {children}
+          <AnalyticsProvider>
+            <Nav />
+            <ToastContainer />
+            {children}
+          </AnalyticsProvider>
         </AuthProvider>
       </body>
     </html>

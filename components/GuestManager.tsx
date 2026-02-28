@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react'
 import { userGet, userSetJSON, userGetJSON } from '@/lib/userStorage'
 import { showToast } from '@/components/Toast'
 import styles from './GuestManager.module.css'
+import { useAIContext } from '@/lib/useAIContext'
 
 interface AdditionalGuest {
     id: string; name: string; dietary: string; relationship: string
@@ -75,6 +76,8 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const themeChangeRef = React.useRef(false)
     const customInviteRef = React.useRef<HTMLInputElement>(null)
     const coverPhotoRef = React.useRef<HTMLInputElement>(null)
+    // Cross-portal AI context
+    const { getContextPayload, learn } = useAIContext(planData as Parameters<typeof useAIContext>[0], guests as unknown as Parameters<typeof useAIContext>[1])
 
     const resizeImage = (file: File, maxW: number): Promise<string> => {
         return new Promise((resolve) => {
@@ -288,10 +291,11 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const generateInvite = async () => {
         setLoadingInvite(true)
         try {
-            const res = await fetch('/api/guests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'generate_invite', eventDetails: { ...planData, inviteTheme, hostName: 'Your Host' }, temperature: inviteTemp }) })
+            const res = await fetch('/api/guests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'generate_invite', eventDetails: { ...planData, inviteTheme, hostName: 'Your Host' }, temperature: inviteTemp, ...getContextPayload() }) })
             const data = await res.json()
             setInvite(data); setIsEditingInvite(false)
             showToast('Invite generated!', 'success')
+            learn({ type: 'invite_style_chosen', style: inviteTheme })
         } catch { showToast('Failed to generate invite', 'error') }
         setLoadingInvite(false)
     }
@@ -300,9 +304,9 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
         if (!refineInput.trim() || !invite) return
         setIsRefining(true)
         try {
-            const res = await fetch('/api/guests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'refine_invite', currentSubject: invite.subject, currentMessage: invite.message, instruction: refineInput }) })
+            const res = await fetch('/api/guests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'refine_invite', currentSubject: invite.subject, currentMessage: invite.message, instruction: refineInput, ...getContextPayload() }) })
             const data = await res.json()
-            if (data.subject) { setInvite(prev => prev ? { ...prev, subject: data.subject, message: data.message, smsVersion: data.smsVersion || prev?.smsVersion } : prev); setRefineInput(''); setIsEditingInvite(false); showToast('Invite refined!', 'success') }
+            if (data.subject) { setInvite(prev => prev ? { ...prev, subject: data.subject, message: data.message, smsVersion: data.smsVersion || prev?.smsVersion } : prev); setRefineInput(''); setIsEditingInvite(false); showToast('Invite refined!', 'success'); learn({ type: 'invite_refined', refinementText: refineInput.trim() }) }
         } catch { showToast('Failed to refine invite', 'error') }
         setIsRefining(false)
     }

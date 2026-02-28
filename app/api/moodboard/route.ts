@@ -1,15 +1,27 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
+import { assembleContext, hasContext } from '@/lib/ai-context-server'
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_MAPS_API_KEY || '')
 
 export async function POST(req: NextRequest) {
   try {
-    const { theme, eventType, budget } = await req.json()
+    const body = await req.json()
+    const { theme, eventType, budget } = body
 
-    const prompt = `You are PartyPal's mood board designer. Create a rich visual inspiration board.
+    // Build cross-portal context
+    const contextBlock = hasContext(body) ? `\n${assembleContext(body, 'mood board design')}\nUse this context to align the mood board with the user's full vision.\n\n` : ''
+
+    const prompt = `${contextBlock}You are PartyPal's mood board designer. Create a rich visual inspiration board.
 
 Theme: ${theme || 'Modern Elegant'} | Event: ${eventType || 'Birthday Party'} | Budget: ${budget || 'Flexible'}
+
+CROSS-PORTAL INTELLIGENCE:
+- If guest context indicates children, include family-friendly inspirations
+- If vendor context shows shortlisted vendors, suggest decor that complements their style
+- If user preference is "minimal", keep the board clean and restrained; if "detailed/lavish", go all out
+- If budget is tight, suggest creative DIY alternatives alongside aspirational ideas
+- If previous events are known, suggest something fresh and different
 
 Return ONLY valid JSON, no markdown:
 {

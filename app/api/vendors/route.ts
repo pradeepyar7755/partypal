@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { assembleContext, hasContext } from '@/lib/ai-context-server'
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || ''
 const genAI = new GoogleGenerativeAI(GOOGLE_MAPS_API_KEY)
@@ -7,7 +8,7 @@ const genAI = new GoogleGenerativeAI(GOOGLE_MAPS_API_KEY)
 // Category → search query + relevant Google place types for post-search filtering
 const CATEGORY_MAP: Record<string, { query: string; types?: string[]; relevantTypes: string[] }> = {
   'Venue': { query: 'best event venue banquet hall party venue', relevantTypes: ['event_venue', 'banquet_hall', 'wedding_venue', 'community_center', 'convention_center', 'meeting_room', 'cultural_center'] },
-  'Decor': { query: 'event decorator party decorations balloon artist floral design', relevantTypes: ['florist', 'home_goods_store', 'furniture_store', 'interior_designer', 'art_studio'] },
+  'Decor': { query: 'party decorator event decorations florist flower shop balloon artist floral arrangements', relevantTypes: ['florist', 'flower_shop', 'home_goods_store', 'furniture_store', 'interior_designer', 'art_studio', 'store', 'gift_shop', 'garden_center', 'shopping_mall', 'general_contractor', 'home_improvement_store', 'wholesaler'] },
   'Baker': { query: 'best bakery custom cakes birthday cakes celebration cakes', types: ['bakery'], relevantTypes: ['bakery', 'cake_shop', 'dessert_shop', 'pastry_shop'] },
   'Food': { query: 'best catering restaurant food service party catering', relevantTypes: ['restaurant', 'meal_delivery', 'meal_takeaway', 'food_court', 'catering_service', 'caterer'] },
   'Photos': { query: 'best event photographer portrait photography studio', relevantTypes: ['photographer', 'photo_studio', 'photography_studio', 'portrait_studio'] },
@@ -55,8 +56,8 @@ function getBadge(rating: number, reviews: number): string {
   return ''
 }
 
-// Summarize Google reviews using Gemini
-async function summarizeReviews(vendorName: string, category: string, reviews: Array<{ text: string; rating: number }>): Promise<string> {
+// Summarize Google reviews using Gemini — with cross-portal context
+async function summarizeReviews(vendorName: string, category: string, reviews: Array<{ text: string; rating: number }>, eventContext?: string): Promise<string> {
   if (!GOOGLE_MAPS_API_KEY || reviews.length === 0) return ''
   try {
     const reviewTexts = reviews
@@ -66,9 +67,11 @@ async function summarizeReviews(vendorName: string, category: string, reviews: A
       .join('\n')
     if (!reviewTexts) return ''
 
+    const contextHint = eventContext ? `\nThe user is planning: ${eventContext}. If relevant, mention why this vendor fits their event.` : ''
+
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { maxOutputTokens: 80 } })
     const result = await model.generateContent(
-      `Summarize these customer reviews for "${vendorName}" (a ${category} vendor) into ONE concise, engaging sentence (under 25 words). Focus on what customers love most. Don't mention the location or say "highly rated". Be specific about what makes them special.\n\nReviews:\n${reviewTexts}`
+      `Summarize these customer reviews for "${vendorName}" (a ${category} vendor) into ONE concise, engaging sentence (under 25 words). Focus on what customers love most. Don't mention the location or say "highly rated". Be specific about what makes them special.${contextHint}\n\nReviews:\n${reviewTexts}`
     )
     return result.response.text()?.trim() || ''
   } catch {
@@ -78,7 +81,11 @@ async function summarizeReviews(vendorName: string, category: string, reviews: A
 
 export async function POST(req: NextRequest) {
   try {
-    const { category, location, cuisine } = await req.json()
+    const body = await req.json()
+    const { category, location, cuisine } = body
+
+    // Build event context hint for vendor summaries
+    const eventHint = hasContext(body) ? `${body.eventType || ''} ${body.theme || ''} party, ${body.guests || ''} guests, budget ${body.budget || 'flexible'}` : ''
 
     // If no API key, fall back to static
     if (!GOOGLE_MAPS_API_KEY) {
@@ -90,7 +97,7 @@ export async function POST(req: NextRequest) {
 
     // For "All Vendors", search multiple categories
     if (cat === 'All') {
-      const categories = ['Venue', 'Baker', 'Food', 'Music', 'Drinks', 'Photos']
+      const categories = ['Venue', 'Decor', 'Baker', 'Food', 'Music', 'Drinks', 'Photos', 'Entertain']
       const allVendors = await Promise.all(
         categories.map(c => searchPlaces(c, loc, 4))
       )
@@ -103,7 +110,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ vendors: merged, source: 'google' })
     }
 
-    const vendors = await searchPlaces(cat, loc, 15, cuisine)
+    const vendors = await searchPlaces(cat, loc, 20, cuisine)
     return NextResponse.json({ vendors, source: 'google' })
   } catch (error) {
     console.error('Vendors error:', error)

@@ -13,6 +13,7 @@ import {
 } from 'firebase/auth'
 import { auth } from '@/lib/firebase-client'
 import { setStorageUid } from '@/lib/userStorage'
+import { trackSignUp, trackLogin } from '@/lib/analytics'
 
 interface AuthContextType {
     user: User | null
@@ -49,7 +50,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signInWithGoogle = async () => {
         const provider = new GoogleAuthProvider()
-        await signInWithPopup(auth, provider)
+        const result = await signInWithPopup(auth, provider)
+        // Track: is this a new user (sign up) or returning (login)?
+        if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
+            trackSignUp('google')
+        } else {
+            trackLogin('google')
+        }
     }
 
     const signInWithApple = async () => {
@@ -61,11 +68,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signInWithEmail = async (email: string, password: string) => {
         await signInWithEmailAndPassword(auth, email, password)
+        trackLogin('email')
     }
 
     const signUpWithEmail = async (email: string, password: string, name: string) => {
         const cred = await createUserWithEmailAndPassword(auth, email, password)
         await updateProfile(cred.user, { displayName: name })
+        trackSignUp('email')
     }
 
     const logout = async () => {
