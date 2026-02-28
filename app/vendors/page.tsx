@@ -200,6 +200,11 @@ function VendorsContent() {
 
   const filtered = vendors.filter(v => {
     if (showShortlistOnly && !shortlist.includes(v.id)) return false
+    // Rating filter
+    if (v.rating < ratingFilter) return false
+    // Price filter
+    const priceVal = v.price === 'Free' ? 0 : v.price === '$' ? 250 : v.price === '$$' ? 500 : v.price === '$$$' ? 1000 : 2000
+    if (priceVal > priceMax) return false
     if (!search) return true
     return v.name.toLowerCase().includes(search.toLowerCase()) ||
       v.description.toLowerCase().includes(search.toLowerCase()) ||
@@ -295,32 +300,6 @@ function VendorsContent() {
                   </label>
                 ))}
               </div>
-            </div>
-            <div className={styles.filterDivider} />
-
-            <div className={styles.filterSection}>
-              <h3>Availability</h3>
-              <label className={styles.filterCheck}><input type="checkbox" defaultChecked /><label>Available for event</label><span className={styles.filterCount}>142</span></label>
-              <label className={styles.filterCheck}><input type="checkbox" /><label>Weekend only</label><span className={styles.filterCount}>89</span></label>
-              <label className={styles.filterCheck}><input type="checkbox" /><label>Instant Book</label><span className={styles.filterCount}>203</span></label>
-            </div>
-            <div className={styles.filterDivider} />
-
-            <div className={styles.filterSection}>
-              <h3>Party Size</h3>
-              <label className={styles.filterCheck}><input type="checkbox" defaultChecked /><label>Up to 50 guests</label><span className={styles.filterCount}>312</span></label>
-              <label className={styles.filterCheck}><input type="checkbox" /><label>50–100 guests</label><span className={styles.filterCount}>187</span></label>
-              <label className={styles.filterCheck}><input type="checkbox" /><label>100+ guests</label><span className={styles.filterCount}>93</span></label>
-            </div>
-            <div className={styles.filterDivider} />
-
-            <div className={styles.filterSection}>
-              <h3>Style</h3>
-              <label className={styles.filterCheck}><input type="checkbox" defaultChecked /><label>Tropical</label><span className={styles.filterCount}>47</span></label>
-              <label className={styles.filterCheck}><input type="checkbox" /><label>Modern</label><span className={styles.filterCount}>124</span></label>
-              <label className={styles.filterCheck}><input type="checkbox" /><label>Vintage / Retro</label><span className={styles.filterCount}>61</span></label>
-              <label className={styles.filterCheck}><input type="checkbox" /><label>Minimalist</label><span className={styles.filterCount}>88</span></label>
-              <label className={styles.filterCheck}><input type="checkbox" /><label>Bohemian</label><span className={styles.filterCount}>39</span></label>
             </div>
           </div>
         )}
