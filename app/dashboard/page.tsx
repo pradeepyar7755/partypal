@@ -144,31 +144,39 @@ export default function Dashboard() {
     const [pollShareLink, setPollShareLink] = useState<string | null>(null)
     const [pollsLoading, setPollsLoading] = useState(false)
     const [pollDeletingId, setPollDeletingId] = useState<string | null>(null)
+    const currentEventIdRef = useRef<string | undefined>(undefined)
 
-    // Fetch polls from Firestore for current event
-    const fetchPolls = useCallback(async (eid?: string) => {
-        const id = eid || data.eventId
-        if (!id) return
+    // Fetch polls from Firestore for a specific event
+    const fetchPolls = useCallback(async (eid: string) => {
+        if (!eid) return
         setPollsLoading(true)
         try {
-            const res = await fetch(`/api/polls?eventId=${id}`)
+            const res = await fetch(`/api/polls?eventId=${eid}`)
             const d = await res.json()
             setPolls(d.polls || [])
         } catch { /* silent */ }
         setPollsLoading(false)
-    }, [data.eventId])
+    }, [])
 
-    // Fetch polls when event changes
+    // Fetch polls when event changes — uses explicit eventId, no stale closure
     useEffect(() => {
-        if (data.eventId) fetchPolls(data.eventId)
+        currentEventIdRef.current = data.eventId
+        if (data.eventId) {
+            fetchPolls(data.eventId)
+        } else {
+            setPolls([])  // No event = no polls
+        }
     }, [data.eventId, fetchPolls])
 
     // Auto-refresh polls every 30s when on polls tab
     useEffect(() => {
-        if (selectedTab !== 'polls' || !data.eventId) return
-        const iv = setInterval(() => fetchPolls(), 30000)
+        if (selectedTab !== 'polls') return
+        const iv = setInterval(() => {
+            const eid = currentEventIdRef.current
+            if (eid) fetchPolls(eid)
+        }, 30000)
         return () => clearInterval(iv)
-    }, [selectedTab, data.eventId, fetchPolls])
+    }, [selectedTab, fetchPolls])
 
     const deletePoll = async (pollId: string) => {
         if (!confirm('Delete this poll? All votes will be lost.')) return
@@ -1340,7 +1348,7 @@ export default function Dashboard() {
                                         })}
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border)' }}>
                                             <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 600 }}>Created {new Date(poll.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
-                                            <button onClick={() => fetchPolls()} style={{ padding: '0.25rem 0.6rem', borderRadius: 6, background: 'transparent', border: '1px solid var(--border)', color: '#9aabbb', fontWeight: 700, fontSize: '0.68rem', cursor: 'pointer', fontFamily: 'inherit' }}>🔄 Refresh</button>
+                                            <button onClick={() => data.eventId && fetchPolls(data.eventId)} style={{ padding: '0.25rem 0.6rem', borderRadius: 6, background: 'transparent', border: '1px solid var(--border)', color: '#9aabbb', fontWeight: 700, fontSize: '0.68rem', cursor: 'pointer', fontFamily: 'inherit' }}>🔄 Refresh</button>
                                         </div>
                                     </div>
                                 )
@@ -1862,7 +1870,7 @@ export default function Dashboard() {
                     onCreated={({ shareUrl }) => {
                         setPollShareLink(shareUrl)
                         setShowPollCreator(false)
-                        fetchPolls()
+                        if (data.eventId) fetchPolls(data.eventId)
                     }}
                 />
             )}
