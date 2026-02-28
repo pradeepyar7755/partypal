@@ -107,18 +107,25 @@ export default function AdminDashboard() {
     const isAdmin = user && ADMIN_EMAILS.includes(user.email || '')
 
     const fetchData = useCallback(async () => {
+        if (!user) return
         setLoading(true)
         setError('')
         try {
-            const res = await fetch(`/api/analytics?q=dashboard&days=${days}`)
-            if (!res.ok) throw new Error('Failed to load analytics')
+            const token = await user.getIdToken()
+            const res = await fetch(`/api/analytics?q=dashboard&days=${days}`, {
+                headers: { Authorization: `Bearer ${token}` },
+            })
+            if (!res.ok) {
+                if (res.status === 401) throw new Error('Unauthorized — your session may have expired')
+                throw new Error('Failed to load analytics')
+            }
             const json = await res.json()
             setData(json)
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Failed to load analytics')
         }
         setLoading(false)
-    }, [days])
+    }, [days, user])
 
     useEffect(() => {
         if (!authLoading && isAdmin) fetchData()

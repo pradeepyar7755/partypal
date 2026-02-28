@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/firebase'
+import { verifyAdmin } from '@/lib/admin-auth'
 
 // ═══════════════════════════════════════════════════════
 //  Analytics API
-//  POST: Batch write analytics events
-//  GET:  Query aggregated analytics (admin only)
+//  POST: Batch write analytics events (public — no auth)
+//  GET:  Query aggregated analytics (ADMIN ONLY)
 // ═══════════════════════════════════════════════════════
 
 export async function POST(req: NextRequest) {
@@ -99,6 +100,15 @@ async function firestoreQuery<T>(fn: () => Promise<T>, fallback: T): Promise<T> 
 
 export async function GET(req: NextRequest) {
     try {
+        // ── Server-side admin auth check ──
+        const admin = await verifyAdmin(req.headers.get('authorization'))
+        if (!admin) {
+            return NextResponse.json(
+                { error: 'Unauthorized — admin access required' },
+                { status: 401 }
+            )
+        }
+
         const { searchParams } = new URL(req.url)
         const query = searchParams.get('q') || 'dashboard'
         const days = parseInt(searchParams.get('days') || '30')
