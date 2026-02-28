@@ -517,7 +517,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                     </div>
                                 </div>
                                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
-                                    <button onClick={() => setInvite(null)} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.25rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Clear Invite</button>
+                                    <button onClick={() => { setInvite(null); setIsPublished(false); setLastPublishedInvite('') }} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.25rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Clear Invite</button>
                                     <button disabled={bookmarks.length >= 3} onClick={() => { if (invite && bookmarks.length < 3) { setBookmarks(prev => [...prev, { name: `Saved ${prev.length + 1}`, invite: { ...invite } }]); showToast('Invite bookmarked!', 'success') } }} style={{ background: 'none', border: '1px solid var(--yellow)', borderRadius: 6, padding: '0.25rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: 'var(--yellow)', cursor: bookmarks.length >= 3 ? 'not-allowed' : 'pointer', opacity: bookmarks.length >= 3 ? 0.4 : 1 }}>⭐ Bookmark{bookmarks.length >= 3 ? ' (3/3)' : ` (${bookmarks.length}/3)`}</button>
                                 </div>
                             </div>
