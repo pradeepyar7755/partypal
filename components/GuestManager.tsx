@@ -382,9 +382,15 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                     ))}
                 </div>
 
+                {/* RSVP by — always visible, above invitation */}
+                <div className="card" style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.5rem 1.2rem', marginBottom: '0.5rem' }}>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb' }}>📅 RSVP by</span>
+                    <input type="date" value={rsvpByDate} onChange={e => setRsvpByDate(e.target.value)} className={styles.addInput} style={{ margin: 0, padding: '0.2rem 0.4rem', fontSize: '0.72rem', width: 130 }} />
+                </div>
+
                 {/* Invite card or generate prompt */}
                 {!invite && (
-                    <div className="card" style={{ padding: '0.8rem 1.2rem', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <div className="card" style={{ padding: '0.8rem 1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                         <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)' }}>✉️ Invitation</h3>
                         <button className={styles.actionBtn} onClick={generateInvite} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
                         <button className={styles.secondaryBtn} onClick={() => setShowPreview(true)} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>👁️ Preview</button>
@@ -400,11 +406,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                         </div>
                     </div>
                 )}
-                {/* RSVP by — always visible */}
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 1.2rem', marginBottom: '1rem' }}>
-                    <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb' }}>📅 RSVP by</span>
-                    <input type="date" value={rsvpByDate} onChange={e => setRsvpByDate(e.target.value)} className={styles.addInput} style={{ margin: 0, padding: '0.2rem 0.4rem', fontSize: '0.72rem', width: 130 }} />
-                </div>
                 {invite && (
                     <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: inviteCollapsed ? 0 : '0.8rem', cursor: 'pointer', gap: '0.4rem', flexWrap: 'wrap' }} onClick={() => setInviteCollapsed(c => !c)}>
