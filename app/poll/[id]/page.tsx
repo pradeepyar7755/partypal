@@ -29,9 +29,10 @@ export default function PollPage() {
     const [loading, setLoading] = useState(true)
     const [error, setError] = useState('')
     const [voterName, setVoterName] = useState('')
-    const [selected, setSelected] = useState<string[]>([])
     const [voted, setVoted] = useState(false)
     const [submitting, setSubmitting] = useState(false)
+    const [showNamePrompt, setShowNamePrompt] = useState(false)
+    const [pendingOptionId, setPendingOptionId] = useState<string | null>(null)
 
     const fetchPoll = useCallback(async () => {
         try {
@@ -47,34 +48,6 @@ export default function PollPage() {
 
     useEffect(() => { fetchPoll() }, [fetchPoll])
 
-    const toggleOption = (optId: string) => {
-        if (poll?.allowMultiple) {
-            setSelected(prev => prev.includes(optId) ? prev.filter(s => s !== optId) : [...prev, optId])
-        } else {
-            setSelected([optId])
-        }
-    }
-
-    const submitVote = async () => {
-        if (!voterName.trim() || selected.length === 0) return
-        setSubmitting(true)
-        try {
-            const res = await fetch('/api/polls', {
-                method: 'PUT',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ pollId, optionIds: selected, voterName: voterName.trim() }),
-            })
-            const data = await res.json()
-            if (!res.ok) throw new Error(data.error || 'Failed to vote')
-            setPoll(data)
-            setVoted(true)
-            localStorage.setItem(`poll_voted_${pollId}`, voterName.trim())
-        } catch (err) {
-            setError(err instanceof Error ? err.message : 'Failed to submit vote')
-        }
-        setSubmitting(false)
-    }
-
     // Check if already voted
     useEffect(() => {
         const storedName = localStorage.getItem(`poll_voted_${pollId}`)
@@ -83,6 +56,51 @@ export default function PollPage() {
             setVoted(true)
         }
     }, [pollId])
+
+    // Auto-refresh results every 15s
+    useEffect(() => {
+        if (!voted) return
+        const iv = setInterval(fetchPoll, 15000)
+        return () => clearInterval(iv)
+    }, [voted, fetchPoll])
+
+    const handleOptionTap = (optId: string) => {
+        if (voted || poll?.closed) return
+        // If name already known, vote directly
+        const storedName = localStorage.getItem(`poll_voted_${pollId}`) || voterName
+        if (storedName.trim()) {
+            submitVote(optId, storedName.trim())
+        } else {
+            setPendingOptionId(optId)
+            setShowNamePrompt(true)
+        }
+    }
+
+    const submitVote = async (optionId: string, name: string) => {
+        setSubmitting(true)
+        setShowNamePrompt(false)
+        try {
+            const res = await fetch('/api/polls', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ pollId, optionIds: [optionId], voterName: name }),
+            })
+            const data = await res.json()
+            if (!res.ok) throw new Error(data.error || 'Failed to vote')
+            setPoll(data)
+            setVoted(true)
+            setVoterName(name)
+            localStorage.setItem(`poll_voted_${pollId}`, name)
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Failed to vote')
+        }
+        setSubmitting(false)
+    }
+
+    const confirmNameAndVote = () => {
+        if (!voterName.trim() || !pendingOptionId) return
+        submitVote(pendingOptionId, voterName.trim())
+    }
 
     if (loading) {
         return (
@@ -112,111 +130,124 @@ export default function PollPage() {
     }
 
     const maxVotes = Math.max(...poll.options.map(o => o.votes), 1)
+    const totalVotes = poll.totalVotes || 0
 
     return (
         <main className={styles.pollPage}>
             <div className={styles.pollCard}>
                 {/* Header */}
                 <div className={styles.pollHeader}>
-                    <div className={styles.pollBadge}>
-                        🎊 PartyPal Poll
-                    </div>
+                    <div className={styles.pollBadge}>🎊 PartyPal Poll</div>
                     <h1 className={styles.pollQuestion}>{poll.question}</h1>
                     <p className={styles.pollMeta}>
-                        Created by <strong>{poll.creatorName}</strong> · {poll.totalVotes} {poll.totalVotes === 1 ? 'vote' : 'votes'}
-                        {poll.allowMultiple && <span className={styles.multiTag}>Select multiple</span>}
+                        by <strong>{poll.creatorName}</strong> · {totalVotes} {totalVotes === 1 ? 'vote' : 'votes'}
+                        {poll.allowMultiple && <span className={styles.multiTag}>Multi-select</span>}
+                        {poll.closed && <span className={styles.closedTag}>Closed</span>}
                     </p>
                 </div>
 
-                {/* Voting or Results */}
-                {voted || poll.closed ? (
-                    <div className={styles.results}>
-                        <h3 className={styles.resultsLabel}>
-                            {poll.closed ? '🔒 Poll Closed — Final Results' : '✅ Thanks for voting!'}
-                        </h3>
-                        {poll.options
-                            .sort((a, b) => b.votes - a.votes)
-                            .map((opt, i) => {
-                                const pct = poll.totalVotes > 0 ? Math.round((opt.votes / poll.totalVotes) * 100) : 0
-                                const isWinner = i === 0 && opt.votes > 0
-                                return (
-                                    <div key={opt.id} className={`${styles.resultRow} ${isWinner ? styles.winner : ''}`}>
-                                        <div className={styles.resultInfo}>
-                                            <span className={styles.resultText}>
-                                                {isWinner && '👑 '}{opt.text}
-                                            </span>
-                                            <span className={styles.resultCount}>
-                                                {opt.votes} {opt.votes === 1 ? 'vote' : 'votes'} · {pct}%
-                                            </span>
-                                        </div>
-                                        <div className={styles.resultBarBg}>
-                                            <div
-                                                className={styles.resultBarFill}
-                                                style={{
-                                                    width: `${Math.max(2, (opt.votes / maxVotes) * 100)}%`,
-                                                    background: isWinner
-                                                        ? 'linear-gradient(90deg, #F7C948, #E8896A)'
-                                                        : 'linear-gradient(90deg, #4AADA8, #3D8C6E)',
-                                                }}
-                                            />
-                                        </div>
-                                        {opt.voters.length > 0 && (
-                                            <div className={styles.voterList}>
-                                                {opt.voters.map((v, vi) => (
+                {/* Inline options — tap to vote, results show immediately */}
+                <div className={styles.voting}>
+                    {poll.options.map((opt, i) => {
+                        const pct = totalVotes > 0 ? Math.round((opt.votes / totalVotes) * 100) : 0
+                        const barWidth = totalVotes > 0 ? Math.max(2, (opt.votes / maxVotes) * 100) : 0
+                        const isLeader = i === 0 && opt.votes > 0 && voted
+                        const sortedOpts = voted ? [...poll.options].sort((a, b) => b.votes - a.votes) : poll.options
+                        const sortedOpt = voted ? sortedOpts[i] : opt
+                        const sortedPct = totalVotes > 0 ? Math.round((sortedOpt.votes / totalVotes) * 100) : 0
+                        const sortedBarWidth = totalVotes > 0 ? Math.max(2, (sortedOpt.votes / maxVotes) * 100) : 0
+                        const sortedIsLeader = voted && i === 0 && sortedOpt.votes > 0
+                        const myVote = voted && sortedOpt.voters.includes(voterName)
+
+                        if (voted) {
+                            return (
+                                <div key={sortedOpt.id} className={`${styles.optionResult} ${sortedIsLeader ? styles.optionLeader : ''} ${myVote ? styles.optionMyVote : ''}`}>
+                                    <div className={styles.optionResultBar} style={{
+                                        width: `${sortedBarWidth}%`,
+                                        background: sortedIsLeader
+                                            ? 'linear-gradient(90deg, rgba(247,201,72,0.18), rgba(232,137,106,0.12))'
+                                            : 'rgba(74,173,168,0.08)',
+                                    }} />
+                                    <div className={styles.optionResultContent}>
+                                        <span className={styles.optionResultText}>
+                                            {sortedIsLeader && '👑 '}{myVote && '✓ '}{sortedOpt.text}
+                                        </span>
+                                        <span className={styles.optionResultPct}>{sortedPct}%</span>
+                                    </div>
+                                    <div className={styles.optionResultMeta}>
+                                        <span>{sortedOpt.votes} {sortedOpt.votes === 1 ? 'vote' : 'votes'}</span>
+                                        {sortedOpt.voters.length > 0 && (
+                                            <div className={styles.voterChips}>
+                                                {sortedOpt.voters.slice(0, 8).map((v, vi) => (
                                                     <span key={vi} className={styles.voterChip}>{v}</span>
                                                 ))}
+                                                {sortedOpt.voters.length > 8 && (
+                                                    <span className={styles.voterChip}>+{sortedOpt.voters.length - 8}</span>
+                                                )}
                                             </div>
                                         )}
                                     </div>
-                                )
-                            })}
-                        <button className={styles.refreshBtn} onClick={fetchPoll}>
-                            🔄 Refresh Results
-                        </button>
-                    </div>
-                ) : (
-                    <div className={styles.voting}>
-                        {/* Name input */}
-                        <div className={styles.nameInput}>
-                            <label>Your name</label>
+                                </div>
+                            )
+                        }
+
+                        // Not yet voted — show tappable options
+                        return (
+                            <button
+                                key={opt.id}
+                                className={styles.optionTap}
+                                onClick={() => handleOptionTap(opt.id)}
+                                disabled={submitting}
+                            >
+                                <span className={styles.optionTapText}>{opt.text}</span>
+                                {totalVotes > 0 && (
+                                    <span className={styles.optionTapCount}>{opt.votes}</span>
+                                )}
+                            </button>
+                        )
+                    })}
+
+                    {voted && (
+                        <div className={styles.votedFooter}>
+                            <span>You voted as <strong>{voterName}</strong></span>
+                            <button className={styles.refreshBtn} onClick={fetchPoll}>🔄 Refresh</button>
+                        </div>
+                    )}
+
+                    {submitting && (
+                        <div style={{ textAlign: 'center', padding: '0.5rem', color: 'var(--teal)', fontSize: '0.82rem', fontWeight: 700 }}>
+                            <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2, display: 'inline-block', verticalAlign: 'middle', marginRight: 6 }} />
+                            Submitting your vote...
+                        </div>
+                    )}
+                </div>
+
+                {/* Name prompt overlay */}
+                {showNamePrompt && (
+                    <div className={styles.nameOverlay}>
+                        <div className={styles.nameModal}>
+                            <div style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>👋</div>
+                            <div style={{ fontWeight: 800, color: 'var(--navy)', marginBottom: '0.3rem' }}>
+                                What&apos;s your name?
+                            </div>
+                            <div style={{ fontSize: '0.78rem', color: '#9aabbb', marginBottom: '0.8rem' }}>
+                                So others can see who voted
+                            </div>
                             <input
                                 type="text"
                                 value={voterName}
                                 onChange={e => setVoterName(e.target.value)}
-                                placeholder="Enter your name..."
-                                maxLength={50}
+                                onKeyDown={e => e.key === 'Enter' && confirmNameAndVote()}
+                                placeholder="Your name..."
+                                autoFocus
+                                maxLength={30}
+                                className={styles.nameModalInput}
                             />
+                            <div style={{ display: 'flex', gap: '0.5rem' }}>
+                                <button onClick={() => setShowNamePrompt(false)} className={styles.nameModalCancel}>Cancel</button>
+                                <button onClick={confirmNameAndVote} disabled={!voterName.trim()} className={styles.nameModalSubmit}>Vote</button>
+                            </div>
                         </div>
-
-                        {/* Options */}
-                        <div className={styles.optionsList}>
-                            {poll.options.map(opt => (
-                                <button
-                                    key={opt.id}
-                                    className={`${styles.optionBtn} ${selected.includes(opt.id) ? styles.optionSelected : ''}`}
-                                    onClick={() => toggleOption(opt.id)}
-                                >
-                                    <div className={styles.optionCheck}>
-                                        {selected.includes(opt.id) ? '✓' : ''}
-                                    </div>
-                                    <span>{opt.text}</span>
-                                </button>
-                            ))}
-                        </div>
-
-                        {/* Submit */}
-                        <button
-                            className={styles.voteBtn}
-                            onClick={submitVote}
-                            disabled={submitting || !voterName.trim() || selected.length === 0}
-                        >
-                            {submitting ? (
-                                <span style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', justifyContent: 'center' }}>
-                                    <span className="spinner" style={{ width: 18, height: 18, borderWidth: 2 }} />
-                                    Submitting...
-                                </span>
-                            ) : '🗳️ Submit Vote'}
-                        </button>
                     </div>
                 )}
 

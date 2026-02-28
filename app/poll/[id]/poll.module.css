@@ -11,254 +11,213 @@
     background: white;
     border-radius: 20px;
     box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
-    max-width: 560px;
+    max-width: 480px;
     width: 100%;
     overflow: hidden;
 }
 
 .pollHeader {
-    padding: 2rem 2rem 1.5rem;
+    padding: 1.5rem 1.5rem 1.2rem;
     text-align: center;
     border-bottom: 1px solid var(--border);
 }
 
 .pollBadge {
     display: inline-block;
-    padding: 0.3rem 1rem;
+    padding: 0.25rem 0.8rem;
     border-radius: 20px;
     background: linear-gradient(135deg, rgba(247, 201, 72, 0.15), rgba(74, 173, 168, 0.1));
     border: 1px solid rgba(247, 201, 72, 0.3);
-    font-size: 0.78rem;
+    font-size: 0.72rem;
     font-weight: 800;
     color: var(--navy);
-    margin-bottom: 1rem;
+    margin-bottom: 0.8rem;
     letter-spacing: 0.02em;
 }
 
 .pollQuestion {
     font-family: 'Fredoka One', cursive;
-    font-size: 1.5rem;
+    font-size: 1.3rem;
     color: var(--navy);
-    margin: 0 0 0.6rem;
+    margin: 0 0 0.5rem;
     line-height: 1.3;
 }
 
 .pollMeta {
-    font-size: 0.82rem;
+    font-size: 0.78rem;
     color: #9aabbb;
     font-weight: 600;
 }
 
 .multiTag {
     display: inline-block;
-    padding: 0.15rem 0.5rem;
+    padding: 0.1rem 0.4rem;
     border-radius: 6px;
     background: rgba(74, 173, 168, 0.1);
     color: var(--teal);
-    font-size: 0.72rem;
+    font-size: 0.68rem;
     font-weight: 800;
-    margin-left: 0.5rem;
+    margin-left: 0.4rem;
 }
 
-/* ── Voting ── */
+.closedTag {
+    display: inline-block;
+    padding: 0.1rem 0.4rem;
+    border-radius: 6px;
+    background: rgba(232, 137, 106, 0.1);
+    color: #E8896A;
+    font-size: 0.68rem;
+    font-weight: 800;
+    margin-left: 0.4rem;
+}
+
+/* ── WhatsApp-style inline voting ── */
 .voting {
-    padding: 1.5rem 2rem 2rem;
+    padding: 1rem 1.5rem 1.2rem;
 }
 
-.nameInput {
-    margin-bottom: 1.5rem;
-}
-
-.nameInput label {
-    display: block;
-    font-size: 0.82rem;
-    font-weight: 800;
-    color: var(--navy);
-    margin-bottom: 0.4rem;
-}
-
-.nameInput input {
-    width: 100%;
-    padding: 0.7rem 1rem;
-    border: 2px solid var(--border);
-    border-radius: 12px;
-    font-size: 0.9rem;
-    font-weight: 600;
-    font-family: inherit;
-    transition: border-color 0.2s;
-    outline: none;
-    box-sizing: border-box;
-}
-
-.nameInput input:focus {
-    border-color: var(--teal);
-}
-
-.optionsList {
-    display: flex;
-    flex-direction: column;
-    gap: 0.6rem;
-    margin-bottom: 1.5rem;
-}
-
-.optionBtn {
+/* Tappable option buttons (before voting) */
+.optionTap {
     display: flex;
     align-items: center;
-    gap: 0.8rem;
-    padding: 0.9rem 1.2rem;
+    justify-content: space-between;
+    width: 100%;
+    padding: 0.85rem 1rem;
+    margin-bottom: 0.5rem;
     border: 2px solid var(--border);
     border-radius: 14px;
     background: #fafbfc;
     cursor: pointer;
-    font-size: 0.92rem;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.optionTap:hover:not(:disabled) {
+    border-color: var(--teal);
+    background: rgba(74, 173, 168, 0.03);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(74, 173, 168, 0.1);
+}
+
+.optionTap:active:not(:disabled) {
+    transform: scale(0.98);
+}
+
+.optionTap:disabled {
+    opacity: 0.6;
+    cursor: wait;
+}
+
+.optionTapText {
+    font-size: 0.9rem;
     font-weight: 700;
     color: var(--navy);
-    transition: all 0.2s;
-    font-family: inherit;
-    text-align: left;
 }
 
-.optionBtn:hover {
-    border-color: var(--teal);
-    background: rgba(74, 173, 168, 0.04);
-    transform: translateY(-1px);
-}
-
-.optionSelected {
-    border-color: var(--teal) !important;
-    background: rgba(74, 173, 168, 0.08) !important;
-    box-shadow: 0 2px 12px rgba(74, 173, 168, 0.15);
-}
-
-.optionCheck {
-    width: 26px;
-    height: 26px;
-    border-radius: 50%;
-    border: 2px solid var(--border);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 0.8rem;
-    font-weight: 900;
-    color: white;
-    flex-shrink: 0;
-    transition: all 0.2s;
-}
-
-.optionSelected .optionCheck {
-    background: var(--teal);
-    border-color: var(--teal);
-}
-
-.voteBtn {
-    width: 100%;
-    padding: 0.9rem;
-    border-radius: 14px;
-    background: linear-gradient(135deg, var(--teal), var(--green));
-    color: white;
-    font-size: 1rem;
-    font-weight: 800;
-    font-family: 'Fredoka One', cursive;
-    cursor: pointer;
-    border: none;
-    transition: all 0.3s;
-    letter-spacing: 0.02em;
-}
-
-.voteBtn:hover:not(:disabled) {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 20px rgba(74, 173, 168, 0.3);
-}
-
-.voteBtn:disabled {
-    opacity: 0.5;
-    cursor: not-allowed;
-}
-
-/* ── Results ── */
-.results {
-    padding: 1.5rem 2rem 2rem;
-}
-
-.resultsLabel {
-    font-family: 'Fredoka One', cursive;
-    font-size: 1rem;
-    color: var(--navy);
-    margin: 0 0 1.2rem;
-    text-align: center;
-}
-
-.resultRow {
-    margin-bottom: 1.2rem;
-    padding: 0.8rem 1rem;
-    border-radius: 12px;
-    background: #fafbfc;
-    border: 1px solid var(--border);
-    transition: all 0.3s;
-}
-
-.winner {
-    background: linear-gradient(135deg, rgba(247, 201, 72, 0.08), rgba(232, 137, 106, 0.06));
-    border-color: rgba(247, 201, 72, 0.3);
-}
-
-.resultInfo {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    margin-bottom: 0.5rem;
-}
-
-.resultText {
-    font-weight: 800;
-    color: var(--navy);
-    font-size: 0.9rem;
-}
-
-.resultCount {
-    font-size: 0.78rem;
+.optionTapCount {
+    font-size: 0.72rem;
     font-weight: 700;
     color: #9aabbb;
+    background: rgba(0, 0, 0, 0.04);
+    padding: 0.15rem 0.5rem;
+    border-radius: 10px;
 }
 
-.resultBarBg {
-    height: 8px;
-    border-radius: 4px;
-    background: var(--border);
+/* Result option (after voting) */
+.optionResult {
+    position: relative;
+    padding: 0.7rem 1rem;
+    margin-bottom: 0.5rem;
+    border-radius: 12px;
+    border: 1.5px solid var(--border);
     overflow: hidden;
+    transition: all 0.3s;
 }
 
-.resultBarFill {
-    height: 100%;
-    border-radius: 4px;
+.optionLeader {
+    border-color: rgba(247, 201, 72, 0.4);
+}
+
+.optionMyVote {
+    border-color: rgba(74, 173, 168, 0.4);
+}
+
+.optionResultBar {
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    border-radius: 12px;
     transition: width 0.6s ease;
 }
 
-.voterList {
+.optionResultContent {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.15rem;
+}
+
+.optionResultText {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: var(--navy);
+}
+
+.optionResultPct {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--navy);
+    min-width: 35px;
+    text-align: right;
+}
+
+.optionResultMeta {
+    position: relative;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: #9aabbb;
+}
+
+.voterChips {
     display: flex;
     flex-wrap: wrap;
-    gap: 0.3rem;
-    margin-top: 0.5rem;
+    gap: 0.2rem;
 }
 
 .voterChip {
     display: inline-block;
-    padding: 0.15rem 0.5rem;
-    border-radius: 6px;
+    padding: 0.08rem 0.35rem;
+    border-radius: 4px;
     background: rgba(74, 173, 168, 0.08);
     color: var(--teal);
-    font-size: 0.7rem;
+    font-size: 0.65rem;
     font-weight: 700;
 }
 
+.votedFooter {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding-top: 0.8rem;
+    margin-top: 0.3rem;
+    border-top: 1px solid var(--border);
+    font-size: 0.78rem;
+    color: '#9aabbb';
+    font-weight: 600;
+}
+
 .refreshBtn {
-    display: block;
-    margin: 1.5rem auto 0;
-    padding: 0.6rem 1.5rem;
-    border-radius: 10px;
+    padding: 0.35rem 0.8rem;
+    border-radius: 8px;
     background: transparent;
-    border: 2px solid var(--border);
-    font-size: 0.82rem;
+    border: 1.5px solid var(--border);
+    font-size: 0.75rem;
     font-weight: 700;
     color: var(--navy);
     cursor: pointer;
@@ -271,9 +230,83 @@
     color: var(--teal);
 }
 
+/* ── Name prompt overlay ── */
+.nameOverlay {
+    position: absolute;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.45);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 20px;
+    z-index: 10;
+    padding: 1rem;
+}
+
+.nameModal {
+    background: white;
+    border-radius: 16px;
+    padding: 1.5rem;
+    text-align: center;
+    max-width: 300px;
+    width: 100%;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15);
+}
+
+.nameModalInput {
+    width: 100%;
+    padding: 0.65rem 0.8rem;
+    border: 2px solid var(--border);
+    border-radius: 10px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: inherit;
+    outline: none;
+    margin-bottom: 0.8rem;
+    box-sizing: border-box;
+    text-align: center;
+    transition: border-color 0.2s;
+}
+
+.nameModalInput:focus {
+    border-color: var(--teal);
+}
+
+.nameModalCancel {
+    flex: 1;
+    padding: 0.55rem;
+    border-radius: 10px;
+    border: 1.5px solid var(--border);
+    background: transparent;
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #9aabbb;
+    cursor: pointer;
+    font-family: inherit;
+}
+
+.nameModalSubmit {
+    flex: 1;
+    padding: 0.55rem;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, var(--teal), var(--green));
+    font-weight: 800;
+    font-size: 0.85rem;
+    color: white;
+    cursor: pointer;
+    font-family: 'Fredoka One', cursive;
+}
+
+.nameModalSubmit:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
 /* ── Footer ── */
 .pollFooter {
-    padding: 1rem 2rem;
+    padding: 0.8rem 1.5rem;
     text-align: center;
     border-top: 1px solid var(--border);
     background: #fafbfc;
@@ -282,7 +315,7 @@
 .pollFooter a {
     color: #9aabbb;
     text-decoration: none;
-    font-size: 0.78rem;
+    font-size: 0.75rem;
     font-weight: 700;
     transition: color 0.2s;
 }
@@ -291,8 +324,8 @@
     color: var(--teal);
 }
 
-/* ── Mobile ── */
-@media (max-width: 600px) {
+/* ── Responsive ── */
+@media (max-width: 520px) {
     .pollPage {
         padding: 1rem 0.5rem;
         align-items: flex-start;
@@ -304,13 +337,12 @@
     }
 
     .pollHeader,
-    .voting,
-    .results {
+    .voting {
         padding-left: 1.2rem;
         padding-right: 1.2rem;
     }
 
     .pollQuestion {
-        font-size: 1.2rem;
+        font-size: 1.1rem;
     }
 }

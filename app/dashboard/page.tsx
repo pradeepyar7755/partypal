@@ -2040,6 +2040,7 @@ export default function Dashboard() {
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 function PollList({ eventId, polls, setPolls }: { eventId?: string; polls: any[]; setPolls: (p: any[]) => void }) {
     const [loading, setLoading] = useState(true)
+    const [deletingId, setDeletingId] = useState<string | null>(null)
 
     const fetchPolls = useCallback(async () => {
         if (!eventId) { setLoading(false); return }
@@ -2052,6 +2053,26 @@ function PollList({ eventId, polls, setPolls }: { eventId?: string; polls: any[]
     }, [eventId, setPolls])
 
     useEffect(() => { fetchPolls() }, [fetchPolls])
+
+    // Auto-refresh every 30s
+    useEffect(() => {
+        if (!eventId) return
+        const iv = setInterval(fetchPolls, 30000)
+        return () => clearInterval(iv)
+    }, [eventId, fetchPolls])
+
+    const deletePoll = async (pollId: string) => {
+        if (!confirm('Delete this poll? All votes will be lost.')) return
+        setDeletingId(pollId)
+        try {
+            await fetch(`/api/polls?id=${pollId}`, { method: 'DELETE' })
+            setPolls(polls.filter(p => p.id !== pollId))
+            showToast('Poll deleted', 'success')
+        } catch {
+            showToast('Failed to delete', 'error')
+        }
+        setDeletingId(null)
+    }
 
     if (loading) {
         return <div style={{ textAlign: 'center', padding: '2rem' }}>
@@ -2080,71 +2101,111 @@ function PollList({ eventId, polls, setPolls }: { eventId?: string; polls: any[]
                 const maxVotes = Math.max(...poll.options.map((o: { votes: number }) => o.votes), 1)
                 const sortedOptions = [...poll.options].sort((a: { votes: number }, b: { votes: number }) => b.votes - a.votes)
                 return (
-                    <div key={poll.id} className="card" style={{ padding: '1.5rem' }}>
+                    <div key={poll.id} className="card" style={{ padding: '1.2rem 1.5rem', opacity: deletingId === poll.id ? 0.4 : 1, transition: 'opacity 0.3s' }}>
+                        {/* Poll Header */}
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
-                            <div>
-                                <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1rem', color: 'var(--navy)', margin: '0 0 0.2rem' }}>
+                            <div style={{ flex: 1 }}>
+                                <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.05rem', color: 'var(--navy)', margin: '0 0 0.25rem' }}>
                                     {poll.question}
                                 </h3>
-                                <div style={{ fontSize: '0.75rem', color: '#9aabbb', fontWeight: 600 }}>
-                                    {poll.totalVotes} {poll.totalVotes === 1 ? 'vote' : 'votes'} · by {poll.creatorName}
-                                    {poll.allowMultiple && <span style={{ marginLeft: 6, color: 'var(--teal)' }}>· Multi-select</span>}
+                                <div style={{ fontSize: '0.75rem', color: '#9aabbb', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                    <span>{poll.totalVotes} {poll.totalVotes === 1 ? 'vote' : 'votes'}</span>
+                                    <span style={{ color: '#ddd' }}>·</span>
+                                    <span>by {poll.creatorName}</span>
+                                    {poll.allowMultiple && (
+                                        <span style={{ padding: '0.08rem 0.35rem', borderRadius: 4, background: 'rgba(74,173,168,0.08)', color: 'var(--teal)', fontSize: '0.68rem', fontWeight: 800 }}>Multi</span>
+                                    )}
+                                    {poll.closed && (
+                                        <span style={{ padding: '0.08rem 0.35rem', borderRadius: 4, background: 'rgba(232,137,106,0.08)', color: '#E8896A', fontSize: '0.68rem', fontWeight: 800 }}>Closed</span>
+                                    )}
                                 </div>
                             </div>
-                            <button
-                                onClick={() => {
-                                    navigator.clipboard.writeText(`${window.location.origin}/poll/${poll.id}`)
-                                    showToast('Poll link copied!', 'success')
-                                }}
-                                style={{
-                                    padding: '0.3rem 0.6rem', borderRadius: 6,
-                                    background: 'rgba(74,173,168,0.08)', border: '1px solid rgba(74,173,168,0.2)',
-                                    color: 'var(--teal)', fontWeight: 700, fontSize: '0.72rem',
-                                    cursor: 'pointer',
-                                }}
-                            >🔗 Share</button>
+                            <div style={{ display: 'flex', gap: '0.3rem', flexShrink: 0 }}>
+                                <button
+                                    onClick={() => {
+                                        navigator.clipboard.writeText(`${window.location.origin}/poll/${poll.id}`)
+                                        showToast('Poll link copied!', 'success')
+                                    }}
+                                    style={{
+                                        padding: '0.3rem 0.55rem', borderRadius: 6,
+                                        background: 'rgba(74,173,168,0.06)', border: '1px solid rgba(74,173,168,0.15)',
+                                        color: 'var(--teal)', fontWeight: 700, fontSize: '0.7rem',
+                                        cursor: 'pointer',
+                                    }}
+                                >🔗</button>
+                                <button
+                                    onClick={() => deletePoll(poll.id)}
+                                    style={{
+                                        padding: '0.3rem 0.55rem', borderRadius: 6,
+                                        background: 'rgba(232,137,106,0.06)', border: '1px solid rgba(232,137,106,0.15)',
+                                        color: '#E8896A', fontWeight: 700, fontSize: '0.7rem',
+                                        cursor: 'pointer',
+                                    }}
+                                >🗑</button>
+                            </div>
                         </div>
+
+                        {/* WhatsApp-style result bars */}
                         {sortedOptions.map((opt: { id: string; text: string; votes: number; voters: string[] }, i: number) => {
                             const pct = poll.totalVotes > 0 ? Math.round((opt.votes / poll.totalVotes) * 100) : 0
                             const isLeader = i === 0 && opt.votes > 0
+                            const barWidth = poll.totalVotes > 0 ? Math.max(2, (opt.votes / maxVotes) * 100) : 0
                             return (
-                                <div key={opt.id} style={{ marginBottom: '0.6rem' }}>
-                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: 700, marginBottom: '0.2rem' }}>
-                                        <span style={{ color: 'var(--navy)' }}>
+                                <div key={opt.id} style={{
+                                    position: 'relative', marginBottom: '0.5rem', padding: '0.55rem 0.8rem',
+                                    borderRadius: 10, border: `1.5px solid ${isLeader ? 'rgba(247,201,72,0.3)' : 'var(--border)'}`,
+                                    overflow: 'hidden',
+                                }}>
+                                    {/* Background bar */}
+                                    <div style={{
+                                        position: 'absolute', top: 0, left: 0, bottom: 0, borderRadius: 10,
+                                        width: `${barWidth}%`, transition: 'width 0.5s ease',
+                                        background: isLeader
+                                            ? 'linear-gradient(90deg, rgba(247,201,72,0.12), rgba(232,137,106,0.08))'
+                                            : 'rgba(74,173,168,0.06)',
+                                    }} />
+                                    {/* Content */}
+                                    <div style={{ position: 'relative', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                                        <span style={{ fontSize: '0.82rem', fontWeight: 700, color: 'var(--navy)' }}>
                                             {isLeader && '👑 '}{opt.text}
                                         </span>
-                                        <span style={{ color: '#9aabbb' }}>{opt.votes} · {pct}%</span>
+                                        <span style={{ fontSize: '0.78rem', fontWeight: 800, color: isLeader ? '#E8896A' : 'var(--teal)', minWidth: 35, textAlign: 'right' }}>
+                                            {pct}%
+                                        </span>
                                     </div>
-                                    <div style={{ height: 6, borderRadius: 3, background: 'var(--border)', overflow: 'hidden' }}>
-                                        <div style={{
-                                            height: '100%', borderRadius: 3, transition: 'width 0.4s ease',
-                                            width: `${Math.max(2, (opt.votes / maxVotes) * 100)}%`,
-                                            background: isLeader ? 'linear-gradient(90deg, #F7C948, #E8896A)' : 'linear-gradient(90deg, #4AADA8, #3D8C6E)',
-                                        }} />
-                                    </div>
+                                    {/* Voter chips */}
                                     {opt.voters.length > 0 && (
-                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.2rem', marginTop: '0.3rem' }}>
-                                            {opt.voters.map((v: string, vi: number) => (
+                                        <div style={{ position: 'relative', display: 'flex', flexWrap: 'wrap', gap: '0.15rem', marginTop: '0.25rem' }}>
+                                            {opt.voters.slice(0, 10).map((v: string, vi: number) => (
                                                 <span key={vi} style={{
-                                                    padding: '0.1rem 0.4rem', borderRadius: 4,
+                                                    padding: '0.05rem 0.3rem', borderRadius: 4,
                                                     background: 'rgba(74,173,168,0.06)', color: 'var(--teal)',
-                                                    fontSize: '0.68rem', fontWeight: 700,
+                                                    fontSize: '0.62rem', fontWeight: 700,
                                                 }}>{v}</span>
                                             ))}
+                                            {opt.voters.length > 10 && (
+                                                <span style={{ fontSize: '0.62rem', fontWeight: 700, color: '#9aabbb' }}>+{opt.voters.length - 10}</span>
+                                            )}
                                         </div>
                                     )}
                                 </div>
                             )
                         })}
-                        <button
-                            onClick={fetchPolls}
-                            style={{
-                                marginTop: '0.5rem', padding: '0.3rem 0.8rem', borderRadius: 6,
-                                background: 'transparent', border: '1px solid var(--border)',
-                                color: '#9aabbb', fontWeight: 700, fontSize: '0.72rem',
-                                cursor: 'pointer', fontFamily: 'inherit',
-                            }}
-                        >🔄 Refresh</button>
+
+                        {/* Footer actions */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '0.5rem', paddingTop: '0.5rem', borderTop: '1px solid var(--border)' }}>
+                            <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 600 }}>
+                                Created {new Date(poll.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                            </span>
+                            <button
+                                onClick={fetchPolls}
+                                style={{
+                                    padding: '0.25rem 0.6rem', borderRadius: 6, background: 'transparent',
+                                    border: '1px solid var(--border)', color: '#9aabbb', fontWeight: 700,
+                                    fontSize: '0.68rem', cursor: 'pointer', fontFamily: 'inherit',
+                                }}
+                            >🔄 Refresh</button>
+                        </div>
                     </div>
                 )
             })}

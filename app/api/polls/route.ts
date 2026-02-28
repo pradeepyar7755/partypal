@@ -44,14 +44,26 @@ export async function POST(req: NextRequest) {
     }
 }
 
-// ── GET a poll (or list polls for an event) ───────────
+// ── GET a poll (or list polls for an event, or stats) ─
 export async function GET(req: NextRequest) {
     try {
         const { searchParams } = new URL(req.url)
         const pollId = searchParams.get('id')
         const eventId = searchParams.get('eventId')
+        const stats = searchParams.get('stats')
 
         const db = getDb()
+
+        // Admin stats mode
+        if (stats === 'true') {
+            const snap = await db.collection('polls').get()
+            const allPolls = snap.docs.map(d => d.data())
+            const totalPolls = allPolls.length
+            const totalVotes = allPolls.reduce((sum, p) => sum + (p.totalVotes || 0), 0)
+            const activePolls = allPolls.filter(p => !p.closed).length
+            const eventsWithPolls = new Set(allPolls.map(p => p.eventId).filter(Boolean)).size
+            return NextResponse.json({ totalPolls, totalVotes, activePolls, eventsWithPolls })
+        }
 
         if (pollId) {
             const doc = await db.collection('polls').doc(pollId).get()
@@ -69,6 +81,26 @@ export async function GET(req: NextRequest) {
         }
 
         return NextResponse.json({ error: 'Provide id or eventId' }, { status: 400 })
+    } catch (error) {
+        const msg = error instanceof Error ? error.message : String(error)
+        return NextResponse.json({ error: msg }, { status: 500 })
+    }
+}
+
+// ── DELETE a poll ─────────────────────────────────────
+export async function DELETE(req: NextRequest) {
+    try {
+        const { searchParams } = new URL(req.url)
+        const pollId = searchParams.get('id')
+        if (!pollId) return NextResponse.json({ error: 'Missing poll id' }, { status: 400 })
+
+        const db = getDb()
+        const ref = db.collection('polls').doc(pollId)
+        const doc = await ref.get()
+        if (!doc.exists) return NextResponse.json({ error: 'Poll not found' }, { status: 404 })
+
+        await ref.delete()
+        return NextResponse.json({ deleted: true })
     } catch (error) {
         const msg = error instanceof Error ? error.message : String(error)
         return NextResponse.json({ error: msg }, { status: 500 })

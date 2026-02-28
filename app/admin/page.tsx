@@ -105,6 +105,7 @@ export default function AdminDashboard() {
     const [error, setError] = useState('')
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [usageData, setUsageData] = useState<any>(null)
+    const [pollStats, setPollStats] = useState<{ totalPolls: number; totalVotes: number; activePolls: number; eventsWithPolls: number } | null>(null)
 
     const isAdmin = user && ADMIN_EMAILS.includes(user.email || '')
 
@@ -145,6 +146,18 @@ export default function AdminDashboard() {
             })()
         }
     }, [authLoading, isAdmin, user])
+
+    // Fetch poll stats
+    useEffect(() => {
+        if (!authLoading && isAdmin) {
+            (async () => {
+                try {
+                    const res = await fetch('/api/polls?stats=true')
+                    if (res.ok) setPollStats(await res.json())
+                } catch { /* silent */ }
+            })()
+        }
+    }, [authLoading, isAdmin])
 
     // Not logged in or not admin
     if (authLoading) {
@@ -652,6 +665,44 @@ export default function AdminDashboard() {
                                                 </div>
                                             </div>
                                         ))}
+                                    </div>
+                                )}
+                            </>
+                        )}
+
+                        {/* ══ POLL STATS ══ */}
+                        {pollStats && (
+                            <>
+                                <div className={styles.sectionHeader} style={{ marginTop: '1.5rem' }}>
+                                    <span className={styles.sectionEmoji}>🗳️</span>
+                                    <span className={styles.sectionTitle}>Polls & Engagement</span>
+                                </div>
+                                <div className={styles.kpiGrid}>
+                                    <KPICard label="Total Polls" value={pollStats.totalPolls} icon="🗳️" />
+                                    <KPICard label="Total Votes" value={pollStats.totalVotes} icon="✋" color="#4AADA8" />
+                                    <KPICard label="Active Polls" value={pollStats.activePolls} icon="📊" color="#F7C948" />
+                                    <KPICard label="Events w/ Polls" value={pollStats.eventsWithPolls} icon="🎉" color="#7B5EA7" />
+                                </div>
+                                {pollStats.totalPolls > 0 && (
+                                    <div className={styles.chartCard}>
+                                        <div className={styles.chartTitle}>Poll Engagement</div>
+                                        <div style={{ display: 'flex', gap: '1rem', flexWrap: 'wrap', padding: '0.5rem 0' }}>
+                                            <MetricBox
+                                                emoji="📈"
+                                                label="Avg Votes/Poll"
+                                                value={pollStats.totalPolls > 0 ? (pollStats.totalVotes / pollStats.totalPolls).toFixed(1) : '0'}
+                                            />
+                                            <MetricBox
+                                                emoji="🎯"
+                                                label="Poll Adoption"
+                                                value={`${pollStats.eventsWithPolls} events`}
+                                            />
+                                            <MetricBox
+                                                emoji="🟢"
+                                                label="Active Rate"
+                                                value={pollStats.totalPolls > 0 ? `${Math.round((pollStats.activePolls / pollStats.totalPolls) * 100)}%` : '0%'}
+                                            />
+                                        </div>
                                     </div>
                                 )}
                             </>
