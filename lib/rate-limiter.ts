@@ -7,12 +7,11 @@
 import { getDb } from '@/lib/firebase'
 
 // ── Configuration ─────────────────────────────────────
-// Gemini 2.5 Flash limits for your plan tier:
+// Gemini 2.5 Flash — Paid Tier 1 limits:
 export const PLAN_CONFIG = {
-    // Free tier limits (update these if you upgrade to a paid plan)
-    dailyRequestBudget: 250,      // Total RPD across all users
-    requestsPerMinute: 10,        // RPM limit
-    tokensPerMinute: 250_000,     // TPM limit
+    dailyRequestBudget: 1500,     // Paid Tier 1: 1,500 RPD
+    requestsPerMinute: 300,       // Paid Tier 1: 300 RPM
+    tokensPerMinute: 1_000_000,   // Paid Tier 1: 1M TPM
 
     // Cost estimates per endpoint (for the admin dashboard)
     costPerPlan: 0.01,            // ~2K input + ~2K output tokens
@@ -21,14 +20,16 @@ export const PLAN_CONFIG = {
     costPerGuestAction: 0.003,
     costPerVendorSearch: 0.01,    // ~20 vendor summaries
 
-    // Scaling thresholds
+    // Scaling thresholds — per-user daily AI call limits
+    // Each "call" = 1 user action (generate plan, search vendors, write invite, etc.)
+    // A typical active planning session uses ~15-25 calls
     thresholds: [
-        { maxUsers: 10, dailyLimitPerUser: 50, label: 'Early Stage', action: 'No limits needed' },
-        { maxUsers: 25, dailyLimitPerUser: 30, label: 'Growing', action: 'Soft limits active' },
-        { maxUsers: 50, dailyLimitPerUser: 15, label: 'Rate Limiting', action: 'Enforce per-user limits' },
-        { maxUsers: 100, dailyLimitPerUser: 8, label: 'Upgrade Required', action: 'Upgrade to paid plan or enforce strict limits' },
-        { maxUsers: 250, dailyLimitPerUser: 5, label: 'Paid Plan Active', action: 'Paid plan limits apply' },
-        { maxUsers: 1000, dailyLimitPerUser: 3, label: 'Scale Plan', action: 'Enterprise limits apply' },
+        { maxUsers: 25, dailyLimitPerUser: 100, label: 'Early Stage', action: 'No limits enforced — tracking only', userExperience: 'Unlimited feel — users can plan freely' },
+        { maxUsers: 50, dailyLimitPerUser: 50, label: 'Growing', action: 'Generous limits active', userExperience: '~3 full planning sessions per day' },
+        { maxUsers: 100, dailyLimitPerUser: 25, label: 'Active', action: 'Standard limits enforced', userExperience: '1-2 full planning sessions per day' },
+        { maxUsers: 250, dailyLimitPerUser: 15, label: 'Scaling', action: 'Moderate limits — monitor closely', userExperience: '1 solid planning session per day' },
+        { maxUsers: 500, dailyLimitPerUser: 10, label: 'High Volume', action: 'Consider Tier 2 upgrade ($250 cumulative)', userExperience: 'Core actions only — may need to resume tomorrow' },
+        { maxUsers: 1000, dailyLimitPerUser: 8, label: 'Tier 2 Required', action: 'Upgrade to Tier 2 (10K RPD)', userExperience: 'Limited — essential actions only' },
     ],
 }
 
