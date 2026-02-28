@@ -1,11 +1,22 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 import { assembleContext, hasContext } from '@/lib/ai-context-server'
+import { checkRateLimit } from '@/lib/rate-limiter'
 
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_MAPS_API_KEY || '')
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit check
+    const identifier = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'anonymous'
+    const rateCheck = await checkRateLimit(identifier, 'moodboard')
+    if (!rateCheck.allowed) {
+      return NextResponse.json({
+        error: `Daily AI limit reached (${rateCheck.limit} requests/day). Try again tomorrow.`,
+        rateLimit: rateCheck,
+      }, { status: 429 })
+    }
+
     const body = await req.json()
     const { theme, eventType, budget } = body
 

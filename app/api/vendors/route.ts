@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { assembleContext, hasContext } from '@/lib/ai-context-server'
+import { checkRateLimit } from '@/lib/rate-limiter'
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || ''
 const genAI = new GoogleGenerativeAI(GOOGLE_MAPS_API_KEY)
@@ -8,6 +9,7 @@ const genAI = new GoogleGenerativeAI(GOOGLE_MAPS_API_KEY)
 // Category → search query + relevant Google place types for post-search filtering
 const CATEGORY_MAP: Record<string, { query: string; types?: string[]; relevantTypes: string[] }> = {
   'Venue': { query: 'best event venue banquet hall party venue', relevantTypes: ['event_venue', 'banquet_hall', 'wedding_venue', 'community_center', 'convention_center', 'meeting_room', 'cultural_center'] },
+
   'Decor': { query: 'party decorator event decorations florist flower shop balloon artist floral arrangements', relevantTypes: ['florist', 'flower_shop', 'home_goods_store', 'furniture_store', 'interior_designer', 'art_studio', 'store', 'gift_shop', 'garden_center', 'shopping_mall', 'general_contractor', 'home_improvement_store', 'wholesaler'] },
   'Baker': { query: 'best bakery custom cakes birthday cakes celebration cakes', types: ['bakery'], relevantTypes: ['bakery', 'cake_shop', 'dessert_shop', 'pastry_shop'] },
   'Food': { query: 'best catering restaurant food service party catering', relevantTypes: ['restaurant', 'meal_delivery', 'meal_takeaway', 'food_court', 'catering_service', 'caterer'] },
@@ -81,6 +83,17 @@ async function summarizeReviews(vendorName: string, category: string, reviews: A
 
 export async function POST(req: NextRequest) {
   try {
+    // Rate limit check
+    const identifier = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'anonymous'
+    const rateCheck = await checkRateLimit(identifier, 'vendors')
+    if (!rateCheck.allowed) {
+      return NextResponse.json({
+        error: `Daily AI limit reached (${rateCheck.limit} requests/day). Try again tomorrow.`,
+        vendors: [],
+        rateLimit: rateCheck,
+      }, { status: 429 })
+    }
+
     const body = await req.json()
     const { category, location, cuisine } = body
 

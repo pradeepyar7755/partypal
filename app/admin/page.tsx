@@ -103,6 +103,8 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true)
     const [days, setDays] = useState(30)
     const [error, setError] = useState('')
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [usageData, setUsageData] = useState<any>(null)
 
     const isAdmin = user && ADMIN_EMAILS.includes(user.email || '')
 
@@ -130,6 +132,19 @@ export default function AdminDashboard() {
     useEffect(() => {
         if (!authLoading && isAdmin) fetchData()
     }, [authLoading, isAdmin, fetchData])
+
+    // Fetch usage/rate limit data
+    useEffect(() => {
+        if (!authLoading && isAdmin && user) {
+            (async () => {
+                try {
+                    const token = await user.getIdToken()
+                    const res = await fetch('/api/admin/usage', { headers: { Authorization: `Bearer ${token}` } })
+                    if (res.ok) setUsageData(await res.json())
+                } catch { /* silent */ }
+            })()
+        }
+    }, [authLoading, isAdmin, user])
 
     // Not logged in or not admin
     if (authLoading) {
@@ -501,6 +516,146 @@ export default function AdminDashboard() {
                                 </div>
                             )}
                         </div>
+
+                        {/* ══ AI USAGE & RATE LIMITS ══ */}
+                        {usageData && (
+                            <>
+                                <div className={styles.sectionHeader}>
+                                    <span className={styles.sectionEmoji}>⚡</span>
+                                    <span className={styles.sectionTitle}>AI Usage & Rate Limits</span>
+                                    <span className={styles.sectionSub}>Gemini 2.5 Flash</span>
+                                </div>
+
+                                {/* Today’s usage KPIs */}
+                                <div className={styles.kpiGrid}>
+                                    <KPICard
+                                        label="Today's AI Calls"
+                                        value={usageData.today.totalCalls}
+                                        icon="🤖"
+                                        color={usageData.today.budgetUsedPercent > 80 ? '#E8896A' : '#4AADA8'}
+                                        subtitle={`${usageData.today.budgetRemaining} remaining`}
+                                    />
+                                    <KPICard
+                                        label="Current Tier"
+                                        value={usageData.tier.label}
+                                        icon="🎯"
+                                        color="#F7C948"
+                                        subtitle={`${usageData.tier.dailyLimitPerUser} calls/user/day`}
+                                    />
+                                    <KPICard
+                                        label="Budget Used"
+                                        value={`${usageData.today.budgetUsedPercent}%`}
+                                        icon="📊"
+                                        color={usageData.today.budgetUsedPercent > 60 ? '#E8896A' : '#3D8C6E'}
+                                        subtitle={`of ${usageData.config.dailyRequestBudget} daily RPD`}
+                                    />
+                                    <KPICard
+                                        label="Active Today"
+                                        value={usageData.today.activeUsers}
+                                        icon="👥"
+                                        subtitle={`of ${usageData.registeredUsers} registered`}
+                                    />
+                                </div>
+
+                                {/* 7-Day Usage Chart */}
+                                <div className={styles.chartCard}>
+                                    <div className={styles.chartHeader}>AI Calls — Last 7 Days</div>
+                                    <div className={styles.barChart}>
+                                        {usageData.last7Days.map((d: { date: string; calls: number }, i: number) => {
+                                            const maxCalls = Math.max(...usageData.last7Days.map((x: { calls: number }) => x.calls), 1)
+                                            return (
+                                                <div key={i} className={styles.barCol}>
+                                                    <div className={styles.barValue}>{d.calls}</div>
+                                                    <div
+                                                        className={styles.bar}
+                                                        style={{
+                                                            height: `${Math.max(4, (d.calls / maxCalls) * 100)}%`,
+                                                            background: d.calls > usageData.config.dailyRequestBudget * 0.8
+                                                                ? '#E8896A'
+                                                                : 'linear-gradient(to top, #4AADA8, #3D8C6E)',
+                                                        }}
+                                                    />
+                                                    <div className={styles.barLabel}>
+                                                        {new Date(d.date + 'T12:00:00').toLocaleDateString('en', { weekday: 'short' })}
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                </div>
+
+                                {/* Tier Progression Table */}
+                                <div className={styles.feedCard}>
+                                    <div style={{ padding: '0.8rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                                        <div style={{ fontWeight: 800, color: 'white', fontSize: '0.88rem' }}>🚦 Scaling Thresholds</div>
+                                        <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.72rem', marginTop: 2 }}>Per-user limits decrease as user base grows</div>
+                                    </div>
+                                    {usageData.config.thresholds.map((t: { maxUsers: number; dailyLimitPerUser: number; label: string; action: string }, i: number) => {
+                                        const isActive = usageData.tier.label === t.label
+                                        const isPast = usageData.registeredUsers > t.maxUsers
+                                        return (
+                                            <div key={i} className={styles.feedItem} style={{
+                                                opacity: isPast ? 0.4 : 1,
+                                                background: isActive ? 'rgba(74,173,168,0.08)' : 'transparent',
+                                                borderLeft: isActive ? '3px solid #4AADA8' : '3px solid transparent',
+                                            }}>
+                                                <div className={styles.feedDot} style={{ background: isActive ? '#4AADA8' : isPast ? '#555' : '#F7C948' }} />
+                                                <div className={styles.feedContent}>
+                                                    <div className={styles.feedEvent}>
+                                                        {isActive && '✅ '}
+                                                        <strong>≤{t.maxUsers} users</strong>
+                                                        <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 8 }}>
+                                                            {t.dailyLimitPerUser} calls/user/day · {t.label}
+                                                        </span>
+                                                    </div>
+                                                    <div className={styles.feedTime}>
+                                                        {t.action}
+                                                        {isActive && (
+                                                            <span style={{ marginLeft: 8, color: '#4AADA8', fontWeight: 700 }}>
+                                                                Headroom: {usageData.tier.headroom} calls/day
+                                                            </span>
+                                                        )}
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        )
+                                    })}
+                                </div>
+
+                                {/* Top API Consumers */}
+                                {usageData.topUsers.length > 0 && (
+                                    <div className={styles.feedCard}>
+                                        <div style={{ padding: '0.8rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                                            <div style={{ fontWeight: 800, color: 'white', fontSize: '0.88rem' }}>🔥 Top API Consumers Today</div>
+                                        </div>
+                                        {usageData.topUsers.map((u: { uid: string; count: number }, i: number) => (
+                                            <div key={i} className={styles.feedItem}>
+                                                <div className={styles.feedDot} style={{ background: DONUT_COLORS[i] || '#555' }} />
+                                                <div className={styles.feedContent}>
+                                                    <div className={styles.feedEvent}>
+                                                        {u.uid.slice(0, 12)}...
+                                                        <span style={{ color: 'rgba(255,255,255,0.4)', marginLeft: 8 }}>
+                                                            {u.count} calls ({Math.round(u.count / usageData.tier.dailyLimitPerUser * 100)}% of limit)
+                                                        </span>
+                                                    </div>
+                                                    <div style={{
+                                                        height: 4, borderRadius: 2, marginTop: 4,
+                                                        background: 'rgba(255,255,255,0.06)',
+                                                        width: '100%', maxWidth: 200,
+                                                    }}>
+                                                        <div style={{
+                                                            height: '100%', borderRadius: 2,
+                                                            width: `${Math.min(100, u.count / usageData.tier.dailyLimitPerUser * 100)}%`,
+                                                            background: u.count / usageData.tier.dailyLimitPerUser > 0.8 ? '#E8896A' : '#4AADA8',
+                                                        }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </>
+                        )}
                     </>
                 ) : null}
             </div>
