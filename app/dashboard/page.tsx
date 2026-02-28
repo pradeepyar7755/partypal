@@ -110,6 +110,9 @@ export default function Dashboard() {
     const ALL_VENDOR_CATS = ['Venue', 'Decor', 'Baker', 'Food', 'Photos', 'Music', 'Drinks', 'Entertain']
     const [enabledCats, setEnabledCats] = useState<string[]>(ALL_VENDOR_CATS)
     const [newCheckItem, setNewCheckItem] = useState('')
+    const [newCheckCategory, setNewCheckCategory] = useState('')
+    const [dragTaskIdx, setDragTaskIdx] = useState<number | null>(null)
+    const [moveMenuIdx, setMoveMenuIdx] = useState<number | null>(null)
     const [guestSearch, setGuestSearch] = useState('')
     const [guestFilter, setGuestFilter] = useState<'all' | 'invited' | 'confirmed' | 'declined'>('all')
     const [showAddGuest, setShowAddGuest] = useState(false)
@@ -378,9 +381,10 @@ export default function Dashboard() {
         })
     }
 
-    const addCheckItem = () => {
+    const addCheckItem = (targetCategory?: string) => {
         if (!newCheckItem.trim()) return
-        const newItem: ChecklistItem = { item: newCheckItem.trim(), category: 'Custom', done: false }
+        const cat = targetCategory || newCheckCategory || 'Custom'
+        const newItem: ChecklistItem = { item: newCheckItem.trim(), category: cat, done: false }
         const updated = [...checklist, newItem]
         setChecklist(updated)
         const stored = userGet('partyplan')
@@ -390,7 +394,21 @@ export default function Dashboard() {
             userSetJSON('partyplan', d)
         }
         setNewCheckItem('')
-        showToast('Item added ✓', 'success')
+        setNewCheckCategory('')
+        showToast('Task added ✓', 'success')
+    }
+
+    const moveTaskToCategory = (taskIdx: number, newCategory: string) => {
+        const updated = checklist.map((c, i) => i === taskIdx ? { ...c, category: newCategory } : c)
+        setChecklist(updated)
+        const stored = userGet('partyplan')
+        if (stored) {
+            const d = JSON.parse(stored)
+            d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done, completedAt: c.completedAt }))
+            userSetJSON('partyplan', d)
+        }
+        setMoveMenuIdx(null)
+        showToast('Task moved ✓', 'success')
     }
 
     const removeCheckItem = (i: number, e: React.MouseEvent) => {
@@ -1390,16 +1408,93 @@ export default function Dashboard() {
                                                                 })()}
                                                                 {/* Inline checklist tasks */}
                                                                 {!tasksCollapsed && taskMapping[i]?.length > 0 && (
-                                                                    <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '0.4rem' }}>
+                                                                    <div
+                                                                        style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '0.4rem' }}
+                                                                        onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderLeft = '3px solid var(--teal)' }}
+                                                                        onDragLeave={e => { e.currentTarget.style.borderLeft = 'none' }}
+                                                                        onDrop={e => {
+                                                                            e.preventDefault()
+                                                                            e.currentTarget.style.borderLeft = 'none'
+                                                                            if (dragTaskIdx !== null) {
+                                                                                // Move task category to match this timeline item for keyword matching
+                                                                                const keywords = `${t.task} ${t.category}`.split(/[\s_,/]+/).filter(w => w.length > 2).slice(0, 2).join(' ')
+                                                                                moveTaskToCategory(dragTaskIdx, keywords || t.task.split(' ')[0])
+                                                                                setDragTaskIdx(null)
+                                                                            }
+                                                                        }}
+                                                                    >
                                                                         {taskMapping[i].map(ci => {
                                                                             const c = checklist[ci]
                                                                             if (!c) return null
                                                                             return (
-                                                                                <div key={ci} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.2rem 0', cursor: 'pointer' }} onClick={() => toggleCheck(ci)}>
-                                                                                    <div style={{ width: 16, height: 16, borderRadius: 4, border: c.done ? '2px solid #3D8C6E' : '2px solid #ccc', background: c.done ? '#3D8C6E' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: '#fff', flexShrink: 0, transition: 'all 0.2s' }}>{c.done ? '✓' : ''}</div>
-                                                                                    <span style={{ fontSize: '0.75rem', fontWeight: 600, color: c.done ? '#9aabbb' : 'var(--navy)', textDecoration: c.done ? 'line-through' : 'none', flex: 1 }}>{c.item}</span>
+                                                                                <div
+                                                                                    key={ci}
+                                                                                    draggable
+                                                                                    onDragStart={() => setDragTaskIdx(ci)}
+                                                                                    onDragEnd={() => setDragTaskIdx(null)}
+                                                                                    style={{
+                                                                                        display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0',
+                                                                                        opacity: dragTaskIdx === ci ? 0.3 : 1, transition: 'opacity 0.2s',
+                                                                                        position: 'relative',
+                                                                                    }}
+                                                                                >
+                                                                                    {/* Drag handle */}
+                                                                                    <span style={{ cursor: 'grab', fontSize: '0.7rem', color: '#ccc', userSelect: 'none', flexShrink: 0 }} title="Drag to move">⠿</span>
+                                                                                    {/* Checkbox */}
+                                                                                    <div
+                                                                                        onClick={() => toggleCheck(ci)}
+                                                                                        style={{ width: 16, height: 16, borderRadius: 4, border: c.done ? '2px solid #3D8C6E' : '2px solid #ccc', background: c.done ? '#3D8C6E' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: '#fff', flexShrink: 0, transition: 'all 0.2s', cursor: 'pointer' }}
+                                                                                    >{c.done ? '✓' : ''}</div>
+                                                                                    {/* Task text */}
+                                                                                    <span onClick={() => toggleCheck(ci)} style={{ fontSize: '0.75rem', fontWeight: 600, color: c.done ? '#9aabbb' : 'var(--navy)', textDecoration: c.done ? 'line-through' : 'none', flex: 1, cursor: 'pointer' }}>{c.item}</span>
                                                                                     {c.completedAt && <span style={{ fontSize: '0.55rem', color: '#3D8C6E', fontWeight: 700, whiteSpace: 'nowrap' }}>{new Date(c.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                                                                                    {/* Move button */}
+                                                                                    <button
+                                                                                        onClick={e => { e.stopPropagation(); setMoveMenuIdx(moveMenuIdx === ci ? null : ci) }}
+                                                                                        style={{ background: 'none', border: 'none', color: moveMenuIdx === ci ? 'var(--teal)' : '#ddd', cursor: 'pointer', fontSize: '0.65rem', padding: '0.1rem', flexShrink: 0, transition: 'color 0.2s' }}
+                                                                                        onMouseEnter={e => { if (moveMenuIdx !== ci) e.currentTarget.style.color = '#9aabbb' }}
+                                                                                        onMouseLeave={e => { if (moveMenuIdx !== ci) e.currentTarget.style.color = '#ddd' }}
+                                                                                        title="Move to..."
+                                                                                    >↕</button>
+                                                                                    {/* Delete button */}
                                                                                     <button onClick={(e) => removeCheckItem(ci, e)} style={{ background: 'none', border: 'none', color: '#ddd', cursor: 'pointer', fontSize: '0.6rem', padding: '0.1rem', flexShrink: 0 }} onMouseEnter={e => (e.currentTarget.style.color = '#E8896A')} onMouseLeave={e => (e.currentTarget.style.color = '#ddd')}>✕</button>
+                                                                                    {/* Move menu dropdown */}
+                                                                                    {moveMenuIdx === ci && (
+                                                                                        <div style={{
+                                                                                            position: 'absolute', right: 0, top: '100%', zIndex: 100,
+                                                                                            background: 'white', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.12)',
+                                                                                            border: '1px solid var(--border)', padding: '0.3rem', minWidth: 180, maxHeight: 200, overflowY: 'auto',
+                                                                                        }}>
+                                                                                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', padding: '0.2rem 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Move to...</div>
+                                                                                            {(isEditing ? editTimeline : data.plan.timeline).map((tl, tli) => (
+                                                                                                <button key={tli} onClick={() => {
+                                                                                                    const keywords = `${tl.task} ${tl.category}`.split(/[\s_,/]+/).filter(w => w.length > 2).slice(0, 2).join(' ')
+                                                                                                    moveTaskToCategory(ci, keywords || tl.task.split(' ')[0])
+                                                                                                }} style={{
+                                                                                                    display: 'block', width: '100%', textAlign: 'left', padding: '0.4rem 0.5rem',
+                                                                                                    borderRadius: 6, border: 'none', background: tli === i ? 'rgba(74,173,168,0.08)' : 'transparent',
+                                                                                                    cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, color: 'var(--navy)',
+                                                                                                    fontFamily: 'inherit', transition: 'background 0.15s',
+                                                                                                }}
+                                                                                                    onMouseEnter={e => e.currentTarget.style.background = 'rgba(74,173,168,0.06)'}
+                                                                                                    onMouseLeave={e => e.currentTarget.style.background = tli === i ? 'rgba(74,173,168,0.08)' : 'transparent'}
+                                                                                                >
+                                                                                                    {tli === i && '✓ '}{tl.task.length > 30 ? tl.task.slice(0, 30) + '...' : tl.task}
+                                                                                                </button>
+                                                                                            ))}
+                                                                                            <button onClick={() => moveTaskToCategory(ci, 'Custom')} style={{
+                                                                                                display: 'block', width: '100%', textAlign: 'left', padding: '0.4rem 0.5rem',
+                                                                                                borderRadius: 6, border: 'none', background: 'transparent',
+                                                                                                cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, color: '#9aabbb',
+                                                                                                fontFamily: 'inherit', borderTop: '1px solid var(--border)', marginTop: '0.2rem',
+                                                                                            }}
+                                                                                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(0,0,0,0.02)'}
+                                                                                                onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                                                                            >
+                                                                                                📋 General Tasks
+                                                                                            </button>
+                                                                                        </div>
+                                                                                    )}
                                                                                 </div>
                                                                             )
                                                                         })}
@@ -1414,26 +1509,84 @@ export default function Dashboard() {
                                     </div>
                                     {/* Unassigned tasks at end of timeline */}
                                     {!tasksCollapsed && unassignedTasks.length > 0 && (
-                                        <div style={{ padding: '0.6rem 1rem', borderTop: '1px dashed rgba(0,0,0,0.08)' }}>
+                                        <div
+                                            style={{ padding: '0.6rem 1rem', borderTop: '1px dashed rgba(0,0,0,0.08)' }}
+                                            onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderLeft = '3px solid #9aabbb' }}
+                                            onDragLeave={e => { e.currentTarget.style.borderLeft = 'none' }}
+                                            onDrop={e => {
+                                                e.preventDefault()
+                                                e.currentTarget.style.borderLeft = 'none'
+                                                if (dragTaskIdx !== null) {
+                                                    moveTaskToCategory(dragTaskIdx, 'Custom')
+                                                    setDragTaskIdx(null)
+                                                }
+                                            }}
+                                        >
                                             <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.3rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>General Tasks</div>
                                             {unassignedTasks.map(ci => {
                                                 const c = checklist[ci]
                                                 if (!c) return null
                                                 return (
-                                                    <div key={ci} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.2rem 0', cursor: 'pointer' }} onClick={() => toggleCheck(ci)}>
-                                                        <div style={{ width: 16, height: 16, borderRadius: 4, border: c.done ? '2px solid #3D8C6E' : '2px solid #ccc', background: c.done ? '#3D8C6E' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: '#fff', flexShrink: 0, transition: 'all 0.2s' }}>{c.done ? '✓' : ''}</div>
-                                                        <span style={{ fontSize: '0.75rem', fontWeight: 600, color: c.done ? '#9aabbb' : 'var(--navy)', textDecoration: c.done ? 'line-through' : 'none', flex: 1 }}>{c.item}</span>
+                                                    <div
+                                                        key={ci}
+                                                        draggable
+                                                        onDragStart={() => setDragTaskIdx(ci)}
+                                                        onDragEnd={() => setDragTaskIdx(null)}
+                                                        style={{
+                                                            display: 'flex', alignItems: 'center', gap: '0.3rem', padding: '0.2rem 0',
+                                                            opacity: dragTaskIdx === ci ? 0.3 : 1, position: 'relative',
+                                                        }}
+                                                    >
+                                                        <span style={{ cursor: 'grab', fontSize: '0.7rem', color: '#ccc', userSelect: 'none', flexShrink: 0 }}>⠿</span>
+                                                        <div onClick={() => toggleCheck(ci)} style={{ width: 16, height: 16, borderRadius: 4, border: c.done ? '2px solid #3D8C6E' : '2px solid #ccc', background: c.done ? '#3D8C6E' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: '#fff', flexShrink: 0, transition: 'all 0.2s', cursor: 'pointer' }}>{c.done ? '✓' : ''}</div>
+                                                        <span onClick={() => toggleCheck(ci)} style={{ fontSize: '0.75rem', fontWeight: 600, color: c.done ? '#9aabbb' : 'var(--navy)', textDecoration: c.done ? 'line-through' : 'none', flex: 1, cursor: 'pointer' }}>{c.item}</span>
                                                         {c.completedAt && <span style={{ fontSize: '0.55rem', color: '#3D8C6E', fontWeight: 700, whiteSpace: 'nowrap' }}>{new Date(c.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                                                        <button onClick={e => { e.stopPropagation(); setMoveMenuIdx(moveMenuIdx === ci ? null : ci) }} style={{ background: 'none', border: 'none', color: moveMenuIdx === ci ? 'var(--teal)' : '#ddd', cursor: 'pointer', fontSize: '0.65rem', padding: '0.1rem', flexShrink: 0 }} title="Move to...">↕</button>
                                                         <button onClick={(e) => removeCheckItem(ci, e)} style={{ background: 'none', border: 'none', color: '#ddd', cursor: 'pointer', fontSize: '0.6rem', padding: '0.1rem', flexShrink: 0 }} onMouseEnter={e => (e.currentTarget.style.color = '#E8896A')} onMouseLeave={e => (e.currentTarget.style.color = '#ddd')}>✕</button>
+                                                        {moveMenuIdx === ci && (
+                                                            <div style={{ position: 'absolute', right: 0, top: '100%', zIndex: 100, background: 'white', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.12)', border: '1px solid var(--border)', padding: '0.3rem', minWidth: 180, maxHeight: 200, overflowY: 'auto' }}>
+                                                                <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', padding: '0.2rem 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Move to...</div>
+                                                                {data.plan.timeline.map((tl, tli) => (
+                                                                    <button key={tli} onClick={() => {
+                                                                        const keywords = `${tl.task} ${tl.category}`.split(/[\s_,/]+/).filter(w => w.length > 2).slice(0, 2).join(' ')
+                                                                        moveTaskToCategory(ci, keywords || tl.task.split(' ')[0])
+                                                                    }} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.4rem 0.5rem', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, color: 'var(--navy)', fontFamily: 'inherit' }}
+                                                                        onMouseEnter={e => e.currentTarget.style.background = 'rgba(74,173,168,0.06)'}
+                                                                        onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+                                                                    >{tl.task.length > 30 ? tl.task.slice(0, 30) + '...' : tl.task}</button>
+                                                                ))}
+                                                            </div>
+                                                        )}
                                                     </div>
                                                 )
                                             })}
                                         </div>
                                     )}
-                                    {/* Add task inline */}
-                                    <div style={{ display: 'flex', gap: '0.3rem', padding: '0.5rem 1rem', borderTop: '1px solid rgba(0,0,0,0.04)' }}>
-                                        <input value={newCheckItem} onChange={e => setNewCheckItem(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCheckItem()} placeholder="+ Add a task..." style={{ flex: 1, padding: '0.3rem 0.5rem', borderRadius: 6, border: '1.5px solid rgba(0,0,0,0.08)', fontSize: '0.75rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
-                                        <button onClick={addCheckItem} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 6, padding: '0.3rem 0.6rem', fontWeight: 800, fontSize: '0.7rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>Add</button>
+                                    {/* Add task with deliverable selector */}
+                                    <div style={{ padding: '0.5rem 1rem', borderTop: '1px solid rgba(0,0,0,0.04)' }}>
+                                        <div style={{ display: 'flex', gap: '0.3rem', marginBottom: newCheckItem.trim() ? '0.4rem' : 0 }}>
+                                            <input value={newCheckItem} onChange={e => setNewCheckItem(e.target.value)} onKeyDown={e => e.key === 'Enter' && addCheckItem()} placeholder="+ Add a task..." style={{ flex: 1, padding: '0.3rem 0.5rem', borderRadius: 6, border: '1.5px solid rgba(0,0,0,0.08)', fontSize: '0.75rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
+                                            <button onClick={() => addCheckItem()} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 6, padding: '0.3rem 0.6rem', fontWeight: 800, fontSize: '0.7rem', cursor: 'pointer', whiteSpace: 'nowrap' }}>Add</button>
+                                        </div>
+                                        {newCheckItem.trim() && (
+                                            <select
+                                                value={newCheckCategory}
+                                                onChange={e => setNewCheckCategory(e.target.value)}
+                                                style={{
+                                                    width: '100%', padding: '0.3rem 0.5rem', borderRadius: 6,
+                                                    border: '1.5px solid rgba(0,0,0,0.08)', fontSize: '0.72rem',
+                                                    fontWeight: 600, color: newCheckCategory ? 'var(--navy)' : '#9aabbb',
+                                                    outline: 'none', background: 'white', fontFamily: 'inherit',
+                                                }}
+                                            >
+                                                <option value="">📋 Add to: General Tasks</option>
+                                                {data.plan.timeline.map((tl, tli) => (
+                                                    <option key={tli} value={`${tl.task} ${tl.category}`.split(/[\s_,/]+/).filter(w => w.length > 2).slice(0, 2).join(' ') || tl.task.split(' ')[0]}>
+                                                        📌 {tl.task.length > 35 ? tl.task.slice(0, 35) + '...' : tl.task}
+                                                    </option>
+                                                ))}
+                                            </select>
+                                        )}
                                     </div>
                                 </div>
 
