@@ -760,21 +760,64 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
             </div >
 
             {/* RSVP Preview Modal */}
-            {
-                showPreview && (
-                    <div onClick={() => setShowPreview(false)} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
-                        <div onClick={e => e.stopPropagation()} style={{ position: 'relative', width: 400, maxWidth: '95vw', height: '85vh', maxHeight: 750, background: '#1a2535', borderRadius: 28, boxShadow: '0 20px 60px rgba(0,0,0,0.5)', overflow: 'hidden', border: '3px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}>
-                            {/* Modal header */}
-                            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 1rem', background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
-                                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'rgba(255,255,255,0.5)' }}>📱 RSVP Preview</span>
-                                <button onClick={() => setShowPreview(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff', fontSize: '0.8rem', fontWeight: 800 }}>✕</button>
+            {showPreview && (
+                <div onClick={() => setShowPreview(false)} style={{ position: 'fixed', inset: 0, zIndex: 9999, background: 'rgba(0,0,0,0.6)', backdropFilter: 'blur(6px)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem' }}>
+                    <div onClick={e => e.stopPropagation()} style={{ position: 'relative', width: 400, maxWidth: '95vw', height: '85vh', maxHeight: 750, background: '#1a2535', borderRadius: 28, boxShadow: '0 20px 60px rgba(0,0,0,0.5)', overflow: 'hidden', border: '3px solid rgba(255,255,255,0.1)', display: 'flex', flexDirection: 'column' }}>
+                        {/* Modal header */}
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0.6rem 1rem', background: 'rgba(255,255,255,0.05)', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+                            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: 'rgba(255,255,255,0.5)' }}>📱 RSVP Preview {hasUnpublishedChanges ? '(Unpublished)' : ''}</span>
+                            <button onClick={() => setShowPreview(false)} style={{ background: 'rgba(255,255,255,0.1)', border: 'none', borderRadius: 8, width: 28, height: 28, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', color: '#fff', fontSize: '0.8rem', fontWeight: 800 }}>✕</button>
+                        </div>
+                        {/* Inline preview */}
+                        <div style={{ flex: 1, overflow: 'auto', background: '#f0f2f5', padding: '1rem' }}>
+                            <div style={{ maxWidth: 360, margin: '0 auto', background: '#fff', borderRadius: 16, overflow: 'hidden', boxShadow: '0 4px 20px rgba(0,0,0,0.08)' }}>
+                                {/* Header */}
+                                <div style={{ padding: '1.5rem', textAlign: 'center' as const, background: invite?.coverPhoto ? `url(${invite.coverPhoto}) center/cover` : 'linear-gradient(135deg, #1a2535 0%, #2a3a4f 100%)', position: 'relative' as const }}>
+                                    {invite?.coverPhoto && <div style={{ position: 'absolute', inset: 0, background: 'rgba(26,37,53,0.65)' }} />}
+                                    <div style={{ position: 'relative', zIndex: 1 }}>
+                                        <div style={{ fontSize: '2rem', marginBottom: '0.3rem' }}>{planData.eventType?.split(' ')[0] || '🎉'}</div>
+                                        <h2 style={{ fontFamily: "'Fredoka One',cursive", color: '#fff', margin: '0 0 0.5rem', fontSize: '1.1rem' }}>{planData.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</h2>
+                                        {planData.date && <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.8rem', margin: '0 0 0.2rem', fontWeight: 600 }}>📅 {new Date(planData.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
+                                        <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.8rem', margin: 0, fontWeight: 600 }}>📍 {planData.location || 'Location TBD'}</p>
+                                        {rsvpByDate && <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.75rem', margin: '0.3rem 0 0', fontWeight: 600 }}>⏰ RSVP by {new Date(rsvpByDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
+                                    </div>
+                                </div>
+                                {/* Invite body */}
+                                {invite?.customImage ? (
+                                    <div style={{ padding: '0.5rem' }}>
+                                        <img src={invite.customImage} alt="Custom invite" style={{ width: '100%', borderRadius: 8, display: 'block' }} />
+                                    </div>
+                                ) : invite?.message ? (
+                                    <div style={{ padding: '1rem 1.2rem', background: 'rgba(247,201,72,0.08)', borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
+                                        {invite.subject && <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.85rem', color: '#1a2535', marginBottom: '0.5rem' }}>{invite.subject}</div>}
+                                        {invite.message.split('\n').map((line, i) => (
+                                            <p key={i} style={{ fontSize: '0.8rem', color: '#4a5568', lineHeight: 1.6, fontWeight: 500, margin: line.trim() ? '0 0 0.4rem 0' : '0 0 0.2rem 0' }}>{line || '\u00A0'}</p>
+                                        ))}
+                                    </div>
+                                ) : (
+                                    <div style={{ padding: '2rem 1.2rem', textAlign: 'center' as const, color: '#9aabbb', fontSize: '0.8rem', fontWeight: 600 }}>
+                                        No invite content yet — generate or type one above
+                                    </div>
+                                )}
+                                {/* Mock RSVP form */}
+                                <div style={{ padding: '1rem 1.2rem' }}>
+                                    <div style={{ background: '#f7f8fa', borderRadius: 10, padding: '0.8rem', marginBottom: '0.5rem' }}>
+                                        <div style={{ fontSize: '0.7rem', fontWeight: 800, color: '#9aabbb', marginBottom: '0.3rem' }}>Your Name *</div>
+                                        <div style={{ background: '#fff', border: '1.5px solid #e2e6ea', borderRadius: 8, padding: '0.4rem 0.6rem', fontSize: '0.75rem', color: '#ccc' }}>Full name</div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.4rem', justifyContent: 'center', marginBottom: '0.5rem' }}>
+                                        {['🎉 Going', '🤔 Maybe', '😢 Can\'t'].map(opt => (
+                                            <div key={opt} style={{ padding: '0.4rem 0.7rem', borderRadius: 10, border: '1.5px solid #e2e6ea', fontSize: '0.7rem', fontWeight: 700, color: '#9aabbb' }}>{opt}</div>
+                                        ))}
+                                    </div>
+                                    <div style={{ background: 'var(--teal)', color: '#fff', borderRadius: 10, padding: '0.5rem', textAlign: 'center' as const, fontSize: '0.78rem', fontWeight: 800, opacity: 0.6 }}>Send My RSVP 🎊</div>
+                                </div>
+                                <div style={{ textAlign: 'center' as const, padding: '0.5rem', fontSize: '0.65rem', color: '#ccc', fontWeight: 600 }}>Powered by 🎊 PartyPal</div>
                             </div>
-                            {/* iframe */}
-                            <iframe src={getRSVPLink()} style={{ flex: 1, width: '100%', border: 'none', background: '#fff' }} title="RSVP Preview" />
                         </div>
                     </div>
-                )
-            }
+                </div>
+            )}
         </>
     )
 }
