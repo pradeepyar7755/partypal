@@ -384,7 +384,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
 
                 {/* Invite card or generate prompt */}
                 {!invite && (
-                    <div className="card" style={{ padding: '0.8rem 1.2rem', marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
+                    <div className="card" style={{ padding: '0.8rem 1.2rem', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                         <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)' }}>✉️ Invitation</h3>
                         <button className={styles.actionBtn} onClick={generateInvite} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
                         <button className={styles.secondaryBtn} onClick={() => setShowPreview(true)} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>👁️ Preview</button>
@@ -400,6 +400,11 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                         </div>
                     </div>
                 )}
+                {/* RSVP by — always visible */}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.4rem 1.2rem', marginBottom: '1rem' }}>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb' }}>📅 RSVP by</span>
+                    <input type="date" value={rsvpByDate} onChange={e => setRsvpByDate(e.target.value)} className={styles.addInput} style={{ margin: 0, padding: '0.2rem 0.4rem', fontSize: '0.72rem', width: 130 }} />
+                </div>
                 {invite && (
                     <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
                         <div style={{ display: 'flex', alignItems: 'center', marginBottom: inviteCollapsed ? 0 : '0.8rem', cursor: 'pointer', gap: '0.4rem', flexWrap: 'wrap' }} onClick={() => setInviteCollapsed(c => !c)}>
@@ -420,25 +425,10 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                 <input ref={coverPhotoRef} type="file" accept="image/*" onChange={handleCoverPhotoUpload} style={{ display: 'none' }} />
                                 <button onClick={() => customInviteRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>🖼️ Invite</button>
                                 <button onClick={() => coverPhotoRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>📸 Cover</button>
-                                {bookmarks.map((bm, idx) => (
-                                    <div key={idx} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.15rem' }}>
-                                        {editingBookmarkIdx === idx ? (
-                                            <input value={bm.name} onChange={e => setBookmarks(prev => prev.map((b, i) => i === idx ? { ...b, name: e.target.value } : b))} onBlur={() => setEditingBookmarkIdx(null)} onKeyDown={e => { if (e.key === 'Enter') setEditingBookmarkIdx(null) }} autoFocus className={styles.addInput} style={{ margin: 0, padding: '0.15rem 0.3rem', fontSize: '0.65rem', width: 60, fontWeight: 700 }} />
-                                        ) : (
-                                            <button className={styles.secondaryBtn} onClick={() => { setInvite(bm.invite); showToast(`Loaded "${bm.name}"`, 'success') }} onDoubleClick={() => setEditingBookmarkIdx(idx)} title="Click to load, double-click to rename" style={{ fontSize: '0.65rem', padding: '0.2rem 0.4rem' }}>⭐ {bm.name}</button>
-                                        )}
-                                        <button onClick={() => setBookmarks(prev => prev.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', fontSize: '0.6rem', padding: '0.05rem' }} title="Remove">✕</button>
-                                    </div>
-                                ))}
                                 {!inviteCollapsed && <button onClick={() => setIsEditingInvite(!isEditingInvite)} style={{ background: 'none', border: '1px solid var(--teal)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.68rem', fontWeight: 700, color: 'var(--teal)', cursor: 'pointer' }}>
                                     {isEditingInvite ? '✕ Cancel' : '✏️ Edit'}
                                 </button>}
                             </div>
-                        </div>
-                        {/* RSVP by — always visible */}
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: inviteCollapsed ? 0 : '0.8rem', paddingTop: '0.4rem' }}>
-                            <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb' }}>📅 RSVP by</span>
-                            <input type="date" value={rsvpByDate} onChange={e => setRsvpByDate(e.target.value)} className={styles.addInput} style={{ margin: 0, padding: '0.2rem 0.4rem', fontSize: '0.72rem', width: 130 }} />
                         </div>
                         {!inviteCollapsed && (<>
                             {isEditingInvite ? (
@@ -514,6 +504,16 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                 <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.5rem', alignItems: 'center', flexWrap: 'wrap' }}>
                                     <button onClick={() => { setInvite(null); setIsPublished(false); setLastPublishedInvite(''); if (planData.eventId) fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: null }) }).catch(() => { }) }} style={{ background: 'none', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.25rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Clear Invite</button>
                                     <button disabled={bookmarks.length >= 3} onClick={() => { if (invite && bookmarks.length < 3) { setBookmarks(prev => [...prev, { name: `Saved ${prev.length + 1}`, invite: { ...invite } }]); showToast('Invite bookmarked!', 'success') } }} style={{ background: 'none', border: '1px solid var(--yellow)', borderRadius: 6, padding: '0.25rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: 'var(--yellow)', cursor: bookmarks.length >= 3 ? 'not-allowed' : 'pointer', opacity: bookmarks.length >= 3 ? 0.4 : 1 }}>⭐ Bookmark{bookmarks.length >= 3 ? ' (3/3)' : ` (${bookmarks.length}/3)`}</button>
+                                    {bookmarks.map((bm, idx) => (
+                                        <div key={idx} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.15rem' }}>
+                                            {editingBookmarkIdx === idx ? (
+                                                <input value={bm.name} onChange={e => setBookmarks(prev => prev.map((b, i) => i === idx ? { ...b, name: e.target.value } : b))} onBlur={() => setEditingBookmarkIdx(null)} onKeyDown={e => { if (e.key === 'Enter') setEditingBookmarkIdx(null) }} autoFocus className={styles.addInput} style={{ margin: 0, padding: '0.15rem 0.3rem', fontSize: '0.65rem', width: 60, fontWeight: 700 }} />
+                                            ) : (
+                                                <button className={styles.secondaryBtn} onClick={() => { setInvite(bm.invite); showToast(`Loaded "${bm.name}"`, 'success') }} onDoubleClick={() => setEditingBookmarkIdx(idx)} title="Click to load, double-click to rename" style={{ fontSize: '0.65rem', padding: '0.2rem 0.4rem' }}>⭐ {bm.name}</button>
+                                            )}
+                                            <button onClick={() => setBookmarks(prev => prev.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', fontSize: '0.6rem', padding: '0.05rem' }} title="Remove">✕</button>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         </>)}
