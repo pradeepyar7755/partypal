@@ -162,7 +162,7 @@ function VendorsContent() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           category: cat === 'All Vendors' ? 'Mixed party vendors' : cat,
-          location: (() => { const l = params.get('location') || planData.location || ''; return l && l !== 'TBD' ? l : detectedLocation || 'Atlanta, GA' })(),
+          location: (() => { const l = detectedLocation || params.get('location') || planData.location || ''; return l && l !== 'TBD' ? l : 'Atlanta, GA' })(),
           theme: planData.theme || '', budget: planData.budget || '', guests: planData.guests || '30',
         }),
       })
@@ -207,7 +207,7 @@ function VendorsContent() {
     return b.matchScore - a.matchScore
   })
 
-  const location = (() => { const l = params.get('location') || planData.location || ''; return l && l !== 'TBD' ? l : detectedLocation || 'Atlanta, GA' })()
+  const location = (() => { const l = detectedLocation || params.get('location') || planData.location || ''; return l && l !== 'TBD' ? l : 'Atlanta, GA' })()
 
   return (
     <main className="page-enter">

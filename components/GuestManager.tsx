@@ -415,7 +415,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                 </button>}
                             </div>
                         </div>
-                        {!inviteCollapsed && (<>
+                        {!inviteCollapsed && (<div style={{ paddingTop: '0.8rem' }}>
                             {isEditingInvite ? (
                                 <>
                                     <input value={invite.subject || ''} onChange={e => setInvite(prev => prev ? { ...prev, subject: e.target.value } : prev)} className={styles.addInput} style={{ width: '100%', marginBottom: '0.4rem', fontWeight: 700 }} placeholder="Subject line" />
@@ -501,7 +501,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                     ))}
                                 </div>
                             </div>
-                        </>)}
+                        </div>)}
                     </div>
                 )}
                 {/* RSVP by + Upload — always visible below invitation */}
