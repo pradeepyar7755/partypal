@@ -70,7 +70,8 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const [isEditingInvite, setIsEditingInvite] = useState(false)
     const [inviteCollapsed, setInviteCollapsed] = useState(false)
     const [showPreview, setShowPreview] = useState(false)
-    const [isDraft, setIsDraft] = useState(false)
+    const [isPublished, setIsPublished] = useState(false)
+    const [lastPublishedInvite, setLastPublishedInvite] = useState<string>('')
     const themeChangeRef = React.useRef(false)
     const customInviteRef = React.useRef<HTMLInputElement>(null)
     const coverPhotoRef = React.useRef<HTMLInputElement>(null)
@@ -116,16 +117,20 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     // Persist invite to localStorage whenever it changes
     useEffect(() => {
         userSetJSON(inviteKey, invite)
-        // Auto-sync to Firestore ONLY if NOT in draft mode
-        if (planData.eventId && !isDraft) {
-            const invitePayload = invite ? {
-                ...invite,
-                customImage: invite.customImage || null,
-                coverPhoto: invite.coverPhoto || null,
-            } : null
-            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: invitePayload, rsvpBy: rsvpByDate || null }) }).catch(() => { })
+        // Auto-sync to Firestore only if published and content hasn't changed since publish
+        // (We no longer auto-sync — user must explicitly Publish)
+    }, [invite, inviteKey])
+
+    // Sync rsvpByDate to Firestore independently (always ok to sync)
+    useEffect(() => {
+        if (planData.eventId && rsvpByDate) {
+            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, rsvpBy: rsvpByDate }) }).catch(() => { })
         }
-    }, [invite, inviteKey, planData.eventId, rsvpByDate, isDraft])
+    }, [rsvpByDate, planData.eventId])
+
+    // Detect if invite has changed since last publish
+    const inviteFingerprint = invite ? JSON.stringify({ s: invite.subject, m: invite.message, sm: invite.smsVersion, ci: invite.customImage, cp: invite.coverPhoto }) : ''
+    const hasUnpublishedChanges = invite && (!isPublished || inviteFingerprint !== lastPublishedInvite)
 
     useEffect(() => { userSetJSON(bookmarkKey, bookmarks) }, [bookmarks, bookmarkKey])
 
@@ -314,15 +319,12 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
             // Snapshot current invite as a frozen version (including images)
             const vId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
             try {
-                // First, sync current invite to Firestore as the live version
-                const invitePayload = { ...invite, customImage: invite.customImage || null, coverPhoto: invite.coverPhoto || null }
-                await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: eid, invite: invitePayload, rsvpBy: rsvpByDate || null, inviteVersion: { id: vId, subject: invite.subject, message: invite.message, smsVersion: invite.smsVersion, customImage: invite.customImage || '', coverPhoto: invite.coverPhoto || '' } }) })
+                await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: eid, inviteVersion: { id: vId, subject: invite.subject, message: invite.message, smsVersion: invite.smsVersion, customImage: invite.customImage || '', coverPhoto: invite.coverPhoto || '' } }) })
             } catch { /* best effort */ }
             const link = getRSVPLink(vId)
             navigator.clipboard.writeText(link)
             setCopied(true); setTimeout(() => setCopied(false), 2000)
-            setIsDraft(true) // Enter draft mode — further edits won't auto-sync
-            showToast('RSVP link copied! Further edits are now a draft.', 'success')
+            showToast('RSVP link copied!', 'success')
         } else {
             navigator.clipboard.writeText(getRSVPLink())
             setCopied(true); setTimeout(() => setCopied(false), 2000)
@@ -330,13 +332,14 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
         }
     }
 
-    const publishDraft = async () => {
+    const publishInvite = async () => {
         if (!invite || !planData.eventId) return
         const invitePayload = { ...invite, customImage: invite.customImage || null, coverPhoto: invite.coverPhoto || null }
         try {
             await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: invitePayload, rsvpBy: rsvpByDate || null }) })
-            setIsDraft(false)
-            showToast('Draft published! Live RSVP page updated.', 'success')
+            setIsPublished(true)
+            setLastPublishedInvite(JSON.stringify({ s: invite.subject, m: invite.message, sm: invite.smsVersion, ci: invite.customImage, cp: invite.coverPhoto }))
+            showToast('Invite published! Live RSVP page updated.', 'success')
         } catch {
             showToast('Failed to publish', 'error')
         }
@@ -385,9 +388,10 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                         <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)' }}>✉️ Invitation</h3>
                         <button className={styles.actionBtn} onClick={generateInvite} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
                         <button className={styles.secondaryBtn} onClick={() => setShowPreview(true)} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>👁️ Preview</button>
-                        <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
-                        {isDraft && <button onClick={publishDraft} style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', background: 'rgba(247,201,72,0.15)', border: '1.5px solid rgba(247,201,72,0.4)', borderRadius: 6, fontWeight: 800, color: '#c4880a', cursor: 'pointer' }}>📤 Publish Draft</button>}
-                        {isDraft && <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#c4880a', background: 'rgba(247,201,72,0.1)', padding: '0.15rem 0.4rem', borderRadius: 4 }}>Draft — edits won’t affect copied links</span>}
+                        {hasUnpublishedChanges
+                            ? <button onClick={publishInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', background: 'rgba(74,173,168,0.12)', border: '1.5px solid rgba(74,173,168,0.4)', borderRadius: 6, fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>📤 Publish</button>
+                            : <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
+                        }
                     </div>
                 )}
                 {invite && (
@@ -400,9 +404,10 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                             <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
                                 <button className={styles.actionBtn} onClick={generateInvite} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
                                 <button className={styles.secondaryBtn} onClick={() => setShowPreview(true)} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>👁️ Preview</button>
-                                <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
-                                {isDraft && <button onClick={publishDraft} style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', background: 'rgba(247,201,72,0.15)', border: '1.5px solid rgba(247,201,72,0.4)', borderRadius: 6, fontWeight: 800, color: '#c4880a', cursor: 'pointer' }}>📤 Publish</button>}
-                                {isDraft && <span style={{ fontSize: '0.58rem', fontWeight: 800, color: '#c4880a', background: 'rgba(247,201,72,0.1)', padding: '0.1rem 0.35rem', borderRadius: 4 }}>Draft</span>}
+                                {hasUnpublishedChanges
+                                    ? <button onClick={publishInvite} style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', background: 'rgba(74,173,168,0.12)', border: '1.5px solid rgba(74,173,168,0.4)', borderRadius: 6, fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>📤 Publish</button>
+                                    : <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
+                                }
                             </div>
                             <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.3rem', alignItems: 'center', flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
                                 {bookmarks.map((bm, idx) => (
@@ -452,13 +457,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                     <p style={{ fontSize: '0.78rem', color: 'var(--navy)', fontWeight: 600, margin: 0 }}>{invite.smsVersion}</p>
                                 </div>
                             )}
-                            {/* RSVP by date */}
-                            <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', flexWrap: 'wrap', paddingTop: '0.6rem', borderTop: '1px solid #eee', alignItems: 'center' }}>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                                    <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb' }}>📅 RSVP by</span>
-                                    <input type="date" value={rsvpByDate} onChange={e => setRsvpByDate(e.target.value)} className={styles.addInput} style={{ margin: 0, padding: '0.2rem 0.4rem', fontSize: '0.72rem', width: 130 }} />
-                                </div>
-                            </div>
                             {/* Upload options */}
                             <div style={{ display: 'flex', gap: '0.5rem', marginTop: '0.6rem', flexWrap: 'wrap', paddingTop: '0.6rem', borderTop: '1px solid #eee' }}>
                                 <input ref={customInviteRef} type="file" accept="image/*" onChange={handleCustomInviteUpload} style={{ display: 'none' }} />
