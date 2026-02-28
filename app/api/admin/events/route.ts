@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
         const d = doc.data()
         return { id: doc.id, uid: d.uid || 'none', eventType: d.eventType, location: d.location }
     })
-    const uniqueUids = [...new Set(events.map(e => e.uid))]
+    const uniqueUids = Array.from(new Set(events.map(e => e.uid)))
     return NextResponse.json({ total: events.length, uniqueUids, events })
 }
 
