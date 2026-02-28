@@ -27,7 +27,11 @@ export default function Nav() {
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
 
+  // Admin email whitelist — must match lib/admin-auth.ts
+  const isAdmin = user?.email === 'admin@partypal.social'
+
   const links = [
+    ...(isAdmin ? [{ href: '/admin', label: 'Analytics' }] : []),
     { href: '/', label: 'Home' },
     { href: '/dashboard', label: 'My Events' },
     { href: '/vendors', label: 'Vendors' },
@@ -53,8 +57,15 @@ export default function Nav() {
       <ul className={mobileOpen ? 'mobile-open' : ''}>
         {links.map(l => (
           <li key={l.href}>
-            <Link href={l.href} style={pathname === l.href ? { color: 'white' } : {}}>
-              {l.label}
+            <Link
+              href={l.href}
+              style={
+                l.href === '/admin'
+                  ? { color: pathname === '/admin' ? '#F7C948' : 'rgba(247,201,72,0.7)', fontWeight: 800 }
+                  : pathname === l.href ? { color: 'white' } : {}
+              }
+            >
+              {l.href === '/admin' ? '📊 ' : ''}{l.label}
             </Link>
           </li>
         ))}
