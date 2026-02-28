@@ -85,7 +85,7 @@ export default function PrivacyPolicy() {
                         <div className={styles.usageCard}>
                             <span className={styles.usageEmoji}>🧠</span>
                             <h4>Personalize AI</h4>
-                            <p>Your local AI preferences make suggestions smarter over time — stored only on your device.</p>
+                            <p>As you use PartyPal, your AI preferences are learned from your interactions within the app — stored only in your browser and never shared.</p>
                         </div>
                         <div className={styles.usageCard}>
                             <span className={styles.usageEmoji}>🔧</span>
@@ -111,8 +111,9 @@ export default function PrivacyPolicy() {
                             <h4>Your AI Context is Private</h4>
                             <p>
                                 AI learning preferences (planning style, budget tendency, tone preference, favorite categories)
-                                are stored <strong>exclusively in your browser&apos;s local storage</strong>. This data never leaves
-                                your device and is never transmitted to our servers.
+                                are built <strong>solely from your interactions within PartyPal</strong> — we never pull data from
+                                other AI tools or external services. These preferences are stored exclusively in your browser&apos;s
+                                local storage and are never transmitted to our servers.
                             </p>
                         </div>
                     </div>
@@ -157,8 +158,8 @@ export default function PrivacyPolicy() {
                         <div className={styles.storageCard}>
                             <h4>💻 Local Storage</h4>
                             <p>
-                                AI preferences and session data are stored in your <strong>browser&apos;s local storage</strong>.
-                                This data stays on your device and is never synced to our servers.
+                                AI preferences — learned only from how you use PartyPal — are stored in your <strong>browser&apos;s
+                                    local storage</strong>. This data stays within your PartyPal session and is never synced to our servers.
                             </p>
                         </div>
                         <div className={styles.storageCard}>
@@ -274,7 +275,7 @@ export default function PrivacyPolicy() {
                             <div className={styles.stepNumber}>3</div>
                             <div>
                                 <h4>AI Context Erased</h4>
-                                <p>Your local AI preferences are cleared from your browser. Since these never left your device, no server-side cleanup is needed.</p>
+                                <p>Your PartyPal AI preferences — learned from your in-app interactions — are cleared from your browser. Since these were never sent to our servers, no server-side cleanup is needed.</p>
                             </div>
                         </div>
                         <div className={styles.deletionStep}>
