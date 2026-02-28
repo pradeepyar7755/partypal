@@ -1,0 +1,316 @@
+.pollPage {
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 2rem 1rem;
+    background: linear-gradient(135deg, #f0f4f8 0%, #e8f0e8 30%, #f8f4e8 60%, #f0e8f0 100%);
+}
+
+.pollCard {
+    background: white;
+    border-radius: 20px;
+    box-shadow: 0 8px 40px rgba(0, 0, 0, 0.08), 0 2px 8px rgba(0, 0, 0, 0.04);
+    max-width: 560px;
+    width: 100%;
+    overflow: hidden;
+}
+
+.pollHeader {
+    padding: 2rem 2rem 1.5rem;
+    text-align: center;
+    border-bottom: 1px solid var(--border);
+}
+
+.pollBadge {
+    display: inline-block;
+    padding: 0.3rem 1rem;
+    border-radius: 20px;
+    background: linear-gradient(135deg, rgba(247, 201, 72, 0.15), rgba(74, 173, 168, 0.1));
+    border: 1px solid rgba(247, 201, 72, 0.3);
+    font-size: 0.78rem;
+    font-weight: 800;
+    color: var(--navy);
+    margin-bottom: 1rem;
+    letter-spacing: 0.02em;
+}
+
+.pollQuestion {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.5rem;
+    color: var(--navy);
+    margin: 0 0 0.6rem;
+    line-height: 1.3;
+}
+
+.pollMeta {
+    font-size: 0.82rem;
+    color: #9aabbb;
+    font-weight: 600;
+}
+
+.multiTag {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    background: rgba(74, 173, 168, 0.1);
+    color: var(--teal);
+    font-size: 0.72rem;
+    font-weight: 800;
+    margin-left: 0.5rem;
+}
+
+/* ── Voting ── */
+.voting {
+    padding: 1.5rem 2rem 2rem;
+}
+
+.nameInput {
+    margin-bottom: 1.5rem;
+}
+
+.nameInput label {
+    display: block;
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: var(--navy);
+    margin-bottom: 0.4rem;
+}
+
+.nameInput input {
+    width: 100%;
+    padding: 0.7rem 1rem;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    font-size: 0.9rem;
+    font-weight: 600;
+    font-family: inherit;
+    transition: border-color 0.2s;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.nameInput input:focus {
+    border-color: var(--teal);
+}
+
+.optionsList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.6rem;
+    margin-bottom: 1.5rem;
+}
+
+.optionBtn {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.9rem 1.2rem;
+    border: 2px solid var(--border);
+    border-radius: 14px;
+    background: #fafbfc;
+    cursor: pointer;
+    font-size: 0.92rem;
+    font-weight: 700;
+    color: var(--navy);
+    transition: all 0.2s;
+    font-family: inherit;
+    text-align: left;
+}
+
+.optionBtn:hover {
+    border-color: var(--teal);
+    background: rgba(74, 173, 168, 0.04);
+    transform: translateY(-1px);
+}
+
+.optionSelected {
+    border-color: var(--teal) !important;
+    background: rgba(74, 173, 168, 0.08) !important;
+    box-shadow: 0 2px 12px rgba(74, 173, 168, 0.15);
+}
+
+.optionCheck {
+    width: 26px;
+    height: 26px;
+    border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.8rem;
+    font-weight: 900;
+    color: white;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.optionSelected .optionCheck {
+    background: var(--teal);
+    border-color: var(--teal);
+}
+
+.voteBtn {
+    width: 100%;
+    padding: 0.9rem;
+    border-radius: 14px;
+    background: linear-gradient(135deg, var(--teal), var(--green));
+    color: white;
+    font-size: 1rem;
+    font-weight: 800;
+    font-family: 'Fredoka One', cursive;
+    cursor: pointer;
+    border: none;
+    transition: all 0.3s;
+    letter-spacing: 0.02em;
+}
+
+.voteBtn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(74, 173, 168, 0.3);
+}
+
+.voteBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* ── Results ── */
+.results {
+    padding: 1.5rem 2rem 2rem;
+}
+
+.resultsLabel {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1rem;
+    color: var(--navy);
+    margin: 0 0 1.2rem;
+    text-align: center;
+}
+
+.resultRow {
+    margin-bottom: 1.2rem;
+    padding: 0.8rem 1rem;
+    border-radius: 12px;
+    background: #fafbfc;
+    border: 1px solid var(--border);
+    transition: all 0.3s;
+}
+
+.winner {
+    background: linear-gradient(135deg, rgba(247, 201, 72, 0.08), rgba(232, 137, 106, 0.06));
+    border-color: rgba(247, 201, 72, 0.3);
+}
+
+.resultInfo {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.5rem;
+}
+
+.resultText {
+    font-weight: 800;
+    color: var(--navy);
+    font-size: 0.9rem;
+}
+
+.resultCount {
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #9aabbb;
+}
+
+.resultBarBg {
+    height: 8px;
+    border-radius: 4px;
+    background: var(--border);
+    overflow: hidden;
+}
+
+.resultBarFill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 0.6s ease;
+}
+
+.voterList {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-top: 0.5rem;
+}
+
+.voterChip {
+    display: inline-block;
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    background: rgba(74, 173, 168, 0.08);
+    color: var(--teal);
+    font-size: 0.7rem;
+    font-weight: 700;
+}
+
+.refreshBtn {
+    display: block;
+    margin: 1.5rem auto 0;
+    padding: 0.6rem 1.5rem;
+    border-radius: 10px;
+    background: transparent;
+    border: 2px solid var(--border);
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: var(--navy);
+    cursor: pointer;
+    font-family: inherit;
+    transition: all 0.2s;
+}
+
+.refreshBtn:hover {
+    border-color: var(--teal);
+    color: var(--teal);
+}
+
+/* ── Footer ── */
+.pollFooter {
+    padding: 1rem 2rem;
+    text-align: center;
+    border-top: 1px solid var(--border);
+    background: #fafbfc;
+}
+
+.pollFooter a {
+    color: #9aabbb;
+    text-decoration: none;
+    font-size: 0.78rem;
+    font-weight: 700;
+    transition: color 0.2s;
+}
+
+.pollFooter a:hover {
+    color: var(--teal);
+}
+
+/* ── Mobile ── */
+@media (max-width: 600px) {
+    .pollPage {
+        padding: 1rem 0.5rem;
+        align-items: flex-start;
+        padding-top: 2rem;
+    }
+
+    .pollCard {
+        border-radius: 16px;
+    }
+
+    .pollHeader,
+    .voting,
+    .results {
+        padding-left: 1.2rem;
+        padding-right: 1.2rem;
+    }
+
+    .pollQuestion {
+        font-size: 1.2rem;
+    }
+}

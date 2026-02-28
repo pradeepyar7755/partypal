@@ -1,5 +1,5 @@
 'use client'
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from './dashboard.module.css'
 import { showToast } from '@/components/Toast'
@@ -8,6 +8,7 @@ import LocationSearch from '@/components/LocationSearch'
 import GuestManager from '@/components/GuestManager'
 import { useAuth } from '@/components/AuthContext'
 import { useAIContext } from '@/lib/useAIContext'
+import CreatePoll from '@/components/CreatePoll'
 
 interface ChecklistItem { item: string; category: string; done: boolean; due?: string; urgent?: boolean; completedAt?: string }
 interface TimelineItem { weeks: string; task: string; category: string; priority: string; emoji?: string; completedAt?: string }
@@ -100,7 +101,7 @@ export default function Dashboard() {
     const [isEditing, setIsEditing] = useState(false)
     const [editData, setEditData] = useState<{ eventType: string; date: string; guests: string; location: string; theme: string; budget: string; time?: string }>({ eventType: '', date: '', guests: '', location: '', theme: '', budget: '' })
     const [editTimeline, setEditTimeline] = useState<TimelineItem[]>([])
-    const [selectedTab, setSelectedTab] = useState<'plan' | 'theme' | 'vendors' | 'guests'>('plan')
+    const [selectedTab, setSelectedTab] = useState<'plan' | 'theme' | 'vendors' | 'guests' | 'polls'>('plan')
     const [eventGuests, setEventGuests] = useState<EventGuest[]>([])
     const [eventVendors, setEventVendors] = useState<EventVendor[]>([])
     const [savedVendors, setSavedVendors] = useState<Record<string, SavedVendor>>({})
@@ -133,6 +134,11 @@ export default function Dashboard() {
     const [pendingChanges, setPendingChanges] = useState<{ field: string; oldValue: string; newValue: string }[]>([])
     const [isSendingNotifications, setIsSendingNotifications] = useState(false)
     const [notifyResult, setNotifyResult] = useState<{ sent: number; total: number; message: string } | null>(null)
+    // Poll state
+    const [showPollCreator, setShowPollCreator] = useState(false)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [polls, setPolls] = useState<any[]>([])
+    const [pollShareLink, setPollShareLink] = useState<string | null>(null)
 
     // Helper: show business name or just street name from full location
     const shortLocation = (loc: string) => {
@@ -909,7 +915,7 @@ export default function Dashboard() {
 
             <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0.8rem 1.5rem 0' }}>
                 <div style={{ display: 'flex', gap: '0.3rem', borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: 0 }}>
-                    {([['plan', '📋 Plan'], ['theme', '🎨 Theme'], ['vendors', '🏪 Vendors'], ['guests', '👥 Guests']] as const).map(([key, label]) => (
+                    {([['plan', '📋 Plan'], ['theme', '🎨 Theme'], ['vendors', '🏪 Vendors'], ['guests', '👥 Guests'], ['polls', '🗳️ Polls']] as const).map(([key, label]) => (
                         <button
                             key={key}
                             onClick={() => setSelectedTab(key)}
@@ -1157,6 +1163,66 @@ export default function Dashboard() {
             {selectedTab === 'guests' && (
                 <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1.5rem' }}>
                     <GuestManager eventId={data.eventId} planData={{ eventType: data.eventType, theme: data.theme, date: data.date, location: data.location, eventId: data.eventId }} isDemo={isDemo} />
+                </div>
+            )}
+
+            {/* ══ POLLS TAB ══ */}
+            {selectedTab === 'polls' && (
+                <div style={{ maxWidth: 800, margin: '0 auto', padding: '1.5rem' }}>
+                    {/* Header & Create Button */}
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+                        <div>
+                            <h2 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.3rem', color: 'var(--navy)', margin: 0 }}>
+                                🗳️ Party Polls
+                            </h2>
+                            <p style={{ fontSize: '0.82rem', color: '#9aabbb', fontWeight: 600, margin: '0.2rem 0 0' }}>
+                                Let friends & family vote on party decisions
+                            </p>
+                        </div>
+                        <button
+                            onClick={() => setShowPollCreator(true)}
+                            style={{
+                                padding: '0.6rem 1.2rem', borderRadius: 12,
+                                background: 'linear-gradient(135deg, var(--teal), var(--green))',
+                                color: 'white', fontWeight: 800, border: 'none',
+                                cursor: 'pointer', fontSize: '0.85rem', fontFamily: "'Fredoka One',cursive",
+                            }}
+                        >
+                            + New Poll
+                        </button>
+                    </div>
+
+                    {/* Share Link Banner */}
+                    {pollShareLink && (
+                        <div style={{
+                            padding: '1rem 1.2rem', borderRadius: 14, marginBottom: '1.5rem',
+                            background: 'linear-gradient(135deg, rgba(74,173,168,0.08), rgba(247,201,72,0.06))',
+                            border: '1px solid rgba(74,173,168,0.2)',
+                            display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap',
+                        }}>
+                            <div style={{ fontSize: '1.4rem' }}>🔗</div>
+                            <div style={{ flex: 1 }}>
+                                <div style={{ fontWeight: 800, color: 'var(--navy)', fontSize: '0.85rem' }}>Poll Created!</div>
+                                <div style={{ fontSize: '0.78rem', color: 'var(--teal)', fontWeight: 700, wordBreak: 'break-all' }}>
+                                    {window.location.origin}{pollShareLink}
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(`${window.location.origin}${pollShareLink}`)
+                                    showToast('Link copied!', 'success')
+                                }}
+                                style={{
+                                    padding: '0.45rem 0.9rem', borderRadius: 8,
+                                    background: 'var(--navy)', color: 'white', fontWeight: 700,
+                                    border: 'none', cursor: 'pointer', fontSize: '0.78rem',
+                                }}
+                            >📋 Copy Link</button>
+                        </div>
+                    )}
+
+                    {/* Poll List */}
+                    <PollList eventId={data.eventId} polls={polls} setPolls={setPolls} />
                 </div>
             )}
 
@@ -1496,6 +1562,9 @@ export default function Dashboard() {
                                         <button className={styles.qaBtn} onClick={() => setSelectedTab('guests')}>
                                             <span>💌</span><span>Send Invitations Now</span><span>›</span>
                                         </button>
+                                        <button className={styles.qaBtn} onClick={() => { setSelectedTab('polls'); setShowPollCreator(true) }}>
+                                            <span>🗳️</span><span>Create a Poll</span><span>›</span>
+                                        </button>
 
                                     </div>
                                 </div>
@@ -1504,6 +1573,25 @@ export default function Dashboard() {
                     </>
                 )
             }
+            {/* Poll Creator Modal */}
+            {showPollCreator && (
+                <CreatePoll
+                    eventId={data.eventId}
+                    creatorName={user?.displayName || user?.email?.split('@')[0] || 'Host'}
+                    onClose={() => setShowPollCreator(false)}
+                    onCreated={({ shareUrl }) => {
+                        setPollShareLink(shareUrl)
+                        setShowPollCreator(false)
+                        // Refresh polls
+                        if (data.eventId) {
+                            fetch(`/api/polls?eventId=${data.eventId}`)
+                                .then(r => r.json())
+                                .then(d => setPolls(d.polls || []))
+                                .catch(() => { })
+                        }
+                    }}
+                />
+            )}
             {/* Collaborator Modal */}
             {showCollabModal && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }} onClick={() => setShowCollabModal(false)}>
@@ -1792,5 +1880,121 @@ export default function Dashboard() {
                 </div>
             )}
         </main >
+    )
+}
+
+// ── Poll List Component ───────────────────────────────
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function PollList({ eventId, polls, setPolls }: { eventId?: string; polls: any[]; setPolls: (p: any[]) => void }) {
+    const [loading, setLoading] = useState(true)
+
+    const fetchPolls = useCallback(async () => {
+        if (!eventId) { setLoading(false); return }
+        try {
+            const res = await fetch(`/api/polls?eventId=${eventId}`)
+            const data = await res.json()
+            setPolls(data.polls || [])
+        } catch { /* silent */ }
+        setLoading(false)
+    }, [eventId, setPolls])
+
+    useEffect(() => { fetchPolls() }, [fetchPolls])
+
+    if (loading) {
+        return <div style={{ textAlign: 'center', padding: '2rem' }}>
+            <div className="spinner" style={{ width: 30, height: 30, margin: '0 auto 0.5rem' }} />
+            <div style={{ color: '#9aabbb', fontSize: '0.82rem', fontWeight: 600 }}>Loading polls...</div>
+        </div>
+    }
+
+    if (polls.length === 0) {
+        return (
+            <div className="card" style={{ textAlign: 'center', padding: '3rem 2rem' }}>
+                <div style={{ fontSize: '3rem', marginBottom: '0.8rem' }}>🗳️</div>
+                <div style={{ fontFamily: "'Fredoka One',cursive", color: 'var(--navy)', fontSize: '1.1rem', marginBottom: '0.3rem' }}>
+                    No polls yet
+                </div>
+                <div style={{ color: '#9aabbb', fontSize: '0.82rem', fontWeight: 600 }}>
+                    Create a poll to let friends & family vote on dates, venues, themes, and more!
+                </div>
+            </div>
+        )
+    }
+
+    return (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+            {polls.map((poll) => {
+                const maxVotes = Math.max(...poll.options.map((o: { votes: number }) => o.votes), 1)
+                const sortedOptions = [...poll.options].sort((a: { votes: number }, b: { votes: number }) => b.votes - a.votes)
+                return (
+                    <div key={poll.id} className="card" style={{ padding: '1.5rem' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
+                            <div>
+                                <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1rem', color: 'var(--navy)', margin: '0 0 0.2rem' }}>
+                                    {poll.question}
+                                </h3>
+                                <div style={{ fontSize: '0.75rem', color: '#9aabbb', fontWeight: 600 }}>
+                                    {poll.totalVotes} {poll.totalVotes === 1 ? 'vote' : 'votes'} · by {poll.creatorName}
+                                    {poll.allowMultiple && <span style={{ marginLeft: 6, color: 'var(--teal)' }}>· Multi-select</span>}
+                                </div>
+                            </div>
+                            <button
+                                onClick={() => {
+                                    navigator.clipboard.writeText(`${window.location.origin}/poll/${poll.id}`)
+                                    showToast('Poll link copied!', 'success')
+                                }}
+                                style={{
+                                    padding: '0.3rem 0.6rem', borderRadius: 6,
+                                    background: 'rgba(74,173,168,0.08)', border: '1px solid rgba(74,173,168,0.2)',
+                                    color: 'var(--teal)', fontWeight: 700, fontSize: '0.72rem',
+                                    cursor: 'pointer',
+                                }}
+                            >🔗 Share</button>
+                        </div>
+                        {sortedOptions.map((opt: { id: string; text: string; votes: number; voters: string[] }, i: number) => {
+                            const pct = poll.totalVotes > 0 ? Math.round((opt.votes / poll.totalVotes) * 100) : 0
+                            const isLeader = i === 0 && opt.votes > 0
+                            return (
+                                <div key={opt.id} style={{ marginBottom: '0.6rem' }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.82rem', fontWeight: 700, marginBottom: '0.2rem' }}>
+                                        <span style={{ color: 'var(--navy)' }}>
+                                            {isLeader && '👑 '}{opt.text}
+                                        </span>
+                                        <span style={{ color: '#9aabbb' }}>{opt.votes} · {pct}%</span>
+                                    </div>
+                                    <div style={{ height: 6, borderRadius: 3, background: 'var(--border)', overflow: 'hidden' }}>
+                                        <div style={{
+                                            height: '100%', borderRadius: 3, transition: 'width 0.4s ease',
+                                            width: `${Math.max(2, (opt.votes / maxVotes) * 100)}%`,
+                                            background: isLeader ? 'linear-gradient(90deg, #F7C948, #E8896A)' : 'linear-gradient(90deg, #4AADA8, #3D8C6E)',
+                                        }} />
+                                    </div>
+                                    {opt.voters.length > 0 && (
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.2rem', marginTop: '0.3rem' }}>
+                                            {opt.voters.map((v: string, vi: number) => (
+                                                <span key={vi} style={{
+                                                    padding: '0.1rem 0.4rem', borderRadius: 4,
+                                                    background: 'rgba(74,173,168,0.06)', color: 'var(--teal)',
+                                                    fontSize: '0.68rem', fontWeight: 700,
+                                                }}>{v}</span>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
+                            )
+                        })}
+                        <button
+                            onClick={fetchPolls}
+                            style={{
+                                marginTop: '0.5rem', padding: '0.3rem 0.8rem', borderRadius: 6,
+                                background: 'transparent', border: '1px solid var(--border)',
+                                color: '#9aabbb', fontWeight: 700, fontSize: '0.72rem',
+                                cursor: 'pointer', fontFamily: 'inherit',
+                            }}
+                        >🔄 Refresh</button>
+                    </div>
+                )
+            })}
+        </div>
     )
 }

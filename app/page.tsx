@@ -352,7 +352,7 @@ export default function Home() {
               </div>
               <div className={styles.formGroup}>
                 <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>Location / City / Venue {!locationTBD && '*'}</span>
+                  <span>Location / Venue {!locationTBD && '*'}</span>
                   <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', fontWeight: 700, color: locationTBD ? 'var(--teal)' : '#9aabbb', cursor: 'pointer' }}>
                     <input type="checkbox" checked={locationTBD} onChange={e => {
                       setLocationTBD(e.target.checked)
