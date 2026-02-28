@@ -70,6 +70,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const [isEditingInvite, setIsEditingInvite] = useState(false)
     const [inviteCollapsed, setInviteCollapsed] = useState(false)
     const [showPreview, setShowPreview] = useState(false)
+    const [isDraft, setIsDraft] = useState(false)
     const themeChangeRef = React.useRef(false)
     const customInviteRef = React.useRef<HTMLInputElement>(null)
     const coverPhotoRef = React.useRef<HTMLInputElement>(null)
@@ -115,9 +116,8 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     // Persist invite to localStorage whenever it changes
     useEffect(() => {
         userSetJSON(inviteKey, invite)
-        // Also sync to Firestore for RSVP page (including null to clear)
-        if (planData.eventId) {
-            // Ensure removed images are explicitly null (not undefined) so Firestore clears them
+        // Auto-sync to Firestore ONLY if NOT in draft mode
+        if (planData.eventId && !isDraft) {
             const invitePayload = invite ? {
                 ...invite,
                 customImage: invite.customImage || null,
@@ -125,7 +125,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
             } : null
             fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: invitePayload, rsvpBy: rsvpByDate || null }) }).catch(() => { })
         }
-    }, [invite, inviteKey, planData.eventId, rsvpByDate])
+    }, [invite, inviteKey, planData.eventId, rsvpByDate, isDraft])
 
     useEffect(() => { userSetJSON(bookmarkKey, bookmarks) }, [bookmarks, bookmarkKey])
 
@@ -314,16 +314,31 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
             // Snapshot current invite as a frozen version (including images)
             const vId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
             try {
-                await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: eid, inviteVersion: { id: vId, subject: invite.subject, message: invite.message, smsVersion: invite.smsVersion, customImage: invite.customImage || '', coverPhoto: invite.coverPhoto || '' } }) })
+                // First, sync current invite to Firestore as the live version
+                const invitePayload = { ...invite, customImage: invite.customImage || null, coverPhoto: invite.coverPhoto || null }
+                await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: eid, invite: invitePayload, rsvpBy: rsvpByDate || null, inviteVersion: { id: vId, subject: invite.subject, message: invite.message, smsVersion: invite.smsVersion, customImage: invite.customImage || '', coverPhoto: invite.coverPhoto || '' } }) })
             } catch { /* best effort */ }
             const link = getRSVPLink(vId)
             navigator.clipboard.writeText(link)
             setCopied(true); setTimeout(() => setCopied(false), 2000)
-            showToast('RSVP link copied with frozen invite!', 'success')
+            setIsDraft(true) // Enter draft mode — further edits won't auto-sync
+            showToast('RSVP link copied! Further edits are now a draft.', 'success')
         } else {
             navigator.clipboard.writeText(getRSVPLink())
             setCopied(true); setTimeout(() => setCopied(false), 2000)
             showToast('RSVP link copied!', 'success')
+        }
+    }
+
+    const publishDraft = async () => {
+        if (!invite || !planData.eventId) return
+        const invitePayload = { ...invite, customImage: invite.customImage || null, coverPhoto: invite.coverPhoto || null }
+        try {
+            await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: invitePayload, rsvpBy: rsvpByDate || null }) })
+            setIsDraft(false)
+            showToast('Draft published! Live RSVP page updated.', 'success')
+        } catch {
+            showToast('Failed to publish', 'error')
         }
     }
 
@@ -371,6 +386,8 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                         <button className={styles.actionBtn} onClick={generateInvite} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
                         <button className={styles.secondaryBtn} onClick={() => setShowPreview(true)} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>👁️ Preview</button>
                         <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
+                        {isDraft && <button onClick={publishDraft} style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', background: 'rgba(247,201,72,0.15)', border: '1.5px solid rgba(247,201,72,0.4)', borderRadius: 6, fontWeight: 800, color: '#c4880a', cursor: 'pointer' }}>📤 Publish Draft</button>}
+                        {isDraft && <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#c4880a', background: 'rgba(247,201,72,0.1)', padding: '0.15rem 0.4rem', borderRadius: 4 }}>Draft — edits won’t affect copied links</span>}
                     </div>
                 )}
                 {invite && (
@@ -384,6 +401,8 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                 <button className={styles.actionBtn} onClick={generateInvite} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
                                 <button className={styles.secondaryBtn} onClick={() => setShowPreview(true)} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>👁️ Preview</button>
                                 <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
+                                {isDraft && <button onClick={publishDraft} style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', background: 'rgba(247,201,72,0.15)', border: '1.5px solid rgba(247,201,72,0.4)', borderRadius: 6, fontWeight: 800, color: '#c4880a', cursor: 'pointer' }}>📤 Publish</button>}
+                                {isDraft && <span style={{ fontSize: '0.58rem', fontWeight: 800, color: '#c4880a', background: 'rgba(247,201,72,0.1)', padding: '0.1rem 0.35rem', borderRadius: 4 }}>Draft</span>}
                             </div>
                             <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.3rem', alignItems: 'center', flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
                                 {bookmarks.map((bm, idx) => (
