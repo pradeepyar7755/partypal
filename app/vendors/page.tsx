@@ -49,6 +49,7 @@ function VendorsContent() {
   const [ratingFilter, setRatingFilter] = useState(4)
   const [detectedLocation, setDetectedLocation] = useState('')
   const [locationReady, setLocationReady] = useState(false)
+  const [isAutoDetected, setIsAutoDetected] = useState(false)
 
   // Auto-detect user location on mount
   useEffect(() => {
@@ -70,6 +71,7 @@ function VendorsContent() {
     const existingLoc = rawLoc && rawLoc !== 'TBD' ? rawLoc : ''
     if (existingLoc) {
       setDetectedLocation(existingLoc)
+      setIsAutoDetected(true)
       setLocationReady(true)
       return
     }
@@ -121,6 +123,7 @@ function VendorsContent() {
               })
               if (result) {
                 setDetectedLocation(result)
+                setIsAutoDetected(true)
                 setLocationReady(true)
                 return
               }
@@ -138,6 +141,7 @@ function VendorsContent() {
       const data = await res.json()
       if (data.label) {
         setDetectedLocation(data.label)
+        setIsAutoDetected(true)
         setLocationReady(true)
         return
       }
@@ -145,6 +149,7 @@ function VendorsContent() {
 
     // 3. Final fallback
     setDetectedLocation('Atlanta, GA')
+    setIsAutoDetected(true)
     setLocationReady(true)
   }
 
@@ -238,12 +243,13 @@ function VendorsContent() {
           <div className={styles.searchInputWrap} style={{ maxWidth: 280, flex: '0 0 auto' }}>
             <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontSize: '1rem', zIndex: 2, pointerEvents: 'none' }}>📍</span>
             <LocationSearch
-              value={detectedLocation}
+              value={isAutoDetected ? '' : detectedLocation}
               onChange={(loc) => {
                 setDetectedLocation(loc)
+                setIsAutoDetected(false)
                 setLocationReady(true)
               }}
-              placeholder="Location..."
+              placeholder={isAutoDetected ? 'Current Location' : 'Location...'}
               className={styles.searchInput}
             />
           </div>
