@@ -50,6 +50,9 @@ function VendorsContent() {
   const [detectedLocation, setDetectedLocation] = useState('')
   const [locationReady, setLocationReady] = useState(false)
   const [isAutoDetected, setIsAutoDetected] = useState(false)
+  const [cuisine, setCuisine] = useState('All')
+
+  const CUISINES = ['All', 'Indian', 'Mexican', 'Italian', 'Chinese', 'Thai', 'BBQ', 'Mediterranean', 'Japanese', 'Soul Food', 'American']
 
   // Auto-detect user location on mount
   useEffect(() => {
@@ -157,7 +160,7 @@ function VendorsContent() {
     if (!locationReady) return
     fetchVendors(activecat)
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activecat, planData, locationReady, detectedLocation])
+  }, [activecat, planData, locationReady, detectedLocation, cuisine])
 
   const fetchVendors = async (cat: string) => {
     setLoading(true)
@@ -170,6 +173,7 @@ function VendorsContent() {
           category: cat === 'All Vendors' ? 'Mixed party vendors' : cat,
           location: (() => { const l = detectedLocation || params.get('location') || planData.location || ''; return l && l !== 'TBD' ? l : 'Atlanta, GA' })(),
           theme: planData.theme || '', budget: planData.budget || '', guests: planData.guests || '30',
+          cuisine: cat === 'Food' && cuisine !== 'All' ? cuisine : undefined,
         }),
       })
       const data = await res.json()
@@ -235,11 +239,20 @@ function VendorsContent() {
           <p className={styles.headerSub}>Browse vetted vendors in your area — ready to make your party memorable.</p>
           <div className={styles.filterTabs}>
             {CATS.map(c => (
-              <button key={c} className={`${styles.filterTab} ${activecat === c ? styles.filterTabActive : ''}`} onClick={() => setActivecat(c)}>
+              <button key={c} className={`${styles.filterTab} ${activecat === c ? styles.filterTabActive : ''}`} onClick={() => { setActivecat(c); if (c !== 'Food') setCuisine('All') }}>
                 {CAT_EMOJIS[c]} {c}
               </button>
             ))}
           </div>
+          {activecat === 'Food' && (
+            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
+              {CUISINES.map(c => (
+                <button key={c} onClick={() => setCuisine(c)} style={{ padding: '0.3rem 0.7rem', borderRadius: 20, border: cuisine === c ? '2px solid white' : '1.5px solid rgba(255,255,255,0.3)', background: cuisine === c ? 'rgba(255,255,255,0.2)' : 'transparent', color: 'white', fontSize: '0.75rem', fontWeight: cuisine === c ? 800 : 600, cursor: 'pointer', transition: 'all 0.15s', backdropFilter: cuisine === c ? 'blur(4px)' : 'none' }}>
+                  {c}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </header>
 

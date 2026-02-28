@@ -78,7 +78,7 @@ async function summarizeReviews(vendorName: string, category: string, reviews: A
 
 export async function POST(req: NextRequest) {
   try {
-    const { category, location } = await req.json()
+    const { category, location, cuisine } = await req.json()
 
     // If no API key, fall back to static
     if (!GOOGLE_MAPS_API_KEY) {
@@ -103,7 +103,7 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ vendors: merged, source: 'google' })
     }
 
-    const vendors = await searchPlaces(cat, loc, 15)
+    const vendors = await searchPlaces(cat, loc, 15, cuisine)
     return NextResponse.json({ vendors, source: 'google' })
   } catch (error) {
     console.error('Vendors error:', error)
@@ -111,11 +111,13 @@ export async function POST(req: NextRequest) {
   }
 }
 
-async function searchPlaces(category: string, location: string, maxResults: number) {
+async function searchPlaces(category: string, location: string, maxResults: number, cuisine?: string) {
   const mapping = CATEGORY_MAP[category]
   if (!mapping) return []
 
-  const textQuery = `${mapping.query} in ${location}`
+  // Prepend cuisine to query for Food category
+  const queryPrefix = cuisine ? `best ${cuisine} ` : ''
+  const textQuery = `${queryPrefix}${mapping.query} in ${location}`
 
   const body: Record<string, unknown> = {
     textQuery,
