@@ -161,6 +161,7 @@ function VendorsContent() {
 
   const fetchVendors = async (cat: string) => {
     setLoading(true)
+    setVendors([])
     try {
       const res = await fetch('/api/vendors', {
         method: 'POST',
@@ -172,7 +173,7 @@ function VendorsContent() {
         }),
       })
       const data = await res.json()
-      if (data.vendors?.length > 0) setVendors(data.vendors)
+      setVendors(data.vendors || [])
     } catch { /* keep current vendors */ }
     setLoading(false)
   }
