@@ -311,10 +311,10 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const copyRSVPLink = async () => {
         const eid = planData.eventId || eventId || ''
         if (invite && eid) {
-            // Snapshot current invite as a version
+            // Snapshot current invite as a frozen version (including images)
             const vId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
             try {
-                await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: eid, inviteVersion: { id: vId, subject: invite.subject, message: invite.message, smsVersion: invite.smsVersion } }) })
+                await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: eid, inviteVersion: { id: vId, subject: invite.subject, message: invite.message, smsVersion: invite.smsVersion, customImage: invite.customImage || '', coverPhoto: invite.coverPhoto || '' } }) })
             } catch { /* best effort */ }
             const link = getRSVPLink(vId)
             navigator.clipboard.writeText(link)
@@ -371,10 +371,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                         <button className={styles.actionBtn} onClick={generateInvite} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
                         <button className={styles.secondaryBtn} onClick={() => setShowPreview(true)} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>👁️ Preview</button>
                         <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
-                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginLeft: '0.3rem' }}>
-                            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb' }}>📅 RSVP by</span>
-                            <input type="date" value={rsvpByDate} onChange={e => setRsvpByDate(e.target.value)} className={styles.addInput} style={{ margin: 0, padding: '0.15rem 0.35rem', fontSize: '0.68rem', width: 120 }} />
-                        </div>
                     </div>
                 )}
                 {invite && (
@@ -388,10 +384,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                 <button className={styles.actionBtn} onClick={generateInvite} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
                                 <button className={styles.secondaryBtn} onClick={() => setShowPreview(true)} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>👁️ Preview</button>
                                 <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb' }}>📅 RSVP by</span>
-                                    <input type="date" value={rsvpByDate} onChange={e => setRsvpByDate(e.target.value)} className={styles.addInput} style={{ margin: 0, padding: '0.15rem 0.35rem', fontSize: '0.68rem', width: 120 }} onClick={e => e.stopPropagation()} />
-                                </div>
                             </div>
                             <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.3rem', alignItems: 'center', flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
                                 {bookmarks.map((bm, idx) => (
@@ -408,6 +400,11 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                     {isEditingInvite ? '✕ Cancel' : '✏️ Edit'}
                                 </button>}
                             </div>
+                        </div>
+                        {/* RSVP by — always visible */}
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: inviteCollapsed ? 0 : '0.8rem', paddingTop: '0.4rem' }}>
+                            <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb' }}>📅 RSVP by</span>
+                            <input type="date" value={rsvpByDate} onChange={e => setRsvpByDate(e.target.value)} className={styles.addInput} style={{ margin: 0, padding: '0.2rem 0.4rem', fontSize: '0.72rem', width: 130 }} />
                         </div>
                         {!inviteCollapsed && (<>
                             {isEditingInvite ? (

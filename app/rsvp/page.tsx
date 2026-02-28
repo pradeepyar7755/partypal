@@ -39,10 +39,14 @@ function RSVPContent() {
                         // If version ID specified, load that frozen version; otherwise fall back to live invite
                         let invSubject = data.invite?.subject
                         let invMessage = data.invite?.message
+                        let invCustomImage = data.invite?.customImage
+                        let invCoverPhoto = data.invite?.coverPhoto
                         if (versionId && data.inviteVersions && data.inviteVersions[versionId]) {
                             const ver = data.inviteVersions[versionId]
                             invSubject = ver.subject
                             invMessage = ver.message
+                            if (ver.customImage) invCustomImage = ver.customImage
+                            if (ver.coverPhoto) invCoverPhoto = ver.coverPhoto
                         }
                         setEventData({
                             eventId,
@@ -54,8 +58,8 @@ function RSVPContent() {
                             inviteSubject: invSubject,
                             inviteMessage: invMessage,
                             rsvpBy: data.rsvpBy,
-                            customImage: data.invite?.customImage,
-                            coverPhoto: data.invite?.coverPhoto,
+                            customImage: invCustomImage,
+                            coverPhoto: invCoverPhoto,
                         })
                         return
                     }

@@ -32,11 +32,13 @@ export async function POST(req: NextRequest) {
         if (body.invite !== undefined) updateData.invite = body.invite
         if (body.rsvpBy !== undefined) updateData.rsvpBy = body.rsvpBy
         if (body.inviteVersion) {
-            // Store versioned invite: inviteVersions.{versionId} = { subject, message, smsVersion, createdAt }
+            // Store versioned invite: inviteVersions.{versionId} = { subject, message, smsVersion, customImage, coverPhoto, createdAt }
             updateData[`inviteVersions.${body.inviteVersion.id}`] = {
                 subject: body.inviteVersion.subject || '',
                 message: body.inviteVersion.message || '',
                 smsVersion: body.inviteVersion.smsVersion || '',
+                customImage: body.inviteVersion.customImage || '',
+                coverPhoto: body.inviteVersion.coverPhoto || '',
                 createdAt: new Date().toISOString(),
             }
         }
