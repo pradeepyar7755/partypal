@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || ''
-const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || ''
+const genAI = new GoogleGenerativeAI(GOOGLE_MAPS_API_KEY)
 
 // Category → search query + type filter mapping (improved for better results)
 const CATEGORY_MAP: Record<string, { query: string; types?: string[] }> = {
@@ -54,9 +55,9 @@ function getBadge(rating: number, reviews: number): string {
   return ''
 }
 
-// Summarize Google reviews using Anthropic Claude
+// Summarize Google reviews using Gemini
 async function summarizeReviews(vendorName: string, category: string, reviews: Array<{ text: string; rating: number }>): Promise<string> {
-  if (!ANTHROPIC_API_KEY || reviews.length === 0) return ''
+  if (!GOOGLE_MAPS_API_KEY || reviews.length === 0) return ''
   try {
     const reviewTexts = reviews
       .filter(r => r.text && r.text.length > 10)
@@ -65,25 +66,11 @@ async function summarizeReviews(vendorName: string, category: string, reviews: A
       .join('\n')
     if (!reviewTexts) return ''
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': ANTHROPIC_API_KEY,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-3-5-haiku-20241022',
-        max_tokens: 120,
-        messages: [{
-          role: 'user',
-          content: `Summarize these customer reviews for "${vendorName}" (a ${category} vendor) into ONE concise, engaging sentence (under 25 words). Focus on what customers love most. Don't mention the location or say "highly rated". Be specific about what makes them special.\n\nReviews:\n${reviewTexts}`
-        }],
-      }),
-    })
-    if (!res.ok) return ''
-    const data = await res.json()
-    return data.content?.[0]?.text?.trim() || ''
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { maxOutputTokens: 80 } })
+    const result = await model.generateContent(
+      `Summarize these customer reviews for "${vendorName}" (a ${category} vendor) into ONE concise, engaging sentence (under 25 words). Focus on what customers love most. Don't mention the location or say "highly rated". Be specific about what makes them special.\n\nReviews:\n${reviewTexts}`
+    )
+    return result.response.text()?.trim() || ''
   } catch {
     return ''
   }
