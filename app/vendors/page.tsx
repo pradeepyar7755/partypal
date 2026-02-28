@@ -327,7 +327,7 @@ function VendorsContent() {
 
         {/* ── Vendor Cards ── */}
         <div>
-          <div className={styles.resultsCount}>Showing <span>{filtered.length} of {vendors.length}</span> vendors near {location}</div>
+          <div className={styles.resultsCount}>Showing <span>{filtered.length} of {vendors.length}</span> vendors near {isAutoDetected ? 'Current Location' : location}</div>
 
           {loading ? (
             <div className={styles.loading}>
