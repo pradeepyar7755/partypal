@@ -47,7 +47,7 @@ Return ONLY valid JSON with the updated timeline applying the user's feedback. K
 
 Return ONLY valid JSON, no markdown, no backticks.` : `You are PartyPal, an expert party planner AI. Generate a comprehensive party plan.
 ${contextBlock}
-Event: ${eventType} | Date: ${date || 'TBD'} | Guests: ${guests} | Location: ${location} | Theme: ${theme || 'Open'} | Budget: ${budget || 'Flexible'}
+Event: ${eventType} | Date: ${date || 'TBD'} | Guests: ${guests} | Location: ${location} | Theme: ${theme || 'Open'} | Budget: ${budget || 'NOT PROVIDED — you must estimate'}
 Today's date: ${new Date().toISOString().split('T')[0]}
 
 IMPORTANT TIMELINE RULES:
@@ -66,6 +66,15 @@ CROSS-PORTAL INTELLIGENCE RULES:
 - If budget is mostly spent, focus tips on cost-saving and DIY options
 - If user preferences indicate a planning style, match the detail level (minimal = fewer items, detailed = comprehensive)
 
+BUDGET ESTIMATION RULES (when budget is NOT provided):
+- You MUST estimate a realistic total budget based on: event type, guest count, location, and theme
+- Use real-world pricing for the given location (e.g. Atlanta catering costs vs NYC)
+- Rough per-guest benchmarks: casual party $30-50/guest, semi-formal $75-125/guest, formal/wedding $150-300/guest
+- Factor in: venue rental, food/catering, decorations, entertainment, photography, drinks, cake/dessert
+- Return a specific dollar amount (e.g. "$3,500") NOT a range
+- Make the breakdown amounts add up to this estimated total
+- Add a tip mentioning this is an AI-suggested budget that can be adjusted
+
 Return ONLY valid JSON, no markdown, no backticks:
 {
   "summary": "2-sentence exciting summary. If short notice, acknowledge the tight timeline but stay encouraging.",
@@ -76,7 +85,8 @@ Return ONLY valid JSON, no markdown, no backticks:
     {"item":"Specific actionable task","category":"matching_category","done":false}
   ],
   "budget": {
-    "total": "${budget || '$2,000'}",
+    "total": "${budget || 'ESTIMATE a realistic total budget for this event type, guest count, and location. Use a specific dollar amount like $3,500 — not a range.'}",
+    "budgetEstimated": ${!budget},
     "breakdown": [
       {"category":"Category","amount":number,"percentage":number,"color":"hex_color"}
     ]

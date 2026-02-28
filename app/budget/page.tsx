@@ -16,6 +16,9 @@ export default function Budget() {
     const [tips, setTips] = useState<string[]>([])
     const [eventType, setEventType] = useState('')
     const [vendorActuals, setVendorActuals] = useState<{ category: string; cost: number }[]>([])
+    const [isEstimated, setIsEstimated] = useState(false)
+    const [editingTotal, setEditingTotal] = useState(false)
+    const [totalEditValue, setTotalEditValue] = useState('')
 
     useEffect(() => {
         const stored = userGet('partyplan')
@@ -24,7 +27,12 @@ export default function Budget() {
         setBreakdown(data.plan?.budget?.breakdown || [])
         setTips(data.plan?.tips || [])
         setEventType(data.eventType || '')
-        const budgetStr = data.budget || '$2,000'
+
+        // Check if budget was AI-estimated
+        const budgetWasEstimated = data.plan?.budget?.budgetEstimated === true || !data.budget || data.budget === '' || data.budget === 'Flexible'
+        setIsEstimated(budgetWasEstimated)
+
+        const budgetStr = data.budget || data.plan?.budget?.total || '$2,000'
         const nums = budgetStr.match(/[\d,]+/g)?.map((n: string) => parseInt(n.replace(/,/g, ''))) || [2000]
         const parsed = nums.length >= 2 ? Math.round((nums[0] + nums[1]) / 2) : (nums[0] || 2000)
         setTotalBudget(parsed)
@@ -36,6 +44,31 @@ export default function Budget() {
             setVendorActuals(actuals)
         }
     }, [router])
+
+    const setCustomBudget = () => {
+        const newTotal = parseInt(totalEditValue) || totalBudget
+        setTotalBudget(newTotal)
+        setIsEstimated(false)
+        setEditingTotal(false)
+        // Recalculate percentages and save
+        const updated = breakdown.map(b => ({
+            ...b,
+            percentage: Math.round((b.amount / newTotal) * 100),
+        }))
+        setBreakdown(updated)
+        const stored = userGet('partyplan')
+        if (stored) {
+            const data = JSON.parse(stored)
+            data.budget = `$${newTotal.toLocaleString()}`
+            if (data.plan?.budget) {
+                data.plan.budget.total = `$${newTotal.toLocaleString()}`
+                data.plan.budget.breakdown = updated
+                data.plan.budget.budgetEstimated = false
+            }
+            userSetJSON('partyplan', data)
+        }
+        showToast(`Budget set to $${newTotal.toLocaleString()}`, 'success')
+    }
 
     const allocated = breakdown.reduce((s, b) => s + b.amount, 0)
     const pct = Math.min(100, Math.round((allocated / totalBudget) * 100))
@@ -107,6 +140,71 @@ export default function Budget() {
                     <p className={styles.budgetSub}>Track and manage your party spending across all categories</p>
                 </div>
             </header>
+
+            {/* AI Budget Estimation Banner */}
+            {isEstimated && (
+                <div style={{
+                    maxWidth: 900, margin: '0 auto 1.5rem', padding: '1rem 1.5rem',
+                    background: 'linear-gradient(135deg, rgba(247,201,72,0.12), rgba(74,173,168,0.08))',
+                    border: '1px solid rgba(247,201,72,0.3)', borderRadius: 14,
+                    display: 'flex', alignItems: 'center', gap: '1rem', flexWrap: 'wrap',
+                }}>
+                    <div style={{ fontSize: '1.8rem' }}>🤖</div>
+                    <div style={{ flex: 1, minWidth: 200 }}>
+                        <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.92rem', color: 'var(--navy)', marginBottom: 2 }}>
+                            AI-Suggested Budget: ${totalBudget.toLocaleString()}
+                        </div>
+                        <div style={{ fontSize: '0.78rem', color: '#6b7c8a', lineHeight: 1.4 }}>
+                            Based on your {eventType || 'event'} details, we estimated this budget. You can adjust it anytime.
+                        </div>
+                    </div>
+                    {editingTotal ? (
+                        <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                            <span style={{ fontWeight: 800, color: 'var(--navy)' }}>$</span>
+                            <input
+                                type="number"
+                                value={totalEditValue}
+                                onChange={e => setTotalEditValue(e.target.value)}
+                                onKeyDown={e => { if (e.key === 'Enter') setCustomBudget(); if (e.key === 'Escape') setEditingTotal(false) }}
+                                autoFocus
+                                placeholder={totalBudget.toString()}
+                                style={{
+                                    width: 100, padding: '0.4rem 0.6rem', borderRadius: 8,
+                                    border: '2px solid var(--teal)', fontWeight: 700, fontSize: '0.9rem',
+                                    fontFamily: 'inherit', outline: 'none',
+                                }}
+                            />
+                            <button
+                                onClick={setCustomBudget}
+                                style={{
+                                    padding: '0.4rem 0.8rem', borderRadius: 8, fontWeight: 700,
+                                    background: 'var(--teal)', color: 'white', border: 'none',
+                                    cursor: 'pointer', fontSize: '0.8rem',
+                                }}
+                            >Save</button>
+                        </div>
+                    ) : (
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                            <button
+                                onClick={() => { setEditingTotal(true); setTotalEditValue(totalBudget.toString()) }}
+                                style={{
+                                    padding: '0.5rem 1rem', borderRadius: 10, fontWeight: 700,
+                                    background: 'var(--navy)', color: 'white', border: 'none',
+                                    cursor: 'pointer', fontSize: '0.8rem',
+                                }}
+                            >✏️ Set My Budget</button>
+                            <button
+                                onClick={() => { setIsEstimated(false); showToast('Budget accepted!', 'success') }}
+                                style={{
+                                    padding: '0.5rem 1rem', borderRadius: 10, fontWeight: 700,
+                                    background: 'transparent', color: 'var(--teal)', border: '2px solid var(--teal)',
+                                    cursor: 'pointer', fontSize: '0.8rem',
+                                }}
+                            >✅ Looks Good</button>
+                        </div>
+                    )}
+                </div>
+            )}
 
             <div className={styles.budgetContent}>
                 <div className={styles.budgetGrid}>
@@ -249,6 +347,6 @@ export default function Budget() {
                     </div>
                 </div>
             </div>
-        </main>
+        </main >
     )
 }

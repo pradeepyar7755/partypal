@@ -394,7 +394,7 @@ export default function Home() {
               <div className={styles.formGroup}>
                 <label>Estimated Budget</label>
                 <select value={form.budget} onChange={e => setForm({ ...form, budget: e.target.value })}>
-                  <option value="">Select budget range...</option>
+                  <option value="">AI will estimate for you...</option>
                   <option>Under $500</option>
                   <option>$500 – $1,500</option>
                   <option>$1,500 – $5,000</option>
