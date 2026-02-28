@@ -43,6 +43,7 @@ const DEFAULT_VENDORS = [
 ]
 
 const DEFAULT_PLAN: PlanData = {
+    eventId: 'demo',
     eventType: "Maya's 30th Birthday 🎂",
     guests: '40',
     location: 'Atlanta, GA',
@@ -266,6 +267,10 @@ export default function Dashboard() {
     }
 
     const loadEvent = (plan: PlanData, demo: boolean) => {
+        // Ensure every plan has an eventId
+        if (!plan.eventId) {
+            plan.eventId = demo ? 'demo' : Math.random().toString(36).substring(2, 10)
+        }
         // Compute timeline dates before setting data
         const enrichedPlan = plan.date ? { ...plan, plan: { ...plan.plan, timeline: computeTimelineDates(plan.plan.timeline, plan.date) } } : plan
         setData(enrichedPlan)
