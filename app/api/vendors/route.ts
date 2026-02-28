@@ -1,17 +1,18 @@
 import { NextRequest, NextResponse } from 'next/server'
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || ''
+const ANTHROPIC_API_KEY = process.env.ANTHROPIC_API_KEY || ''
 
-// Category → search query + type filter mapping
+// Category → search query + type filter mapping (improved for better results)
 const CATEGORY_MAP: Record<string, { query: string; types?: string[] }> = {
-  'Venue': { query: 'event venue banquet hall wedding venue', types: ['event_venue'] },
-  'Decor': { query: 'party decorations event decorator floral design' },
-  'Baker': { query: 'bakery custom cakes celebration cakes', types: ['bakery'] },
-  'Food': { query: 'catering food service restaurant', types: ['restaurant', 'meal_delivery'] },
-  'Photos': { query: 'event photographer photography studio' },
-  'Music': { query: 'DJ music entertainment live music' },
-  'Drinks': { query: 'bar bartender cocktail service', types: ['bar'] },
-  'Entertain': { query: 'party entertainment performer magician' },
+  'Venue': { query: 'best event venue banquet hall party venue', types: ['event_venue'] },
+  'Decor': { query: 'event decorator party decorations balloon artist floral design' },
+  'Baker': { query: 'best bakery custom cakes birthday cakes celebration cakes', types: ['bakery'] },
+  'Food': { query: 'best catering service party catering food catering', types: ['meal_delivery'] },
+  'Photos': { query: 'best event photographer portrait photography studio' },
+  'Music': { query: 'best DJ service party DJ live music entertainment' },
+  'Drinks': { query: 'cocktail bar mobile bartender bar catering', types: ['bar'] },
+  'Entertain': { query: 'party entertainment kids entertainment magician face painting' },
 }
 
 const CAT_EMOJIS: Record<string, string> = {
@@ -51,6 +52,41 @@ function getBadge(rating: number, reviews: number): string {
   if (reviews <= 20) return 'New'
   if (reviews >= 200) return 'Popular'
   return ''
+}
+
+// Summarize Google reviews using Anthropic Claude
+async function summarizeReviews(vendorName: string, category: string, reviews: Array<{ text: string; rating: number }>): Promise<string> {
+  if (!ANTHROPIC_API_KEY || reviews.length === 0) return ''
+  try {
+    const reviewTexts = reviews
+      .filter(r => r.text && r.text.length > 10)
+      .slice(0, 5)
+      .map(r => `[${r.rating}★] ${r.text}`)
+      .join('\n')
+    if (!reviewTexts) return ''
+
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': ANTHROPIC_API_KEY,
+        'anthropic-version': '2023-06-01',
+      },
+      body: JSON.stringify({
+        model: 'claude-3-5-haiku-20241022',
+        max_tokens: 120,
+        messages: [{
+          role: 'user',
+          content: `Summarize these customer reviews for "${vendorName}" (a ${category} vendor) into ONE concise, engaging sentence (under 25 words). Focus on what customers love most. Don't mention the location or say "highly rated". Be specific about what makes them special.\n\nReviews:\n${reviewTexts}`
+        }],
+      }),
+    })
+    if (!res.ok) return ''
+    const data = await res.json()
+    return data.content?.[0]?.text?.trim() || ''
+  } catch {
+    return ''
+  }
 }
 
 export async function POST(req: NextRequest) {
@@ -98,6 +134,7 @@ async function searchPlaces(category: string, location: string, maxResults: numb
     textQuery,
     maxResultCount: maxResults,
     languageCode: 'en',
+    rankPreference: 'RELEVANCE',
   }
 
   // Add type filter if available
@@ -119,6 +156,7 @@ async function searchPlaces(category: string, location: string, maxResults: numb
     'places.websiteUri',
     'places.currentOpeningHours',
     'places.businessStatus',
+    'places.reviews',
   ].join(',')
 
   const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
@@ -140,20 +178,46 @@ async function searchPlaces(category: string, location: string, maxResults: numb
   const data = await res.json()
   const places = data.places || []
 
-  return places.map((place: Record<string, unknown>, idx: number) => {
+  // Sort by popularity (reviews * rating) to surface best vendors
+  places.sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
+    const scoreA = ((a.rating as number) || 0) * Math.log2(((a.userRatingCount as number) || 1) + 1)
+    const scoreB = ((b.rating as number) || 0) * Math.log2(((b.userRatingCount as number) || 1) + 1)
+    return scoreB - scoreA
+  })
+
+  // Process all vendors, with AI summaries running in parallel
+  const vendorPromises = places.map(async (place: Record<string, unknown>, idx: number) => {
     const displayName = place.displayName as { text: string } | undefined
     const editorial = place.editorialSummary as { text: string } | undefined
     const photos = place.photos as Array<{ name: string; widthPx: number; heightPx: number }> | undefined
     const rating = (place.rating as number) || 4.0
-    const reviews = (place.userRatingCount as number) || 0
+    const reviewCount = (place.userRatingCount as number) || 0
     const types = (place.types as string[]) || []
     const { price, priceLabel } = mapPrice(place.priceLevel as string | undefined)
+    const googleReviews = (place.reviews as Array<{ text?: { text: string }; rating: number }>) || []
 
     // Generate a match score based on rating and reviews
-    const matchScore = Math.min(98, Math.floor(75 + (rating * 3) + Math.min(reviews / 50, 5)))
+    const matchScore = Math.min(98, Math.floor(75 + (rating * 3) + Math.min(reviewCount / 50, 5)))
 
     const photoUrl = photos?.[0]?.name ? getPhotoUrl(photos[0].name) : undefined
     const photoUrl2 = photos?.[1]?.name ? getPhotoUrl(photos[1].name) : undefined
+
+    // Build description: editorial > AI review summary > generic fallback
+    let description = editorial?.text || ''
+    if (!description && googleReviews.length > 0) {
+      const parsedReviews = googleReviews
+        .filter(r => r.text?.text)
+        .map(r => ({ text: r.text!.text, rating: r.rating || 5 }))
+      const aiSummary = await summarizeReviews(
+        displayName?.text || 'this vendor',
+        category,
+        parsedReviews
+      )
+      description = aiSummary
+    }
+    if (!description) {
+      description = `A popular ${category.toLowerCase()} vendor in your area. Tap to view details and reviews.`
+    }
 
     return {
       id: (place.id as string) || `g${idx}`,
@@ -161,13 +225,13 @@ async function searchPlaces(category: string, location: string, maxResults: numb
       category,
       location: (place.formattedAddress as string) || location,
       rating: Math.round(rating * 10) / 10,
-      reviews,
+      reviews: reviewCount,
       price,
       priceLabel,
       matchScore,
-      description: editorial?.text || `A highly rated ${category.toLowerCase()} vendor in ${location}. Check their Google Maps listing for more details.`,
+      description,
       tags: cleanTypes(types),
-      badge: getBadge(rating, reviews),
+      badge: getBadge(rating, reviewCount),
       emoji: CAT_EMOJIS[category] || '📍',
       featured: idx === 0,
       photoUrl,
@@ -178,4 +242,6 @@ async function searchPlaces(category: string, location: string, maxResults: numb
       source: 'google',
     }
   })
+
+  return Promise.all(vendorPromises)
 }
