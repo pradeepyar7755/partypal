@@ -61,7 +61,7 @@ Return ONLY valid JSON:
       return NextResponse.json({ error: 'Unknown action' }, { status: 400 })
     }
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { temperature: temperature || 0.7 } })
+    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash', generationConfig: { temperature: temperature || 0.7 } })
     const result = await model.generateContent(prompt)
     const text = result.response.text()
     const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()

@@ -66,7 +66,7 @@ async function summarizeReviews(vendorName: string, category: string, reviews: A
       .join('\n')
     if (!reviewTexts) return ''
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { maxOutputTokens: 80 } })
+    const model = genAI.getGenerativeModel({ model: 'gemini-3-flash', generationConfig: { maxOutputTokens: 80 } })
     const result = await model.generateContent(
       `Summarize these customer reviews for "${vendorName}" (a ${category} vendor) into ONE concise, engaging sentence (under 25 words). Focus on what customers love most. Don't mention the location or say "highly rated". Be specific about what makes them special.\n\nReviews:\n${reviewTexts}`
     )
