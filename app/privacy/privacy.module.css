@@ -1,0 +1,480 @@
+.privacyPage {
+    background: var(--dark-navy);
+    min-height: calc(100vh - 64px);
+    padding: 3rem 2.5rem 4rem;
+}
+
+.inner {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* ── Header ── */
+.badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.72rem;
+    font-weight: 800;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--yellow);
+    background: rgba(247, 201, 72, 0.1);
+    border: 1px solid rgba(247, 201, 72, 0.25);
+    padding: 0.35rem 1rem;
+    border-radius: 50px;
+    margin-bottom: 1.2rem;
+}
+
+.title {
+    font-family: 'Fredoka One', cursive;
+    font-size: clamp(1.8rem, 4vw, 2.6rem);
+    color: white;
+    margin-bottom: 0.6rem;
+}
+
+.title em {
+    color: var(--yellow);
+    font-style: normal;
+}
+
+.subtitle {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 1rem;
+    font-weight: 600;
+    line-height: 1.6;
+    margin-bottom: 0.8rem;
+    max-width: 600px;
+}
+
+.effective {
+    color: rgba(255, 255, 255, 0.3);
+    font-size: 0.78rem;
+    font-weight: 700;
+    margin-bottom: 2.5rem;
+}
+
+/* ── Table of Contents ── */
+.toc {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 3rem;
+}
+
+.tocTitle {
+    font-size: 0.8rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 1rem;
+}
+
+.tocLinks {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.tocLinks a {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    padding: 0.4rem 0.9rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-decoration: none;
+    transition: all 0.2s;
+}
+
+.tocLinks a:hover {
+    background: rgba(74, 173, 168, 0.15);
+    border-color: rgba(74, 173, 168, 0.3);
+    color: #4AADA8;
+}
+
+/* ── Sections ── */
+.section {
+    margin-bottom: 3rem;
+    scroll-margin-top: 100px;
+}
+
+.sectionIcon {
+    font-size: 2rem;
+    margin-bottom: 0.5rem;
+}
+
+.sectionTitle {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.5rem;
+    color: white;
+    margin-bottom: 0.8rem;
+}
+
+.section>p {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.92rem;
+    font-weight: 600;
+    line-height: 1.7;
+    margin-bottom: 1.2rem;
+}
+
+.section a {
+    color: #4AADA8;
+    text-decoration: none;
+    font-weight: 700;
+}
+
+.section a:hover {
+    text-decoration: underline;
+}
+
+/* ── Data Cards ── */
+.dataCard {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.3rem 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.dataCard h3 {
+    font-size: 0.95rem;
+    color: white;
+    font-weight: 800;
+    margin-bottom: 0.6rem;
+}
+
+.dataCard ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.dataCard li {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.88rem;
+    font-weight: 600;
+    line-height: 1.7;
+    padding: 0.15rem 0;
+    padding-left: 1.2rem;
+    position: relative;
+}
+
+.dataCard li::before {
+    content: '•';
+    color: var(--yellow);
+    position: absolute;
+    left: 0;
+    font-weight: 900;
+}
+
+.dataCard li strong {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* ── Usage Grid ── */
+.usageGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.usageCard {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.3rem;
+    transition: border-color 0.3s;
+}
+
+.usageCard:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.usageEmoji {
+    font-size: 1.5rem;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.usageCard h4 {
+    color: white;
+    font-size: 0.9rem;
+    font-weight: 800;
+    margin-bottom: 0.3rem;
+}
+
+.usageCard p {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+/* ── Highlights ── */
+.highlight {
+    display: flex;
+    gap: 1rem;
+    background: rgba(74, 173, 168, 0.06);
+    border: 1px solid rgba(74, 173, 168, 0.2);
+    border-radius: 14px;
+    padding: 1.3rem 1.5rem;
+    margin-bottom: 1rem;
+}
+
+.highlightIcon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+}
+
+.highlight h4 {
+    color: white;
+    font-size: 0.92rem;
+    font-weight: 800;
+    margin-bottom: 0.3rem;
+}
+
+.highlight p {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.6;
+}
+
+.highlight strong {
+    color: #4AADA8;
+}
+
+/* ── Storage Grid ── */
+.storageGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+.storageCard {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.2rem;
+}
+
+.storageCard h4 {
+    color: white;
+    font-size: 0.88rem;
+    font-weight: 800;
+    margin-bottom: 0.4rem;
+}
+
+.storageCard p {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.storageCard strong {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* ── Rights Grid ── */
+.rightsGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 0.8rem;
+}
+
+.rightCard {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.1rem;
+    text-align: center;
+    transition: border-color 0.3s;
+}
+
+.rightCard:hover {
+    border-color: rgba(255, 255, 255, 0.15);
+}
+
+.rightCard span {
+    font-size: 1.5rem;
+    display: block;
+    margin-bottom: 0.4rem;
+}
+
+.rightCard h4 {
+    color: white;
+    font-size: 0.82rem;
+    font-weight: 800;
+    margin-bottom: 0.2rem;
+}
+
+.rightCard p {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.75rem;
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+/* ── Deletion Steps ── */
+.deletionSteps {
+    display: flex;
+    flex-direction: column;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+}
+
+.deletionStep {
+    display: flex;
+    gap: 1rem;
+    align-items: flex-start;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.1rem 1.3rem;
+}
+
+.stepNumber {
+    width: 32px;
+    height: 32px;
+    background: linear-gradient(135deg, #4AADA8, #3D8C6E);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: 900;
+    font-size: 0.85rem;
+    flex-shrink: 0;
+}
+
+.deletionStep h4 {
+    color: white;
+    font-size: 0.88rem;
+    font-weight: 800;
+    margin-bottom: 0.2rem;
+}
+
+.deletionStep p {
+    color: rgba(255, 255, 255, 0.45);
+    font-size: 0.82rem;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+/* ── Note ── */
+.note {
+    background: rgba(232, 137, 106, 0.08);
+    border: 1px solid rgba(232, 137, 106, 0.25);
+    border-radius: 12px;
+    padding: 1rem 1.3rem;
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 0.85rem;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+.note strong {
+    color: #E8896A;
+}
+
+/* ── Third Party Grid ── */
+.thirdPartyGrid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+}
+
+.thirdPartyCard {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+}
+
+.thirdPartyCard strong {
+    color: white;
+    font-size: 0.88rem;
+    display: block;
+    margin-bottom: 0.3rem;
+}
+
+.thirdPartyCard p {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.78rem;
+    font-weight: 600;
+    line-height: 1.5;
+}
+
+/* ── Contact Card ── */
+.contactCard {
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 14px;
+    padding: 1.3rem;
+}
+
+.contactCard p {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.9rem;
+    font-weight: 600;
+    margin-bottom: 0.4rem;
+}
+
+.contactCard strong {
+    color: rgba(255, 255, 255, 0.7);
+}
+
+/* ── Footer ── */
+.footer {
+    text-align: center;
+    padding: 2rem 0;
+    border-top: 1px solid rgba(255, 255, 255, 0.06);
+    margin-top: 2rem;
+}
+
+.backLink {
+    color: var(--yellow);
+    font-weight: 800;
+    font-size: 0.92rem;
+    text-decoration: none;
+    transition: opacity 0.2s;
+}
+
+.backLink:hover {
+    opacity: 0.8;
+}
+
+/* ── Responsive ── */
+@media (max-width: 700px) {
+    .privacyPage {
+        padding: 2rem 1.25rem 3rem;
+    }
+
+    .usageGrid,
+    .storageGrid,
+    .thirdPartyGrid {
+        grid-template-columns: 1fr;
+    }
+
+    .rightsGrid {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .highlight {
+        flex-direction: column;
+        gap: 0.6rem;
+    }
+}
+
+@media (max-width: 500px) {
+    .rightsGrid {
+        grid-template-columns: 1fr;
+    }
+}

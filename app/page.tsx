@@ -453,11 +453,12 @@ export default function Home() {
               <a href="/contact">Contact Us</a>
               <a href="/contact">FAQs</a>
               <a href="/contact">Send Feedback</a>
+              <a href="/privacy">Privacy Policy</a>
             </div>
           </div>
         </div>
         <div className={styles.footerBottom}>
-          <p>© 2026 PartyPal · partypal.social</p>
+          <p>© 2026 PartyPal · partypal.social · <a href="/privacy" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Privacy Policy</a></p>
         </div>
       </footer>
     </main>
