@@ -58,8 +58,9 @@ function VendorsContent() {
   const [distanceFilter, setDistanceFilter] = useState('all')
   const [activeEvents, setActiveEvents] = useState<{ eventId: string; eventType: string }[]>([])
   const [addToEventVendor, setAddToEventVendor] = useState<string | null>(null)
+  const [showEventPicker, setShowEventPicker] = useState(false)
 
-  const CUISINES = ['All', 'Indian', 'Mexican', 'Italian', 'Chinese', 'Thai', 'BBQ', 'Mediterranean', 'Japanese', 'Soul Food', 'American']
+  const CUISINES = ['Indian', 'Mexican', 'Italian', 'Chinese', 'Thai', 'BBQ', 'Mediterranean', 'Japanese', 'Soul Food', 'American']
 
   // Auto-detect user location on mount
   useEffect(() => {
@@ -282,7 +283,25 @@ function VendorsContent() {
           <div className={styles.breadcrumb}>
             <a href="/">🏠 Home</a> › <span>{activecat === 'All Vendors' ? 'Vendors' : activecat + ' Vendors'}</span>
           </div>
-          <button className="back-btn" onClick={() => router.push('/')} style={{ marginTop: '0.3rem' }}>← Back to Home</button>
+          <div style={{ display: 'flex', gap: '0.8rem', marginTop: '0.3rem', flexWrap: 'wrap' }}>
+            <button className="back-btn" onClick={() => router.push('/')}>← Back to Home</button>
+            {activeEvents.length > 0 && (
+              <div style={{ position: 'relative' }}>
+                <button className="back-btn" onClick={() => setShowEventPicker(p => !p)} style={{ background: 'rgba(74,173,168,0.1)', color: 'var(--teal)', border: '1.5px solid rgba(74,173,168,0.25)' }}>← Back to My Events</button>
+                {showEventPicker && (
+                  <div style={{ position: 'absolute', top: '110%', left: 0, background: 'white', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '1.5px solid var(--border)', padding: '0.5rem', zIndex: 100, minWidth: 200 }}>
+                    <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', padding: '0.2rem 0.4rem', marginBottom: '0.3rem' }}>Select event:</div>
+                    {activeEvents.map(ev => (
+                      <button key={ev.eventId} onClick={() => { setShowEventPicker(false); router.push(`/dashboard?event=${ev.eventId}&tab=vendors`) }} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '0.4rem 0.5rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 700, color: 'var(--navy)', cursor: 'pointer' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(74,173,168,0.08)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >{ev.eventType}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
           <h1 className={styles.headerTitle}>
             {activecat === 'All Vendors' ? 'Find Your Perfect Vendors 🔍' : `Find ${CAT_EMOJIS[activecat]} ${activecat} Vendors`}
           </h1>
@@ -294,15 +313,7 @@ function VendorsContent() {
               </button>
             ))}
           </div>
-          {activecat === 'Food' && (
-            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginTop: '0.5rem' }}>
-              {CUISINES.map(c => (
-                <button key={c} onClick={() => setCuisine(c)} style={{ padding: '0.3rem 0.7rem', borderRadius: 20, border: cuisine === c ? '2px solid white' : '1.5px solid rgba(255,255,255,0.3)', background: cuisine === c ? 'rgba(255,255,255,0.2)' : 'transparent', color: 'white', fontSize: '0.75rem', fontWeight: cuisine === c ? 800 : 600, cursor: 'pointer', transition: 'all 0.15s', backdropFilter: cuisine === c ? 'blur(4px)' : 'none' }}>
-                  {c}
-                </button>
-              ))}
-            </div>
-          )}
+
         </div>
       </header>
 
@@ -352,6 +363,20 @@ function VendorsContent() {
           </select>
         </div>
       </div>
+
+      {/* Cuisine filter pills — shown below search when Food tab is active */}
+      {activecat === 'Food' && (
+        <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0.5rem 1rem' }}>
+          <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', alignItems: 'center' }}>
+            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#9aabbb', marginRight: '0.3rem' }}>🍽️ Cuisine:</span>
+            {CUISINES.map(c => (
+              <button key={c} onClick={() => setCuisine(c)} style={{ padding: '0.3rem 0.7rem', borderRadius: 20, border: cuisine === c ? '2px solid var(--teal)' : '1.5px solid var(--border)', background: cuisine === c ? 'rgba(74,173,168,0.1)' : 'white', color: cuisine === c ? 'var(--teal)' : 'var(--navy)', fontSize: '0.72rem', fontWeight: cuisine === c ? 800 : 600, cursor: 'pointer', transition: 'all 0.15s' }}>
+                {c}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* ══ MAIN LAYOUT ══ */}
       <div className={styles.main} style={showSidebar ? {} : { gridTemplateColumns: '1fr' }}>
@@ -447,10 +472,10 @@ function VendorsContent() {
                         <div className={styles.priceFrom}>Starting from</div>
                         <div className={styles.priceAmount}>{v.price} {v.priceLabel}</div>
                       </div>
-                      <a href={v.websiteUri || v.googleMapsUri || '#'} target="_blank" rel="noopener noreferrer" className={styles.bookBtn} onClick={(e) => e.stopPropagation()} style={{ textDecoration: 'none', color: 'inherit' }}>Website →</a>
+                      <a href={v.websiteUri || v.googleMapsUri || '#'} target="_blank" rel="noopener noreferrer" className={styles.bookBtn} onClick={(e) => e.stopPropagation()} style={{ textDecoration: 'none', color: 'inherit', background: 'var(--light-bg)', border: '1.5px solid var(--border)' }}>Visit →</a>
                       {activeEvents.length > 0 && (
                         <div style={{ position: 'relative' }}>
-                          <button onClick={(e) => { e.stopPropagation(); setAddToEventVendor(addToEventVendor === v.id ? null : v.id) }} className={styles.bookBtn} style={{ background: 'var(--light-bg)', color: 'var(--navy)', border: '1.5px solid var(--border)' }}>+ Event</button>
+                          <button onClick={(e) => { e.stopPropagation(); setAddToEventVendor(addToEventVendor === v.id ? null : v.id) }} className={styles.bookBtn}>+ Event</button>
                           {addToEventVendor === v.id && (
                             <div style={{ position: 'absolute', bottom: '110%', right: 0, background: 'white', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '1.5px solid var(--border)', padding: '0.5rem', zIndex: 100, minWidth: 180 }} onClick={(e) => e.stopPropagation()}>
                               <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', padding: '0.2rem 0.4rem', marginBottom: '0.3rem' }}>Add to event:</div>

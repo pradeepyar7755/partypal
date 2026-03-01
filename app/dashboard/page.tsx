@@ -1171,7 +1171,7 @@ export default function Dashboard() {
                                             <div style={{ position: 'relative', display: 'inline-flex', marginLeft: 'auto' }}>
                                                 <button onClick={startEditing} style={{ background: 'rgba(74,173,168,0.1)', border: '1.5px solid rgba(74,173,168,0.25)', borderRadius: 8, padding: '0.3rem 0.8rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>✏️ Edit</button>
                                                 <div style={{ position: 'absolute', top: '-2.2rem', left: '50%', transform: 'translateX(-50%)', background: 'var(--navy)', color: '#fff', fontSize: '0.58rem', fontWeight: 800, padding: '0.2rem 0.5rem', borderRadius: 6, whiteSpace: 'nowrap', zIndex: 50, boxShadow: '0 2px 8px rgba(0,0,0,0.2)', pointerEvents: 'none' }}>
-                                                    Rename or Edit Event Details
+                                                    Rename/Edit Event
                                                     <div style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '5px solid var(--navy)' }} />
                                                 </div>
                                                 <span style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: '50%', background: '#E8896A', animation: 'pulse 1.5s infinite', zIndex: 51 }} />
@@ -1300,7 +1300,7 @@ export default function Dashboard() {
                             </div>
                         </div>
                     ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr)', gap: '1.5rem' }}>
+                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: '1.5rem' }}>
                             <div>
                                 {/* Add Vendor Form */}
                                 <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
@@ -1420,7 +1420,7 @@ export default function Dashboard() {
                                     <button onClick={() => router.push('/vendors')} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 10, padding: '0.6rem 1.5rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', color: 'var(--navy)' }}>Browse More Vendors →</button>
                                 </div>
                             </div>
-                            {/* Sidebar — Cost Summary */}
+                            {/* Right Pane — Cost Summary */}
                             <div>
                                 <div className="card" style={{ padding: '1.2rem', textAlign: 'center', marginBottom: '1rem' }}>
                                     <div style={{ fontSize: '1.5rem', marginBottom: '0.2rem' }}>💰</div>
