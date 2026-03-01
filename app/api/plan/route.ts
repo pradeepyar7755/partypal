@@ -67,11 +67,17 @@ CROSS-PORTAL INTELLIGENCE RULES:
 - If user preferences indicate a planning style, match the detail level (minimal = fewer items, detailed = comprehensive)
 
 BUDGET ESTIMATION RULES (when budget is NOT provided):
-- You MUST estimate a realistic total budget based on: event type, guest count, location, and theme
-- Use real-world pricing for the given location (e.g. Atlanta catering costs vs NYC)
-- Rough per-guest benchmarks: casual party $30-50/guest, semi-formal $75-125/guest, formal/wedding $150-300/guest
-- Factor in: venue rental, food/catering, decorations, entertainment, photography, drinks, cake/dessert
-- Return a specific dollar amount (e.g. "$3,500") NOT a range
+- You MUST estimate a realistic, CONSERVATIVE total budget based on: event type, guest count, location, and theme
+- Use real-world pricing for the given location (e.g. Atlanta is cheaper than NYC or LA)
+- CONSERVATIVE per-guest benchmarks (including ALL costs — venue, food, drinks, decor, everything):
+  * Casual house party / birthday: $15-30/guest total
+  * Semi-formal event / milestone birthday: $40-75/guest total
+  * Formal event / wedding reception: $100-200/guest total
+  * Kids birthday party: $10-20/guest total
+- IMPORTANT: Most casual parties do NOT need a professional photographer, DJ, or fancy venue. Only include these if the event type warrants it.
+- Do NOT inflate costs with unnecessary vendor categories. A birthday party at home doesn't need a $500 venue rental.
+- For house parties: assume the host's home is free, focus budget on food, drinks, decorations, and cake
+- Return a specific dollar amount (e.g. "$750") NOT a range — keep it realistic and on the lower end
 - Make the breakdown amounts add up to this estimated total
 - Add a tip mentioning this is an AI-suggested budget that can be adjusted
 
