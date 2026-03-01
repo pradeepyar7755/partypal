@@ -339,7 +339,7 @@ export default function Dashboard() {
             })
         }, 300)
         return () => clearTimeout(timer)
-    }, [data])
+    }, [data, selectedTab])
     // Map checklist items to timeline items by keyword matching
     const mapChecklistToTimeline = () => {
         const timeline = isEditing ? editTimeline : data.plan.timeline
@@ -721,6 +721,30 @@ export default function Dashboard() {
         showToast('Event deleted', 'success')
     }
 
+    const resignFromEvent = async (eventId: string, e: React.MouseEvent) => {
+        e.stopPropagation()
+        if (!confirm('Leave this shared event? You will no longer have access.')) return
+        // Remove from local shared events
+        const updated = sharedEvents.filter(ev => ev.eventId !== eventId)
+        setSharedEvents(updated)
+        if (data.eventId === eventId) {
+            loadEvent(DEFAULT_PLAN, true)
+        }
+        // Remove yourself from Firestore collaborators list
+        if (user?.email) {
+            try {
+                const res = await fetch(`/api/events/shared?email=${encodeURIComponent(user.email)}`)
+                const data = await res.json()
+                const event = data.events?.find((e: any) => e.eventId === eventId)
+                if (event?.collaborators) {
+                    const updatedCollabs = event.collaborators.filter((c: any) => c.email.toLowerCase() !== user.email!.toLowerCase())
+                    await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId, collaborators: updatedCollabs }) })
+                }
+            } catch { /* best effort */ }
+        }
+        showToast('You have left this shared event', 'success')
+    }
+
     // Guest management
     const addGuest = () => {
         if (!guestForm.name.trim()) return
@@ -828,7 +852,7 @@ export default function Dashboard() {
                         <a href="/" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>🏠 Home</a> › <span style={{ color: 'var(--yellow)' }}>My Events</span>
                     </div>
                     <button className="back-btn" onClick={() => router.push('/')} style={{ marginTop: 0 }}>← Back to Home</button>
-                    <h1 style={{ fontFamily: "'Fredoka One', cursive", fontSize: '1.6rem', color: 'white', marginBottom: '0.4rem' }}>Plan your events with the help of AI ✨</h1>
+                    <h1 style={{ fontFamily: "'Fredoka One', cursive", fontSize: '2.2rem', color: 'white', marginBottom: '0.4rem' }}>Plan your events with the help of AI ✨</h1>
                     <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.5rem' }}>Create, manage, and share your party plans — all powered by AI.</p>
                 </div>
             </header>
@@ -910,6 +934,11 @@ export default function Dashboard() {
                                             style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(232,137,106,0.1)', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.65rem', color: '#E8896A', padding: 0, lineHeight: 1 }}
                                             title="Delete event"
                                         >✕</button>}
+                                        {isShared && <button
+                                            onClick={(e) => resignFromEvent(ev.eventId!, e)}
+                                            style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(123,94,167,0.1)', border: '1px solid rgba(123,94,167,0.3)', borderRadius: 6, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.6rem', color: '#7B5EA7', padding: 0, lineHeight: 1 }}
+                                            title="Leave shared event"
+                                        >⇥</button>}
                                     </div>
                                 )
                             })}

@@ -56,6 +56,8 @@ function VendorsContent() {
   const [isAutoDetected, setIsAutoDetected] = useState(false)
   const [cuisine, setCuisine] = useState('All')
   const [distanceFilter, setDistanceFilter] = useState('all')
+  const [activeEvents, setActiveEvents] = useState<{ eventId: string; eventType: string }[]>([])
+  const [addToEventVendor, setAddToEventVendor] = useState<string | null>(null)
 
   const CUISINES = ['All', 'Indian', 'Mexican', 'Italian', 'Chinese', 'Thai', 'BBQ', 'Mediterranean', 'Japanese', 'Soul Food', 'American']
 
@@ -63,6 +65,15 @@ function VendorsContent() {
   useEffect(() => {
     const saved = userGetJSON('partypal_shortlist', [] as string[])
     setShortlist(saved)
+    // Load active events (non-past, non-demo)
+    const events = userGetJSON<any[]>('partypal_events', [])
+    const now = new Date()
+    const active = events.filter((e: any) => {
+      if (!e.eventId || e.eventId === 'demo') return false
+      const d = e.date ? new Date(e.date + 'T12:00:00') : null
+      return !d || d >= now
+    }).map((e: any) => ({ eventId: e.eventId, eventType: e.eventType || 'Event' }))
+    setActiveEvents(active)
     const stored = userGet('partyplan')
     if (stored) {
       const p = JSON.parse(stored)
@@ -423,6 +434,35 @@ function VendorsContent() {
                         <div className={styles.priceAmount}>{v.price} {v.priceLabel}</div>
                       </div>
                       <a href={v.websiteUri || v.googleMapsUri || '#'} target="_blank" rel="noopener noreferrer" className={styles.bookBtn} onClick={(e) => e.stopPropagation()} style={{ textDecoration: 'none', color: 'inherit' }}>View →</a>
+                      {activeEvents.length > 0 && (
+                        <div style={{ position: 'relative' }}>
+                          <button onClick={(e) => { e.stopPropagation(); setAddToEventVendor(addToEventVendor === v.id ? null : v.id) }} style={{ background: 'rgba(74,173,168,0.1)', border: '1.5px solid rgba(74,173,168,0.3)', borderRadius: 8, padding: '0.4rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: 'var(--teal)', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Event</button>
+                          {addToEventVendor === v.id && (
+                            <div style={{ position: 'absolute', bottom: '110%', right: 0, background: 'white', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '1.5px solid var(--border)', padding: '0.5rem', zIndex: 100, minWidth: 180 }} onClick={(e) => e.stopPropagation()}>
+                              <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', padding: '0.2rem 0.4rem', marginBottom: '0.3rem' }}>Add to event:</div>
+                              {activeEvents.map(ev => (
+                                <button key={ev.eventId} onClick={(e) => {
+                                  e.stopPropagation()
+                                  const existingVendors = userGetJSON<any[]>(`partypal_vendors_${ev.eventId}`, [])
+                                  const alreadyAdded = existingVendors.some((vn: any) => vn.name === v.name)
+                                  if (alreadyAdded) {
+                                    showToast(`${v.name} is already in ${ev.eventType}`, 'info')
+                                  } else {
+                                    const newVendor = { name: v.name, category: v.category, notes: `${v.rating}★ · ${v.price} · ${v.location}`, confirmed: false, costEstimate: undefined }
+                                    const updated = [...existingVendors, newVendor]
+                                    userSetJSON(`partypal_vendors_${ev.eventId}`, updated)
+                                    showToast(`Added ${v.name} to ${ev.eventType}!`, 'success')
+                                  }
+                                  setAddToEventVendor(null)
+                                }} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '0.4rem 0.5rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 700, color: 'var(--navy)', cursor: 'pointer' }}
+                                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(74,173,168,0.08)')}
+                                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                >{ev.eventType}</button>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </div>
