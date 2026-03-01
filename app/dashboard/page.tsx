@@ -877,11 +877,13 @@ function DashboardContent() {
     const { mapping: taskMapping, unassigned: unassignedTasks } = mapChecklistToTimeline()
 
     // Auto-add venue as pending vendor when location is set and not TBD
+    // Read directly from localStorage to avoid stale React state overwriting marketplace-added vendors
     useEffect(() => {
         if (!isDemo && data.location && data.location !== 'TBD' && data.eventId) {
-            const hasVenue = eventVendors.some(v => v.category === 'Venue')
-            if (!hasVenue) {
-                const updated = [{ name: data.location, category: 'Venue', notes: 'From your event details', confirmed: false }, ...eventVendors]
+            const storedVendors = userGetJSON<EventVendor[]>(`partypal_vendors_${data.eventId}`, [])
+            const hasVenue = storedVendors.some(v => v.category === 'Venue')
+            if (!hasVenue && storedVendors.length === 0) {
+                const updated = [{ name: data.location, category: 'Venue', notes: 'From your event details', confirmed: false }, ...storedVendors]
                 setEventVendors(updated)
                 userSetJSON(`partypal_vendors_${data.eventId}`, updated)
             }
