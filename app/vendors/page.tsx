@@ -224,17 +224,20 @@ function VendorsContent() {
     if (distanceFilter !== 'all') {
       const loc = (detectedLocation || planData.location || '').toLowerCase()
       const vLoc = v.location.toLowerCase()
+      // Extract city name from search location (e.g., "Atlanta, GA" → "atlanta")
       const locCity = loc.split(',')[0].trim()
-      const vLocCity = vLoc.split(',')[0].trim()
-      const vLocParts = vLoc.split(',')
-      const isSameCity = vLocCity.includes(locCity) || locCity.includes(vLocCity)
-      const isSameState = vLocParts.length >= 2 && loc.includes(vLocParts[vLocParts.length - 2]?.trim() || '')
-      // Heuristic distance estimate
-      const estMiles = isSameCity ? 5 : isSameState ? 15 : 30
+      // Check if the vendor's full address contains the search city name
+      const cityInAddress = locCity.length > 2 && vLoc.includes(locCity)
+      // Also check state match
+      const locParts = loc.split(',').map(p => p.trim())
+      const locState = locParts.length >= 2 ? locParts[locParts.length - 1].trim() : ''
+      const stateInAddress = locState.length >= 2 && vLoc.includes(locState.toLowerCase())
+      // Heuristic distance: same city = ~3mi, same state = ~15mi, different = ~30mi
+      const estMiles = cityInAddress ? 3 : stateInAddress ? 15 : 30
       if (distanceFilter === '<5' && estMiles > 5) return false
-      if (distanceFilter === '5-10' && (estMiles < 5 || estMiles > 10)) return false
-      if (distanceFilter === '10-25' && (estMiles < 10 || estMiles > 25)) return false
-      if (distanceFilter === '25+' && estMiles < 25) return false
+      if (distanceFilter === '5-10' && (estMiles <= 3)) return false  // same city is < 5mi, skip for 5-10
+      if (distanceFilter === '10-25' && cityInAddress) return false   // same city vendors are too close
+      if (distanceFilter === '25+' && (cityInAddress || stateInAddress)) return false
     }
     if (!search) return true
     return v.name.toLowerCase().includes(search.toLowerCase()) ||

@@ -345,11 +345,31 @@ export default function Dashboard() {
         const timeline = isEditing ? editTimeline : data.plan.timeline
         const assigned = new Set<number>()
         const mapping: Record<number, number[]> = {}
+        timeline.forEach((_, ti) => { mapping[ti] = [] })
+
+        // Build a lookup: for each timeline item, compute its "dropdown value" (the category key used when adding tasks)
+        const timelineKeys = timeline.map(t => {
+            return `${t.task} ${t.category}`.split(/[\s_,/]+/).filter(w => w.length > 2).slice(0, 2).join(' ').toLowerCase() || t.task.split(' ')[0].toLowerCase()
+        })
+
+        // Pass 1: Exact category match — tasks explicitly assigned to a deliverable via dropdown
+        checklist.forEach((c, ci) => {
+            if (c.category === '__general__' || c.category === 'Custom' || !c.category) return
+            const catLower = c.category.toLowerCase()
+            // Find the timeline item whose dropdown key matches this task's category
+            const matchIdx = timelineKeys.findIndex(tk => tk === catLower || catLower.includes(tk) || tk.includes(catLower))
+            if (matchIdx >= 0) {
+                mapping[matchIdx].push(ci)
+                assigned.add(ci)
+            }
+        })
+
+        // Pass 2: Keyword heuristic matching for unassigned tasks
         timeline.forEach((t, ti) => {
-            mapping[ti] = []
             const tWords = `${t.task} ${t.category}`.toLowerCase()
             checklist.forEach((c, ci) => {
                 if (assigned.has(ci)) return
+                if (c.category === '__general__' || c.category === 'Custom') return
                 const cWords = `${c.item} ${c.category}`.toLowerCase()
                 const keywords = ['venue', 'book', 'vendor', 'dj', 'music', 'photographer', 'photo', 'video',
                     'invite', 'invitation', 'rsvp', 'guest', 'send',
@@ -359,18 +379,16 @@ export default function Dashboard() {
                     'budget', 'cost', 'date', 'time', 'plan', 'event day']
                 const matchScore = keywords.filter(kw => tWords.includes(kw) && cWords.includes(kw)).length
                 const catMatch = c.category && tWords.includes(c.category.toLowerCase()) ? 2 : 0
-                // Skip tasks explicitly assigned to general
-                if (c.category === '__general__' || c.category === 'Custom') return
                 if (matchScore + catMatch >= 1) {
                     mapping[ti].push(ci)
                     assigned.add(ci)
                 }
             })
         })
-        // Ensure every deliverable has at least 1 task
-        // First pass: try to steal from unassigned pool
-        const unassignedPool = checklist.map((_, ci) => ci).filter(ci => !assigned.has(ci))
-        timeline.forEach((t, ti) => {
+
+        // Pass 3: Steal from unassigned pool for empty deliverables
+        const unassignedPool = checklist.map((_, ci) => ci).filter(ci => !assigned.has(ci) && checklist[ci]?.category !== '__general__' && checklist[ci]?.category !== 'Custom')
+        timeline.forEach((_, ti) => {
             if (mapping[ti].length === 0 && unassignedPool.length > 0) {
                 const stolen = unassignedPool.shift()!
                 mapping[ti].push(stolen)

@@ -16,7 +16,7 @@ interface Contact {
 }
 
 const AVATAR_COLORS = ['#4AADA8', '#E8896A', '#7B5EA7', '#F7C948', '#3D8C6E', '#c4880a', '#D35E8D', '#5B8AF5']
-const DEFAULT_CIRCLES = ['Family', 'Close Friends', 'Work', 'College', 'Neighbors', 'Kids']
+const DEFAULT_CIRCLES = ['Family', 'Friends', 'Work', 'School', 'Neighbors']
 
 function getInitials(name: string) {
   return name.split(' ').map(w => w[0]).join('').toUpperCase().substring(0, 2)

@@ -164,7 +164,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     // Load contacts & circles from localStorage
     useEffect(() => {
         setCircleContacts(userGetJSON('partypal_contacts', []))
-        setSavedCircles(userGetJSON('partypal_circles', ['Family', 'Close Friends', 'Work', 'College', 'Neighbors', 'Kids']))
+        setSavedCircles(userGetJSON('partypal_circles', ['Family', 'Friends', 'Work', 'School', 'Neighbors']))
     }, [])
 
     useEffect(() => {
