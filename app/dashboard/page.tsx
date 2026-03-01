@@ -342,7 +342,7 @@ export default function Dashboard() {
     }, [data, selectedTab])
     // Map checklist items to timeline items by keyword matching
     const mapChecklistToTimeline = () => {
-        const timeline = isEditing ? editTimeline : data.plan.timeline
+        const timeline = data.plan.timeline
         const assigned = new Set<number>()
         const mapping: Record<number, number[]> = {}
         timeline.forEach((_, ti) => { mapping[ti] = [] })
@@ -1527,7 +1527,7 @@ export default function Dashboard() {
                                         </div>
                                     </div>
                                     <div className={styles.timeline}>
-                                        {(isEditing ? editTimeline : data.plan.timeline).map((t, i, arr) => {
+                                        {(data.plan.timeline).map((t, i, arr) => {
                                             const firstTag = t.category ? (t.category.split(/[_,/]/)[0] || '').trim().toLowerCase() : ''
                                             const icon = CATEGORY_ICONS[firstTag] || CATEGORY_ICONS.default
                                             const dotColor = CATEGORY_DOTS[firstTag] || CATEGORY_DOTS.default
@@ -1540,7 +1540,7 @@ export default function Dashboard() {
                                                     onDragOver={e => editTimelineMode && e.preventDefault()}
                                                     onDrop={() => {
                                                         if (!editTimelineMode || dragIdx === null || dragIdx === i) return
-                                                        const items = [...(isEditing ? editTimeline : data.plan.timeline)]
+                                                        const items = [...(data.plan.timeline)]
                                                         const [moved] = items.splice(dragIdx, 1)
                                                         items.splice(i, 0, moved)
                                                         if (isEditing) {
@@ -1565,17 +1565,11 @@ export default function Dashboard() {
                                                         <div className={styles.tlLine} />
                                                     </div>
                                                     <div className={styles.tlContent}>
-                                                        {editTimelineMode && !isEditing ? (
+                                                        {editTimelineMode ? (
                                                             <>
                                                                 <input value={t.weeks} onChange={e => { const items = [...data.plan.timeline]; items[i] = { ...items[i], weeks: e.target.value }; setData(prev => ({ ...prev, plan: { ...prev.plan, timeline: items } })) }} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(74,173,168,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', color: '#4AADA8', fontSize: '0.68rem', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.06em', width: '100%', outline: 'none', marginBottom: 4 }} />
                                                                 <input value={t.task} onChange={e => { const items = [...data.plan.timeline]; items[i] = { ...items[i], task: e.target.value }; setData(prev => ({ ...prev, plan: { ...prev.plan, timeline: items } })) }} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#1A2535', fontSize: '0.9rem', fontWeight: 800, width: '100%', outline: 'none', marginBottom: 4 }} />
                                                                 <textarea value={t.category} onChange={e => { const items = [...data.plan.timeline]; items[i] = { ...items[i], category: e.target.value }; setData(prev => ({ ...prev, plan: { ...prev.plan, timeline: items } })) }} rows={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#6b7c93', fontSize: '0.78rem', fontWeight: 600, width: '100%', outline: 'none', resize: 'vertical' as const }} />
-                                                            </>
-                                                        ) : isEditing ? (
-                                                            <>
-                                                                <input value={t.weeks} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, weeks: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(74,173,168,0.3)', borderRadius: 6, padding: '0.25rem 0.5rem', color: '#4AADA8', fontSize: '0.68rem', fontWeight: 900, textTransform: 'uppercase' as const, letterSpacing: '0.06em', width: '100%', outline: 'none', marginBottom: 4 }} />
-                                                                <input value={t.task} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, task: e.target.value } : item))} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#1A2535', fontSize: '0.9rem', fontWeight: 800, width: '100%', outline: 'none', marginBottom: 4 }} />
-                                                                <textarea value={t.category} onChange={e => setEditTimeline(prev => prev.map((item, idx) => idx === i ? { ...item, category: e.target.value } : item))} rows={2} style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.15)', borderRadius: 6, padding: '0.3rem 0.5rem', color: '#6b7c93', fontSize: '0.78rem', fontWeight: 600, width: '100%', outline: 'none', resize: 'vertical' as const }} />
                                                             </>
                                                         ) : (
                                                             <>
@@ -1676,7 +1670,7 @@ export default function Dashboard() {
                                                                                             border: '1px solid var(--border)', padding: '0.3rem', minWidth: 180, maxHeight: 200, overflowY: 'auto',
                                                                                         }}>
                                                                                             <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', padding: '0.2rem 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Move to...</div>
-                                                                                            {(isEditing ? editTimeline : data.plan.timeline).map((tl, tli) => (
+                                                                                            {(data.plan.timeline).map((tl, tli) => (
                                                                                                 <button key={tli} onClick={() => {
                                                                                                     const keywords = `${tl.task} ${tl.category}`.split(/[\s_,/]+/).filter(w => w.length > 2).slice(0, 2).join(' ')
                                                                                                     moveTaskToCategory(ci, keywords || tl.task.split(' ')[0])
