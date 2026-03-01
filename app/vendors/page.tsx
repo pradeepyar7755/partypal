@@ -444,15 +444,11 @@ function VendorsContent() {
                                 <button key={ev.eventId} onClick={(e) => {
                                   e.stopPropagation()
                                   const existingVendors = userGetJSON<any[]>(`partypal_vendors_${ev.eventId}`, [])
-                                  const alreadyAdded = existingVendors.some((vn: any) => vn.name === v.name)
-                                  if (alreadyAdded) {
-                                    showToast(`${v.name} is already in ${ev.eventType}`, 'info')
-                                  } else {
-                                    const newVendor = { name: v.name, category: v.category, notes: `${v.rating}★ · ${v.price} · ${v.location}`, confirmed: false, costEstimate: undefined }
-                                    const updated = [...existingVendors, newVendor]
-                                    userSetJSON(`partypal_vendors_${ev.eventId}`, updated)
-                                    showToast(`Added ${v.name} to ${ev.eventType}!`, 'success')
-                                  }
+                                  const newVendor = { name: v.name, category: v.category, notes: `${v.rating}★ · ${v.price} · ${v.location}`, confirmed: false, costEstimate: undefined }
+                                  const updated = [...existingVendors, newVendor]
+                                  userSetJSON(`partypal_vendors_${ev.eventId}`, updated)
+                                  const alreadyHad = existingVendors.some((vn: any) => vn.name === v.name)
+                                  showToast(`${alreadyHad ? 'Added again' : 'Added'} ${v.name} to ${ev.eventType}!`, 'success')
                                   setAddToEventVendor(null)
                                 }} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '0.4rem 0.5rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 700, color: 'var(--navy)', cursor: 'pointer' }}
                                   onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(74,173,168,0.08)')}

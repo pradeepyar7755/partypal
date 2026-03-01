@@ -35,12 +35,69 @@ const TIMELINE_DOTS = ['coral', 'yellow', 'teal', 'green', 'navy', 'coral']
 
 
 
-const DEFAULT_VENDORS = [
-    { emoji: '🏛️', name: 'The Loft ATL', cat: 'Venue · Midtown Atlanta', match: 98, stars: 5, price: 'From $450 / event' },
-    { emoji: '📷', name: 'Lens & Light Co.', cat: 'Photography · Buckhead', match: 95, stars: 5, price: 'From $320 / event' },
-    { emoji: '🎵', name: 'DJ Tropicana', cat: 'Music · DJ Services', match: 91, stars: 4.5, price: 'From $280 / event' },
-    { emoji: '🎂', name: 'Sugar Blooms Bakery', cat: 'Baker · Custom Cakes', match: 89, stars: 5, price: 'From $150 / cake' },
-]
+const VENDOR_SUGGESTIONS: Record<string, { emoji: string; name: string; cat: string; match: number; stars: number; price: string }[]> = {
+    game: [
+        { emoji: '🎲', name: 'The Game Room', cat: 'Game Cafe · Board Games', match: 97, stars: 5, price: 'From $200 / event' },
+        { emoji: '🍕', name: 'Snack Attack Catering', cat: 'Snacks · Finger Foods', match: 94, stars: 4.5, price: 'From $150 / event' },
+        { emoji: '🏠', name: 'Loft Social Lounge', cat: 'Venue · Private Space', match: 92, stars: 5, price: 'From $350 / event' },
+        { emoji: '🎭', name: 'Party Pros Entertainment', cat: 'Entertainment · Trivia Host', match: 88, stars: 4.5, price: 'From $180 / event' },
+    ],
+    wedding: [
+        { emoji: '💒', name: 'The Grand Estate', cat: 'Venue · Ceremony & Reception', match: 98, stars: 5, price: 'From $2,500 / event' },
+        { emoji: '💐', name: 'Bloom & Petal Florals', cat: 'Florist · Wedding Arrangements', match: 96, stars: 5, price: 'From $800 / event' },
+        { emoji: '📷', name: 'Forever Captured Photo', cat: 'Photography · Wedding', match: 95, stars: 5, price: 'From $1,200 / event' },
+        { emoji: '🍽️', name: 'Elegance Catering Co.', cat: 'Caterer · Fine Dining', match: 93, stars: 5, price: 'From $1,800 / event' },
+    ],
+    birthday: [
+        { emoji: '🏛️', name: 'The Loft ATL', cat: 'Venue · Midtown Atlanta', match: 98, stars: 5, price: 'From $450 / event' },
+        { emoji: '🎂', name: 'Sugar Blooms Bakery', cat: 'Baker · Custom Cakes', match: 95, stars: 5, price: 'From $150 / cake' },
+        { emoji: '🎵', name: 'DJ Tropicana', cat: 'Music · DJ Services', match: 91, stars: 4.5, price: 'From $280 / event' },
+        { emoji: '📷', name: 'Lens & Light Co.', cat: 'Photography · Buckhead', match: 89, stars: 5, price: 'From $320 / event' },
+    ],
+    dinner: [
+        { emoji: '👨‍🍳', name: 'Chef Laurent Private', cat: 'Private Chef · Multi-Course', match: 97, stars: 5, price: 'From $500 / event' },
+        { emoji: '🍷', name: 'Wine & Vine Sommelier', cat: 'Sommelier · Wine Pairing', match: 94, stars: 5, price: 'From $200 / event' },
+        { emoji: '🕯️', name: 'Lumina Decor Studio', cat: 'Decor · Table Settings', match: 91, stars: 4.5, price: 'From $250 / event' },
+        { emoji: '🎵', name: 'Acoustic Duo Live', cat: 'Music · Live Jazz/Acoustic', match: 87, stars: 5, price: 'From $350 / event' },
+    ],
+    corporate: [
+        { emoji: '🏢', name: 'Skyline Conference Center', cat: 'Venue · Corporate Events', match: 97, stars: 5, price: 'From $1,200 / event' },
+        { emoji: '🍽️', name: 'Business Lunch Catering', cat: 'Caterer · Corporate', match: 94, stars: 4.5, price: 'From $600 / event' },
+        { emoji: '📽️', name: 'TechAV Solutions', cat: 'AV/Tech · Presentations', match: 92, stars: 5, price: 'From $400 / event' },
+        { emoji: '📸', name: 'EventShot Photography', cat: 'Photography · Corporate', match: 89, stars: 4.5, price: 'From $350 / event' },
+    ],
+    baby: [
+        { emoji: '🏠', name: 'Garden View Venue', cat: 'Venue · Intimate Space', match: 96, stars: 5, price: 'From $400 / event' },
+        { emoji: '🎂', name: 'Sweet Dreams Bakery', cat: 'Baker · Baby Shower Cakes', match: 95, stars: 5, price: 'From $120 / cake' },
+        { emoji: '🎀', name: 'Little Touches Decor', cat: 'Decor · Baby Shower', match: 93, stars: 4.5, price: 'From $200 / event' },
+        { emoji: '📷', name: 'Tender Moments Photo', cat: 'Photography · Events', match: 90, stars: 5, price: 'From $280 / event' },
+    ],
+    holiday: [
+        { emoji: '🏛️', name: 'Festive Hall Venue', cat: 'Venue · Holiday Events', match: 96, stars: 5, price: 'From $600 / event' },
+        { emoji: '🍽️', name: 'Holiday Feast Catering', cat: 'Caterer · Holiday Menus', match: 94, stars: 5, price: 'From $500 / event' },
+        { emoji: '✨', name: 'Sparkle & Shine Decor', cat: 'Decor · Holiday Themes', match: 92, stars: 4.5, price: 'From $300 / event' },
+        { emoji: '🎤', name: 'Jingle Bell Entertainment', cat: 'Entertainment · Live Music', match: 88, stars: 4.5, price: 'From $350 / event' },
+    ],
+    default: [
+        { emoji: '🏛️', name: 'The Loft ATL', cat: 'Venue · Midtown Atlanta', match: 98, stars: 5, price: 'From $450 / event' },
+        { emoji: '🍽️', name: 'Savory Bites Catering', cat: 'Caterer · Full Service', match: 93, stars: 5, price: 'From $400 / event' },
+        { emoji: '🎭', name: 'Event Pros Entertainment', cat: 'Entertainment · Hosting', match: 90, stars: 4.5, price: 'From $250 / event' },
+        { emoji: '✨', name: 'Decor Dreams Studio', cat: 'Decor · Event Styling', match: 87, stars: 4.5, price: 'From $200 / event' },
+    ],
+}
+
+function getVendorsForEvent(eventType: string) {
+    const type = eventType.toLowerCase()
+    if (type.includes('game') || type.includes('trivia') || type.includes('board')) return VENDOR_SUGGESTIONS.game
+    if (type.includes('wedding') || type.includes('bridal')) return VENDOR_SUGGESTIONS.wedding
+    if (type.includes('birthday') || type.includes('bday')) return VENDOR_SUGGESTIONS.birthday
+    if (type.includes('dinner') || type.includes('supper') || type.includes('brunch')) return VENDOR_SUGGESTIONS.dinner
+    if (type.includes('corporate') || type.includes('office') || type.includes('team') || type.includes('work')) return VENDOR_SUGGESTIONS.corporate
+    if (type.includes('baby') || type.includes('shower') || type.includes('gender reveal')) return VENDOR_SUGGESTIONS.baby
+    if (type.includes('holiday') || type.includes('christmas') || type.includes('thanksgiving') || type.includes('halloween') || type.includes('new year')) return VENDOR_SUGGESTIONS.holiday
+    if (type.includes('graduation') || type.includes('anniversary') || type.includes('celebration')) return VENDOR_SUGGESTIONS.birthday
+    return VENDOR_SUGGESTIONS.default
+}
 
 const DEFAULT_PLAN: PlanData = {
     eventId: 'demo',
@@ -1156,7 +1213,7 @@ export default function Dashboard() {
                     {isDemo ? (
                         <div>
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem' }}>
-                                {DEFAULT_VENDORS.map((v, i) => (
+                                {getVendorsForEvent(data.eventType).map((v, i) => (
                                     <div key={i} className="card" style={{ padding: '1.2rem', cursor: 'pointer' }} onClick={() => router.push(`/vendors?cat=${v.cat.split(' ')[0].toLowerCase()}`)}>
                                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.5rem' }}>
                                             <span style={{ fontSize: '1.8rem' }}>{v.emoji}</span>
