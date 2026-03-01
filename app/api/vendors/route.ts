@@ -1,18 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { GoogleGenerativeAI } from '@google/generative-ai'
-import { assembleContext, hasContext } from '@/lib/ai-context-server'
 import { checkRateLimit } from '@/lib/rate-limiter'
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || ''
-const genAI = new GoogleGenerativeAI(GOOGLE_MAPS_API_KEY)
 
 // Category → search query + relevant Google place types for post-search filtering
 const CATEGORY_MAP: Record<string, { query: string; types?: string[]; relevantTypes: string[] }> = {
   'Venue': { query: 'best event venue banquet hall party venue', relevantTypes: ['event_venue', 'banquet_hall', 'wedding_venue', 'community_center', 'convention_center', 'meeting_room', 'cultural_center'] },
-
   'Decor': { query: 'party decorator event decorations florist flower shop balloon artist floral arrangements', relevantTypes: ['florist', 'flower_shop', 'home_goods_store', 'furniture_store', 'interior_designer', 'art_studio', 'store', 'gift_shop', 'garden_center', 'shopping_mall', 'general_contractor', 'home_improvement_store', 'wholesaler'] },
   'Baker': { query: 'best bakery custom cakes birthday cakes celebration cakes', types: ['bakery'], relevantTypes: ['bakery', 'cake_shop', 'dessert_shop', 'pastry_shop'] },
-  'Food': { query: 'best catering restaurant food service party catering', relevantTypes: ['restaurant', 'meal_delivery', 'meal_takeaway', 'food_court', 'catering_service', 'caterer'] },
+  'Food': { query: 'best catering restaurant food service party catering', relevantTypes: ['restaurant', 'meal_delivery', 'meal_takeaway', 'food_court'] },
   'Photos': { query: 'best event photographer portrait photography studio', relevantTypes: ['photographer', 'photo_studio', 'photography_studio', 'portrait_studio'] },
   'Music': { query: 'best DJ service party DJ live music entertainment', relevantTypes: ['night_club', 'performing_arts_theater', 'music_store', 'recording_studio', 'karaoke', 'concert_hall'] },
   'Drinks': { query: 'best cocktail bar sports bar lounge taproom', relevantTypes: ['bar', 'night_club', 'pub', 'wine_bar', 'cocktail_bar', 'lounge', 'brewery', 'winery'] },
@@ -24,7 +20,6 @@ const CAT_EMOJIS: Record<string, string> = {
   Photos: '📷', Music: '🎵', Drinks: '🥂', Entertain: '🤹',
 }
 
-// Map Google price_level to display values
 function mapPrice(priceLevel?: string): { price: string; priceLabel: string } {
   switch (priceLevel) {
     case 'PRICE_LEVEL_FREE': return { price: 'Free', priceLabel: '' }
@@ -36,12 +31,10 @@ function mapPrice(priceLevel?: string): { price: string; priceLabel: string } {
   }
 }
 
-// Build a photo URL from the Places photo resource name
-function getPhotoUrl(photoName: string, maxWidth = 600): string {
+function getPhotoUrl(photoName: string, maxWidth = 400): string {
   return `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidth}&key=${GOOGLE_MAPS_API_KEY}`
 }
 
-// Clean up Google place types for display as tags
 function cleanTypes(types: string[]): string[] {
   const excluded = ['point_of_interest', 'establishment', 'political', 'geocode', 'premise', 'subpremise']
   return types
@@ -50,7 +43,6 @@ function cleanTypes(types: string[]): string[] {
     .slice(0, 4)
 }
 
-// Determine badge based on rating
 function getBadge(rating: number, reviews: number): string {
   if (rating >= 4.7 && reviews >= 100) return '⭐ Top Rated'
   if (reviews <= 20) return 'New'
@@ -58,37 +50,17 @@ function getBadge(rating: number, reviews: number): string {
   return ''
 }
 
-// Summarize Google reviews using Gemini — with cross-portal context
-async function summarizeReviews(vendorName: string, category: string, reviews: Array<{ text: string; rating: number }>, eventContext?: string): Promise<string> {
-  if (!GOOGLE_MAPS_API_KEY || reviews.length === 0) return ''
-  try {
-    const reviewTexts = reviews
-      .filter(r => r.text && r.text.length > 10)
-      .slice(0, 5)
-      .map(r => `[${r.rating}★] ${r.text}`)
-      .join('\n')
-    if (!reviewTexts) return ''
-
-    const contextHint = eventContext ? `\nThe user is planning: ${eventContext}. If relevant, mention why this vendor fits their event.` : ''
-
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { maxOutputTokens: 80 } })
-    const result = await model.generateContent(
-      `Summarize these customer reviews for "${vendorName}" (a ${category} vendor) into ONE concise, engaging sentence (under 25 words). Focus on what customers love most. Don't mention the location or say "highly rated". Be specific about what makes them special.${contextHint}\n\nReviews:\n${reviewTexts}`
-    )
-    return result.response.text()?.trim() || ''
-  } catch {
-    return ''
-  }
-}
+// ═══ IN-MEMORY CACHE (5 min TTL) — avoids repeat API calls ═══
+const vendorCache = new Map<string, { data: unknown[]; ts: number }>()
+const CACHE_TTL = 5 * 60 * 1000
 
 export async function POST(req: NextRequest) {
   try {
-    // Rate limit check
     const identifier = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'anonymous'
     const rateCheck = await checkRateLimit(identifier, 'vendors')
     if (!rateCheck.allowed) {
       return NextResponse.json({
-        error: `Daily AI limit reached (${rateCheck.limit} requests/day). Try again tomorrow.`,
+        error: `Daily limit reached (${rateCheck.limit} requests/day). Try again tomorrow.`,
         vendors: [],
         rateLimit: rateCheck,
       }, { status: 429 })
@@ -97,10 +69,6 @@ export async function POST(req: NextRequest) {
     const body = await req.json()
     const { category, location, cuisine } = body
 
-    // Build event context hint for vendor summaries
-    const eventHint = hasContext(body) ? `${body.eventType || ''} ${body.theme || ''} party, ${body.guests || ''} guests, budget ${body.budget || 'flexible'}` : ''
-
-    // If no API key, fall back to static
     if (!GOOGLE_MAPS_API_KEY) {
       return NextResponse.json({ vendors: [], source: 'none' })
     }
@@ -108,22 +76,30 @@ export async function POST(req: NextRequest) {
     const cat = category === 'Mixed party vendors' ? 'All' : category
     const loc = location || 'Atlanta, GA'
 
-    // For "All Vendors", search multiple categories
+    // Check cache first — return instantly if fresh
+    const cacheKey = `${cat}:${loc}:${cuisine || 'all'}`
+    const cached = vendorCache.get(cacheKey)
+    if (cached && Date.now() - cached.ts < CACHE_TTL) {
+      return NextResponse.json({ vendors: cached.data, source: 'cache' })
+    }
+
+    // For "All Vendors", search multiple categories (3 per cat to limit cost)
     if (cat === 'All') {
       const categories = ['Venue', 'Decor', 'Baker', 'Food', 'Music', 'Drinks', 'Photos', 'Entertain']
       const allVendors = await Promise.all(
-        categories.map(c => searchPlaces(c, loc, 5))
+        categories.map(c => searchPlaces(c, loc, 3))
       )
       const merged = allVendors.flat()
-      // Shuffle for variety
       for (let i = merged.length - 1; i > 0; i--) {
         const j = Math.floor(Math.random() * (i + 1));
         [merged[i], merged[j]] = [merged[j], merged[i]]
       }
+      vendorCache.set(cacheKey, { data: merged, ts: Date.now() })
       return NextResponse.json({ vendors: merged, source: 'google' })
     }
 
-    const vendors = await searchPlaces(cat, loc, 20, cuisine)
+    const vendors = await searchPlaces(cat, loc, 10, cuisine)
+    vendorCache.set(cacheKey, { data: vendors, ts: Date.now() })
     return NextResponse.json({ vendors, source: 'google' })
   } catch (error) {
     console.error('Vendors error:', error)
@@ -135,23 +111,22 @@ async function searchPlaces(category: string, location: string, maxResults: numb
   const mapping = CATEGORY_MAP[category]
   if (!mapping) return []
 
-  // For cuisine-specific searches, use a more targeted query
   const textQuery = cuisine && cuisine !== 'All'
     ? `${cuisine} restaurant in ${location}`
     : `${mapping.query} in ${location}`
 
   const body: Record<string, unknown> = {
     textQuery,
-    maxResultCount: 20,
+    maxResultCount: Math.min(maxResults, 10),
     languageCode: 'en',
     rankPreference: 'RELEVANCE',
   }
 
-  // Add type filter if available
   if (mapping.types?.length) {
     body.includedType = mapping.types[0]
   }
 
+  // COST-OPTIMIZED: removed places.reviews ($25/1K) and places.currentOpeningHours
   const fieldMask = [
     'places.id',
     'places.displayName',
@@ -164,9 +139,7 @@ async function searchPlaces(category: string, location: string, maxResults: numb
     'places.photos',
     'places.googleMapsUri',
     'places.websiteUri',
-    'places.currentOpeningHours',
     'places.businessStatus',
-    'places.reviews',
   ].join(',')
 
   const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
@@ -188,19 +161,22 @@ async function searchPlaces(category: string, location: string, maxResults: numb
   const data = await res.json()
   let places = data.places || []
 
-  // Post-filter: only keep places whose Google types overlap with this category's relevant types
+  // Soft filter: prefer matching types but keep all results if too few match
   if (mapping.relevantTypes.length > 0) {
     const relevant = new Set(mapping.relevantTypes)
-    places = places.filter((p: Record<string, unknown>) => {
+    const matching = places.filter((p: Record<string, unknown>) => {
       const types = (p.types as string[]) || []
       return types.some(t => relevant.has(t))
     })
+    if (matching.length >= 3) {
+      places = matching
+    }
+    // Otherwise keep all results — better to show something than nothing
   }
 
-  // Cuisine post-filter: boost results that actually match the cuisine
+  // Cuisine boost: sort cuisine-matching results to top
   if (cuisine && cuisine !== 'All') {
     const cuisineLower = cuisine.toLowerCase()
-    // Score each place by how well it matches the cuisine
     const scored = places.map((p: Record<string, unknown>) => {
       const name = ((p.displayName as { text: string })?.text || '').toLowerCase()
       const editorial = ((p.editorialSummary as { text: string })?.text || '').toLowerCase()
@@ -211,22 +187,20 @@ async function searchPlaces(category: string, location: string, maxResults: numb
       if (types.includes(cuisineLower)) score += 1
       return { place: p, score }
     })
-    // Sort by cuisine match score (descending), keeping relevance as tiebreaker
     scored.sort((a: { score: number }, b: { score: number }) => b.score - a.score)
     places = scored.map((s: { place: Record<string, unknown> }) => s.place)
   }
 
-  // Sort by popularity (reviews * rating) to surface best vendors
+  // Sort by popularity
   places.sort((a: Record<string, unknown>, b: Record<string, unknown>) => {
     const scoreA = ((a.rating as number) || 0) * Math.log2(((a.userRatingCount as number) || 1) + 1)
     const scoreB = ((b.rating as number) || 0) * Math.log2(((b.userRatingCount as number) || 1) + 1)
     return scoreB - scoreA
   })
-  // Cap at requested max after filtering
   places = places.slice(0, maxResults)
 
-  // Process all vendors, with AI summaries running in parallel
-  const vendorPromises = places.map(async (place: Record<string, unknown>, idx: number) => {
+  // Map to vendor objects — NO Gemini AI calls, use editorial summaries
+  return places.map((place: Record<string, unknown>, idx: number) => {
     const displayName = place.displayName as { text: string } | undefined
     const editorial = place.editorialSummary as { text: string } | undefined
     const photos = place.photos as Array<{ name: string; widthPx: number; heightPx: number }> | undefined
@@ -234,54 +208,33 @@ async function searchPlaces(category: string, location: string, maxResults: numb
     const reviewCount = (place.userRatingCount as number) || 0
     const types = (place.types as string[]) || []
     const { price, priceLabel } = mapPrice(place.priceLevel as string | undefined)
-    const googleReviews = (place.reviews as Array<{ text?: { text: string }; rating: number }>) || []
 
-    // Generate a match score based on rating and reviews
     const matchScore = Math.min(98, Math.floor(75 + (rating * 3) + Math.min(reviewCount / 50, 5)))
-
     const photoUrl = photos?.[0]?.name ? getPhotoUrl(photos[0].name) : undefined
     const photoUrl2 = photos?.[1]?.name ? getPhotoUrl(photos[1].name) : undefined
-
-    // Build description: editorial > AI review summary > generic fallback
-    let description = editorial?.text || ''
-    if (!description && googleReviews.length > 0) {
-      const parsedReviews = googleReviews
-        .filter(r => r.text?.text)
-        .map(r => ({ text: r.text!.text, rating: r.rating || 5 }))
-      const aiSummary = await summarizeReviews(
-        displayName?.text || 'this vendor',
-        category,
-        parsedReviews
-      )
-      description = aiSummary
-    }
-    if (!description) {
-      description = `A popular ${category.toLowerCase()} vendor in your area. Tap to view details and reviews.`
-    }
+    const description = editorial?.text || `${cleanTypes(types).slice(0, 2).join(' · ')} in ${location}`
 
     return {
-      id: (place.id as string) || `g${idx}`,
+      id: (place.id as string) || `v-${idx}`,
       name: displayName?.text || 'Unknown Vendor',
       category,
+      emoji: CAT_EMOJIS[category] || '🎉',
       location: (place.formattedAddress as string) || location,
-      rating: Math.round(rating * 10) / 10,
-      reviews: reviewCount,
+      rating,
+      reviewCount,
       price,
       priceLabel,
-      matchScore,
+      types: cleanTypes(types),
       description,
-      tags: cleanTypes(types),
+      matchScore,
       badge: getBadge(rating, reviewCount),
-      emoji: CAT_EMOJIS[category] || '📍',
-      featured: idx === 0,
+      isNew: reviewCount <= 20,
+      distance: null,
       photoUrl,
       photoUrl2,
-      googleMapsUri: (place.googleMapsUri as string) || '',
-      websiteUri: (place.websiteUri as string) || '',
-      isOpen: (place.currentOpeningHours as { openNow?: boolean })?.openNow,
-      source: 'google',
+      verified: reviewCount >= 50,
+      googleMapsUri: place.googleMapsUri as string,
+      websiteUri: place.websiteUri as string,
     }
   })
-
-  return Promise.all(vendorPromises)
 }
