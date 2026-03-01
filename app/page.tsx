@@ -353,7 +353,8 @@ export default function Home() {
               <div className={styles.formGroup}>
                 <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                   <span>Location / Venue {!locationTBD && '*'}</span>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', fontSize: '0.78rem', fontWeight: 700, color: locationTBD ? 'var(--teal)' : '#9aabbb', cursor: 'pointer' }}>
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.78rem', fontWeight: 700, color: locationTBD ? 'var(--teal)' : '#9aabbb', cursor: 'pointer' }}>
+                    TBD
                     <input type="checkbox" checked={locationTBD} onChange={e => {
                       setLocationTBD(e.target.checked)
                       if (e.target.checked) {
@@ -363,7 +364,6 @@ export default function Home() {
                         setForm(prev => ({ ...prev, location: '' }))
                       }
                     }} style={{ accentColor: 'var(--teal)' }} />
-                    TBD
                   </label>
                 </label>
                 {locationTBD ? (
