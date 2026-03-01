@@ -326,7 +326,7 @@ export default function Dashboard() {
         })
     }
 
-    const loadEvent = (plan: PlanData, demo: boolean) => {
+    const loadEvent = (plan: PlanData, demo: boolean, initialTab?: 'plan' | 'theme' | 'vendors' | 'guests' | 'polls') => {
         // Ensure every plan has an eventId
         if (!plan.eventId) {
             plan.eventId = demo ? 'demo' : Math.random().toString(36).substring(2, 10)
@@ -335,7 +335,7 @@ export default function Dashboard() {
         const enrichedPlan = plan.date ? { ...plan, plan: { ...plan.plan, timeline: computeTimelineDates(plan.plan.timeline, plan.date) } } : plan
         setData(enrichedPlan)
         setIsDemo(demo)
-        setSelectedTab('plan')
+        setSelectedTab(initialTab || 'plan')
         if (!demo) userSetJSON('partyplan', enrichedPlan)
         const TIMELINE_LABELS = ['6 wks out', '6 wks out', '4 wks out', '4 wks out', '3 wks out', '3 wks out', '2 wks out', '2 wks out', '1 wk out', 'Day before']
         const enriched = (enrichedPlan.plan.checklist || []).map((item, i) => ({
@@ -373,7 +373,25 @@ export default function Dashboard() {
             parsed.eventId = Math.random().toString(36).substring(2, 10)
             userSetJSON('partyplan', parsed)
         }
-        loadEvent(parsed, !stored)
+        // Check for URL query params: ?event=X&tab=Y
+        const urlParams = new URLSearchParams(window.location.search)
+        const urlEventId = urlParams.get('event')
+        const urlTab = urlParams.get('tab') as 'plan' | 'theme' | 'vendors' | 'guests' | 'polls' | null
+
+        // If URL specifies an event, load that event
+        if (urlEventId && storedEvents.length > 0) {
+            const targetEvent = storedEvents.find(ev => ev.eventId === urlEventId)
+            if (targetEvent) {
+                loadEvent(targetEvent, false, urlTab || 'plan')
+                // Clean up URL params
+                window.history.replaceState({}, '', '/dashboard')
+                return
+            }
+        }
+
+        loadEvent(parsed, !stored, urlTab || undefined)
+        // Clean up URL params if present
+        if (urlTab) window.history.replaceState({}, '', '/dashboard')
     }, [])
 
     // Multi-device sync: merge Firestore events with localStorage
