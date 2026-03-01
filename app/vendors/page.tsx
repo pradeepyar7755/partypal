@@ -502,6 +502,11 @@ function VendorsContent() {
                                 <button key={ev.eventId} onClick={(e) => {
                                   e.stopPropagation()
                                   const existingVendors = userGetJSON<any[]>(`partypal_vendors_${ev.eventId}`, [])
+                                  if (existingVendors.some((vn: any) => vn.name === v.name)) {
+                                    showToast(`${v.name} is already in ${ev.eventType}`, 'info')
+                                    setAddToEventVendor(null)
+                                    return
+                                  }
                                   const newVendor = { name: v.name, category: v.category, notes: `${v.rating}★ · ${v.price} · ${v.location}`, confirmed: false, costEstimate: undefined }
                                   const updated = [...existingVendors, newVendor]
                                   userSetJSON(`partypal_vendors_${ev.eventId}`, updated)
