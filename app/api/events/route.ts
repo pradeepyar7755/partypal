@@ -53,3 +53,24 @@ export async function POST(req: NextRequest) {
         return NextResponse.json({ error: 'Failed to save event', details: msg }, { status: 500 })
     }
 }
+
+// DELETE: Remove an event
+export async function DELETE(req: NextRequest) {
+    try {
+        const url = new URL(req.url)
+        const eventId = url.searchParams.get('eventId')
+
+        if (!eventId) {
+            return NextResponse.json({ error: 'Missing eventId' }, { status: 400 })
+        }
+
+        const db = getDb()
+        await db.collection('events').doc(eventId).delete()
+
+        return NextResponse.json({ success: true, eventId })
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error)
+        console.error('Event delete error:', msg)
+        return NextResponse.json({ error: 'Failed to delete event', details: msg }, { status: 500 })
+    }
+}

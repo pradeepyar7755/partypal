@@ -703,14 +703,21 @@ export default function Dashboard() {
 
     const deleteEvent = (eventId: string, e: React.MouseEvent) => {
         e.stopPropagation()
-        if (!confirm('Delete this event?')) return
+        if (!confirm('Delete this event? This cannot be undone.')) return
         const updated = allEvents.filter(ev => ev.eventId !== eventId)
         setAllEvents(updated)
         userSetJSON('partypal_events', updated)
+        // Clean up associated localStorage data
+        userRemove(`partypal_guests_${eventId}`)
+        userRemove(`partypal_collabs_${eventId}`)
+        userRemove(`partypal_vendors_${eventId}`)
+        userRemove(`partypal_polls_${eventId}`)
         if (data.eventId === eventId) {
             loadEvent(DEFAULT_PLAN, true)
             userRemove('partyplan')
         }
+        // Delete from Firestore
+        fetch(`/api/events?eventId=${encodeURIComponent(eventId)}`, { method: 'DELETE' }).catch(() => { })
         showToast('Event deleted', 'success')
     }
 
