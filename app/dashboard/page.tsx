@@ -1182,16 +1182,22 @@ export default function Dashboard() {
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem', marginBottom: '0.6rem' }}>
                                                 <div>
                                                     <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Event Name</label>
-                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                                        {(() => {
-                                                            const emoji = editData.eventType.match(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu)?.pop()
-                                                            return emoji ? <span style={{ fontSize: '1.2rem', padding: '0 0.3rem', userSelect: 'none' }}>{emoji}</span> : null
-                                                        })()}
-                                                        <input value={editData.eventType.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim()} onChange={e => {
-                                                            const emoji = editData.eventType.match(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu)?.pop() || ''
-                                                            setEditData(p => ({ ...p, eventType: e.target.value + (emoji ? ` ${emoji}` : '') }))
-                                                        }} style={{ flex: 1, padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
-                                                    </div>
+                                                    {(() => {
+                                                        // Extract trailing emoji from event name (e.g. "Birthday 🎂" -> emoji="🎂")
+                                                        const words = editData.eventType.trim().split(' ')
+                                                        const lastWord = words[words.length - 1] || ''
+                                                        const isEmoji = lastWord.length <= 2 && !/^[a-zA-Z0-9]+$/.test(lastWord) && words.length > 1
+                                                        const textPart = isEmoji ? words.slice(0, -1).join(' ') : editData.eventType
+                                                        const emojiPart = isEmoji ? lastWord : ''
+                                                        return (
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                                {emojiPart && <span style={{ fontSize: '1.2rem', padding: '0 0.3rem', userSelect: 'none' }}>{emojiPart}</span>}
+                                                                <input value={textPart} onChange={e => {
+                                                                    setEditData(p => ({ ...p, eventType: e.target.value + (emojiPart ? ` ${emojiPart}` : '') }))
+                                                                }} style={{ flex: 1, padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
+                                                            </div>
+                                                        )
+                                                    })()}
                                                 </div>
                                                 <div>
                                                     <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Date</label>
