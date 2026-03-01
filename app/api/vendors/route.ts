@@ -57,13 +57,18 @@ const CACHE_TTL = 5 * 60 * 1000
 export async function POST(req: NextRequest) {
   try {
     const identifier = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'anonymous'
-    const rateCheck = await checkRateLimit(identifier, 'vendors')
-    if (!rateCheck.allowed) {
-      return NextResponse.json({
-        error: `Daily limit reached (${rateCheck.limit} requests/day). Try again tomorrow.`,
-        vendors: [],
-        rateLimit: rateCheck,
-      }, { status: 429 })
+    // Rate limit — fail open (don't block vendors if Firestore is down)
+    try {
+      const rateCheck = await checkRateLimit(identifier, 'vendors')
+      if (!rateCheck.allowed) {
+        return NextResponse.json({
+          error: `Daily limit reached (${rateCheck.limit} requests/day). Try again tomorrow.`,
+          vendors: [],
+          rateLimit: rateCheck,
+        }, { status: 429 })
+      }
+    } catch (rateLimitErr) {
+      console.warn('Rate limiter unavailable, allowing request:', rateLimitErr)
     }
 
     const body = await req.json()
