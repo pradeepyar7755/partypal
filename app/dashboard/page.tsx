@@ -1,6 +1,6 @@
 'use client'
-import { useState, useEffect, useRef, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useRef, useCallback, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import styles from './dashboard.module.css'
 import { showToast } from '@/components/Toast'
 import { userGet, userSet, userGetJSON, userSetJSON, userRemove } from '@/lib/userStorage'
@@ -147,7 +147,7 @@ const DEFAULT_PLAN: PlanData = {
     },
 }
 
-export default function Dashboard() {
+function DashboardContent() {
     const router = useRouter()
     const { user } = useAuth()
     const [data, setData] = useState<PlanData>(DEFAULT_PLAN)
@@ -393,6 +393,20 @@ export default function Dashboard() {
         // Clean up URL params if present
         if (urlTab) window.history.replaceState({}, '', '/dashboard')
     }, [])
+
+    // React to URL search param changes during SPA navigation
+    const searchParams = useSearchParams()
+    const urlEventParam = searchParams.get('event')
+    const urlTabParam = searchParams.get('tab')
+    useEffect(() => {
+        if (!urlEventParam) return
+        const storedEvents: PlanData[] = userGetJSON('partypal_events', [])
+        const targetEvent = storedEvents.find(ev => ev.eventId === urlEventParam)
+        if (targetEvent) {
+            loadEvent(targetEvent, false, (urlTabParam as 'plan' | 'theme' | 'vendors' | 'guests' | 'polls') || 'plan')
+        }
+        window.history.replaceState({}, '', '/dashboard')
+    }, [urlEventParam, urlTabParam])
 
     // Multi-device sync: merge Firestore events with localStorage
     const syncFromFirestore = useCallback(async (isInitial = false) => {
@@ -2494,3 +2508,6 @@ export default function Dashboard() {
     )
 }
 
+export default function Dashboard() {
+    return <Suspense fallback={<div style={{ minHeight: '100vh' }} />}><DashboardContent /></Suspense>
+}
