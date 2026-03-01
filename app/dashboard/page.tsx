@@ -18,7 +18,7 @@ interface EventVendor { name: string; category: string; notes: string; confirmed
 interface SavedVendor { name: string; category: string; price: string; emoji: string }
 
 interface PlanData {
-    eventId?: string; eventType: string; guests: string; location: string; theme: string; date: string; budget: string; time?: string; createdAt?: string
+    eventId?: string; eventType: string; guests: string; location: string; theme: string; date: string; budget: string; time?: string; createdAt?: string; updatedAt?: string
     plan: {
         summary: string
         timeline: TimelineItem[]
@@ -316,6 +316,58 @@ export default function Dashboard() {
         }
         loadEvent(parsed, !stored)
     }, [])
+
+    // Multi-device sync: merge Firestore events with localStorage
+    const syncFromFirestore = useCallback(async (isInitial = false) => {
+        if (!user?.uid) return
+        try {
+            const res = await fetch(`/api/events?uid=${user.uid}`)
+            const d = await res.json()
+            const serverEvents: PlanData[] = d.events || []
+            if (serverEvents.length === 0 && !isInitial) return
+
+            setAllEvents(prev => {
+                const merged = [...prev]
+                for (const sev of serverEvents) {
+                    const idx = merged.findIndex(e => e.eventId === sev.eventId)
+                    if (idx >= 0) {
+                        // Keep whichever is newer
+                        const localTime = merged[idx].updatedAt ? new Date(merged[idx].updatedAt!).getTime() : 0
+                        const serverTime = sev.updatedAt ? new Date(sev.updatedAt as string).getTime() : 0
+                        if (serverTime > localTime) {
+                            merged[idx] = sev
+                        }
+                    } else {
+                        // New event from another device
+                        merged.push(sev)
+                    }
+                }
+                userSetJSON('partypal_events', merged)
+                return merged
+            })
+
+            // Also sync the active plan if it's newer on the server
+            const activePlan = userGetJSON<PlanData>('partyplan', null as any)
+            if (activePlan?.eventId) {
+                const serverVersion = serverEvents.find(e => e.eventId === activePlan.eventId)
+                if (serverVersion) {
+                    const localTime = activePlan.updatedAt ? new Date(activePlan.updatedAt).getTime() : 0
+                    const serverTime = serverVersion.updatedAt ? new Date(serverVersion.updatedAt as string).getTime() : 0
+                    if (serverTime > localTime) {
+                        userSetJSON('partyplan', serverVersion)
+                        loadEvent(serverVersion, false)
+                    }
+                }
+            }
+        } catch { /* silent */ }
+    }, [user])
+
+    // Initial Firestore sync + 30-second polling
+    useEffect(() => {
+        syncFromFirestore(true)
+        const interval = setInterval(() => syncFromFirestore(false), 30000)
+        return () => clearInterval(interval)
+    }, [syncFromFirestore])
 
     // Fetch shared events from Firestore
     useEffect(() => {

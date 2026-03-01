@@ -1,6 +1,38 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/firebase'
 
+// GET: Fetch all events for a user
+export async function GET(req: NextRequest) {
+    try {
+        const url = new URL(req.url)
+        const uid = url.searchParams.get('uid')
+
+        if (!uid) {
+            return NextResponse.json({ error: 'Missing uid' }, { status: 400 })
+        }
+
+        const db = getDb()
+        const snapshot = await db.collection('events').where('uid', '==', uid).get()
+        const events: Record<string, unknown>[] = []
+        snapshot.forEach(doc => {
+            events.push({ ...doc.data(), eventId: doc.id })
+        })
+
+        // Sort by updatedAt descending
+        events.sort((a, b) => {
+            const aTime = a.updatedAt ? new Date(a.updatedAt as string).getTime() : 0
+            const bTime = b.updatedAt ? new Date(b.updatedAt as string).getTime() : 0
+            return bTime - aTime
+        })
+
+        return NextResponse.json({ events })
+    } catch (error: unknown) {
+        const msg = error instanceof Error ? error.message : String(error)
+        console.error('Event fetch error:', msg)
+        return NextResponse.json({ error: 'Failed to fetch events', details: msg }, { status: 500 })
+    }
+}
+
 // POST: Save/update an event
 export async function POST(req: NextRequest) {
     try {
