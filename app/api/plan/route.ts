@@ -56,8 +56,10 @@ IMPORTANT TIMELINE RULES:
 - If the event is less than 2 weeks away, this is SHORT NOTICE: compress the timeline into days, flag items that need to be fast-tracked with ⚡ prefix, and add a warning note about potential blockers (vendor availability, venue constraints)
 - If the event is less than 1 week away, this is RUSH PLANNING: be very aggressive with the timeline, prioritize essentials only, and note what can realistically be pulled off
 - Do NOT use a generic "6 weeks out" format if the event is sooner than that
-- Keep deliverables CONCISE (4-6 milestones max, not 10+). Each milestone should be a clear action.
-- Always include a "Day before" or final prep milestone and an "Event Day" milestone
+- Keep deliverables CONCISE: 3-5 milestones MAXIMUM. Fewer is better.
+- Each milestone task description must be SHORT: 5-8 words max (e.g. "Book venue & photographer", "Order decor & cake")
+- Combine related tasks into single milestones (e.g. "Book venue & photographer" not separate entries)
+- Always include a "Final prep" milestone and an "Event Day" milestone
 
 CROSS-PORTAL INTELLIGENCE RULES:
 - If guest dietary data is provided, reflect that in food/catering budget allocation and checklist items
@@ -83,9 +85,9 @@ BUDGET ESTIMATION RULES (when budget is NOT provided):
 
 Return ONLY valid JSON, no markdown, no backticks:
 {
-  "summary": "2-sentence exciting summary. If short notice, acknowledge the tight timeline but stay encouraging.",
+  "summary": "1-2 short sentences. Keep it exciting but brief.",
   "timeline": [
-    {"weeks":"appropriate time period","task":"Concise action item","category":"category_tag","priority":"high|medium|low"}
+    {"weeks":"time period","task":"Short 5-8 word action","category":"category_tag","priority":"high|medium|low"}
   ],
   "checklist": [
     {"item":"Specific actionable task","category":"matching_category","done":false}
@@ -98,9 +100,8 @@ Return ONLY valid JSON, no markdown, no backticks:
     ]
   },
   "tips": [
-    "Tip 1 specific to this party type and timeline",
-    "Tip 2 specific to this theme",
-    "Tip 3 for this guest count"
+    "Short, actionable tip 1",
+    "Short, actionable tip 2"
   ],
   "moodboard": {
     "palette": ["#hex1","#hex2","#hex3","#hex4"],
@@ -114,7 +115,8 @@ Return ONLY valid JSON, no markdown, no backticks:
 }
 
 CHECKLIST RULES:
-- Generate 6-10 specific checklist items
+- Generate 4-6 specific checklist items (keep it tight, not overwhelming)
+- Each item should be a SHORT, actionable task (e.g. "Book DJ" not "Research and book a DJ for the party")
 - Each checklist item category MUST match one of the timeline milestone categories so they group together
 - Never leave a timeline milestone without at least 1 matching checklist item
 - Categories should be single-word lowercase tags like: venue, vendor, food, decor, guests, music, planning, logistics, photos
