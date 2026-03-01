@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect } from 'react'
+import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthContext'
 import { userGetJSON, userSetJSON } from '@/lib/userStorage'
 import styles from './guests.module.css'
@@ -35,6 +36,9 @@ export default function GuestsPage() {
   const [editingId, setEditingId] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', email: '', phone: '', circles: [] as string[] })
   const [bulkText, setBulkText] = useState('')
+  const [activeEvents, setActiveEvents] = useState<{ eventId: string; eventType: string }[]>([])
+  const [showEventPicker, setShowEventPicker] = useState(false)
+  const router = useRouter()
 
   // Load contacts and circles from localStorage
   useEffect(() => {
@@ -42,6 +46,18 @@ export default function GuestsPage() {
     setContacts(saved)
     const savedCircles = userGetJSON<string[]>('partypal_circles', DEFAULT_CIRCLES)
     setCircles(savedCircles)
+    // Load active events (non-past, non-demo)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const events = userGetJSON<any[]>('partypal_events', [])
+    const now = new Date()
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const active = events.filter((e: any) => {
+      if (!e.eventId || e.eventId === 'demo') return false
+      const d = e.date ? new Date(e.date + 'T12:00:00') : null
+      return !d || d >= now
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }).map((e: any) => ({ eventId: e.eventId, eventType: e.eventType || 'Event' }))
+    setActiveEvents(active)
   }, [user])
 
   // Save contacts
@@ -176,6 +192,26 @@ export default function GuestsPage() {
             <a href="/">🏠 Home</a> › <span>Guests</span>
           </div>
           <button className="back-btn" onClick={() => window.location.href = '/'} style={{ marginTop: 0 }}>← Back to Home</button>
+          {activeEvents.length > 0 && (
+            activeEvents.length === 1 ? (
+              <button className="back-btn" onClick={() => router.push(`/dashboard?event=${activeEvents[0].eventId}&tab=guests`)} style={{ marginTop: 0, background: 'rgba(74,173,168,0.1)', color: 'var(--teal)', border: '1.5px solid rgba(74,173,168,0.25)' }}>← Back to My Events</button>
+            ) : (
+              <div style={{ position: 'relative', display: 'inline-block' }}>
+                <button className="back-btn" onClick={() => setShowEventPicker(p => !p)} style={{ marginTop: 0, background: 'rgba(74,173,168,0.1)', color: 'var(--teal)', border: '1.5px solid rgba(74,173,168,0.25)' }}>← Back to My Events</button>
+                {showEventPicker && (
+                  <div style={{ position: 'absolute', top: '110%', left: 0, background: 'white', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '1.5px solid var(--border)', padding: '0.5rem', zIndex: 100, minWidth: 200 }}>
+                    <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', padding: '0.2rem 0.4rem', marginBottom: '0.3rem' }}>Select event:</div>
+                    {activeEvents.map(ev => (
+                      <button key={ev.eventId} onClick={() => { setShowEventPicker(false); router.push(`/dashboard?event=${ev.eventId}&tab=guests`) }} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '0.4rem 0.5rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 700, color: 'var(--navy)', cursor: 'pointer' }}
+                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(74,173,168,0.08)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                      >{ev.eventType}</button>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )
+          )}
           <div className={styles.headerTitle}>Guest Management 👥</div>
           <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.2rem' }}>Add your friends & family to circles for faster and repeatable access</p>
           <div className={styles.headerSub}>{contacts.length} contact{contacts.length !== 1 ? 's' : ''} · {circles.length} circle{circles.length !== 1 ? 's' : ''}</div>

@@ -286,20 +286,24 @@ function VendorsContent() {
           <div style={{ display: 'flex', gap: '0.8rem', marginTop: '0.3rem', flexWrap: 'wrap' }}>
             <button className="back-btn" onClick={() => router.push('/')}>← Back to Home</button>
             {activeEvents.length > 0 && (
-              <div style={{ position: 'relative' }}>
-                <button className="back-btn" onClick={() => setShowEventPicker(p => !p)} style={{ background: 'rgba(74,173,168,0.1)', color: 'var(--teal)', border: '1.5px solid rgba(74,173,168,0.25)' }}>← Back to My Events</button>
-                {showEventPicker && (
-                  <div style={{ position: 'absolute', top: '110%', left: 0, background: 'white', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '1.5px solid var(--border)', padding: '0.5rem', zIndex: 100, minWidth: 200 }}>
-                    <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', padding: '0.2rem 0.4rem', marginBottom: '0.3rem' }}>Select event:</div>
-                    {activeEvents.map(ev => (
-                      <button key={ev.eventId} onClick={() => { setShowEventPicker(false); router.push(`/dashboard?event=${ev.eventId}&tab=vendors`) }} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '0.4rem 0.5rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 700, color: 'var(--navy)', cursor: 'pointer' }}
-                        onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(74,173,168,0.08)')}
-                        onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                      >{ev.eventType}</button>
-                    ))}
-                  </div>
-                )}
-              </div>
+              activeEvents.length === 1 ? (
+                <button className="back-btn" onClick={() => router.push(`/dashboard?event=${activeEvents[0].eventId}&tab=vendors`)} style={{ background: 'rgba(74,173,168,0.1)', color: 'var(--teal)', border: '1.5px solid rgba(74,173,168,0.25)' }}>← Back to My Events</button>
+              ) : (
+                <div style={{ position: 'relative' }}>
+                  <button className="back-btn" onClick={() => setShowEventPicker(p => !p)} style={{ background: 'rgba(74,173,168,0.1)', color: 'var(--teal)', border: '1.5px solid rgba(74,173,168,0.25)' }}>← Back to My Events</button>
+                  {showEventPicker && (
+                    <div style={{ position: 'absolute', top: '110%', left: 0, background: 'white', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '1.5px solid var(--border)', padding: '0.5rem', zIndex: 100, minWidth: 200 }}>
+                      <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', padding: '0.2rem 0.4rem', marginBottom: '0.3rem' }}>Select event:</div>
+                      {activeEvents.map(ev => (
+                        <button key={ev.eventId} onClick={() => { setShowEventPicker(false); router.push(`/dashboard?event=${ev.eventId}&tab=vendors`) }} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '0.4rem 0.5rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 700, color: 'var(--navy)', cursor: 'pointer' }}
+                          onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(74,173,168,0.08)')}
+                          onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                        >{ev.eventType}</button>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )
             )}
           </div>
           <h1 className={styles.headerTitle}>
