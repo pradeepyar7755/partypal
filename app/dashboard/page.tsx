@@ -122,7 +122,8 @@ export default function Dashboard() {
     const [refineTimelineInput, setRefineTimelineInput] = useState('')
     const [isRefiningTimeline, setIsRefiningTimeline] = useState(false)
     const [editTimelineMode, setEditTimelineMode] = useState(false)
-    const [tasksCollapsed, setTasksCollapsed] = useState(false)
+    const [tasksCollapsed, setTasksCollapsed] = useState(true)
+    const [showChecklistHint, setShowChecklistHint] = useState(true)
     const [showCollabModal, setShowCollabModal] = useState(false)
     const [collaborators, setCollaborators] = useState<{ email: string; name: string; role: string }[]>([])
     const [collabForm, setCollabForm] = useState({ email: '', name: '', role: 'Viewer' })
@@ -358,6 +359,8 @@ export default function Dashboard() {
                     'budget', 'cost', 'date', 'time', 'plan', 'event day']
                 const matchScore = keywords.filter(kw => tWords.includes(kw) && cWords.includes(kw)).length
                 const catMatch = c.category && tWords.includes(c.category.toLowerCase()) ? 2 : 0
+                // Skip tasks explicitly assigned to general
+                if (c.category === '__general__' || c.category === 'Custom') return
                 if (matchScore + catMatch >= 1) {
                     mapping[ti].push(ci)
                     assigned.add(ci)
@@ -436,7 +439,7 @@ export default function Dashboard() {
 
     const addCheckItem = (targetCategory?: string) => {
         if (!newCheckItem.trim()) return
-        const cat = targetCategory || newCheckCategory || 'Custom'
+        const cat = targetCategory || newCheckCategory || '__general__'
         const newItem: ChecklistItem = { item: newCheckItem.trim(), category: cat, done: false }
         const updated = [...checklist, newItem]
         setChecklist(updated)
@@ -1432,7 +1435,18 @@ export default function Dashboard() {
                                                 <button onClick={refineTimeline} disabled={isRefiningTimeline || !refineTimelineInput.trim()} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 6, padding: '0.22rem 0.45rem', fontSize: '0.62rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefiningTimeline || !refineTimelineInput.trim() ? 0.5 : 1 }}>{isRefiningTimeline ? '...' : '✨'}</button>
                                             </div>
                                             <button onClick={() => setEditTimelineMode(!editTimelineMode)} title={editTimelineMode ? 'Exit edit' : 'Edit'} style={{ background: editTimelineMode ? 'var(--teal)' : 'transparent', color: editTimelineMode ? '#fff' : '#9aabbb', border: `1.5px solid ${editTimelineMode ? 'var(--teal)' : 'var(--border)'}`, borderRadius: 6, padding: '0.18rem 0.35rem', fontSize: '0.65rem', cursor: 'pointer', transition: 'all 0.2s' }}>✏️</button>
-                                            <button onClick={() => setTasksCollapsed(!tasksCollapsed)} title={tasksCollapsed ? 'Show tasks' : 'Hide tasks'} style={{ background: tasksCollapsed ? 'rgba(74,173,168,0.1)' : 'transparent', color: tasksCollapsed ? 'var(--teal)' : '#9aabbb', border: `1.5px solid ${tasksCollapsed ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`, borderRadius: 6, padding: '0.18rem 0.35rem', fontSize: '0.62rem', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>{tasksCollapsed ? '☐' : '☑'}</button>
+                                            <div style={{ position: 'relative', display: 'inline-flex' }}>
+                                                <button onClick={() => { setTasksCollapsed(!tasksCollapsed); setShowChecklistHint(false) }} title={tasksCollapsed ? 'Show smart checklist' : 'Hide smart checklist'} style={{ background: tasksCollapsed ? 'rgba(74,173,168,0.1)' : 'transparent', color: tasksCollapsed ? 'var(--teal)' : '#9aabbb', border: `1.5px solid ${tasksCollapsed ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`, borderRadius: 6, padding: '0.18rem 0.35rem', fontSize: '0.62rem', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>{tasksCollapsed ? '☐' : '☑'}</button>
+                                                {showChecklistHint && tasksCollapsed && (
+                                                    <div style={{ position: 'absolute', top: '-2.2rem', left: '50%', transform: 'translateX(-50%)', background: 'var(--navy)', color: '#fff', fontSize: '0.6rem', fontWeight: 800, padding: '0.25rem 0.5rem', borderRadius: 6, whiteSpace: 'nowrap', zIndex: 50, boxShadow: '0 2px 8px rgba(0,0,0,0.2)', pointerEvents: 'none' }}>
+                                                        Open Smart Checklist ✨
+                                                        <div style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '5px solid var(--navy)' }} />
+                                                    </div>
+                                                )}
+                                                {showChecklistHint && tasksCollapsed && (
+                                                    <span style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: '50%', background: '#E8896A', animation: 'pulse 1.5s infinite', zIndex: 51 }} />
+                                                )}
+                                            </div>
                                         </div>
                                     </div>
                                     <div className={styles.timeline}>
@@ -1636,7 +1650,7 @@ export default function Dashboard() {
                                                 e.preventDefault()
                                                 e.currentTarget.style.background = 'transparent'
                                                 if (dragTaskIdx !== null) {
-                                                    moveTaskToCategory(dragTaskIdx, 'Custom')
+                                                    moveTaskToCategory(dragTaskIdx, '__general__')
                                                     setDragTaskIdx(null)
                                                 }
                                             }}

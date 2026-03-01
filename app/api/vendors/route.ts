@@ -112,7 +112,7 @@ export async function POST(req: NextRequest) {
     if (cat === 'All') {
       const categories = ['Venue', 'Decor', 'Baker', 'Food', 'Music', 'Drinks', 'Photos', 'Entertain']
       const allVendors = await Promise.all(
-        categories.map(c => searchPlaces(c, loc, 4))
+        categories.map(c => searchPlaces(c, loc, 8))
       )
       const merged = allVendors.flat()
       // Shuffle for variety

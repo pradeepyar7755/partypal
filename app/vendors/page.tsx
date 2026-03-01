@@ -47,7 +47,7 @@ function VendorsContent() {
   const [showShortlistOnly, setShowShortlistOnly] = useState(false)
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
-  const VENDORS_PER_PAGE = 6
+  const VENDORS_PER_PAGE = 10
   const [showSidebar, setShowSidebar] = useState(true)
   const [priceMax, setPriceMax] = useState(1000)
   const [ratingFilter, setRatingFilter] = useState(4)
@@ -55,6 +55,7 @@ function VendorsContent() {
   const [locationReady, setLocationReady] = useState(false)
   const [isAutoDetected, setIsAutoDetected] = useState(false)
   const [cuisine, setCuisine] = useState('All')
+  const [distanceFilter, setDistanceFilter] = useState('all')
 
   const CUISINES = ['All', 'Indian', 'Mexican', 'Italian', 'Chinese', 'Thai', 'BBQ', 'Mediterranean', 'Japanese', 'Soul Food', 'American']
 
@@ -217,8 +218,24 @@ function VendorsContent() {
     // Rating filter
     if (v.rating < ratingFilter) return false
     // Price filter
-    const priceVal = v.price === 'Free' ? 0 : v.price === '$' ? 250 : v.price === '$$' ? 500 : v.price === '$$$' ? 1000 : 2000
+    const priceVal = v.price === 'Free' ? 0 : v.price === '$$$$' ? 2000 : v.price === '$$$' ? 1000 : v.price === '$$' ? 500 : v.price === '$' ? 250 : 500
     if (priceVal > priceMax) return false
+    // Distance filter — estimate from address text vs search location
+    if (distanceFilter !== 'all') {
+      const loc = (detectedLocation || planData.location || '').toLowerCase()
+      const vLoc = v.location.toLowerCase()
+      const locCity = loc.split(',')[0].trim()
+      const vLocCity = vLoc.split(',')[0].trim()
+      const vLocParts = vLoc.split(',')
+      const isSameCity = vLocCity.includes(locCity) || locCity.includes(vLocCity)
+      const isSameState = vLocParts.length >= 2 && loc.includes(vLocParts[vLocParts.length - 2]?.trim() || '')
+      // Heuristic distance estimate
+      const estMiles = isSameCity ? 5 : isSameState ? 15 : 30
+      if (distanceFilter === '<5' && estMiles > 5) return false
+      if (distanceFilter === '5-10' && (estMiles < 5 || estMiles > 10)) return false
+      if (distanceFilter === '10-25' && (estMiles < 10 || estMiles > 25)) return false
+      if (distanceFilter === '25+' && estMiles < 25) return false
+    }
     if (!search) return true
     return v.name.toLowerCase().includes(search.toLowerCase()) ||
       v.description.toLowerCase().includes(search.toLowerCase()) ||
@@ -239,7 +256,7 @@ function VendorsContent() {
   const endItem = Math.min(safePage * VENDORS_PER_PAGE, filtered.length)
 
   // Reset page when filters change
-  useEffect(() => { setCurrentPage(1) }, [activecat, search, sort, ratingFilter, priceMax, showShortlistOnly, cuisine])
+  useEffect(() => { setCurrentPage(1) }, [activecat, search, sort, ratingFilter, priceMax, showShortlistOnly, cuisine, distanceFilter])
 
   const location = (() => { const l = detectedLocation || params.get('location') || planData.location || ''; return l && l !== 'TBD' ? l : 'Atlanta, GA' })()
 
@@ -330,6 +347,19 @@ function VendorsContent() {
                     <input type="radio" name="rating" checked={ratingFilter === r} onChange={() => setRatingFilter(r)} />
                     <span className={styles.starsSm}>{'★'.repeat(r)}</span>
                     <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--navy)' }}>{r === 5 ? '5 stars only' : `${r}+ stars`}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+            <div className={styles.filterDivider} />
+
+            <div className={styles.filterSection}>
+              <h3>Distance</h3>
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
+                {[{ label: 'Any Distance', value: 'all' }, { label: '< 5 miles', value: '<5' }, { label: '5–10 miles', value: '5-10' }, { label: '10–25 miles', value: '10-25' }, { label: '25+ miles', value: '25+' }].map(d => (
+                  <label key={d.value} className={styles.filterCheck}>
+                    <input type="radio" name="distance" checked={distanceFilter === d.value} onChange={() => setDistanceFilter(d.value)} />
+                    <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--navy)' }}>{d.label}</span>
                   </label>
                 ))}
               </div>
