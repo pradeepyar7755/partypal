@@ -1932,6 +1932,16 @@ export default function Dashboard() {
                             </select>
                             <button disabled={!collabForm.email.trim() || !collabForm.name.trim()} onClick={async () => {
                                 if (!collabForm.email.trim() || !collabForm.name.trim()) return
+                                // Check if trying to add yourself
+                                if (user?.email && collabForm.email.trim().toLowerCase() === user.email.toLowerCase()) {
+                                    showToast("You can't add yourself as a collaborator — you're already the owner!", 'error')
+                                    return
+                                }
+                                // Check for duplicate
+                                if (collaborators.some(c => c.email.toLowerCase() === collabForm.email.trim().toLowerCase())) {
+                                    showToast(`${collabForm.email} is already a collaborator`, 'error')
+                                    return
+                                }
                                 try {
                                     const res = await fetch('/api/collaborate/invite', {
                                         method: 'POST',
