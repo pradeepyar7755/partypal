@@ -346,7 +346,12 @@ function DashboardContent() {
         // Load per-event guests & vendors
         if (!demo && plan.eventId) {
             setEventGuests(userGetJSON(`partypal_guests_${plan.eventId}`, []))
-            setEventVendors(userGetJSON(`partypal_vendors_${plan.eventId}`, []))
+            const localVendors = userGetJSON(`partypal_vendors_${plan.eventId}`, [])
+            setEventVendors(localVendors)
+            // Also try to load from cloud if local is empty
+            if (localVendors.length === 0) {
+                fetch(`/api/events?uid=_`).catch(() => { })
+            }
             setCollaborators(userGetJSON(`partypal_collabs_${plan.eventId}`, []))
         } else {
             setEventGuests([])
@@ -447,6 +452,13 @@ function DashboardContent() {
                     if (serverTime > localTime) {
                         userSetJSON('partyplan', serverVersion)
                         loadEvent(serverVersion, false)
+                    }
+                    // Sync vendors from cloud if local is empty
+                    const localVendors = userGetJSON<EventVendor[]>(`partypal_vendors_${activePlan.eventId}`, [])
+                    const cloudVendors = (serverVersion as any).vendors as EventVendor[] | undefined
+                    if (localVendors.length === 0 && cloudVendors && cloudVendors.length > 0) {
+                        userSetJSON(`partypal_vendors_${activePlan.eventId}`, cloudVendors)
+                        setEventVendors(cloudVendors)
                     }
                 }
             }
@@ -962,7 +974,10 @@ function DashboardContent() {
         const cost = vendorForm.costEstimate ? parseFloat(vendorForm.costEstimate) : undefined
         const updated = [...eventVendors, { name: vendorForm.name.trim(), category: vendorForm.category.trim(), notes: vendorForm.notes.trim(), confirmed: false, costEstimate: cost && !isNaN(cost) ? cost : undefined }]
         setEventVendors(updated)
-        if (data.eventId) userSetJSON(`partypal_vendors_${data.eventId}`, updated)
+        if (data.eventId) {
+            userSetJSON(`partypal_vendors_${data.eventId}`, updated)
+            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, vendors: updated }) }).catch(() => { })
+        }
         setVendorForm({ name: '', category: '', notes: '', costEstimate: '' })
         showToast('Vendor added', 'success')
     }
@@ -970,25 +985,37 @@ function DashboardContent() {
         const num = cost ? parseFloat(cost) : undefined
         const updated = eventVendors.map((v, i) => i === idx ? { ...v, costEstimate: num && !isNaN(num) ? num : undefined } : v)
         setEventVendors(updated)
-        if (data.eventId) userSetJSON(`partypal_vendors_${data.eventId}`, updated)
+        if (data.eventId) {
+            userSetJSON(`partypal_vendors_${data.eventId}`, updated)
+            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, vendors: updated }) }).catch(() => { })
+        }
     }
     const addSavedVendorToEvent = (id: string, vendor: SavedVendor) => {
         if (eventVendors.some(v => v.name === vendor.name && v.category === vendor.category)) { showToast('Already added', 'info'); return }
         const updated = [...eventVendors, { name: vendor.name, category: vendor.category, notes: `From shortlist • ${vendor.price}`, confirmed: false }]
         setEventVendors(updated)
-        if (data.eventId) userSetJSON(`partypal_vendors_${data.eventId}`, updated)
+        if (data.eventId) {
+            userSetJSON(`partypal_vendors_${data.eventId}`, updated)
+            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, vendors: updated }) }).catch(() => { })
+        }
         showToast(`${vendor.name} added!`, 'success')
     }
     const totalVendorCost = eventVendors.reduce((sum, v) => sum + (v.costEstimate || 0), 0)
     const removeVendor = (idx: number) => {
         const updated = eventVendors.filter((_, i) => i !== idx)
         setEventVendors(updated)
-        if (data.eventId) userSetJSON(`partypal_vendors_${data.eventId}`, updated)
+        if (data.eventId) {
+            userSetJSON(`partypal_vendors_${data.eventId}`, updated)
+            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, vendors: updated }) }).catch(() => { })
+        }
     }
     const toggleVendorConfirmed = (idx: number) => {
         const updated = eventVendors.map((v, i) => i === idx ? { ...v, confirmed: !v.confirmed } : v)
         setEventVendors(updated)
-        if (data.eventId) userSetJSON(`partypal_vendors_${data.eventId}`, updated)
+        if (data.eventId) {
+            userSetJSON(`partypal_vendors_${data.eventId}`, updated)
+            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, vendors: updated }) }).catch(() => { })
+        }
     }
     const toggleCat = (cat: string) => setEnabledCats(prev => prev.includes(cat) ? prev.filter(c => c !== cat) : [...prev, cat])
 

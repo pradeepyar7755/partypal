@@ -209,12 +209,16 @@ function VendorsContent() {
       const vendor = vendors.find(v => v.id === vendorId)
       if (vendor) {
         const savedData = userGetJSON<Record<string, { name: string; category: string; price: string; emoji: string }>>('partypal_shortlist_data', {})
+        const savedFull = userGetJSON<Record<string, Vendor>>('partypal_shortlist_full', {})
         if (updated.includes(vendorId)) {
           savedData[vendorId] = { name: vendor.name, category: vendor.category, price: vendor.price, emoji: vendor.emoji }
+          savedFull[vendorId] = vendor
         } else {
           delete savedData[vendorId]
+          delete savedFull[vendorId]
         }
         userSetJSON('partypal_shortlist_data', savedData)
+        userSetJSON('partypal_shortlist_full', savedFull)
       }
       showToast(updated.includes(vendorId) ? 'Added to shortlist ❤️' : 'Removed from shortlist', updated.includes(vendorId) ? 'success' : 'info')
       if (vendor && updated.includes(vendorId)) {
@@ -225,7 +229,18 @@ function VendorsContent() {
     })
   }
 
-  const filtered = vendors.filter(v => {
+  // When shortlist filter is active, merge in saved shortlist vendors that aren't in current results
+  const vendorsForFilter = (() => {
+    if (!showShortlistOnly) return vendors
+    const savedFull = userGetJSON<Record<string, Vendor>>('partypal_shortlist_full', {})
+    const currentIds = new Set(vendors.map(v => v.id))
+    const missingVendors = shortlist
+      .filter(id => !currentIds.has(id) && savedFull[id])
+      .map(id => savedFull[id])
+    return [...vendors, ...missingVendors]
+  })()
+
+  const filtered = vendorsForFilter.filter(v => {
     if (showShortlistOnly && !shortlist.includes(v.id)) return false
     // Rating filter
     if (v.rating < ratingFilter) return false
@@ -490,6 +505,8 @@ function VendorsContent() {
                                   const newVendor = { name: v.name, category: v.category, notes: `${v.rating}★ · ${v.price} · ${v.location}`, confirmed: false, costEstimate: undefined }
                                   const updated = [...existingVendors, newVendor]
                                   userSetJSON(`partypal_vendors_${ev.eventId}`, updated)
+                                  // Sync to cloud
+                                  fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: ev.eventId, vendors: updated }) }).catch(() => { })
                                   showToast(`Added ${v.name} to ${ev.eventType}!`, 'success')
                                   setAddToEventVendor(null)
                                 }} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '0.4rem 0.5rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 700, color: 'var(--navy)', cursor: 'pointer' }}

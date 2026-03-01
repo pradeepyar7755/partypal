@@ -75,6 +75,7 @@ export async function POST(req: NextRequest) {
             }
         }
         if (body.collaborators !== undefined) updateData.collaborators = body.collaborators
+        if (body.vendors !== undefined) updateData.vendors = body.vendors
 
         await eventRef.set(updateData, { merge: true })
 
