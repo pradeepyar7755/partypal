@@ -21,7 +21,7 @@ const CATEGORIES = [
 const FEATURES = [
   { icon: '🤖', title: 'AI Party Planner', desc: 'Get personalized checklists, timelines, and budget breakdowns based on your event details.' },
   { icon: '🎨', title: 'Theme Inspiration', desc: 'AI surfaces decor ideas, color palettes, and mood boards tailored to your theme and style.' },
-  { icon: '📋', title: 'Vendor Marketplace', desc: 'Browse, compare, and book vetted vendors across all 9 categories — venues, food, music, and more.' },
+  { icon: '📋', title: 'Vendor Marketplace', desc: 'Browse, compare, and book vetted vendors across various categories — venues, food, music, and more.' },
   { icon: '💌', title: 'Guest Management', desc: 'Send digital invites, track RSVPs, collect dietary preferences, and manage your guest list effortlessly.' },
   { icon: '💰', title: 'Budget Tracker', desc: 'Set a budget, track spending across categories, and get smart suggestions to stay on target.' },
   { icon: '✅', title: 'Smart Checklist', desc: 'Auto-generated to-do lists with deadlines that adapt as your event date approaches. Never miss a thing.' },
@@ -300,7 +300,7 @@ export default function Home() {
       <div className="section">
         <p className="section-label">All You Need</p>
         <h2 className="section-title">Everything for Your Party</h2>
-        <p className="section-sub">Browse vendors and services across all 9 categories — curated, reviewed, and ready to book.</p>
+        <p className="section-sub">Browse vendors and services across various categories — curated, reviewed, and ready to book.</p>
         <div className={styles.catGrid} ref={catRef}>
           {CATEGORIES.map(c => (
             <div key={c.name} className={`${styles.catCard} ${styles[c.color]}`} onClick={() => handleCategoryClick(c.cat)}>

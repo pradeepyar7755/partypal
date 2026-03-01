@@ -8,9 +8,9 @@ import { recordInteraction } from '@/lib/ai-memory'
 import { showToast } from '@/components/Toast'
 import { trackVendorSearch, trackVendorShortlisted } from '@/lib/analytics'
 
-const CATS = ['All Vendors', 'Venue', 'Decor', 'Baker', 'Food', 'Photos', 'Music', 'Drinks', 'Entertain']
+const CATS = ['Venue', 'Decor', 'Baker', 'Food', 'Photos', 'Music', 'Drinks', 'Entertain']
 const CAT_EMOJIS: Record<string, string> = {
-  'All Vendors': '🌟', Venue: '🏛️', Decor: '🎀', Baker: '🎂', Food: '🍽️', Photos: '📷', Music: '🎵', Drinks: '🥂', Entertain: '🤹'
+  Venue: '🏛️', Decor: '🎀', Baker: '🎂', Food: '🍽️', Photos: '📷', Music: '🎵', Drinks: '🥂', Entertain: '🤹'
 }
 
 const GRADIENTS: Record<string, string> = {
@@ -37,7 +37,7 @@ interface Vendor {
 function VendorsContent() {
   const router = useRouter()
   const params = useSearchParams()
-  const [activecat, setActivecat] = useState('All Vendors')
+  const [activecat, setActivecat] = useState('Venue')
   const [vendors, setVendors] = useState<Vendor[]>([])
   const [loading, setLoading] = useState(false)
   const [search, setSearch] = useState('')
