@@ -311,15 +311,29 @@ function VendorsContent() {
         <div className={styles.searchBarInner}>
           <div className={styles.searchInputWrap} style={{ maxWidth: 280, flex: '0 0 auto' }}>
             <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontSize: '1rem', zIndex: 2, pointerEvents: 'none' }}>📍</span>
-            <LocationSearch
-              value={isAutoDetected ? '' : detectedLocation}
-              onChange={(loc) => {
-                setDetectedLocation(loc)
-                setIsAutoDetected(false)
-                setLocationReady(true)
-              }}
-              placeholder={isAutoDetected ? 'Current Location' : 'Location...'}
+            <input
               className={styles.searchInput}
+              type="text"
+              placeholder={isAutoDetected ? detectedLocation || 'Current Location' : 'Enter location...'}
+              defaultValue={isAutoDetected ? '' : detectedLocation}
+              onBlur={(e) => {
+                if (e.target.value.trim()) {
+                  setDetectedLocation(e.target.value.trim())
+                  setIsAutoDetected(false)
+                  setLocationReady(true)
+                }
+              }}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  const val = (e.target as HTMLInputElement).value.trim()
+                  if (val) {
+                    setDetectedLocation(val)
+                    setIsAutoDetected(false)
+                    setLocationReady(true)
+                  }
+                }
+              }}
+              style={{ paddingLeft: '2.8rem' }}
             />
           </div>
           <div className={styles.searchInputWrap}>
