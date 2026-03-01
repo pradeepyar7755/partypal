@@ -703,10 +703,13 @@ export default function Dashboard() {
 
     const deleteEvent = (eventId: string, e: React.MouseEvent) => {
         e.stopPropagation()
+        e.preventDefault()
         if (!confirm('Delete this event? This cannot be undone.')) return
+        // Remove from both own events and shared events
         const updated = allEvents.filter(ev => ev.eventId !== eventId)
         setAllEvents(updated)
         userSetJSON('partypal_events', updated)
+        setSharedEvents(prev => prev.filter(ev => ev.eventId !== eventId))
         // Clean up associated localStorage data
         userRemove(`partypal_guests_${eventId}`)
         userRemove(`partypal_collabs_${eventId}`)
@@ -930,8 +933,8 @@ export default function Dashboard() {
                                             {ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'} · {ev.guests || '?'} guests
                                         </div>
                                         {!isShared && <button
-                                            onClick={(e) => deleteEvent(ev.eventId!, e)}
-                                            style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(232,137,106,0.1)', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.65rem', color: '#E8896A', padding: 0, lineHeight: 1 }}
+                                            onClick={(e) => { e.stopPropagation(); e.preventDefault(); deleteEvent(ev.eventId!, e) }}
+                                            style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(232,137,106,0.15)', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.75rem', color: '#E8896A', padding: 0, lineHeight: 1, zIndex: 10 }}
                                             title="Delete event"
                                         >✕</button>}
                                         {isShared && <button
