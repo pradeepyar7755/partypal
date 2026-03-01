@@ -104,7 +104,9 @@ export async function POST(req: NextRequest) {
     }
 
     const vendors = await searchPlaces(cat, loc, 10, cuisine)
-    vendorCache.set(cacheKey, { data: vendors, ts: Date.now() })
+    if (vendors.length > 0) {
+      vendorCache.set(cacheKey, { data: vendors, ts: Date.now() })
+    }
     return NextResponse.json({ vendors, source: 'google' })
   } catch (error) {
     console.error('Vendors error:', error)
