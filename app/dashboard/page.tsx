@@ -827,206 +827,207 @@ export default function Dashboard() {
             </header>
 
             {/* ══ EVENT CARDS ══ */}
-            {/* ══ UNIFIED EVENT SECTION WRAPPER ══ */}
-            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0.75rem', paddingBottom: 0 }}>
-                <div style={{ background: 'linear-gradient(180deg, rgba(45,64,89,0.04) 0%, rgba(74,173,168,0.03) 100%)', border: '1.5px solid rgba(74,173,168,0.12)', borderRadius: 16, padding: '0.75rem 0', overflow: 'hidden' }}>
-
-                    <div style={{ maxWidth: '100%', padding: '0.25rem 0.75rem 0' }}>
-                        <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'thin', WebkitOverflowScrolling: 'touch' }}>
-                            {/* + Plan a Party card (always first) */}
-                            <div
-                                onClick={() => router.push('/#wizard')}
-                                style={{
-                                    minWidth: 120, padding: '0.8rem 1rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s',
-                                    background: 'rgba(0,0,0,0.02)', border: '1.5px dashed rgba(0,0,0,0.12)',
-                                    display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.3rem',
-                                }}
-                            >
-                                <div style={{ fontSize: '1.5rem', opacity: 0.5 }}>➕</div>
-                                <div style={{ fontSize: '0.78rem', color: '#9aabbb', fontWeight: 700 }}>Plan a Party</div>
-                            </div>
-                            {/* All events (own + shared) sorted by date: upcoming first, past after */}
-                            {[...allEvents.map(e => ({ ...e, _shared: false })), ...sharedEvents.filter(se => !allEvents.some(e => e.eventId === se.eventId)).map(e => ({ ...e, _shared: true }))].sort((a, b) => {
-                                const now = new Date()
-                                const aDate = a.date ? new Date(a.date + 'T12:00:00') : null
-                                const bDate = b.date ? new Date(b.date + 'T12:00:00') : null
-                                const aIsPast = aDate ? aDate < now : false
-                                const bIsPast = bDate ? bDate < now : false
-                                if (aIsPast && !bIsPast) return 1
-                                if (!aIsPast && bIsPast) return -1
-                                if (aDate && bDate) return aIsPast ? bDate.getTime() - aDate.getTime() : aDate.getTime() - bDate.getTime()
-                                return 0
-                            }).map((ev, idx) => {
-                                const isActive = !isDemo && data.eventId === ev.eventId
-                                const evDate = ev.date ? new Date(ev.date + 'T12:00:00') : null
-                                const isPast = evDate ? evDate < new Date() : false
-                                const isShared = (ev as any)._shared
-                                const palette = [
-                                    { bg: 'linear-gradient(135deg, rgba(74,173,168,0.18), rgba(61,140,110,0.12))', border: 'rgba(74,173,168,0.5)' },
-                                    { bg: 'linear-gradient(135deg, rgba(232,137,106,0.18), rgba(200,100,70,0.12))', border: 'rgba(232,137,106,0.5)' },
-                                    { bg: 'linear-gradient(135deg, rgba(123,94,167,0.18), rgba(100,70,150,0.12))', border: 'rgba(123,94,167,0.5)' },
-                                    { bg: 'linear-gradient(135deg, rgba(247,201,72,0.20), rgba(220,170,40,0.12))', border: 'rgba(247,201,72,0.5)' },
-                                    { bg: 'linear-gradient(135deg, rgba(66,133,244,0.18), rgba(40,100,200,0.12))', border: 'rgba(66,133,244,0.5)' },
-                                ]
-                                const color = palette[idx % palette.length]
-                                return (
-                                    <div
-                                        key={ev.eventId}
-                                        onClick={() => loadEvent(ev, false)}
-                                        style={{
-                                            minWidth: 150, padding: '0.8rem 1rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const,
-                                            background: isActive ? color.bg : isPast ? 'rgba(0,0,0,0.04)' : 'linear-gradient(135deg, rgba(0,0,0,0.03), rgba(0,0,0,0.06))',
-                                            border: isActive ? `2px solid ${color.border}` : '1.5px solid rgba(0,0,0,0.1)',
-                                            boxShadow: isActive ? `0 4px 16px ${color.border.replace('0.5', '0.2')}` : '0 1px 4px rgba(0,0,0,0.04)',
-                                            opacity: isPast && !isActive ? 0.65 : 1,
-                                        }}
-                                    >
-                                        {isPast && <div style={{ position: 'absolute', top: 6, left: 6, background: 'rgba(155,155,155,0.15)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.55rem', fontWeight: 900, color: '#888', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Past Event</div>}
-                                        {isShared && <div style={{ position: 'absolute', top: 6, right: 28, background: 'rgba(123,94,167,0.15)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.55rem', fontWeight: 900, color: '#7B5EA7', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Shared</div>}
-                                        <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>{ev.eventType?.split(' ')[0] || '🎉'}</div>
-                                        <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.8rem', color: 'var(--navy)', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>{ev.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</div>
-                                        <div style={{ fontSize: '0.7rem', color: '#6b7c93', fontWeight: 700 }}>
-                                            {ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'} · {ev.guests || '?'} guests
-                                        </div>
-                                        {!isShared && <button
-                                            onClick={(e) => deleteEvent(ev.eventId!, e)}
-                                            style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(232,137,106,0.1)', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.65rem', color: '#E8896A', padding: 0, lineHeight: 1 }}
-                                            title="Delete event"
-                                        >✕</button>}
-                                    </div>
-                                )
-                            })}
-                            {/* Demo card (always last) */}
-                            <div
-                                onClick={() => {
-                                    const saved = userGetJSON('partypal_demo', null)
-                                    loadEvent(saved || DEFAULT_PLAN, true)
-                                }}
-                                style={{
-                                    minWidth: 150, padding: '0.8rem 1rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const, overflow: 'hidden',
-                                    background: isDemo
-                                        ? 'repeating-linear-gradient(135deg, rgba(0,0,0,0.03), rgba(0,0,0,0.03) 8px, rgba(0,0,0,0.06) 8px, rgba(0,0,0,0.06) 16px)'
-                                        : 'rgba(0,0,0,0.03)',
-                                    border: isDemo ? '2px solid rgba(155,155,155,0.4)' : '1.5px solid rgba(0,0,0,0.08)',
-                                    opacity: isDemo ? 1 : 0.7,
-                                }}
-                            >
-                                <div style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.08)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.58rem', fontWeight: 900, color: '#888', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>DEMO</div>
-                                <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>🎂</div>
-                                <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: isDemo ? 'var(--navy)' : '#999', marginBottom: '0.2rem' }}>Maya&apos;s 30th Birthday</div>
-                                <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>Mar 15 · 50 guests</div>
-                            </div>
+            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1rem 0.75rem 0' }}>
+                <div style={{ background: 'rgba(45,64,89,0.035)', borderRadius: '14px 14px 0 0', padding: '0.75rem' }}>
+                    <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'thin', WebkitOverflowScrolling: 'touch' }}>
+                        {/* + Plan a Party card (always first) */}
+                        <div
+                            onClick={() => router.push('/#wizard')}
+                            style={{
+                                minWidth: 120, padding: '0.8rem 1rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s',
+                                background: 'rgba(0,0,0,0.02)', border: '1.5px dashed rgba(0,0,0,0.12)',
+                                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.3rem',
+                            }}
+                        >
+                            <div style={{ fontSize: '1.5rem', opacity: 0.5 }}>➕</div>
+                            <div style={{ fontSize: '0.78rem', color: '#9aabbb', fontWeight: 700 }}>Plan a Party</div>
                         </div>
-                    </div>
-
-                    {/* ══ EVENT DETAILS STRIP ══ */}
-                    <div style={{ padding: '0.5rem 0.75rem 0' }}>
-                        {isDemo ? (
-                            /* Demo: compact disclaimer banner */
-                            <div style={{
-                                background: 'repeating-linear-gradient(135deg, rgba(0,0,0,0.02), rgba(0,0,0,0.02) 8px, rgba(0,0,0,0.04) 8px, rgba(0,0,0,0.04) 16px)',
-                                border: '1.5px solid rgba(155,155,155,0.3)',
-                                borderRadius: 10, padding: '0.6rem 1.2rem',
-                                display: 'flex', alignItems: 'center', gap: '0.8rem',
-                            }}>
-                                <span style={{ fontSize: '1rem' }}>💡</span>
-                                <div style={{ flex: 1, fontSize: '0.78rem', fontWeight: 700, color: '#888' }}>
-                                    For Illustration Purposes Only — this is a sample AI-generated plan.
-                                </div>
-                                <button onClick={() => router.push('/#wizard')} style={{
-                                    background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none',
-                                    borderRadius: 8, padding: '0.4rem 1rem', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap',
-                                }}>✨ Create My Plan</button>
-                                <button onClick={() => {
-                                    userRemove('partypal_demo')
-                                    loadEvent(DEFAULT_PLAN, true)
-                                    showToast('Demo reset to original!', 'success')
-                                }} style={{
-                                    background: 'transparent', color: '#999', border: '1.5px solid rgba(155,155,155,0.3)',
-                                    borderRadius: 8, padding: '0.4rem 1rem', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap',
-                                }}>🔄 Reset Demo</button>
-                            </div>
-                        ) : (
-                            /* Real event: editable details strip */
-                            <div style={{
-                                background: 'rgba(74,173,168,0.04)', border: '1.5px solid rgba(74,173,168,0.15)',
-                                borderRadius: 12, padding: '0.8rem 1.2rem',
-                            }}>
-                                {!isEditing ? (
-                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
-                                        <div style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '0.95rem', marginRight: '0.5rem' }}>
-                                            {data.eventType}
-                                        </div>
-                                        {data.date && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>📅 {new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>}
-                                        <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>👥 {data.guests} guests</div>
-                                        <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>📍 {shortLocation(data.location)}</div>
-                                        {data.theme && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>🎨 {data.theme}</div>}
-                                        {data.budget && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>💰 {data.budget}</div>}
-                                        <button onClick={startEditing} style={{ marginLeft: 'auto', background: 'rgba(74,173,168,0.1)', border: '1.5px solid rgba(74,173,168,0.25)', borderRadius: 8, padding: '0.3rem 0.8rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>✏️ Edit</button>
-                                    </div>
-                                ) : (
-                                    <div>
-                                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem', marginBottom: '0.6rem' }}>
-                                            <div>
-                                                <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Event Name</label>
-                                                <input value={editData.eventType} onChange={e => setEditData(p => ({ ...p, eventType: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
-                                            </div>
-                                            <div>
-                                                <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Date</label>
-                                                <input type="date" value={editData.date} onChange={e => setEditData(p => ({ ...p, date: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
-                                            </div>
-                                            <div>
-                                                <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Guests</label>
-                                                <input type="number" value={editData.guests} onChange={e => setEditData(p => ({ ...p, guests: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
-                                            </div>
-                                            <div>
-                                                <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Location</label>
-                                                <LocationSearch
-                                                    value={editData.location}
-                                                    onChange={(loc) => setEditData(p => ({ ...p, location: loc }))}
-                                                    placeholder="Search location..."
-                                                />
-                                            </div>
-                                            <div>
-                                                <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Theme</label>
-                                                <input value={editData.theme} onChange={e => setEditData(p => ({ ...p, theme: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
-                                            </div>
-                                            <div>
-                                                <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Budget</label>
-                                                <select value={editData.budget} onChange={e => setEditData(p => ({ ...p, budget: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }}>
-                                                    <option value="">Select...</option>
-                                                    <option>Under $500</option><option>$500 – $1,500</option><option>$1,500 – $5,000</option><option>$5,000 – $10,000</option><option>$10,000+</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
-                                            <button onClick={cancelEdits} style={{ background: 'rgba(232,137,106,0.1)', border: '1.5px solid rgba(232,137,106,0.3)', borderRadius: 8, padding: '0.35rem 0.8rem', fontSize: '0.75rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Cancel</button>
-                                            <button onClick={saveEdits} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', border: 'none', borderRadius: 8, padding: '0.35rem 1rem', fontSize: '0.75rem', fontWeight: 800, color: '#fff', cursor: 'pointer' }}>💾 Save</button>
-                                        </div>
-                                    </div>
-                                )}
-                            </div>
-                        )}
-                    </div>
-
-                    <div style={{ padding: '0.5rem 0.75rem 0' }}>
-                        <div style={{ display: 'flex', gap: '0.2rem', borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: 0, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
-                            {([['plan', '📋 Plan'], ['theme', '🎨 Theme'], ['vendors', '🏪 Vendors'], ['guests', '👥 Guests'], ['polls', '🗳️ Polls']] as const).map(([key, label]) => (
-                                <button
-                                    key={key}
-                                    onClick={() => setSelectedTab(key)}
+                        {/* All events (own + shared) sorted by date: upcoming first, past after */}
+                        {[...allEvents.map(e => ({ ...e, _shared: false })), ...sharedEvents.filter(se => !allEvents.some(e => e.eventId === se.eventId)).map(e => ({ ...e, _shared: true }))].sort((a, b) => {
+                            const now = new Date()
+                            const aDate = a.date ? new Date(a.date + 'T12:00:00') : null
+                            const bDate = b.date ? new Date(b.date + 'T12:00:00') : null
+                            const aIsPast = aDate ? aDate < now : false
+                            const bIsPast = bDate ? bDate < now : false
+                            if (aIsPast && !bIsPast) return 1
+                            if (!aIsPast && bIsPast) return -1
+                            if (aDate && bDate) return aIsPast ? bDate.getTime() - aDate.getTime() : aDate.getTime() - bDate.getTime()
+                            return 0
+                        }).map((ev, idx) => {
+                            const isActive = !isDemo && data.eventId === ev.eventId
+                            const evDate = ev.date ? new Date(ev.date + 'T12:00:00') : null
+                            const isPast = evDate ? evDate < new Date() : false
+                            const isShared = (ev as any)._shared
+                            const palette = [
+                                { bg: 'linear-gradient(135deg, rgba(74,173,168,0.18), rgba(61,140,110,0.12))', border: 'rgba(74,173,168,0.5)' },
+                                { bg: 'linear-gradient(135deg, rgba(232,137,106,0.18), rgba(200,100,70,0.12))', border: 'rgba(232,137,106,0.5)' },
+                                { bg: 'linear-gradient(135deg, rgba(123,94,167,0.18), rgba(100,70,150,0.12))', border: 'rgba(123,94,167,0.5)' },
+                                { bg: 'linear-gradient(135deg, rgba(247,201,72,0.20), rgba(220,170,40,0.12))', border: 'rgba(247,201,72,0.5)' },
+                                { bg: 'linear-gradient(135deg, rgba(66,133,244,0.18), rgba(40,100,200,0.12))', border: 'rgba(66,133,244,0.5)' },
+                            ]
+                            const color = palette[idx % palette.length]
+                            return (
+                                <div
+                                    key={ev.eventId}
+                                    onClick={() => loadEvent(ev, false)}
                                     style={{
-                                        padding: '0.6rem 0.8rem', border: 'none', borderBottom: selectedTab === key ? '2.5px solid var(--teal)' : '2.5px solid transparent', whiteSpace: 'nowrap' as const,
-                                        background: 'transparent', color: selectedTab === key ? 'var(--navy)' : '#9aabbb',
-                                        fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', transition: 'all 0.2s', borderRadius: '8px 8px 0 0',
+                                        minWidth: 150, padding: '0.8rem 1rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const,
+                                        background: isActive ? color.bg : isPast ? 'rgba(0,0,0,0.04)' : 'linear-gradient(135deg, rgba(0,0,0,0.03), rgba(0,0,0,0.06))',
+                                        border: isActive ? `2px solid ${color.border}` : '1.5px solid rgba(0,0,0,0.1)',
+                                        boxShadow: isActive ? `0 4px 16px ${color.border.replace('0.5', '0.2')}` : '0 1px 4px rgba(0,0,0,0.04)',
+                                        opacity: isPast && !isActive ? 0.65 : 1,
                                     }}
                                 >
-                                    {label}
-                                </button>
-                            ))}
+                                    {isPast && <div style={{ position: 'absolute', top: 6, left: 6, background: 'rgba(155,155,155,0.15)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.55rem', fontWeight: 900, color: '#888', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Past Event</div>}
+                                    {isShared && <div style={{ position: 'absolute', top: 6, right: 28, background: 'rgba(123,94,167,0.15)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.55rem', fontWeight: 900, color: '#7B5EA7', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Shared</div>}
+                                    <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>{ev.eventType?.split(' ')[0] || '🎉'}</div>
+                                    <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.8rem', color: 'var(--navy)', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>{ev.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</div>
+                                    <div style={{ fontSize: '0.7rem', color: '#6b7c93', fontWeight: 700 }}>
+                                        {ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'} · {ev.guests || '?'} guests
+                                    </div>
+                                    {!isShared && <button
+                                        onClick={(e) => deleteEvent(ev.eventId!, e)}
+                                        style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(232,137,106,0.1)', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.65rem', color: '#E8896A', padding: 0, lineHeight: 1 }}
+                                        title="Delete event"
+                                    >✕</button>}
+                                </div>
+                            )
+                        })}
+                        {/* Demo card (always last) */}
+                        <div
+                            onClick={() => {
+                                const saved = userGetJSON('partypal_demo', null)
+                                loadEvent(saved || DEFAULT_PLAN, true)
+                            }}
+                            style={{
+                                minWidth: 150, padding: '0.8rem 1rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const, overflow: 'hidden',
+                                background: isDemo
+                                    ? 'repeating-linear-gradient(135deg, rgba(0,0,0,0.03), rgba(0,0,0,0.03) 8px, rgba(0,0,0,0.06) 8px, rgba(0,0,0,0.06) 16px)'
+                                    : 'rgba(0,0,0,0.03)',
+                                border: isDemo ? '2px solid rgba(155,155,155,0.4)' : '1.5px solid rgba(0,0,0,0.08)',
+                                opacity: isDemo ? 1 : 0.7,
+                            }}
+                        >
+                            <div style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(0,0,0,0.08)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.58rem', fontWeight: 900, color: '#888', letterSpacing: '0.08em', textTransform: 'uppercase' as const }}>DEMO</div>
+                            <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>🎂</div>
+                            <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.85rem', color: isDemo ? 'var(--navy)' : '#999', marginBottom: '0.2rem' }}>Maya&apos;s 30th Birthday</div>
+                            <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>Mar 15 · 50 guests</div>
                         </div>
                     </div>
+                </div>
 
+            </div>
+
+            {/* ══ EVENT DETAILS STRIP ══ */}
+            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 0.75rem' }}>
+                <div style={{ background: 'rgba(45,64,89,0.035)', padding: '0.6rem 0.75rem' }}>
+                    {isDemo ? (
+                        /* Demo: compact disclaimer banner */
+                        <div style={{
+                            background: 'repeating-linear-gradient(135deg, rgba(0,0,0,0.02), rgba(0,0,0,0.02) 8px, rgba(0,0,0,0.04) 8px, rgba(0,0,0,0.04) 16px)',
+                            border: '1.5px solid rgba(155,155,155,0.3)',
+                            borderRadius: 10, padding: '0.6rem 1.2rem',
+                            display: 'flex', alignItems: 'center', gap: '0.8rem',
+                        }}>
+                            <span style={{ fontSize: '1rem' }}>💡</span>
+                            <div style={{ flex: 1, fontSize: '0.78rem', fontWeight: 700, color: '#888' }}>
+                                For Illustration Purposes Only — this is a sample AI-generated plan.
+                            </div>
+                            <button onClick={() => router.push('/#wizard')} style={{
+                                background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none',
+                                borderRadius: 8, padding: '0.4rem 1rem', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap',
+                            }}>✨ Create My Plan</button>
+                            <button onClick={() => {
+                                userRemove('partypal_demo')
+                                loadEvent(DEFAULT_PLAN, true)
+                                showToast('Demo reset to original!', 'success')
+                            }} style={{
+                                background: 'transparent', color: '#999', border: '1.5px solid rgba(155,155,155,0.3)',
+                                borderRadius: 8, padding: '0.4rem 1rem', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap',
+                            }}>🔄 Reset Demo</button>
+                        </div>
+                    ) : (
+                        /* Real event: editable details strip */
+                        <div style={{
+                            background: 'rgba(74,173,168,0.04)', border: '1.5px solid rgba(74,173,168,0.15)',
+                            borderRadius: 12, padding: '0.8rem 1.2rem',
+                        }}>
+                            {!isEditing ? (
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.8rem', flexWrap: 'wrap' }}>
+                                    <div style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '0.95rem', marginRight: '0.5rem' }}>
+                                        {data.eventType}
+                                    </div>
+                                    {data.date && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>📅 {new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>}
+                                    <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>👥 {data.guests} guests</div>
+                                    <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>📍 {shortLocation(data.location)}</div>
+                                    {data.theme && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>🎨 {data.theme}</div>}
+                                    {data.budget && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>💰 {data.budget}</div>}
+                                    <button onClick={startEditing} style={{ marginLeft: 'auto', background: 'rgba(74,173,168,0.1)', border: '1.5px solid rgba(74,173,168,0.25)', borderRadius: 8, padding: '0.3rem 0.8rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>✏️ Edit</button>
+                                </div>
+                            ) : (
+                                <div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem', marginBottom: '0.6rem' }}>
+                                        <div>
+                                            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Event Name</label>
+                                            <input value={editData.eventType} onChange={e => setEditData(p => ({ ...p, eventType: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Date</label>
+                                            <input type="date" value={editData.date} onChange={e => setEditData(p => ({ ...p, date: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Guests</label>
+                                            <input type="number" value={editData.guests} onChange={e => setEditData(p => ({ ...p, guests: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Location</label>
+                                            <LocationSearch
+                                                value={editData.location}
+                                                onChange={(loc) => setEditData(p => ({ ...p, location: loc }))}
+                                                placeholder="Search location..."
+                                            />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Theme</label>
+                                            <input value={editData.theme} onChange={e => setEditData(p => ({ ...p, theme: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
+                                        </div>
+                                        <div>
+                                            <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Budget</label>
+                                            <select value={editData.budget} onChange={e => setEditData(p => ({ ...p, budget: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }}>
+                                                <option value="">Select...</option>
+                                                <option>Under $500</option><option>$500 – $1,500</option><option>$1,500 – $5,000</option><option>$5,000 – $10,000</option><option>$10,000+</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                    <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
+                                        <button onClick={cancelEdits} style={{ background: 'rgba(232,137,106,0.1)', border: '1.5px solid rgba(232,137,106,0.3)', borderRadius: 8, padding: '0.35rem 0.8rem', fontSize: '0.75rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer' }}>✕ Cancel</button>
+                                        <button onClick={saveEdits} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', border: 'none', borderRadius: 8, padding: '0.35rem 1rem', fontSize: '0.75rem', fontWeight: 800, color: '#fff', cursor: 'pointer' }}>💾 Save</button>
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* ══ TABS ══ */}
+            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0 0.75rem' }}>
+                <div style={{ background: 'rgba(45,64,89,0.035)', borderRadius: '0 0 14px 14px', padding: '0 0.75rem 0.75rem' }}>
+                    <div style={{ display: 'flex', gap: '0.2rem', borderBottom: '1px solid rgba(0,0,0,0.08)', paddingBottom: 0, overflowX: 'auto', WebkitOverflowScrolling: 'touch', scrollbarWidth: 'none' }}>
+                        {([['plan', '📋 Plan'], ['theme', '🎨 Theme'], ['vendors', '🏪 Vendors'], ['guests', '👥 Guests'], ['polls', '🗳️ Polls']] as const).map(([key, label]) => (
+                            <button
+                                key={key}
+                                onClick={() => setSelectedTab(key)}
+                                style={{
+                                    padding: '0.6rem 0.8rem', border: 'none', borderBottom: selectedTab === key ? '2.5px solid var(--teal)' : '2.5px solid transparent', whiteSpace: 'nowrap' as const,
+                                    background: 'transparent', color: selectedTab === key ? 'var(--navy)' : '#9aabbb',
+                                    fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', transition: 'all 0.2s', borderRadius: '8px 8px 0 0',
+                                }}
+                            >
+                                {label}
+                            </button>
+                        ))}
+                    </div>
                 </div>
             </div>
 
