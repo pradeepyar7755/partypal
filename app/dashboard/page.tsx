@@ -1951,7 +1951,7 @@ export default function Dashboard() {
                                             collaboratorEmail: collabForm.email,
                                             collaboratorName: collabForm.name,
                                             role: collabForm.role,
-                                            inviterName: data.eventType?.split("'")[0]?.trim() || 'Someone',
+                                            inviterName: user?.displayName || user?.email?.split('@')[0] || 'Someone',
                                             eventName: data.eventType,
                                         }),
                                     })
