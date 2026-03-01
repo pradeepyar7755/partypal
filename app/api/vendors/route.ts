@@ -135,9 +135,10 @@ async function searchPlaces(category: string, location: string, maxResults: numb
   const mapping = CATEGORY_MAP[category]
   if (!mapping) return []
 
-  // Prepend cuisine to query for Food category
-  const queryPrefix = cuisine ? `best ${cuisine} ` : ''
-  const textQuery = `${queryPrefix}${mapping.query} in ${location}`
+  // For cuisine-specific searches, use a more targeted query
+  const textQuery = cuisine && cuisine !== 'All'
+    ? `${cuisine} restaurant in ${location}`
+    : `${mapping.query} in ${location}`
 
   const body: Record<string, unknown> = {
     textQuery,
@@ -194,6 +195,25 @@ async function searchPlaces(category: string, location: string, maxResults: numb
       const types = (p.types as string[]) || []
       return types.some(t => relevant.has(t))
     })
+  }
+
+  // Cuisine post-filter: boost results that actually match the cuisine
+  if (cuisine && cuisine !== 'All') {
+    const cuisineLower = cuisine.toLowerCase()
+    // Score each place by how well it matches the cuisine
+    const scored = places.map((p: Record<string, unknown>) => {
+      const name = ((p.displayName as { text: string })?.text || '').toLowerCase()
+      const editorial = ((p.editorialSummary as { text: string })?.text || '').toLowerCase()
+      const types = ((p.types as string[]) || []).join(' ').toLowerCase()
+      let score = 0
+      if (name.includes(cuisineLower)) score += 3
+      if (editorial.includes(cuisineLower)) score += 2
+      if (types.includes(cuisineLower)) score += 1
+      return { place: p, score }
+    })
+    // Sort by cuisine match score (descending), keeping relevance as tiebreaker
+    scored.sort((a: { score: number }, b: { score: number }) => b.score - a.score)
+    places = scored.map((s: { place: Record<string, unknown> }) => s.place)
   }
 
   // Sort by popularity (reviews * rating) to surface best vendors

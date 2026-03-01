@@ -433,10 +433,10 @@ function VendorsContent() {
                         <div className={styles.priceFrom}>Starting from</div>
                         <div className={styles.priceAmount}>{v.price} {v.priceLabel}</div>
                       </div>
-                      <a href={v.websiteUri || v.googleMapsUri || '#'} target="_blank" rel="noopener noreferrer" className={styles.bookBtn} onClick={(e) => e.stopPropagation()} style={{ textDecoration: 'none', color: 'inherit' }}>View →</a>
+                      <a href={v.websiteUri || v.googleMapsUri || '#'} target="_blank" rel="noopener noreferrer" className={styles.bookBtn} onClick={(e) => e.stopPropagation()} style={{ textDecoration: 'none', color: 'inherit' }}>Website →</a>
                       {activeEvents.length > 0 && (
                         <div style={{ position: 'relative' }}>
-                          <button onClick={(e) => { e.stopPropagation(); setAddToEventVendor(addToEventVendor === v.id ? null : v.id) }} style={{ background: 'rgba(74,173,168,0.1)', border: '1.5px solid rgba(74,173,168,0.3)', borderRadius: 8, padding: '0.4rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: 'var(--teal)', cursor: 'pointer', whiteSpace: 'nowrap' }}>+ Event</button>
+                          <button onClick={(e) => { e.stopPropagation(); setAddToEventVendor(addToEventVendor === v.id ? null : v.id) }} className={styles.bookBtn} style={{ background: 'var(--light-bg)', color: 'var(--navy)', border: '1.5px solid var(--border)' }}>+ Event</button>
                           {addToEventVendor === v.id && (
                             <div style={{ position: 'absolute', bottom: '110%', right: 0, background: 'white', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '1.5px solid var(--border)', padding: '0.5rem', zIndex: 100, minWidth: 180 }} onClick={(e) => e.stopPropagation()}>
                               <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', padding: '0.2rem 0.4rem', marginBottom: '0.3rem' }}>Add to event:</div>

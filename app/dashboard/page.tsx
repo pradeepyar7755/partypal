@@ -181,6 +181,8 @@ export default function Dashboard() {
     const [editTimelineMode, setEditTimelineMode] = useState(false)
     const [tasksCollapsed, setTasksCollapsed] = useState(true)
     const [showChecklistHint, setShowChecklistHint] = useState(true)
+    const [deletedTasks, setDeletedTasks] = useState<ChecklistItem[]>([])
+    const [showDeletedTasks, setShowDeletedTasks] = useState(false)
     const [showCollabModal, setShowCollabModal] = useState(false)
     const [collaborators, setCollaborators] = useState<{ email: string; name: string; role: string }[]>([])
     const [collabForm, setCollabForm] = useState({ email: '', name: '', role: 'Viewer' })
@@ -426,6 +428,18 @@ export default function Dashboard() {
         return () => clearInterval(interval)
     }, [syncFromFirestore])
 
+    // Re-read vendors from localStorage when window gains focus (returning from vendor marketplace)
+    useEffect(() => {
+        const handleFocus = () => {
+            if (data.eventId && !isDemo) {
+                const fresh = userGetJSON<EventVendor[]>(`partypal_vendors_${data.eventId}`, [])
+                setEventVendors(fresh)
+            }
+        }
+        window.addEventListener('focus', handleFocus)
+        return () => window.removeEventListener('focus', handleFocus)
+    }, [data.eventId, isDemo])
+
     // Fetch shared events from Firestore
     useEffect(() => {
         if (!user?.uid) return
@@ -473,37 +487,49 @@ export default function Dashboard() {
             }
         })
 
-        // Pass 2: Keyword heuristic matching for unassigned tasks
-        timeline.forEach((t, ti) => {
-            const tWords = `${t.task} ${t.category}`.toLowerCase()
-            checklist.forEach((c, ci) => {
-                if (assigned.has(ci)) return
-                if (c.category === '__general__' || c.category === 'Custom') return
-                const cWords = `${c.item} ${c.category}`.toLowerCase()
-                const keywords = ['venue', 'book', 'vendor', 'dj', 'music', 'photographer', 'photo', 'video',
-                    'invite', 'invitation', 'rsvp', 'guest', 'send',
-                    'decor', 'cake', 'order', 'decoration', 'flower',
-                    'food', 'drink', 'cater', 'menu', 'cocktail',
-                    'confirm', 'final', 'call', 'playlist',
-                    'budget', 'cost', 'date', 'time', 'plan', 'event day']
-                const matchScore = keywords.filter(kw => tWords.includes(kw) && cWords.includes(kw)).length
-                const catMatch = c.category && tWords.includes(c.category.toLowerCase()) ? 2 : 0
-                if (matchScore + catMatch >= 1) {
-                    mapping[ti].push(ci)
-                    assigned.add(ci)
+        // Pass 2: Keyword heuristic matching — assign to BEST matching timeline item, not first
+        const keywordsMap: Record<string, string[]> = {
+            venue: ['venue', 'book', 'space', 'location', 'room'],
+            music: ['dj', 'music', 'band', 'playlist', 'sound'],
+            photo: ['photographer', 'photo', 'video', 'camera', 'picture'],
+            invite: ['invite', 'invitation', 'rsvp', 'guest', 'send'],
+            decor: ['decor', 'cake', 'order', 'decoration', 'flower', 'balloon', 'banner'],
+            food: ['food', 'drink', 'cater', 'menu', 'cocktail', 'snack', 'bar'],
+            final: ['confirm', 'final', 'call', 'check', 'prep', 'day before', 'event day'],
+        }
+        checklist.forEach((c, ci) => {
+            if (assigned.has(ci)) return
+            if (c.category === '__general__' || c.category === 'Custom') return
+            const cWords = `${c.item} ${c.category}`.toLowerCase()
+            let bestTi = -1, bestScore = 0
+            timeline.forEach((t, ti) => {
+                const tWords = `${t.task} ${t.category}`.toLowerCase()
+                let score = 0
+                for (const group of Object.values(keywordsMap)) {
+                    const cHit = group.some(kw => cWords.includes(kw))
+                    const tHit = group.some(kw => tWords.includes(kw))
+                    if (cHit && tHit) score += 2
                 }
+                if (c.category && tWords.includes(c.category.toLowerCase())) score += 3
+                if (score > bestScore) { bestScore = score; bestTi = ti }
             })
-        })
-
-        // Pass 3: Steal from unassigned pool for empty deliverables
-        const unassignedPool = checklist.map((_, ci) => ci).filter(ci => !assigned.has(ci) && checklist[ci]?.category !== '__general__' && checklist[ci]?.category !== 'Custom')
-        timeline.forEach((_, ti) => {
-            if (mapping[ti].length === 0 && unassignedPool.length > 0) {
-                const stolen = unassignedPool.shift()!
-                mapping[ti].push(stolen)
-                assigned.add(stolen)
+            if (bestTi >= 0 && bestScore >= 2) {
+                mapping[bestTi].push(ci)
+                assigned.add(ci)
             }
         })
+
+        // Pass 3: Round-robin unassigned tasks across deliverables with fewest tasks
+        const unassignedPool = checklist.map((_, ci) => ci).filter(ci => !assigned.has(ci) && checklist[ci]?.category !== '__general__' && checklist[ci]?.category !== 'Custom')
+        for (const ci of unassignedPool) {
+            // Find the timeline item with the fewest tasks
+            let minTi = 0, minCount = Infinity
+            timeline.forEach((_, ti) => {
+                if (mapping[ti].length < minCount) { minCount = mapping[ti].length; minTi = ti }
+            })
+            mapping[minTi].push(ci)
+            assigned.add(ci)
+        }
         const unassigned = checklist.map((_, ci) => ci).filter(ci => !assigned.has(ci))
         return { mapping, unassigned }
     }
@@ -599,13 +625,34 @@ export default function Dashboard() {
         const removed = checklist[i]
         const updated = checklist.filter((_, idx) => idx !== i)
         setChecklist(updated)
+        setDeletedTasks(prev => [...prev, removed])
         const stored = userGet('partyplan')
         if (stored) {
             const d = JSON.parse(stored)
             d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done, completedAt: c.completedAt }))
             userSetJSON('partyplan', d)
         }
-        showToast(`"${removed.item}" removed`, 'info')
+        showToast(`"${removed.item}" moved to Deleted Tasks`, 'info')
+    }
+
+    const restoreDeletedTask = (i: number) => {
+        const task = deletedTasks[i]
+        setDeletedTasks(prev => prev.filter((_, idx) => idx !== i))
+        const updated = [...checklist, { ...task, done: false }]
+        setChecklist(updated)
+        const stored = userGet('partyplan')
+        if (stored) {
+            const d = JSON.parse(stored)
+            d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done, completedAt: c.completedAt }))
+            userSetJSON('partyplan', d)
+        }
+        showToast(`"${task.item}" restored`, 'success')
+    }
+
+    const permanentlyDeleteTask = (i: number) => {
+        const task = deletedTasks[i]
+        setDeletedTasks(prev => prev.filter((_, idx) => idx !== i))
+        showToast(`"${task.item}" permanently deleted`, 'info')
     }
 
     const bulkImportGuests = () => {
@@ -1121,14 +1168,30 @@ export default function Dashboard() {
                                             <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>📍 {shortLocation(data.location)}</div>
                                             {data.theme && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>🎨 {data.theme}</div>}
                                             {data.budget && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>💰 {data.budget}</div>}
-                                            <button onClick={startEditing} style={{ marginLeft: 'auto', background: 'rgba(74,173,168,0.1)', border: '1.5px solid rgba(74,173,168,0.25)', borderRadius: 8, padding: '0.3rem 0.8rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>✏️ Edit</button>
+                                            <div style={{ position: 'relative', display: 'inline-flex', marginLeft: 'auto' }}>
+                                                <button onClick={startEditing} style={{ background: 'rgba(74,173,168,0.1)', border: '1.5px solid rgba(74,173,168,0.25)', borderRadius: 8, padding: '0.3rem 0.8rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>✏️ Edit</button>
+                                                <div style={{ position: 'absolute', top: '-2.2rem', left: '50%', transform: 'translateX(-50%)', background: 'var(--navy)', color: '#fff', fontSize: '0.58rem', fontWeight: 800, padding: '0.2rem 0.5rem', borderRadius: 6, whiteSpace: 'nowrap', zIndex: 50, boxShadow: '0 2px 8px rgba(0,0,0,0.2)', pointerEvents: 'none' }}>
+                                                    Rename or Edit Event Details
+                                                    <div style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '5px solid var(--navy)' }} />
+                                                </div>
+                                                <span style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: '50%', background: '#E8896A', animation: 'pulse 1.5s infinite', zIndex: 51 }} />
+                                            </div>
                                         </div>
                                     ) : (
                                         <div>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(180px, 1fr))', gap: '0.5rem', marginBottom: '0.6rem' }}>
                                                 <div>
                                                     <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Event Name</label>
-                                                    <input value={editData.eventType} onChange={e => setEditData(p => ({ ...p, eventType: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
+                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
+                                                        {(() => {
+                                                            const emoji = editData.eventType.match(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu)?.pop()
+                                                            return emoji ? <span style={{ fontSize: '1.2rem', padding: '0 0.3rem', userSelect: 'none' }}>{emoji}</span> : null
+                                                        })()}
+                                                        <input value={editData.eventType.replace(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu, '').trim()} onChange={e => {
+                                                            const emoji = editData.eventType.match(/[\p{Emoji_Presentation}\p{Extended_Pictographic}]/gu)?.pop() || ''
+                                                            setEditData(p => ({ ...p, eventType: e.target.value + (emoji ? ` ${emoji}` : '') }))
+                                                        }} style={{ flex: 1, padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
+                                                    </div>
                                                 </div>
                                                 <div>
                                                     <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Date</label>
@@ -1891,6 +1954,33 @@ export default function Dashboard() {
                                                                 </div>
                                                             )
                                                         })}
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+                                    )}
+                                    {/* ── Deleted Tasks ── */}
+                                    {!tasksCollapsed && deletedTasks.length > 0 && (
+                                        <div className={styles.timelineItem}>
+                                            <div className={styles.tlLeft}>
+                                                <div className={styles.tlDot} style={{ background: '#E8896A', border: '3px solid rgba(232,137,106,0.2)', fontSize: '0.7rem' }}>🗑️</div>
+                                            </div>
+                                            <div className={styles.tlContent}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', cursor: 'pointer' }} onClick={() => setShowDeletedTasks(!showDeletedTasks)}>
+                                                    <div className={styles.tlTitle} style={{ color: '#E8896A' }}>Deleted Tasks</div>
+                                                    <span style={{ fontSize: '0.55rem', fontWeight: 800, color: '#E8896A', background: 'rgba(232,137,106,0.08)', border: '1px solid rgba(232,137,106,0.2)', padding: '0.05rem 0.35rem', borderRadius: 8 }}>{deletedTasks.length}</span>
+                                                    <span style={{ fontSize: '0.6rem', color: '#9aabbb', marginLeft: 'auto' }}>{showDeletedTasks ? '▼' : '▶'}</span>
+                                                </div>
+                                                <div className={styles.tlDesc}>Tasks you removed — restore or permanently delete</div>
+                                                {showDeletedTasks && (
+                                                    <div style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '0.4rem' }}>
+                                                        {deletedTasks.map((task, i) => (
+                                                            <div key={i} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', padding: '0.3rem 0', borderBottom: '1px solid rgba(0,0,0,0.03)' }}>
+                                                                <span style={{ fontSize: '0.75rem', color: '#9aabbb', textDecoration: 'line-through', flex: 1 }}>{task.item}</span>
+                                                                <button onClick={() => restoreDeletedTask(i)} style={{ background: 'rgba(74,173,168,0.08)', border: '1.5px solid rgba(74,173,168,0.2)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.62rem', fontWeight: 800, color: 'var(--teal)', cursor: 'pointer', whiteSpace: 'nowrap' }}>↩ Restore</button>
+                                                                <button onClick={() => permanentlyDeleteTask(i)} style={{ background: 'rgba(232,137,106,0.08)', border: '1.5px solid rgba(232,137,106,0.2)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.62rem', fontWeight: 800, color: '#E8896A', cursor: 'pointer', whiteSpace: 'nowrap' }}>✕ Delete</button>
+                                                            </div>
+                                                        ))}
                                                     </div>
                                                 )}
                                             </div>
