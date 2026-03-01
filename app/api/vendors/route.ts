@@ -114,6 +114,43 @@ export async function POST(req: NextRequest) {
   }
 }
 
+// Temporary debug endpoint — remove after fixing
+export async function GET() {
+  try {
+    const keyPrefix = GOOGLE_MAPS_API_KEY.slice(0, 10) + '...'
+    const keyLength = GOOGLE_MAPS_API_KEY.length
+
+    // Test the Places API directly
+    const res = await fetch('https://places.googleapis.com/v1/places:searchText', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Goog-Api-Key': GOOGLE_MAPS_API_KEY,
+        'X-Goog-FieldMask': 'places.id,places.displayName',
+      },
+      body: JSON.stringify({
+        textQuery: 'best event venue in Atlanta, GA',
+        maxResultCount: 3,
+      }),
+    })
+
+    const statusCode = res.status
+    const body = await res.text()
+    const parsed = JSON.parse(body)
+    const placeCount = parsed.places?.length || 0
+
+    return NextResponse.json({
+      keyPrefix,
+      keyLength,
+      apiStatus: statusCode,
+      placesReturned: placeCount,
+      rawBody: body.slice(0, 500),
+    })
+  } catch (err) {
+    return NextResponse.json({ error: String(err) })
+  }
+}
+
 async function searchPlaces(category: string, location: string, maxResults: number, cuisine?: string) {
   const mapping = CATEGORY_MAP[category]
   if (!mapping) return []
@@ -167,6 +204,7 @@ async function searchPlaces(category: string, location: string, maxResults: numb
 
   const data = await res.json()
   let places = data.places || []
+  console.log(`[vendor-search] ${category} in ${location}: API returned ${places.length} places, query="${textQuery}"`)
 
   // Soft filter: prefer matching types but keep all results if too few match
   if (mapping.relevantTypes.length > 0) {
