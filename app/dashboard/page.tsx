@@ -323,7 +323,7 @@ export default function Dashboard() {
         fetch(`/api/events/shared?uid=${user.uid}&email=${encodeURIComponent(user.email || '')}`)
             .then(r => r.json())
             .then(d => {
-                if (d.events?.length > 0) setSharedEvents(d.events)
+                setSharedEvents(d.events || [])
             })
             .catch(() => { /* silent */ })
     }, [user])
