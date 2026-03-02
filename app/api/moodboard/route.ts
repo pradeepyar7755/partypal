@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 import { assembleContext, hasContext } from '@/lib/ai-context-server'
-import { checkRateLimit } from '@/lib/rate-limiter'
+import { checkRateLimit, logApiCall } from '@/lib/rate-limiter'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
@@ -67,6 +67,8 @@ Make everything deeply specific to the theme and event type provided.`
     const text = result.response.text()
     const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const board = JSON.parse(cleaned)
+    // Track API usage (fire-and-forget)
+    logApiCall('moodboard', 'gemini', identifier)
     return NextResponse.json(board)
   } catch (error: unknown) {
     console.error('Moodboard error:', error)

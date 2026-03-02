@@ -680,6 +680,176 @@ export default function AdminDashboard() {
                             </>
                         )}
 
+                        {/* ══ API USAGE METRICS ══ */}
+                        {usageData?.apiMetrics && (() => {
+                            const am = usageData.apiMetrics
+                            const EP_META: Record<string, { label: string; emoji: string; color: string; service: string }> = {
+                                plan: { label: 'Party Plan', emoji: '🤖', color: '#F7C948', service: 'Gemini' },
+                                moodboard: { label: 'Moodboard', emoji: '🎨', color: '#7B5EA7', service: 'Gemini' },
+                                guests: { label: 'Guest AI', emoji: '💌', color: '#3D8C6E', service: 'Gemini' },
+                                vendors: { label: 'Vendor Search', emoji: '🔍', color: '#E8896A', service: 'Maps' },
+                                location: { label: 'Location', emoji: '📍', color: '#4AADA8', service: 'Maps' },
+                            }
+                            const epEntries = Object.entries(am.endpointTotals as Record<string, number>)
+                                .sort((a, b) => b[1] - a[1])
+                            const maxEpCalls = Math.max(...epEntries.map(([, c]) => c), 1)
+
+                            return (
+                                <>
+                                    <div className={styles.sectionHeader} style={{ marginTop: '1.5rem' }}>
+                                        <span className={styles.sectionEmoji}>🔌</span>
+                                        <span className={styles.sectionTitle}>API Usage Metrics</span>
+                                        <span className={styles.sectionSub}>Per-endpoint tracking — Last 7 days</span>
+                                    </div>
+
+                                    {/* KPI Row */}
+                                    <div className={styles.kpiGrid}>
+                                        <KPICard
+                                            label="Gemini AI Calls"
+                                            value={formatNumber(am.totals.gemini)}
+                                            icon="🧠"
+                                            color="#F7C948"
+                                            subtitle="Last 7 days"
+                                        />
+                                        <KPICard
+                                            label="Maps / Places"
+                                            value={formatNumber(am.totals.maps)}
+                                            icon="🗺️"
+                                            color="#4AADA8"
+                                            subtitle="Last 7 days"
+                                        />
+                                        <KPICard
+                                            label="Est. Cost Today"
+                                            value={am.todayCost}
+                                            icon="💰"
+                                            color="#3D8C6E"
+                                        />
+                                        <KPICard
+                                            label="Est. Monthly Cost"
+                                            value={am.estMonthlyCost}
+                                            icon="📊"
+                                            color={parseFloat(am.estMonthlyCost.replace('$', '')) > 10 ? '#E8896A' : '#3D8C6E'}
+                                            subtitle="Projected from 7-day avg"
+                                        />
+                                    </div>
+
+                                    {/* Per-Endpoint Breakdown */}
+                                    <div className={styles.twoCol}>
+                                        <div className={styles.chartCard}>
+                                            <div className={styles.chartTitle}>Calls by Endpoint (7 Days)</div>
+                                            <div style={{ padding: '0.3rem 0' }}>
+                                                {epEntries.length > 0 ? epEntries.map(([ep, count]) => {
+                                                    const meta = EP_META[ep] || { label: ep, emoji: '📡', color: '#9aabbb', service: '?' }
+                                                    const pct = (count / maxEpCalls) * 100
+                                                    return (
+                                                        <div key={ep} style={{ marginBottom: '0.6rem' }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, color: 'white', marginBottom: '0.2rem' }}>
+                                                                <span>{meta.emoji} {meta.label}</span>
+                                                                <span style={{ color: 'rgba(255,255,255,0.5)' }}>
+                                                                    {count} calls
+                                                                    <span style={{ marginLeft: 6, padding: '0.1rem 0.4rem', borderRadius: 4, fontSize: '0.6rem', fontWeight: 800, background: meta.service === 'Gemini' ? 'rgba(247,201,72,0.15)' : 'rgba(74,173,168,0.15)', color: meta.service === 'Gemini' ? '#F7C948' : '#4AADA8' }}>
+                                                                        {meta.service}
+                                                                    </span>
+                                                                </span>
+                                                            </div>
+                                                            <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.04)' }}>
+                                                                <div style={{ height: '100%', borderRadius: 4, width: `${pct}%`, background: meta.color, transition: 'width 0.6s ease' }} />
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                }) : (
+                                                    <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', textAlign: 'center', padding: '2rem' }}>
+                                                        No API calls recorded yet. Use PartyPal features to see data here.
+                                                    </div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        {/* Cost Breakdown Table */}
+                                        <div className={styles.chartCard}>
+                                            <div className={styles.chartTitle}>Cost Estimates by Endpoint</div>
+                                            <div style={{ padding: '0.3rem 0' }}>
+                                                {Object.entries(EP_META).map(([ep, meta]) => {
+                                                    const calls = (am.endpointTotals as Record<string, number>)[ep] || 0
+                                                    const costPerCall = ep === 'plan' ? 0.01 : ep === 'moodboard' ? 0.005 : ep === 'guests' ? 0.003 : ep === 'vendors' ? 0.01 : 0.003
+                                                    const cost = calls * costPerCall
+                                                    return (
+                                                        <div key={ep} style={{
+                                                            display: 'flex', justifyContent: 'space-between', alignItems: 'center',
+                                                            padding: '0.5rem 0.3rem', borderBottom: '1px solid rgba(255,255,255,0.04)',
+                                                            fontSize: '0.78rem',
+                                                        }}>
+                                                            <span style={{ fontWeight: 700, color: 'white' }}>
+                                                                {meta.emoji} {meta.label}
+                                                            </span>
+                                                            <span style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                                                <span style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.7rem' }}>
+                                                                    {calls} × ${costPerCall.toFixed(3)}
+                                                                </span>
+                                                                <span style={{ fontWeight: 800, color: cost > 0 ? '#F7C948' : 'rgba(255,255,255,0.3)', minWidth: 50, textAlign: 'right' }}>
+                                                                    ${cost.toFixed(2)}
+                                                                </span>
+                                                            </span>
+                                                        </div>
+                                                    )
+                                                })}
+                                                <div style={{
+                                                    display: 'flex', justifyContent: 'space-between', padding: '0.6rem 0.3rem',
+                                                    fontSize: '0.82rem', fontWeight: 800, color: 'white',
+                                                    borderTop: '2px solid rgba(255,255,255,0.08)', marginTop: '0.3rem',
+                                                }}>
+                                                    <span>Total (7 days)</span>
+                                                    <span style={{ color: '#F7C948' }}>{am.weekCost}</span>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* 7-Day Trend — Stacked by Service */}
+                                    <div className={styles.chartCard} style={{ marginTop: '0.8rem' }}>
+                                        <div className={styles.chartTitle}>Daily API Calls — Last 7 Days (Gemini vs Maps)</div>
+                                        <div className={styles.barChart}>
+                                            {(am.days as { date: string; services: Record<string, number>; totalCalls: number }[]).map((d, i) => {
+                                                const maxDay = Math.max(...(am.days as { totalCalls: number }[]).map((x: { totalCalls: number }) => x.totalCalls), 1)
+                                                const geminiH = maxDay > 0 ? ((d.services.gemini || 0) / maxDay) * 100 : 0
+                                                const mapsH = maxDay > 0 ? ((d.services.maps || 0) / maxDay) * 100 : 0
+                                                return (
+                                                    <div key={i} className={styles.barCol}>
+                                                        <div className={styles.barValue}>{d.totalCalls}</div>
+                                                        <div style={{ display: 'flex', flexDirection: 'column', flex: 1, justifyContent: 'flex-end', width: '100%' }}>
+                                                            <div style={{
+                                                                height: `${Math.max(geminiH > 0 ? 2 : 0, geminiH)}%`,
+                                                                background: '#F7C948',
+                                                                borderRadius: '3px 3px 0 0',
+                                                                transition: 'height 0.5s ease',
+                                                            }} />
+                                                            <div style={{
+                                                                height: `${Math.max(mapsH > 0 ? 2 : 0, mapsH)}%`,
+                                                                background: '#4AADA8',
+                                                                borderRadius: '0 0 3px 3px',
+                                                                transition: 'height 0.5s ease',
+                                                            }} />
+                                                        </div>
+                                                        <div className={styles.barLabel}>
+                                                            {new Date(d.date + 'T12:00:00').toLocaleDateString('en', { weekday: 'short' })}
+                                                        </div>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                        <div style={{ display: 'flex', gap: '1.2rem', justifyContent: 'center', marginTop: '0.5rem' }}>
+                                            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                <span style={{ width: 8, height: 8, borderRadius: 2, background: '#F7C948', display: 'inline-block' }} /> Gemini AI
+                                            </span>
+                                            <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'rgba(255,255,255,0.5)', display: 'flex', alignItems: 'center', gap: 4 }}>
+                                                <span style={{ width: 8, height: 8, borderRadius: 2, background: '#4AADA8', display: 'inline-block' }} /> Google Maps
+                                            </span>
+                                        </div>
+                                    </div>
+                                </>
+                            )
+                        })()}
+
                         {/* ══ POLL ANALYTICS ══ */}
                         {pollStats && (
                             <>

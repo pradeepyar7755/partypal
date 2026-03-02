@@ -176,6 +176,9 @@ export async function getUsageStats() {
         last7Days.push({ date: dateStr, calls: dayCalls })
     }
 
+    // Fetch API metrics alongside
+    const apiMetrics = await getApiMetrics()
+
     return {
         today: {
             totalCalls: todayTotalCalls,
@@ -188,5 +191,130 @@ export async function getUsageStats() {
         topUsers: userCalls.sort((a, b) => b.count - a.count).slice(0, 5),
         last7Days,
         config: PLAN_CONFIG,
+        apiMetrics,
+    }
+}
+
+// ── Log an external API call (fire-and-forget) ────────
+export async function logApiCall(
+    endpoint: string,   // 'plan' | 'moodboard' | 'guests' | 'vendors' | 'location'
+    service: 'gemini' | 'maps',
+    userId?: string
+) {
+    try {
+        const db = getDb()
+        const today = new Date().toISOString().split('T')[0]
+
+        // Increment daily aggregate counter (one doc per date)
+        const dailyRef = db.collection('api_usage_daily').doc(today)
+        const dailyDoc = await dailyRef.get()
+        const existing = dailyDoc.exists ? dailyDoc.data() || {} : {}
+
+        const endpoints = (existing.endpoints || {}) as Record<string, number>
+        const services = (existing.services || {}) as Record<string, number>
+
+        endpoints[endpoint] = (endpoints[endpoint] || 0) + 1
+        services[service] = (services[service] || 0) + 1
+
+        await dailyRef.set({
+            date: today,
+            totalCalls: ((existing.totalCalls as number) || 0) + 1,
+            endpoints,
+            services,
+            lastUpdated: new Date().toISOString(),
+        }, { merge: true })
+
+        // Also write individual event for detailed queries
+        await db.collection('api_usage').add({
+            endpoint,
+            service,
+            userId: userId || 'anonymous',
+            date: today,
+            timestamp: new Date().toISOString(),
+        })
+    } catch {
+        // Fire-and-forget — never fail the actual API request
+    }
+}
+
+// ── Get API usage metrics for admin dashboard ─────────
+export async function getApiMetrics() {
+    try {
+        const db = getDb()
+        const today = new Date().toISOString().split('T')[0]
+
+        // Get last 7 days of daily aggregates
+        const days: { date: string; endpoints: Record<string, number>; services: Record<string, number>; totalCalls: number }[] = []
+        for (let i = 6; i >= 0; i--) {
+            const d = new Date()
+            d.setDate(d.getDate() - i)
+            const dateStr = d.toISOString().split('T')[0]
+            const doc = await db.collection('api_usage_daily').doc(dateStr).get()
+            if (doc.exists) {
+                const data = doc.data()!
+                days.push({
+                    date: dateStr,
+                    endpoints: (data.endpoints || {}) as Record<string, number>,
+                    services: (data.services || {}) as Record<string, number>,
+                    totalCalls: (data.totalCalls as number) || 0,
+                })
+            } else {
+                days.push({ date: dateStr, endpoints: {}, services: {}, totalCalls: 0 })
+            }
+        }
+
+        // Aggregate totals
+        const totals = { gemini: 0, maps: 0, total: 0 }
+        const endpointTotals: Record<string, number> = {}
+        for (const day of days) {
+            totals.total += day.totalCalls
+            totals.gemini += (day.services.gemini || 0)
+            totals.maps += (day.services.maps || 0)
+            for (const [ep, count] of Object.entries(day.endpoints)) {
+                endpointTotals[ep] = (endpointTotals[ep] || 0) + count
+            }
+        }
+
+        // Today's data
+        const todayData = days.find(d => d.date === today) || { endpoints: {} as Record<string, number>, services: {} as Record<string, number>, totalCalls: 0 }
+
+        // Cost estimates (using PLAN_CONFIG rates)
+        const todayCost =
+            (todayData.endpoints.plan || 0) * PLAN_CONFIG.costPerPlan +
+            (todayData.endpoints.moodboard || 0) * PLAN_CONFIG.costPerMoodboard +
+            (todayData.endpoints.guests || 0) * PLAN_CONFIG.costPerGuestAction +
+            (todayData.endpoints.vendors || 0) * PLAN_CONFIG.costPerVendorSearch +
+            (todayData.endpoints.location || 0) * 0.003  // ~$3 per 1K autocomplete requests
+
+        const totalCost =
+            (endpointTotals.plan || 0) * PLAN_CONFIG.costPerPlan +
+            (endpointTotals.moodboard || 0) * PLAN_CONFIG.costPerMoodboard +
+            (endpointTotals.guests || 0) * PLAN_CONFIG.costPerGuestAction +
+            (endpointTotals.vendors || 0) * PLAN_CONFIG.costPerVendorSearch +
+            (endpointTotals.location || 0) * 0.003
+
+        return {
+            totals,
+            endpointTotals,
+            todayCost: `$${todayCost.toFixed(2)}`,
+            weekCost: `$${totalCost.toFixed(2)}`,
+            estMonthlyCost: `$${(totalCost / 7 * 30).toFixed(2)}`,
+            days,
+            today: {
+                endpoints: todayData.endpoints,
+                services: todayData.services,
+                totalCalls: todayData.totalCalls,
+            },
+        }
+    } catch {
+        return {
+            totals: { gemini: 0, maps: 0, total: 0 },
+            endpointTotals: {},
+            todayCost: '$0.00',
+            weekCost: '$0.00',
+            estMonthlyCost: '$0.00',
+            days: [],
+            today: { endpoints: {}, services: {}, totalCalls: 0 },
+        }
     }
 }

@@ -1,7 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
 import { NextRequest, NextResponse } from 'next/server'
 import { assembleContext, hasContext } from '@/lib/ai-context-server'
-import { checkRateLimit } from '@/lib/rate-limiter'
+import { checkRateLimit, logApiCall } from '@/lib/rate-limiter'
 
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
@@ -128,6 +128,8 @@ Make ALL content specific to the actual event details provided. Adjust budget pe
     const text = result.response.text()
     const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const plan = JSON.parse(cleaned)
+    // Track API usage (fire-and-forget)
+    logApiCall('plan', 'gemini', identifier)
     // For refinements, the response only contains { timeline: [...] }
     // but the dashboard expects { plan: { timeline: [...] } }
     if (isRefinement) {

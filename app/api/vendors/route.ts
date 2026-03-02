@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { checkRateLimit } from '@/lib/rate-limiter'
+import { checkRateLimit, logApiCall } from '@/lib/rate-limiter'
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || ''
 
@@ -107,6 +107,8 @@ export async function POST(req: NextRequest) {
     if (vendors.length > 0) {
       vendorCache.set(cacheKey, { data: vendors, ts: Date.now() })
     }
+    // Track API usage (fire-and-forget)
+    logApiCall('vendors', 'maps', identifier)
     return NextResponse.json({ vendors, source: 'google' })
   } catch (error) {
     console.error('Vendors error:', error)

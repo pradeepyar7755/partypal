@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { logApiCall } from '@/lib/rate-limiter'
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || ''
 
@@ -15,6 +16,8 @@ export async function GET(request: NextRequest) {
     if (GOOGLE_MAPS_API_KEY) {
         try {
             const results = await searchGooglePlaces(query)
+            // Track API usage (fire-and-forget)
+            logApiCall('location', 'maps')
             return NextResponse.json({ results })
         } catch (error) {
             console.error('Google Places error:', error)
@@ -64,6 +67,9 @@ export async function POST(request: NextRequest) {
             if (comp.types.includes('administrative_area_level_1')) state = comp.short_name
             if (comp.types.includes('country')) country = comp.long_name
         }
+
+        // Track API usage (fire-and-forget)
+        logApiCall('location', 'maps')
 
         return NextResponse.json({
             name: result.formatted_address?.split(',')[0] || '',
