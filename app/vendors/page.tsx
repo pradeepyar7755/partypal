@@ -336,34 +336,20 @@ function VendorsContent() {
       <div className={styles.searchBarWrap}>
         <div className={styles.searchBarInner}>
           <div className={styles.searchInputWrap} style={{ maxWidth: 280, flex: '0 0 auto' }}>
-            <span style={{ position: 'absolute', left: '1rem', top: '50%', transform: 'translateY(-50%)', fontSize: '1rem', zIndex: 2, pointerEvents: 'none' }}>📍</span>
-            <input
+            <LocationSearch
+              value={isAutoDetected ? '' : detectedLocation}
+              placeholder={isAutoDetected ? displayLocation || '📍 Current Location' : 'Search city, venue, zip...'}
               className={styles.searchInput}
-              type="text"
-              placeholder={isAutoDetected ? displayLocation || 'Current Location' : 'Enter location...'}
-              defaultValue={isAutoDetected ? '' : detectedLocation}
-              onBlur={(e) => {
-                if (e.target.value.trim()) {
-                  setDetectedLocation(e.target.value.trim())
-                  setDisplayLocation(e.target.value.trim())
+              onChange={(loc, details) => {
+                if (loc) {
+                  const locationStr = details?.city && details?.state ? `${details.city}, ${details.state}` : loc
+                  setDetectedLocation(locationStr)
+                  setDisplayLocation(loc)
                   setIsAutoDetected(false)
                   setUsedGeoLocation(false)
                   setLocationReady(true)
                 }
               }}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter') {
-                  const val = (e.target as HTMLInputElement).value.trim()
-                  if (val) {
-                    setDetectedLocation(val)
-                    setDisplayLocation(val)
-                    setIsAutoDetected(false)
-                    setUsedGeoLocation(false)
-                    setLocationReady(true)
-                  }
-                }
-              }}
-              style={{ paddingLeft: '2.8rem' }}
             />
           </div>
           <div className={styles.searchInputWrap}>
