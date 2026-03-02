@@ -176,7 +176,7 @@ function DashboardContent() {
     const [showAddGuest, setShowAddGuest] = useState(false)
     const [showBulkImport, setShowBulkImport] = useState(false)
     const [guestAlertDismissed, setGuestAlertDismissed] = useState(false)
-    const isGuest = user?.isAnonymous === true
+    const isGuest = !user || user.isAnonymous === true
     const showGuestAlert = isGuest && !isDemo && !guestAlertDismissed && allEvents.filter(e => e.eventId !== 'demo').length > 0
     const [bulkText, setBulkText] = useState('')
     const [refineTimelineInput, setRefineTimelineInput] = useState('')
