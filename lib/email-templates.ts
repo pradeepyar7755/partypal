@@ -564,3 +564,61 @@ ${bodyWrap(`
         `<p style="color:${BRAND.textLight};font-size:11px;margin:4px 0 0;"><a href="https://partypal.social/unsubscribe" style="color:${BRAND.textLight};text-decoration:underline;">Unsubscribe</a> from marketing emails</p>`
     )
 }
+
+
+// ═══════════════════════════════════════════════════════
+//  11. ACCOUNT DELETION CONFIRMATION EMAIL
+//  Sent after a user deletes their account
+// ═══════════════════════════════════════════════════════
+export function accountDeletionEmail(params: {
+    userName: string
+    deletionDate: string
+    eventsDeleted: number
+    tenureDays: number
+}): string {
+    const { userName, deletionDate, eventsDeleted, tenureDays } = params
+
+    const tenureText = tenureDays === 0 ? 'less than a day'
+        : tenureDays === 1 ? '1 day'
+            : tenureDays < 30 ? `${tenureDays} days`
+                : tenureDays < 365 ? `${Math.floor(tenureDays / 30)} month${Math.floor(tenureDays / 30) !== 1 ? 's' : ''}`
+                    : `${Math.floor(tenureDays / 365)} year${Math.floor(tenureDays / 365) !== 1 ? 's' : ''}`
+
+    return baseLayout(`
+${headerBlock('👋', 'We\'re Sorry to See You Go', 'Your account has been deleted', `linear-gradient(135deg,${BRAND.darkNavy},${BRAND.navy})`)}
+${bodyWrap(`
+    <p style="color:${BRAND.textDark};font-size:16px;line-height:1.6;margin:0 0 16px;">
+        Hi <strong>${userName}</strong>,
+    </p>
+    <p style="color:${BRAND.textMuted};font-size:14px;line-height:1.7;margin:0 0 20px;">
+        We're truly sorry to see you go. Your Party Pal account has been permanently deleted as of <strong>${deletionDate}</strong>. We appreciate the time you spent with us${tenureDays > 0 ? ` — <strong>${tenureText}</strong> of planning great events together` : ''}.
+    </p>
+    <!-- What was deleted -->
+    ${infoBox('🗑️ What Was Removed', [
+        '✅ Your profile and personal information',
+        `✅ ${eventsDeleted} event${eventsDeleted !== 1 ? 's' : ''} and associated data`,
+        '✅ Guest lists, RSVP records, and collaborator invites',
+        '✅ Your login credentials',
+    ], BRAND.coral)}
+    <p style="color:${BRAND.textMuted};font-size:14px;line-height:1.7;margin:0 0 20px;">
+        All your personal data has been permanently erased from our systems. Anonymized usage analytics may be retained for service improvement, but they can never be traced back to you.
+    </p>
+    ${divider()}
+    <p style="color:${BRAND.textDark};font-size:15px;font-weight:700;line-height:1.6;margin:0 0 8px;">
+        Changed your mind? 🎈
+    </p>
+    <p style="color:${BRAND.textMuted};font-size:14px;line-height:1.7;margin:0 0 20px;">
+        We'd love to have you back! You can create a new account anytime and start fresh with our AI-powered party planning tools.
+    </p>
+    <div style="text-align:center;margin:24px 0 8px;">
+        <a href="https://partypal.social" class="btn btn-primary" style="display:inline-block;padding:14px 40px;border-radius:12px;text-decoration:none;font-weight:800;font-size:14px;background:linear-gradient(135deg,${BRAND.teal},${BRAND.green});color:#fff;">
+            Rejoin Party Pal →
+        </a>
+    </div>
+    <p style="text-align:center;color:${BRAND.textLight};font-size:12px;margin:16px 0 0;font-weight:600;">
+        Thank you for being part of the Party Pal community. We wish you all the best! 💛
+    </p>
+`)}`,
+        `<p style="color:${BRAND.textLight};font-size:11px;margin:4px 0 0;">This is a confirmation of your account deletion. No further emails will be sent.</p>`
+    )
+}

@@ -132,7 +132,31 @@ export async function POST(req: NextRequest) {
             deletionLog.push('Deleted user profile')
         }
 
-        // 6. Delete Firebase Auth account
+        // 6. Send account deletion confirmation email
+        //    (Must happen before auth deletion while we still have the email)
+        if (email) {
+            try {
+                const origin = req.headers.get('origin') || req.headers.get('referer') || 'https://partypal.social'
+                const baseUrl = origin.replace(/\/$/, '')
+                await fetch(`${baseUrl}/api/email`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'account_deletion',
+                        userName: displayName || 'there',
+                        userEmail: email,
+                        eventsDeleted: eventsCreated,
+                        tenureDays,
+                    }),
+                })
+                deletionLog.push('Sent deletion confirmation email')
+            } catch (emailErr) {
+                console.error('Failed to send deletion email:', emailErr)
+                deletionLog.push('Warning: deletion confirmation email may not have sent')
+            }
+        }
+
+        // 7. Delete Firebase Auth account
         try {
             await auth.deleteUser(uid)
             deletionLog.push('Deleted Firebase Auth account')

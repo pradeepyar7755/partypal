@@ -10,6 +10,7 @@ import {
     collaboratorInviteEmail,
     supportConfirmationEmail,
     marketingEmail,
+    accountDeletionEmail,
 } from '@/lib/email-templates'
 
 // ═══════════════════════════════════════════════════════
@@ -264,6 +265,31 @@ export async function POST(req: NextRequest) {
                     ...result,
                     message: `Newsletter sent to ${result.sent} recipient${result.sent !== 1 ? 's' : ''}`,
                 })
+            }
+
+            // ── 10. Account Deletion Confirmation ──
+            case 'account_deletion': {
+                const { userName, userEmail, eventsDeleted, tenureDays } = body
+
+                if (!userEmail) return NextResponse.json({ error: 'No email' }, { status: 400 })
+
+                const deletionDate = new Date().toLocaleDateString('en-US', {
+                    weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+                })
+
+                const result = await sendEmail({
+                    type: 'noreply',
+                    to: userEmail,
+                    subject: '👋 Your Party Pal account has been deleted',
+                    html: accountDeletionEmail({
+                        userName: userName || 'there',
+                        deletionDate,
+                        eventsDeleted: eventsDeleted || 0,
+                        tenureDays: tenureDays || 0,
+                    }),
+                })
+
+                return NextResponse.json({ success: result.success, message: 'Deletion confirmation sent' })
             }
 
             default:
