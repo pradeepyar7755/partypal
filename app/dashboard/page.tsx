@@ -440,13 +440,20 @@ function DashboardContent() {
                         merged.push(sev)
                     }
                 }
-                userSetJSON('partypal_events', merged)
-                return merged
+                // Prune local events that no longer exist on server (deleted from another device/admin)
+                const serverIds = new Set(serverEvents.map(e => e.eventId))
+                const pruned = merged.filter(e => {
+                    // Keep events that exist on server, plus the demo event
+                    if (e.eventId === 'demo') return true
+                    return serverIds.has(e.eventId)
+                })
+                userSetJSON('partypal_events', pruned)
+                return pruned
             })
 
             // Also sync the active plan if it's newer on the server
             const activePlan = userGetJSON<PlanData>('partyplan', null as any)
-            if (activePlan?.eventId) {
+            if (activePlan?.eventId && activePlan.eventId !== 'demo') {
                 const serverVersion = serverEvents.find(e => e.eventId === activePlan.eventId)
                 if (serverVersion) {
                     const localTime = activePlan.updatedAt ? new Date(activePlan.updatedAt).getTime() : 0
@@ -469,6 +476,14 @@ function DashboardContent() {
                         userSetJSON(`partypal_guests_${activePlan.eventId}`, cloudGuests)
                         setEventGuests(cloudGuests)
                     }
+                } else {
+                    // Active event was deleted from server — clean up orphaned local data
+                    userRemove('partyplan')
+                    userRemove(`partypal_guests_${activePlan.eventId}`)
+                    userRemove(`partypal_vendors_${activePlan.eventId}`)
+                    userRemove(`partypal_collabs_${activePlan.eventId}`)
+                    userRemove(`partypal_polls_${activePlan.eventId}`)
+                    loadEvent(DEFAULT_PLAN, true)
                 }
             }
         } catch { /* silent */ }
