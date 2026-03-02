@@ -37,14 +37,42 @@ export function loadPreferences(): UserPreferences {
 }
 
 /**
- * Save preferences to localStorage
+ * Save preferences to localStorage + cloud (fire-and-forget)
  */
-export function savePreferences(prefs: UserPreferences): void {
+export function savePreferences(prefs: UserPreferences, uid?: string): void {
     if (typeof window === 'undefined') return
     try {
         prefs.lastActiveDate = new Date().toISOString().split('T')[0]
         localStorage.setItem(MEMORY_KEY, JSON.stringify(prefs))
+        // Sync to cloud if user is logged in
+        if (uid) {
+            fetch('/api/user-data', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ uid, aiMemory: prefs }),
+            }).catch(() => { })
+        }
     } catch { /* ignore */ }
+}
+
+/**
+ * Load preferences from cloud and merge with local (cloud wins for newer data)
+ */
+export async function loadFromCloud(uid: string): Promise<UserPreferences> {
+    try {
+        const res = await fetch(`/api/user-data?uid=${uid}`)
+        const { data } = await res.json()
+        if (data?.aiMemory) {
+            const cloudPrefs = { ...defaultPreferences(), ...data.aiMemory } as UserPreferences
+            const localPrefs = loadPreferences()
+            // Cloud wins if it has more interactions
+            if (cloudPrefs.interactionCount >= localPrefs.interactionCount) {
+                localStorage.setItem(MEMORY_KEY, JSON.stringify(cloudPrefs))
+                return cloudPrefs
+            }
+        }
+    } catch { /* ignore */ }
+    return loadPreferences()
 }
 
 /**

@@ -60,7 +60,7 @@ export default function SettingsPage() {
         }
     }, [user])
 
-    // Load prefs from localStorage
+    // Load prefs from localStorage, then try cloud
     useEffect(() => {
         try {
             const stored = localStorage.getItem(PREFS_KEY)
@@ -70,7 +70,21 @@ export default function SettingsPage() {
                 setInitPrefs(parsed)
             }
         } catch { /* noop */ }
-    }, [])
+        // Pull from cloud if logged in
+        if (user && !user.isAnonymous) {
+            fetch(`/api/user-data?uid=${user.uid}`)
+                .then(r => r.json())
+                .then(({ data }) => {
+                    if (data?.settings) {
+                        const cloudPrefs = { ...DEFAULT_PREFS, ...data.settings }
+                        setPrefs(cloudPrefs)
+                        setInitPrefs(cloudPrefs)
+                        localStorage.setItem(PREFS_KEY, JSON.stringify(cloudPrefs))
+                    }
+                })
+                .catch(() => { })
+        }
+    }, [user])
 
     // Derived state
     const isGuest = user?.isAnonymous
@@ -116,6 +130,14 @@ export default function SettingsPage() {
             if (prefsChanged) {
                 localStorage.setItem(PREFS_KEY, JSON.stringify(prefs))
                 setInitPrefs({ ...prefs })
+                // Sync to cloud
+                if (!user.isAnonymous) {
+                    fetch('/api/user-data', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ uid: user.uid, settings: prefs }),
+                    }).catch(() => { })
+                }
             }
             setSaveMsg('Settings saved!')
             setTimeout(() => setSaveMsg(''), 3000)
@@ -130,6 +152,14 @@ export default function SettingsPage() {
         try {
             localStorage.removeItem(AI_MEMORY_KEY)
             localStorage.removeItem('partyplan')
+            // Also clear from cloud
+            if (user && !user.isAnonymous) {
+                fetch('/api/user-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ uid: user.uid, aiMemory: null }),
+                }).catch(() => { })
+            }
             setSaveMsg('AI memory & plan cache cleared!')
             setTimeout(() => setSaveMsg(''), 3000)
         } catch { /* noop */ }

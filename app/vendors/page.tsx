@@ -7,6 +7,7 @@ import LocationSearch from '@/components/LocationSearch'
 import { recordInteraction } from '@/lib/ai-memory'
 import { showToast } from '@/components/Toast'
 import { trackVendorSearch, trackVendorShortlisted } from '@/lib/analytics'
+import { useAuth } from '@/components/AuthContext'
 
 const CATS = ['Venue', 'Decor', 'Baker', 'Food', 'Photos', 'Music', 'Drinks', 'Entertain']
 const CAT_EMOJIS: Record<string, string> = {
@@ -37,6 +38,7 @@ interface Vendor {
 function VendorsContent() {
   const router = useRouter()
   const params = useSearchParams()
+  const { user } = useAuth()
   const [activecat, setActivecat] = useState('Venue')
   const [vendors, setVendors] = useState<Vendor[]>([])
   const [loading, setLoading] = useState(false)
@@ -86,6 +88,25 @@ function VendorsContent() {
     if (cat) {
       const match = CATS.find(c => c.toLowerCase() === cat.toLowerCase())
       if (match) setActivecat(match)
+    }
+
+    // Pull shortlist from cloud if logged in
+    if (user && !user.isAnonymous) {
+      fetch(`/api/user-data?uid=${user.uid}`)
+        .then(r => r.json())
+        .then(({ data }) => {
+          if (data?.shortlist && Array.isArray(data.shortlist) && data.shortlist.length > 0) {
+            setShortlist(data.shortlist)
+            userSetJSON('partypal_shortlist', data.shortlist)
+          }
+          if (data?.shortlistData && Object.keys(data.shortlistData).length > 0) {
+            userSetJSON('partypal_shortlist_data', data.shortlistData)
+          }
+          if (data?.shortlistFull && Object.keys(data.shortlistFull).length > 0) {
+            userSetJSON('partypal_shortlist_full', data.shortlistFull)
+          }
+        })
+        .catch(() => { })
     }
 
     // If we already have a location from URL params or plan, skip detection
@@ -220,6 +241,16 @@ function VendorsContent() {
       if (vendor && updated.includes(vendorId)) {
         recordInteraction({ type: 'vendor_shortlisted', category: vendor.category, vendorName: vendor.name })
         trackVendorShortlisted(vendor.name, vendor.category)
+      }
+      // Sync shortlist to cloud
+      if (user && !user.isAnonymous) {
+        const savedData = userGetJSON<Record<string, { name: string; category: string; price: string; emoji: string }>>('partypal_shortlist_data', {})
+        const savedFull = userGetJSON<Record<string, Vendor>>('partypal_shortlist_full', {})
+        fetch('/api/user-data', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ uid: user.uid, shortlist: updated, shortlistData: savedData, shortlistFull: savedFull }),
+        }).catch(() => { })
       }
       return updated
     })

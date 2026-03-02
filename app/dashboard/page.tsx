@@ -460,6 +460,13 @@ function DashboardContent() {
                         userSetJSON(`partypal_vendors_${activePlan.eventId}`, cloudVendors)
                         setEventVendors(cloudVendors)
                     }
+                    // Sync guest contacts from cloud if local is empty
+                    const localGuests = userGetJSON<EventGuest[]>(`partypal_guests_${activePlan.eventId}`, [])
+                    const cloudGuests = (serverVersion as any).guestContacts as EventGuest[] | undefined
+                    if (localGuests.length === 0 && cloudGuests && cloudGuests.length > 0) {
+                        userSetJSON(`partypal_guests_${activePlan.eventId}`, cloudGuests)
+                        setEventGuests(cloudGuests)
+                    }
                 }
             }
         } catch { /* silent */ }
@@ -593,6 +600,10 @@ function DashboardContent() {
                         const d = JSON.parse(stored)
                         d.plan.checklist = cl.map(c => ({ item: c.item, category: c.category, done: c.done, completedAt: c.completedAt }))
                         userSetJSON('partyplan', d)
+                        // Sync checklist to cloud
+                        if (d.eventId) {
+                            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: d.eventId, plan: d.plan }) }).catch(() => { })
+                        }
                     }
                 }
             }
@@ -708,7 +719,10 @@ function DashboardContent() {
         })
         const updated = [...eventGuests, ...newGuests]
         setEventGuests(updated)
-        if (data.eventId) userSetJSON(`partypal_guests_${data.eventId}`, updated)
+        if (data.eventId) {
+            userSetJSON(`partypal_guests_${data.eventId}`, updated)
+            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, guestContacts: updated }) }).catch(() => { })
+        }
         setBulkText('')
         setShowBulkImport(false)
         showToast(`${newGuests.length} guest${newGuests.length > 1 ? 's' : ''} imported`, 'success')
@@ -955,19 +969,28 @@ function DashboardContent() {
         if (!guestForm.name.trim()) return
         const updated = [...eventGuests, { name: guestForm.name.trim(), email: guestForm.email.trim(), status: 'invited' as const }]
         setEventGuests(updated)
-        if (data.eventId) userSetJSON(`partypal_guests_${data.eventId}`, updated)
+        if (data.eventId) {
+            userSetJSON(`partypal_guests_${data.eventId}`, updated)
+            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, guestContacts: updated }) }).catch(() => { })
+        }
         setGuestForm({ name: '', email: '' })
         showToast('Guest added', 'success')
     }
     const removeGuest = (idx: number) => {
         const updated = eventGuests.filter((_, i) => i !== idx)
         setEventGuests(updated)
-        if (data.eventId) userSetJSON(`partypal_guests_${data.eventId}`, updated)
+        if (data.eventId) {
+            userSetJSON(`partypal_guests_${data.eventId}`, updated)
+            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, guestContacts: updated }) }).catch(() => { })
+        }
     }
     const updateGuestStatus = (idx: number, status: EventGuest['status']) => {
         const updated = eventGuests.map((g, i) => i === idx ? { ...g, status } : g)
         setEventGuests(updated)
-        if (data.eventId) userSetJSON(`partypal_guests_${data.eventId}`, updated)
+        if (data.eventId) {
+            userSetJSON(`partypal_guests_${data.eventId}`, updated)
+            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, guestContacts: updated }) }).catch(() => { })
+        }
     }
 
     // Vendor management
