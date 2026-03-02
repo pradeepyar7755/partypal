@@ -437,7 +437,7 @@ export default function Home() {
           <div className={styles.footerAbout}>
             <div className={styles.footerLogo}>🎊 Party<span>Pal</span></div>
             <p className={styles.footerAboutText}>
-              PartyPal is your AI-powered party planning companion. We help you plan unforgettable celebrations by connecting you with the best vendors, managing your guests, and keeping your budget on track — all in one place.
+              PartyPal is your AI-powered party planning companion. We help you plan memorable celebrations by connecting you with the best vendors, managing your guests, and keeping your budget on track — all in one place.
             </p>
           </div>
           <div className={styles.footerNav}>
