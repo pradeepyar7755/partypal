@@ -117,6 +117,15 @@ export default function AdminDashboard() {
         multiSelectPolls: number; multiSelectRate: string
     } | null>(null)
 
+    // User drill-down state
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const [userList, setUserList] = useState<any[]>([])
+    const [usersLoading, setUsersLoading] = useState(false)
+    const [userSearch, setUserSearch] = useState('')
+    const [userSort, setUserSort] = useState<'lastActive' | 'sessions' | 'pageViews' | 'name' | 'created'>('lastActive')
+    const [expandedUser, setExpandedUser] = useState<string | null>(null)
+    const [showUsersSection, setShowUsersSection] = useState(false)
+
     const isAdmin = user && ADMIN_EMAILS.includes(user.email || '')
 
     const fetchData = useCallback(async () => {
@@ -168,6 +177,24 @@ export default function AdminDashboard() {
             })()
         }
     }, [authLoading, isAdmin])
+
+    // Fetch users drill-down data
+    useEffect(() => {
+        if (!authLoading && isAdmin && user && showUsersSection) {
+            (async () => {
+                setUsersLoading(true)
+                try {
+                    const token = await user.getIdToken()
+                    const res = await fetch('/api/admin/users', { headers: { Authorization: `Bearer ${token}` } })
+                    if (res.ok) {
+                        const data = await res.json()
+                        setUserList(data.users || [])
+                    }
+                } catch { /* silent */ }
+                setUsersLoading(false)
+            })()
+        }
+    }, [authLoading, isAdmin, user, showUsersSection])
 
     // Not logged in or not admin
     if (authLoading) {
@@ -302,6 +329,264 @@ export default function AdminDashboard() {
                             <KPICard label="RSVPs" value={formatNumber(k!.totalRSVPs)} icon="✅" />
                             <KPICard label="Errors" value={formatNumber(k!.totalErrors)} icon="🐛" color={k!.totalErrors > 0 ? '#E8896A' : undefined} />
                         </div>
+
+                        {/* ══ USERS DRILL-DOWN ══ */}
+                        <div className={styles.sectionHeader}>
+                            <span className={styles.sectionEmoji}>👥</span>
+                            <span className={styles.sectionTitle}>Registered Users</span>
+                            <button
+                                onClick={() => setShowUsersSection(!showUsersSection)}
+                                style={{
+                                    marginLeft: 'auto', padding: '0.4rem 1rem', borderRadius: 8,
+                                    border: '1.5px solid var(--border)', background: showUsersSection ? 'rgba(74,173,168,0.1)' : 'white',
+                                    color: showUsersSection ? 'var(--teal)' : 'var(--navy)',
+                                    fontWeight: 700, fontSize: '0.78rem', cursor: 'pointer',
+                                    fontFamily: "'Nunito', sans-serif",
+                                }}
+                            >
+                                {showUsersSection ? '▲ Collapse' : '▼ Show Users'}
+                            </button>
+                        </div>
+
+                        {showUsersSection && (
+                            <div className={styles.chartCard}>
+                                {usersLoading ? (
+                                    <div style={{ padding: '2rem', textAlign: 'center' }}>
+                                        <div className="spinner" style={{ width: 30, height: 30, margin: '0 auto' }} />
+                                        <div style={{ color: '#9aabbb', fontSize: '0.82rem', fontWeight: 600, marginTop: '0.8rem' }}>Loading user data...</div>
+                                    </div>
+                                ) : (
+                                    <>
+                                        {/* Search & Sort Controls */}
+                                        <div style={{ display: 'flex', gap: '0.6rem', padding: '0.8rem 1rem', flexWrap: 'wrap', alignItems: 'center', borderBottom: '1px solid var(--border)' }}>
+                                            <input
+                                                type="text"
+                                                placeholder="🔍 Search by name or email..."
+                                                value={userSearch}
+                                                onChange={e => setUserSearch(e.target.value)}
+                                                style={{
+                                                    flex: 1, minWidth: 200, padding: '0.5rem 0.8rem', borderRadius: 8,
+                                                    border: '1.5px solid var(--border)', fontSize: '0.82rem',
+                                                    fontFamily: "'Nunito', sans-serif", fontWeight: 600,
+                                                    outline: 'none', background: 'var(--light-bg)',
+                                                }}
+                                            />
+                                            <select
+                                                value={userSort}
+                                                onChange={e => setUserSort(e.target.value as typeof userSort)}
+                                                style={{
+                                                    padding: '0.5rem 0.8rem', borderRadius: 8,
+                                                    border: '1.5px solid var(--border)', fontSize: '0.78rem',
+                                                    fontFamily: "'Nunito', sans-serif", fontWeight: 700,
+                                                    background: 'white', cursor: 'pointer',
+                                                }}
+                                            >
+                                                <option value="lastActive">Sort: Last Active</option>
+                                                <option value="sessions">Sort: Most Sessions</option>
+                                                <option value="pageViews">Sort: Most Page Views</option>
+                                                <option value="name">Sort: Name A-Z</option>
+                                                <option value="created">Sort: Newest First</option>
+                                            </select>
+                                            <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#9aabbb' }}>
+                                                {userList.length} user{userList.length !== 1 ? 's' : ''}
+                                            </span>
+                                        </div>
+
+                                        {/* User Table */}
+                                        <div style={{ overflowX: 'auto' }}>
+                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', fontFamily: "'Nunito', sans-serif" }}>
+                                                <thead>
+                                                    <tr style={{ borderBottom: '2px solid var(--border)', textTransform: 'uppercase', fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', letterSpacing: '0.5px' }}>
+                                                        <th style={{ padding: '0.6rem 0.8rem', textAlign: 'left' }}>User</th>
+                                                        <th style={{ padding: '0.6rem 0.5rem', textAlign: 'left' }}>Location</th>
+                                                        <th style={{ padding: '0.6rem 0.5rem', textAlign: 'center' }}>Sessions</th>
+                                                        <th style={{ padding: '0.6rem 0.5rem', textAlign: 'center' }}>Pages</th>
+                                                        <th style={{ padding: '0.6rem 0.5rem', textAlign: 'center' }}>Avg Time</th>
+                                                        <th style={{ padding: '0.6rem 0.5rem', textAlign: 'center' }}>Events</th>
+                                                        <th style={{ padding: '0.6rem 0.5rem', textAlign: 'center' }}>Days Active</th>
+                                                        <th style={{ padding: '0.6rem 0.8rem', textAlign: 'right' }}>Last Active</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {userList
+                                                        .filter(u => {
+                                                            if (!userSearch) return true
+                                                            const q = userSearch.toLowerCase()
+                                                            return (u.displayName || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q)
+                                                        })
+                                                        .sort((a, b) => {
+                                                            switch (userSort) {
+                                                                case 'sessions': return b.totalSessions - a.totalSessions
+                                                                case 'pageViews': return b.totalPageViews - a.totalPageViews
+                                                                case 'name': return (a.displayName || '').localeCompare(b.displayName || '')
+                                                                case 'created': return (b.createdAt || '').localeCompare(a.createdAt || '')
+                                                                default: return (b.lastActive || '').localeCompare(a.lastActive || '')
+                                                            }
+                                                        })
+                                                        .map(u => (
+                                                            <tr
+                                                                key={u.uid}
+                                                                onClick={() => setExpandedUser(expandedUser === u.uid ? null : u.uid)}
+                                                                style={{
+                                                                    borderBottom: '1px solid rgba(0,0,0,0.05)', cursor: 'pointer',
+                                                                    background: expandedUser === u.uid ? 'rgba(74,173,168,0.04)' : 'transparent',
+                                                                    transition: 'background 0.15s',
+                                                                }}
+                                                                onMouseEnter={e => { if (expandedUser !== u.uid) e.currentTarget.style.background = 'rgba(0,0,0,0.015)' }}
+                                                                onMouseLeave={e => { if (expandedUser !== u.uid) e.currentTarget.style.background = 'transparent' }}
+                                                            >
+                                                                <td style={{ padding: '0.7rem 0.8rem' }}>
+                                                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                                                        <div style={{
+                                                                            width: 32, height: 32, borderRadius: '50%',
+                                                                            background: u.role === 'admin' ? 'linear-gradient(135deg, #F7C948, #E8896A)' : 'linear-gradient(135deg, #4AADA8, #3D8C6E)',
+                                                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                                            color: 'white', fontSize: '0.72rem', fontWeight: 800,
+                                                                        }}>
+                                                                            {(u.displayName || u.email || '?')[0].toUpperCase()}
+                                                                        </div>
+                                                                        <div>
+                                                                            <div style={{ fontWeight: 700, color: 'var(--navy)', fontSize: '0.82rem' }}>
+                                                                                {u.displayName || 'No Name'}
+                                                                                {u.role === 'admin' && <span style={{ marginLeft: '0.4rem', fontSize: '0.6rem', fontWeight: 800, padding: '0.1rem 0.4rem', borderRadius: 4, background: 'rgba(247,201,72,0.15)', color: '#C4A020' }}>ADMIN</span>}
+                                                                                {u.testAccount && <span style={{ marginLeft: '0.3rem', fontSize: '0.6rem', fontWeight: 800, padding: '0.1rem 0.4rem', borderRadius: 4, background: 'rgba(155,171,187,0.15)', color: '#9aabbb' }}>TEST</span>}
+                                                                            </div>
+                                                                            <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>{u.email}</div>
+                                                                        </div>
+                                                                    </div>
+                                                                </td>
+                                                                <td style={{ padding: '0.7rem 0.5rem', color: '#6b7f94', fontWeight: 600 }}>
+                                                                    {u.location ? `📍 ${u.location}` : <span style={{ color: '#ccc' }}>—</span>}
+                                                                </td>
+                                                                <td style={{ padding: '0.7rem 0.5rem', textAlign: 'center', fontWeight: 700, color: 'var(--navy)' }}>{u.totalSessions}</td>
+                                                                <td style={{ padding: '0.7rem 0.5rem', textAlign: 'center', fontWeight: 700, color: 'var(--navy)' }}>{u.totalPageViews}</td>
+                                                                <td style={{ padding: '0.7rem 0.5rem', textAlign: 'center', fontWeight: 700, color: u.avgTimePerSession > 60 ? '#3D8C6E' : 'var(--navy)' }}>
+                                                                    {u.avgTimePerSession > 0 ? `${Math.floor(u.avgTimePerSession / 60)}m ${u.avgTimePerSession % 60}s` : '—'}
+                                                                </td>
+                                                                <td style={{ padding: '0.7rem 0.5rem', textAlign: 'center', fontWeight: 700, color: 'var(--navy)' }}>{u.eventsCreated}</td>
+                                                                <td style={{ padding: '0.7rem 0.5rem', textAlign: 'center', fontWeight: 700, color: u.activeDays > 3 ? '#3D8C6E' : 'var(--navy)' }}>{u.activeDays}</td>
+                                                                <td style={{ padding: '0.7rem 0.8rem', textAlign: 'right', fontSize: '0.72rem', color: '#9aabbb', fontWeight: 600 }}>
+                                                                    {u.lastActive ? timeAgo(u.lastActive) : '—'}
+                                                                </td>
+                                                            </tr>
+                                                        ))
+                                                    }
+                                                </tbody>
+                                            </table>
+                                        </div>
+
+                                        {/* Expanded User Detail */}
+                                        {expandedUser && userList.find(u => u.uid === expandedUser) && (() => {
+                                            const u = userList.find(u => u.uid === expandedUser)!
+                                            return (
+                                                <div style={{
+                                                    padding: '1.2rem', borderTop: '2px solid var(--teal)',
+                                                    background: 'rgba(74,173,168,0.02)',
+                                                }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                                                        <h4 style={{ fontFamily: "'Fredoka One', cursive", fontSize: '1rem', color: 'var(--navy)', margin: 0 }}>
+                                                            {u.displayName || u.email} — Details
+                                                        </h4>
+                                                        <button onClick={() => setExpandedUser(null)} style={{
+                                                            background: 'transparent', border: 'none', color: '#9aabbb', cursor: 'pointer',
+                                                            fontSize: '0.82rem', fontWeight: 700,
+                                                        }}>✕ Close</button>
+                                                    </div>
+
+                                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '1rem', marginBottom: '1.2rem' }}>
+                                                        <div style={{ background: 'white', borderRadius: 10, padding: '0.8rem', border: '1px solid var(--border)' }}>
+                                                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Sign-Up Method</div>
+                                                            <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--navy)' }}>{u.signUpMethod || 'unknown'}</div>
+                                                        </div>
+                                                        <div style={{ background: 'white', borderRadius: 10, padding: '0.8rem', border: '1px solid var(--border)' }}>
+                                                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Total Time on Site</div>
+                                                            <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--navy)' }}>
+                                                                {u.totalTimeOnSite > 3600 ? `${Math.floor(u.totalTimeOnSite / 3600)}h ${Math.floor((u.totalTimeOnSite % 3600) / 60)}m`
+                                                                    : u.totalTimeOnSite > 60 ? `${Math.floor(u.totalTimeOnSite / 60)}m ${u.totalTimeOnSite % 60}s`
+                                                                        : u.totalTimeOnSite > 0 ? `${u.totalTimeOnSite}s` : '—'}
+                                                            </div>
+                                                        </div>
+                                                        <div style={{ background: 'white', borderRadius: 10, padding: '0.8rem', border: '1px solid var(--border)' }}>
+                                                            <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Joined</div>
+                                                            <div style={{ fontSize: '1rem', fontWeight: 800, color: 'var(--navy)' }}>
+                                                                {u.createdAt ? new Date(u.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '—'}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+
+                                                    {/* Top Pages */}
+                                                    {u.topPages && u.topPages.length > 0 && (
+                                                        <div style={{ marginBottom: '1.2rem' }}>
+                                                            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Top Pages Visited</div>
+                                                            <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap' }}>
+                                                                {u.topPages.map((p: { page: string; views: number }, i: number) => (
+                                                                    <span key={i} style={{
+                                                                        padding: '0.25rem 0.6rem', borderRadius: 6,
+                                                                        background: 'rgba(74,173,168,0.08)', color: 'var(--teal)',
+                                                                        fontSize: '0.72rem', fontWeight: 700,
+                                                                    }}>
+                                                                        {p.page.replace(/^_/, '/').replace('root', '/')} ({p.views})
+                                                                    </span>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Daily Activity Heatmap */}
+                                                    {u.dailyActivity && Object.keys(u.dailyActivity).length > 0 && (
+                                                        <div style={{ marginBottom: '1.2rem' }}>
+                                                            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Daily Activity (Last 30 Days)</div>
+                                                            <div style={{ display: 'flex', gap: '3px', flexWrap: 'wrap' }}>
+                                                                {Array.from({ length: 30 }, (_, i) => {
+                                                                    const d = new Date()
+                                                                    d.setDate(d.getDate() - (29 - i))
+                                                                    const key = d.toISOString().split('T')[0]
+                                                                    const count = u.dailyActivity[key] || 0
+                                                                    const intensity = count === 0 ? 0 : count < 5 ? 0.2 : count < 15 ? 0.4 : count < 30 ? 0.6 : 0.9
+                                                                    return (
+                                                                        <div key={i} title={`${key}: ${count} events`} style={{
+                                                                            width: 16, height: 16, borderRadius: 3,
+                                                                            background: count === 0 ? 'rgba(0,0,0,0.04)' : `rgba(74,173,168,${intensity})`,
+                                                                            cursor: 'default',
+                                                                        }} />
+                                                                    )
+                                                                })}
+                                                            </div>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.6rem', color: '#ccc', fontWeight: 600, marginTop: '0.2rem' }}>
+                                                                <span>30 days ago</span>
+                                                                <span>Today</span>
+                                                            </div>
+                                                        </div>
+                                                    )}
+
+                                                    {/* Recent Activity Feed */}
+                                                    {u.recentEvents && u.recentEvents.length > 0 && (
+                                                        <div>
+                                                            <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase', marginBottom: '0.5rem' }}>Recent Activity</div>
+                                                            <div style={{ maxHeight: 200, overflowY: 'auto', borderRadius: 8, border: '1px solid var(--border)' }}>
+                                                                {u.recentEvents.slice(0, 10).map((evt: { event: string; page: string; timestamp: string }, i: number) => (
+                                                                    <div key={i} style={{
+                                                                        display: 'flex', justifyContent: 'space-between', padding: '0.4rem 0.8rem',
+                                                                        borderBottom: i < 9 ? '1px solid rgba(0,0,0,0.03)' : 'none',
+                                                                        fontSize: '0.72rem', fontWeight: 600,
+                                                                    }}>
+                                                                        <span style={{ color: EVENT_COLORS[evt.event] || '#9aabbb' }}>
+                                                                            {EVENT_LABELS[evt.event] || evt.event}
+                                                                        </span>
+                                                                        <span style={{ color: '#bbb' }}>{evt.page}</span>
+                                                                        <span style={{ color: '#ccc', fontSize: '0.65rem' }}>{timeAgo(evt.timestamp)}</span>
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                    )}
+                                                </div>
+                                            )
+                                        })()}
+                                    </>
+                                )}
+                            </div>
+                        )}
 
                         {/* ══ TRAFFIC ══ */}
                         <div className={styles.sectionHeader}>

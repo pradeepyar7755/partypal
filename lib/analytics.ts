@@ -90,6 +90,8 @@ export function trackPageView() {
         url: window.location.href,
         screenWidth: window.innerWidth,
         screenHeight: window.innerHeight,
+        timezone: Intl.DateTimeFormat().resolvedOptions().timeZone || '',
+        locale: navigator.language || '',
     })
 }
 
