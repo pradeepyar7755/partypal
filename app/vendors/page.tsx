@@ -52,8 +52,10 @@ function VendorsContent() {
   const [priceMax, setPriceMax] = useState(1000)
   const [ratingFilter, setRatingFilter] = useState(4)
   const [detectedLocation, setDetectedLocation] = useState('')
+  const [displayLocation, setDisplayLocation] = useState('')
   const [locationReady, setLocationReady] = useState(false)
   const [isAutoDetected, setIsAutoDetected] = useState(false)
+  const [usedGeoLocation, setUsedGeoLocation] = useState(false)
   const [cuisine, setCuisine] = useState('All')
   const [distanceFilter, setDistanceFilter] = useState('all')
   const [activeEvents, setActiveEvents] = useState<{ eventId: string; eventType: string }[]>([])
@@ -91,6 +93,7 @@ function VendorsContent() {
     const existingLoc = rawLoc && rawLoc !== 'TBD' ? rawLoc : ''
     if (existingLoc) {
       setDetectedLocation(existingLoc)
+      setDisplayLocation(existingLoc)
       setIsAutoDetected(true)
       setLocationReady(true)
       return
@@ -113,54 +116,46 @@ function VendorsContent() {
         })
         const { latitude, longitude } = pos.coords
 
-        // Reverse geocode using Maps JS client-side Geocoder (always works)
+        // Reverse geocode via server to get city + zipcode
         try {
-          const apiRes = await fetch('/api/location')
-          const apiData = await apiRes.json()
-          if (apiData.apiKey) {
-            // Load Google Maps if not already loaded
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
-            const w = window as any
-            if (w.google?.maps?.Geocoder) {
-              const geocoder = new w.google.maps.Geocoder()
-              const result = await new Promise<string>((resolve) => {
-                geocoder.geocode(
-                  { location: { lat: latitude, lng: longitude } },
-                  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                  (results: any[], status: string) => {
-                    if (status === 'OK' && results?.[0]) {
-                      let city = '', state = ''
-                      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-                      results[0].address_components.forEach((c: any) => {
-                        if (c.types.includes('locality')) city = c.long_name
-                        if (c.types.includes('sublocality_level_1') && !city) city = c.long_name
-                        if (c.types.includes('administrative_area_level_1')) state = c.short_name
-                      })
-                      resolve(city && state ? `${city}, ${state}` : results[0].formatted_address?.split(',').slice(0, 2).join(',') || '')
-                    } else resolve('')
-                  }
-                )
-              })
-              if (result) {
-                setDetectedLocation(result)
-                setIsAutoDetected(true)
-                setLocationReady(true)
-                return
-              }
-            }
+          const geoRes = await fetch('/api/location', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ latlng: `${latitude},${longitude}` }),
+          })
+          const geoData = await geoRes.json()
+          if (geoData.city || geoData.name) {
+            const locationStr = geoData.city && geoData.state ? `${geoData.city}, ${geoData.state}` : geoData.address || geoData.name
+            setDetectedLocation(locationStr)
+            setDisplayLocation('📍 Current Location')
+            setUsedGeoLocation(true)
+            setIsAutoDetected(true)
+            setLocationReady(true)
+            return
           }
-        } catch { /* Maps JS not loaded, fall through */ }
+        } catch { /* fall through */ }
+
+        // If reverse geocode failed, still use coords
+        setDetectedLocation(`${latitude},${longitude}`)
+        setDisplayLocation('📍 Current Location')
+        setUsedGeoLocation(true)
+        setIsAutoDetected(true)
+        setLocationReady(true)
+        return
       } catch {
         // Geolocation denied or failed — fall through to IP
       }
     }
 
-    // 2. Fallback: IP-based geolocation
+    // 2. Fallback: IP-based geolocation — show zipcode
     try {
       const res = await fetch('/api/geolocation')
       const data = await res.json()
       if (data.label) {
         setDetectedLocation(data.label)
+        // Try to extract or use zipcode for display
+        const zipMatch = data.zip || data.postal || (data.label as string).match(/\b\d{5}\b/)?.[0]
+        setDisplayLocation(zipMatch ? `📍 ${zipMatch}` : `📍 ${data.label}`)
         setIsAutoDetected(true)
         setLocationReady(true)
         return
@@ -169,6 +164,7 @@ function VendorsContent() {
 
     // 3. Final fallback
     setDetectedLocation('Atlanta, GA')
+    setDisplayLocation('📍 Atlanta, GA')
     setIsAutoDetected(true)
     setLocationReady(true)
   }
@@ -344,12 +340,14 @@ function VendorsContent() {
             <input
               className={styles.searchInput}
               type="text"
-              placeholder={isAutoDetected ? detectedLocation || 'Current Location' : 'Enter location...'}
+              placeholder={isAutoDetected ? displayLocation || 'Current Location' : 'Enter location...'}
               defaultValue={isAutoDetected ? '' : detectedLocation}
               onBlur={(e) => {
                 if (e.target.value.trim()) {
                   setDetectedLocation(e.target.value.trim())
+                  setDisplayLocation(e.target.value.trim())
                   setIsAutoDetected(false)
+                  setUsedGeoLocation(false)
                   setLocationReady(true)
                 }
               }}
@@ -358,7 +356,9 @@ function VendorsContent() {
                   const val = (e.target as HTMLInputElement).value.trim()
                   if (val) {
                     setDetectedLocation(val)
+                    setDisplayLocation(val)
                     setIsAutoDetected(false)
+                    setUsedGeoLocation(false)
                     setLocationReady(true)
                   }
                 }
@@ -441,7 +441,7 @@ function VendorsContent() {
 
         {/* ── Vendor Cards ── */}
         <div>
-          <div className={styles.resultsCount}>Showing <span>{startItem}–{endItem} of {filtered.length}</span> vendors near {isAutoDetected ? 'Current Location' : location}{totalPages > 1 && <span style={{ marginLeft: '0.5rem', color: '#9aabbb' }}>• Page {safePage} of {totalPages}</span>}</div>
+          <div className={styles.resultsCount}>Showing <span>{startItem}–{endItem} of {filtered.length}</span> vendors near {usedGeoLocation ? '📍 Current Location' : displayLocation || location}{totalPages > 1 && <span style={{ marginLeft: '0.5rem', color: '#9aabbb' }}>• Page {safePage} of {totalPages}</span>}</div>
 
           {loading ? (
             <div className={styles.loading}>
