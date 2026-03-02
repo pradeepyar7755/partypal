@@ -158,6 +158,7 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [showVideo, setShowVideo] = useState(false)
   const [slide, setSlide] = useState(0)
+  const [videoTab, setVideoTab] = useState<'interactive' | 'video'>('interactive')
   const catRef = useRef<HTMLDivElement>(null)
   const featRef = useRef<HTMLDivElement>(null)
 
@@ -248,32 +249,50 @@ export default function Home() {
         <div className={styles.videoOverlay} onClick={(e) => { if (e.target === e.currentTarget) closeVideo() }}>
           <div className={styles.videoModal}>
             <div className={styles.videoHeader}>
-              <div className={styles.videoTitle}>▶ How PartyPal Works <span style={{ fontSize: '0.75rem', fontWeight: 600, color: 'rgba(255,255,255,0.4)', marginLeft: '0.4rem' }}>— Interactive Demo</span></div>
+              <div className={styles.videoTitle}>▶ How PartyPal Works</div>
               <button className={styles.videoClose} onClick={closeVideo}>✕</button>
             </div>
-            <div className={styles.screencast}>
-              <div className={styles.browserBar}>
-                <div className={styles.dots}>
-                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f57' }} />
-                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#febc2e' }} />
-                  <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#28c840' }} />
+            {/* Tab bar */}
+            <div style={{ display: 'flex', gap: 0, borderBottom: '1px solid rgba(255,255,255,0.1)', padding: '0 1rem' }}>
+              <button onClick={() => setVideoTab('interactive')} style={{ flex: 1, padding: '0.5rem 0.8rem', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 800, color: videoTab === 'interactive' ? '#F7C948' : 'rgba(255,255,255,0.4)', borderBottom: videoTab === 'interactive' ? '2px solid #F7C948' : '2px solid transparent', transition: 'all 0.2s' }}>🎯 Interactive Demo</button>
+              <button onClick={() => setVideoTab('video')} style={{ flex: 1, padding: '0.5rem 0.8rem', border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.78rem', fontWeight: 800, color: videoTab === 'video' ? '#F7C948' : 'rgba(255,255,255,0.4)', borderBottom: videoTab === 'video' ? '2px solid #F7C948' : '2px solid transparent', transition: 'all 0.2s' }}>🎬 Video Walkthrough</button>
+            </div>
+            {videoTab === 'interactive' ? (
+              <>
+                <div className={styles.screencast}>
+                  <div className={styles.browserBar}>
+                    <div className={styles.dots}>
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#ff5f57' }} />
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#febc2e' }} />
+                      <div style={{ width: 10, height: 10, borderRadius: '50%', background: '#28c840' }} />
+                    </div>
+                    <div className={styles.urlBar}>{DEMO_SLIDES[slide].url}</div>
+                  </div>
+                  <div className={styles.slideContent}>
+                    {DEMO_SLIDES[slide].content}
+                  </div>
+                  <div className={styles.stepLabel}>{DEMO_SLIDES[slide].label}</div>
                 </div>
-                <div className={styles.urlBar}>{DEMO_SLIDES[slide].url}</div>
+                <div className={styles.videoControls}>
+                  <button className={styles.slideBtn} onClick={prevSlide} disabled={slide === 0}>←</button>
+                  <div className={styles.slideDots}>
+                    {DEMO_SLIDES.map((_, i) => (
+                      <div key={i} className={`${styles.slideDot} ${i === slide ? styles.slideDotActive : ''}`} onClick={() => setSlide(i)} />
+                    ))}
+                  </div>
+                  <button className={styles.slideBtn} onClick={nextSlide} disabled={slide === DEMO_SLIDES.length - 1}>→</button>
+                </div>
+              </>
+            ) : (
+              <div style={{ padding: '1.5rem', textAlign: 'center' }}>
+                <div style={{ background: 'rgba(255,255,255,0.03)', borderRadius: 16, padding: '3rem 2rem', border: '1px dashed rgba(255,255,255,0.15)' }}>
+                  <div style={{ fontSize: '2.5rem', marginBottom: '0.8rem' }}>🎬</div>
+                  <h3 style={{ fontFamily: "'Fredoka One',cursive", color: 'white', marginBottom: '0.5rem' }}>Video Walkthrough Coming Soon</h3>
+                  <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', fontWeight: 600, maxWidth: 350, margin: '0 auto' }}>We&apos;re recording a short video showing exactly how to plan your party with PartyPal. Check back soon!</p>
+                  <button onClick={() => setVideoTab('interactive')} style={{ marginTop: '1rem', background: '#F7C948', color: '#1A2535', padding: '0.5rem 1.2rem', borderRadius: 50, fontSize: '0.82rem', fontWeight: 800, border: 'none', cursor: 'pointer' }}>Try the Interactive Demo →</button>
+                </div>
               </div>
-              <div className={styles.slideContent}>
-                {DEMO_SLIDES[slide].content}
-              </div>
-              <div className={styles.stepLabel}>{DEMO_SLIDES[slide].label}</div>
-            </div>
-            <div className={styles.videoControls}>
-              <button className={styles.slideBtn} onClick={prevSlide} disabled={slide === 0}>←</button>
-              <div className={styles.slideDots}>
-                {DEMO_SLIDES.map((_, i) => (
-                  <div key={i} className={`${styles.slideDot} ${i === slide ? styles.slideDotActive : ''}`} onClick={() => setSlide(i)} />
-                ))}
-              </div>
-              <button className={styles.slideBtn} onClick={nextSlide} disabled={slide === DEMO_SLIDES.length - 1}>→</button>
-            </div>
+            )}
           </div>
         </div>
       )}
@@ -309,6 +328,38 @@ export default function Home() {
               <div className={styles.catCount}>{c.count}</div>
             </div>
           ))}
+        </div>
+      </div>
+
+      {/* SEE IT IN ACTION — Maya's 30th Birthday Demo Card */}
+      <div className="section" style={{ paddingTop: 0 }}>
+        <div style={{
+          maxWidth: 720, margin: '0 auto', padding: '1.8rem 2rem', borderRadius: 20,
+          background: 'linear-gradient(135deg, rgba(74,173,168,0.08), rgba(123,94,167,0.06), rgba(247,201,72,0.06))',
+          border: '1.5px solid rgba(74,173,168,0.2)', position: 'relative', overflow: 'hidden',
+        }}>
+          <div style={{ position: 'absolute', top: -30, right: -30, fontSize: '6rem', opacity: 0.06, transform: 'rotate(-15deg)' }}>🌴</div>
+          <div style={{ position: 'absolute', bottom: -20, left: -20, fontSize: '4rem', opacity: 0.06, transform: 'rotate(20deg)' }}>🎂</div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
+            <span style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--teal)', background: 'rgba(74,173,168,0.1)', padding: '0.2rem 0.6rem', borderRadius: 50 }}>✨ See it in Action</span>
+          </div>
+          <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.3rem', color: 'var(--navy)', marginBottom: '0.3rem' }}>Maya&apos;s 30th Birthday 🎂</h3>
+          <p style={{ color: '#6b7c93', fontWeight: 600, fontSize: '0.88rem', marginBottom: '0.8rem', lineHeight: 1.5 }}>
+            Explore a complete AI-generated party plan — timeline, budget, vendor matches, and guest management — all ready to go.
+          </p>
+          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '1rem' }}>
+            {['🎉 40 Guests', '📍 Atlanta, GA', '🌴 Tropical Theme', '💰 $2,000 Budget'].map(tag => (
+              <span key={tag} style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 50, padding: '0.2rem 0.7rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--navy)' }}>{tag}</span>
+            ))}
+          </div>
+          <button onClick={() => router.push('/dashboard')} style={{
+            background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', padding: '0.6rem 1.5rem',
+            borderRadius: 50, border: 'none', fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer',
+            boxShadow: '0 4px 16px rgba(74,173,168,0.3)', transition: 'transform 0.2s, box-shadow 0.2s',
+          }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(74,173,168,0.4)' }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(74,173,168,0.3)' }}
+          >View Demo Plan →</button>
         </div>
       </div>
 

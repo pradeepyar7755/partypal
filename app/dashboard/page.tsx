@@ -10,8 +10,8 @@ import { useAuth } from '@/components/AuthContext'
 import { useAIContext } from '@/lib/useAIContext'
 import CreatePoll from '@/components/CreatePoll'
 
-interface ChecklistItem { item: string; category: string; done: boolean; due?: string; urgent?: boolean; completedAt?: string }
-interface TimelineItem { weeks: string; task: string; category: string; priority: string; emoji?: string; completedAt?: string }
+interface ChecklistItem { item: string; category: string; done: boolean; due?: string; urgent?: boolean; completedAt?: string; assignedTo?: string }
+interface TimelineItem { weeks: string; task: string; category: string; priority: string; emoji?: string; completedAt?: string; assignedTo?: string }
 interface BudgetItem { category: string; amount: number; percentage: number; color: string }
 interface EventGuest { name: string; email: string; status: 'invited' | 'confirmed' | 'declined' }
 interface EventVendor { name: string; category: string; notes: string; confirmed: boolean; costEstimate?: number }
@@ -186,6 +186,8 @@ function DashboardContent() {
     const [showCollabModal, setShowCollabModal] = useState(false)
     const [collaborators, setCollaborators] = useState<{ email: string; name: string; role: string }[]>([])
     const [collabForm, setCollabForm] = useState({ email: '', name: '', role: 'Viewer' })
+    const [assignMenuTask, setAssignMenuTask] = useState<number | null>(null)
+    const [assignMenuTimeline, setAssignMenuTimeline] = useState<number | null>(null)
     const [editBudgetMode, setEditBudgetMode] = useState(false)
     const [editBudgetIdx, setEditBudgetIdx] = useState<number | null>(null)
     const [editBudgetValue, setEditBudgetValue] = useState('')
@@ -708,6 +710,48 @@ function DashboardContent() {
         const task = deletedTasks[i]
         setDeletedTasks(prev => prev.filter((_, idx) => idx !== i))
         showToast(`"${task.item}" permanently deleted`, 'info')
+    }
+
+    // Get list of assignable people (owner + collaborators)
+    const getAssignablePeople = () => {
+        const people: { name: string; email: string }[] = []
+        if (user) people.push({ name: user.displayName || user.email?.split('@')[0] || 'Me', email: user.email || '' })
+        collaborators.forEach(c => people.push({ name: c.name, email: c.email }))
+        return people
+    }
+
+    const assignTask = (taskIdx: number, assigneeName: string | undefined) => {
+        const updated = checklist.map((c, i) => i === taskIdx ? { ...c, assignedTo: assigneeName } : c)
+        setChecklist(updated)
+        const stored = userGet('partyplan')
+        if (stored) {
+            const d = JSON.parse(stored)
+            d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done, completedAt: c.completedAt, assignedTo: c.assignedTo }))
+            userSetJSON('partyplan', d)
+            if (d.eventId) {
+                fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: d.eventId, plan: d.plan }) }).catch(() => { })
+            }
+        }
+        setAssignMenuTask(null)
+        showToast(assigneeName ? `Assigned to ${assigneeName}` : 'Unassigned', 'success')
+    }
+
+    const assignTimeline = (timelineIdx: number, assigneeName: string | undefined) => {
+        const items = [...data.plan.timeline]
+        items[timelineIdx] = { ...items[timelineIdx], assignedTo: assigneeName }
+        const updated = { ...data, plan: { ...data.plan, timeline: items } }
+        setData(updated)
+        if (!isDemo) {
+            userSetJSON('partyplan', updated)
+            if (updated.eventId) {
+                const events = userGetJSON<PlanData[]>('partypal_events', [])
+                const idx = events.findIndex(e => e.eventId === updated.eventId)
+                if (idx >= 0) { events[idx] = updated; userSetJSON('partypal_events', events) }
+                fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: updated.eventId, plan: updated.plan }) }).catch(() => { })
+            }
+        }
+        setAssignMenuTimeline(null)
+        showToast(assigneeName ? `Milestone assigned to ${assigneeName}` : 'Milestone unassigned', 'success')
     }
 
     const bulkImportGuests = () => {
@@ -1856,6 +1900,33 @@ function DashboardContent() {
                                                                         }
                                                                         return <span style={{ fontSize: '0.55rem', fontWeight: 800, color: 'var(--teal)', background: 'rgba(74,173,168,0.08)', border: '1px solid rgba(74,173,168,0.2)', padding: '0.05rem 0.35rem', borderRadius: 8, whiteSpace: 'nowrap' }}>Due{tasks.length > 0 ? ` ${tasksDone}/${tasks.length}` : ''}</span>
                                                                     })()}
+                                                                    {/* Assignee badge / assign button */}
+                                                                    {collaborators.length > 0 && (
+                                                                        <div style={{ position: 'relative', display: 'inline-flex' }}>
+                                                                            {t.assignedTo ? (
+                                                                                <button onClick={(e) => { e.stopPropagation(); setAssignMenuTimeline(assignMenuTimeline === i ? null : i) }} style={{ display: 'flex', alignItems: 'center', gap: '0.2rem', background: 'rgba(123,94,167,0.10)', border: '1px solid rgba(123,94,167,0.25)', borderRadius: 50, padding: '0.05rem 0.35rem 0.05rem 0.05rem', cursor: 'pointer', fontSize: '0.55rem', fontWeight: 800, color: '#7B5EA7' }}>
+                                                                                    <span style={{ width: 16, height: 16, borderRadius: '50%', background: '#7B5EA7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5rem', fontWeight: 900, flexShrink: 0 }}>{t.assignedTo.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}</span>
+                                                                                    {t.assignedTo.split(' ')[0]}
+                                                                                </button>
+                                                                            ) : (
+                                                                                <button onClick={(e) => { e.stopPropagation(); setAssignMenuTimeline(assignMenuTimeline === i ? null : i) }} style={{ background: 'none', border: '1px dashed rgba(154,171,187,0.4)', borderRadius: 50, width: 18, height: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.55rem', color: '#bbb', padding: 0 }} title="Assign to...">👤</button>
+                                                                            )}
+                                                                            {assignMenuTimeline === i && (
+                                                                                <div style={{ position: 'absolute', left: 0, top: '100%', zIndex: 120, background: 'white', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '1px solid var(--border)', padding: '0.3rem', minWidth: 160, marginTop: 4 }}>
+                                                                                    <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#9aabbb', padding: '0.2rem 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assign to</div>
+                                                                                    {getAssignablePeople().map((p, pi) => (
+                                                                                        <button key={pi} onClick={() => assignTimeline(i, p.name)} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', width: '100%', textAlign: 'left', padding: '0.35rem 0.5rem', borderRadius: 6, border: 'none', background: t.assignedTo === p.name ? 'rgba(123,94,167,0.08)' : 'transparent', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 600, color: 'var(--navy)', fontFamily: 'inherit' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(123,94,167,0.06)'} onMouseLeave={e => e.currentTarget.style.background = t.assignedTo === p.name ? 'rgba(123,94,167,0.08)' : 'transparent'}>
+                                                                                            <span style={{ width: 20, height: 20, borderRadius: '50%', background: pi === 0 ? 'var(--teal)' : '#7B5EA7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.55rem', fontWeight: 900, flexShrink: 0 }}>{p.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}</span>
+                                                                                            {p.name}{t.assignedTo === p.name && ' ✓'}
+                                                                                        </button>
+                                                                                    ))}
+                                                                                    {t.assignedTo && (
+                                                                                        <button onClick={() => assignTimeline(i, undefined)} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.35rem 0.5rem', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: '#E8896A', fontFamily: 'inherit', borderTop: '1px solid var(--border)', marginTop: '0.2rem' }}>✕ Unassign</button>
+                                                                                    )}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
                                                                 </div>
                                                                 {t.category && (() => {
                                                                     const TAG_COLORS: Record<string, string> = { venue: '#4AADA8', vendor: '#E8896A', food: '#F7C948', music: '#7B5EA7', decor: '#3D8C6E', planning: '#2D4059', guests: '#c4880a', budget: '#E8896A', entertainment: '#7B5EA7', catering: '#F7C948', photography: '#4AADA8', logistics: '#2D4059' }
@@ -1914,6 +1985,30 @@ function DashboardContent() {
                                                                                     {/* Task text */}
                                                                                     <span onClick={() => toggleCheck(ci)} style={{ fontSize: '0.75rem', fontWeight: 600, color: c.done ? '#9aabbb' : 'var(--navy)', textDecoration: c.done ? 'line-through' : 'none', flex: 1, cursor: 'pointer' }}>{c.item}</span>
                                                                                     {c.completedAt && <span style={{ fontSize: '0.55rem', color: '#3D8C6E', fontWeight: 700, whiteSpace: 'nowrap' }}>{new Date(c.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                                                                                    {/* Assign button */}
+                                                                                    {collaborators.length > 0 && (
+                                                                                        <div style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
+                                                                                            {c.assignedTo ? (
+                                                                                                <button onClick={(e) => { e.stopPropagation(); setAssignMenuTask(assignMenuTask === ci ? null : ci) }} title={`Assigned to ${c.assignedTo}`} style={{ width: 18, height: 18, borderRadius: '50%', background: '#7B5EA7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5rem', fontWeight: 900, border: '1.5px solid rgba(123,94,167,0.3)', cursor: 'pointer', padding: 0 }}>{c.assignedTo.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}</button>
+                                                                                            ) : (
+                                                                                                <button onClick={(e) => { e.stopPropagation(); setAssignMenuTask(assignMenuTask === ci ? null : ci) }} style={{ width: 18, height: 18, borderRadius: '50%', background: 'none', border: '1px dashed rgba(154,171,187,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.5rem', color: '#ccc', padding: 0 }} title="Assign to...">👤</button>
+                                                                                            )}
+                                                                                            {assignMenuTask === ci && (
+                                                                                                <div style={{ position: 'absolute', right: 0, top: '100%', zIndex: 120, background: 'white', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '1px solid var(--border)', padding: '0.3rem', minWidth: 150, marginTop: 4 }}>
+                                                                                                    <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#9aabbb', padding: '0.15rem 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assign</div>
+                                                                                                    {getAssignablePeople().map((p, pi) => (
+                                                                                                        <button key={pi} onClick={() => assignTask(ci, p.name)} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', width: '100%', textAlign: 'left', padding: '0.3rem 0.5rem', borderRadius: 6, border: 'none', background: c.assignedTo === p.name ? 'rgba(123,94,167,0.08)' : 'transparent', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: 'var(--navy)', fontFamily: 'inherit' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(123,94,167,0.06)'} onMouseLeave={e => e.currentTarget.style.background = c.assignedTo === p.name ? 'rgba(123,94,167,0.08)' : 'transparent'}>
+                                                                                                            <span style={{ width: 18, height: 18, borderRadius: '50%', background: pi === 0 ? 'var(--teal)' : '#7B5EA7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5rem', fontWeight: 900, flexShrink: 0 }}>{p.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}</span>
+                                                                                                            {p.name}{c.assignedTo === p.name && ' ✓'}
+                                                                                                        </button>
+                                                                                                    ))}
+                                                                                                    {c.assignedTo && (
+                                                                                                        <button onClick={() => assignTask(ci, undefined)} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.3rem 0.5rem', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.68rem', fontWeight: 600, color: '#E8896A', fontFamily: 'inherit', borderTop: '1px solid var(--border)', marginTop: '0.15rem' }}>✕ Unassign</button>
+                                                                                                    )}
+                                                                                                </div>
+                                                                                            )}
+                                                                                        </div>
+                                                                                    )}
                                                                                     {/* Move button */}
                                                                                     <button
                                                                                         onClick={e => { e.stopPropagation(); setMoveMenuIdx(moveMenuIdx === ci ? null : ci) }}
@@ -2025,6 +2120,30 @@ function DashboardContent() {
                                                                     <div onClick={() => toggleCheck(ci)} style={{ width: 16, height: 16, borderRadius: 4, border: c.done ? '2px solid #3D8C6E' : '2px solid #ccc', background: c.done ? '#3D8C6E' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: '#fff', flexShrink: 0, transition: 'all 0.2s', cursor: 'pointer' }}>{c.done ? '✓' : ''}</div>
                                                                     <span onClick={() => toggleCheck(ci)} style={{ fontSize: '0.75rem', fontWeight: 600, color: c.done ? '#9aabbb' : 'var(--navy)', textDecoration: c.done ? 'line-through' : 'none', flex: 1, cursor: 'pointer' }}>{c.item}</span>
                                                                     {c.completedAt && <span style={{ fontSize: '0.55rem', color: '#3D8C6E', fontWeight: 700, whiteSpace: 'nowrap' }}>{new Date(c.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                                                                    {/* Assign button */}
+                                                                    {collaborators.length > 0 && (
+                                                                        <div style={{ position: 'relative', display: 'inline-flex', flexShrink: 0 }}>
+                                                                            {c.assignedTo ? (
+                                                                                <button onClick={(e) => { e.stopPropagation(); setAssignMenuTask(assignMenuTask === ci ? null : ci) }} title={`Assigned to ${c.assignedTo}`} style={{ width: 18, height: 18, borderRadius: '50%', background: '#7B5EA7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5rem', fontWeight: 900, border: '1.5px solid rgba(123,94,167,0.3)', cursor: 'pointer', padding: 0 }}>{c.assignedTo.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}</button>
+                                                                            ) : (
+                                                                                <button onClick={(e) => { e.stopPropagation(); setAssignMenuTask(assignMenuTask === ci ? null : ci) }} style={{ width: 18, height: 18, borderRadius: '50%', background: 'none', border: '1px dashed rgba(154,171,187,0.4)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.5rem', color: '#ccc', padding: 0 }} title="Assign to...">👤</button>
+                                                                            )}
+                                                                            {assignMenuTask === ci && (
+                                                                                <div style={{ position: 'absolute', right: 0, top: '100%', zIndex: 120, background: 'white', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '1px solid var(--border)', padding: '0.3rem', minWidth: 150, marginTop: 4 }}>
+                                                                                    <div style={{ fontSize: '0.6rem', fontWeight: 800, color: '#9aabbb', padding: '0.15rem 0.5rem', textTransform: 'uppercase', letterSpacing: '0.05em' }}>Assign</div>
+                                                                                    {getAssignablePeople().map((p, pi) => (
+                                                                                        <button key={pi} onClick={() => assignTask(ci, p.name)} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem', width: '100%', textAlign: 'left', padding: '0.3rem 0.5rem', borderRadius: 6, border: 'none', background: c.assignedTo === p.name ? 'rgba(123,94,167,0.08)' : 'transparent', cursor: 'pointer', fontSize: '0.72rem', fontWeight: 600, color: 'var(--navy)', fontFamily: 'inherit' }} onMouseEnter={e => e.currentTarget.style.background = 'rgba(123,94,167,0.06)'} onMouseLeave={e => e.currentTarget.style.background = c.assignedTo === p.name ? 'rgba(123,94,167,0.08)' : 'transparent'}>
+                                                                                            <span style={{ width: 18, height: 18, borderRadius: '50%', background: pi === 0 ? 'var(--teal)' : '#7B5EA7', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.5rem', fontWeight: 900, flexShrink: 0 }}>{p.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2)}</span>
+                                                                                            {p.name}{c.assignedTo === p.name && ' ✓'}
+                                                                                        </button>
+                                                                                    ))}
+                                                                                    {c.assignedTo && (
+                                                                                        <button onClick={() => assignTask(ci, undefined)} style={{ display: 'block', width: '100%', textAlign: 'left', padding: '0.3rem 0.5rem', borderRadius: 6, border: 'none', background: 'transparent', cursor: 'pointer', fontSize: '0.68rem', fontWeight: 600, color: '#E8896A', fontFamily: 'inherit', borderTop: '1px solid var(--border)', marginTop: '0.15rem' }}>✕ Unassign</button>
+                                                                                    )}
+                                                                                </div>
+                                                                            )}
+                                                                        </div>
+                                                                    )}
                                                                     <button onClick={e => { e.stopPropagation(); setMoveMenuIdx(moveMenuIdx === ci ? null : ci) }} style={{ background: 'none', border: 'none', color: moveMenuIdx === ci ? 'var(--teal)' : '#ddd', cursor: 'pointer', fontSize: '0.65rem', padding: '0.1rem', flexShrink: 0 }} title="Move to...">↕</button>
                                                                     <button onClick={(e) => removeCheckItem(ci, e)} style={{ background: 'none', border: 'none', color: '#ddd', cursor: 'pointer', fontSize: '0.6rem', padding: '0.1rem', flexShrink: 0 }} onMouseEnter={e => (e.currentTarget.style.color = '#E8896A')} onMouseLeave={e => (e.currentTarget.style.color = '#ddd')}>✕</button>
                                                                     {moveMenuIdx === ci && (
@@ -2329,6 +2448,12 @@ function DashboardContent() {
                                         <div style={{ flex: 1, minWidth: 0 }}>
                                             <div style={{ fontSize: '0.85rem', fontWeight: 800, color: 'var(--navy)' }}>{c.name}</div>
                                             <div style={{ fontSize: '0.72rem', color: '#9aabbb', fontWeight: 600 }}>{c.email}</div>
+                                            {(() => {
+                                                const taskCount = checklist.filter(t => t.assignedTo === c.name).length
+                                                const milestoneCount = data.plan.timeline.filter(t => t.assignedTo === c.name).length
+                                                if (taskCount === 0 && milestoneCount === 0) return null
+                                                return <div style={{ fontSize: '0.65rem', fontWeight: 700, color: '#7B5EA7', marginTop: '0.15rem' }}>{milestoneCount > 0 ? `${milestoneCount} milestone${milestoneCount > 1 ? 's' : ''}` : ''}{milestoneCount > 0 && taskCount > 0 ? ' · ' : ''}{taskCount > 0 ? `${taskCount} task${taskCount > 1 ? 's' : ''}` : ''} assigned</div>
+                                            })()}
                                         </div>
                                         <span style={{ fontSize: '0.68rem', fontWeight: 800, padding: '0.15rem 0.5rem', borderRadius: 50, background: c.role === 'Editor' ? 'rgba(74,173,168,0.12)' : 'rgba(154,171,187,0.12)', color: c.role === 'Editor' ? 'var(--teal)' : '#9aabbb' }}>{c.role}</span>
                                         <button onClick={() => {
