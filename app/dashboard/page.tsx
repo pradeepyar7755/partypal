@@ -1217,7 +1217,7 @@ function DashboardContent() {
                         <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>⚠️</span>
                         <div style={{ flex: 1 }}>
                             <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#8B5E00', marginBottom: '0.15rem', fontFamily: "'Nunito', sans-serif" }}>
-                                Your events will expire with this session
+                                Your events will expire when you clear browser data
                             </div>
                             <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#6D4C00', lineHeight: 1.4, opacity: 0.85 }}>
                                 Sign up or log in <strong style={{ color: '#5A3D00' }}>for free</strong> to save your events, manage logistics, collaborate with friends, and unlock all member features.
