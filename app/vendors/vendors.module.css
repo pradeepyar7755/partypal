@@ -838,3 +838,27 @@
     font-size: 0.78rem;
   }
 }
+
+/* ══ AD PLACEMENTS ══ */
+.sidebarAd {
+  margin-top: 1rem;
+  padding-top: 1rem;
+  border-top: 1px solid var(--border);
+}
+
+.inFeedAd {
+  grid-column: 1 / -1;
+  margin: 0.5rem 0;
+}
+
+.modalAd {
+  margin-top: 1.5rem;
+  padding-top: 1.5rem;
+  border-top: 1px solid var(--border);
+}
+
+@media (max-width: 900px) {
+  .sidebarAd {
+    display: none;
+  }
+}

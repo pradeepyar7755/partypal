@@ -264,3 +264,108 @@ Before launching any model, instrument these metrics:
 
 > [!CAUTION]
 > **Do not gate RSVP links or poll sharing behind a paywall.** These are your primary viral acquisition channels. Every RSVP link a host shares exposes 10–50 new potential users to PartyPal for free.
+
+---
+
+## 6. Ad Revenue Strategy — Google AdSense on Vendor Pages
+
+### User Behavior Assumptions (at 500 registered users)
+
+| Metric | Value | Source |
+|---|---|---|
+| Monthly Active Users (MAU) | ~150 (30%) | Industry avg for event tools |
+| Vendor page visits per MAU/month | 4–8 | Browse before/during planning |
+| Avg pages per vendor session | 2.5 | Category switch + scroll |
+| Vendor cards clicked (modal opens) | 3–5 per session | High-intent browsing |
+| Desktop vs Mobile split | 45% / 55% | PartyPal analytics target |
+| Avg session duration on vendors | 4–6 min | Browsing, comparing vendors |
+
+**Total monthly impressions by placement:**
+
+| Placement | Calculation | Monthly Impressions |
+|---|---|---|
+| **Sidebar** | 150 MAU × 6 visits × 2.5 pages × 45% desktop | ~1,013 |
+| **In-Feed** | 150 MAU × 6 visits × 2.5 pages × 1.5 ads visible | ~3,375 |
+| **Modal** | 150 MAU × 6 visits × 4 modal opens | ~3,600 |
+| **Total** | — | **~7,988** |
+
+### Per-Placement Revenue Modeling
+
+Event planning falls into the **medium RPM niche** ($4–8 RPM). However, each placement type has different effectiveness:
+
+#### 1️⃣ Sidebar Ad — "Vendor Promo"
+
+| Metric | Low | Mid | High |
+|---|---|---|---|
+| Monthly impressions | 800 | 1,013 | 1,500 |
+| RPM (desktop sidebar) | $2.50 | $4.00 | $6.00 |
+| CTR | 0.3% | 0.5% | 0.8% |
+| **Monthly revenue** | **$2.00** | **$4.05** | **$9.00** |
+
+> Sidebar ads only show on desktop (hidden on mobile). Good baseline revenue but lowest performer due to "banner blindness." Sticky sidebar could increase RPM by 30–50%.
+
+#### 2️⃣ In-Feed Ad — "Sponsored Listing"
+
+| Metric | Low | Mid | High |
+|---|---|---|---|
+| Monthly impressions | 2,500 | 3,375 | 5,000 |
+| RPM (in-content) | $5.00 | $7.00 | $10.00 |
+| CTR | 0.8% | 1.2% | 2.0% |
+| **Monthly revenue** | **$12.50** | **$23.63** | **$50.00** |
+
+> **Best performer.** In-content ads blend with vendor cards, get high viewability, and show on both desktop and mobile. Event planning keywords drive strong advertiser demand (catering, venues, photographers).
+
+#### 3️⃣ Modal Ad — "Party Deals"
+
+| Metric | Low | Mid | High |
+|---|---|---|---|
+| Monthly impressions | 2,500 | 3,600 | 5,000 |
+| RPM (modal/interstitial) | $6.00 | $9.00 | $15.00 |
+| CTR | 1.0% | 1.5% | 2.5% |
+| **Monthly revenue** | **$15.00** | **$32.40** | **$75.00** |
+
+> Highest RPM potential — users in the modal are **high-intent** (actively evaluating a specific vendor). However, must monitor if ads feel intrusive in the modal context. Watch bounce-back rates.
+
+### Combined Revenue Projections
+
+| Scenario | Sidebar | In-Feed | Modal | **Total/Month** | vs API Costs |
+|---|---|---|---|---|---|
+| **Conservative** | $2 | $13 | $15 | **$30** | Offsets 20–60% of Maps API |
+| **Moderate** | $4 | $24 | $32 | **$60** | Offsets 40–100% of Maps API |
+| **Optimistic** | $9 | $50 | $75 | **$134** | Covers Maps API + partial Firebase |
+
+### Revenue at Scale
+
+| Users | MAU | Est. Impressions/Mo | Monthly Ad Revenue | Monthly Costs | **Net Impact** |
+|---|---|---|---|---|---|
+| 100 | 30 | ~1,600 | $6–27 | ~$100 | Offsets 6–27% |
+| 500 | 150 | ~8,000 | $30–134 | ~$430 | Offsets 7–31% |
+| 1,000 | 300 | ~16,000 | $60–268 | ~$750 | Offsets 8–36% |
+| 2,500 | 750 | ~40,000 | $150–670 | ~$1,500 | Offsets 10–45% |
+| 5,000 | 1,500 | ~80,000 | $300–1,340 | ~$2,800 | Offsets 11–48% |
+
+> [!TIP]
+> **Revenue grows linearly with users, but costs grow sub-linearly** (caching, shared infra). At 2,500+ users, ads alone can cover a meaningful portion of operating costs even before subscriptions launch.
+
+### Transition Strategy: Ads → Ad-Free Subscriptions
+
+| Phase | Users | Strategy |
+|---|---|---|
+| **Phase 0 — Now** | 0–500 | All users see ads on vendor pages. Collect impression/CTR data. |
+| **Phase 1 — Validate** | 500+ | Analyze: which placement drives most revenue? Is modal ad hurting UX? Optimize. |
+| **Phase 2 — Monetize** | 500–1,500 | Introduce credits/subscription (Model D). **Paying users get ad-free vendor browsing.** |
+| **Phase 3 — Scale** | 1,500+ | Ads + subscriptions combined. Free users see ads, Pro users don't. Target: $0 net operating cost. |
+
+> [!IMPORTANT]
+> **"Ad-free" becomes a Pro subscription perk.** This is a proven freemium lever — users who find ads annoying are the most likely to pay for removal, creating a natural conversion funnel.
+
+### Which Placement to Prioritize?
+
+| Rank | Placement | Revenue Share | Keep / Cut? |
+|---|---|---|---|
+| 🥇 | **Modal Ad** | ~53% | ✅ Keep — highest RPM, high-intent users |
+| 🥈 | **In-Feed Ad** | ~39% | ✅ Keep — best blend, works on all devices |
+| 🥉 | **Sidebar Ad** | ~8% | ⚠️ Optional — only desktop, lowest impact |
+
+> **Recommendation:** If you want to minimize ad clutter, cut the sidebar ad first. The in-feed + modal combo delivers ~92% of total ad revenue.
+

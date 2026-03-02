@@ -8,6 +8,7 @@ import { recordInteraction } from '@/lib/ai-memory'
 import { showToast } from '@/components/Toast'
 import { trackVendorSearch, trackVendorShortlisted } from '@/lib/analytics'
 import { useAuth } from '@/components/AuthContext'
+import AdUnit from '@/components/AdUnit'
 
 const CATS = ['Venue', 'Decor', 'Baker', 'Food', 'Photos', 'Music', 'Drinks', 'Entertain']
 const CAT_EMOJIS: Record<string, string> = {
@@ -453,6 +454,11 @@ function VendorsContent() {
                 ))}
               </div>
             </div>
+
+            {/* ── Sidebar Ad ── */}
+            <div className={styles.sidebarAd}>
+              <AdUnit slot="sidebar-1" format="vertical" label="Vendor Promo" />
+            </div>
           </div>
         )}
 
@@ -467,82 +473,88 @@ function VendorsContent() {
             </div>
           ) : (
             <div className={styles.vendorGrid}>
-              {paginatedVendors.map(v => (
-                <div key={v.id} className={`${styles.vendorCard} ${v.featured ? `${styles.featured} ${styles.featuredRow}` : ''}`} onClick={() => setSelectedVendor(v)}>
-                  {/* Image Area */}
-                  <div className={styles.vendorCardImg} style={v.photoUrl ? { background: '#1A2535', padding: 0 } : { background: GRADIENTS[v.category] || 'linear-gradient(135deg, #2D4059, #1A2535)' }}>
-                    {v.photoUrl ? (
-                      <img src={v.photoUrl} alt={v.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} />
-                    ) : v.emoji}
-                    <div className={styles.vendorBadgeWrap}>
-                      {v.badge === '⭐ Top Rated' && <span className={styles.badgeTop}>⭐ Top Rated</span>}
-                      {v.badge === 'New' && <span className={styles.badgeNew}>New</span>}
-                      {v.badge === 'Popular' && <span className={styles.badgeNew} style={{ background: '#7B5EA7' }}>Popular</span>}
-                      {v.matchScore >= 85 && <span className={styles.badgeMatch}>{v.matchScore}% match</span>}
-                      {v.isOpen !== undefined && (
-                        <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '0.2rem 0.6rem', borderRadius: 50, background: v.isOpen ? 'rgba(61,140,110,0.9)' : 'rgba(200,60,60,0.9)', color: 'white' }}>
-                          {v.isOpen ? 'Open Now' : 'Closed'}
-                        </span>
-                      )}
-                    </div>
-                    <button className={`${styles.favBtn} ${shortlist.includes(v.id) ? styles.favBtnActive : ''}`} onClick={(e) => toggleShortlist(v.id, e)}>
-                      {shortlist.includes(v.id) ? '❤️' : '🤍'}
-                    </button>
+              {paginatedVendors.map((v, idx) => (
+                <>{idx > 0 && idx % 5 === 0 && (
+                  <div key={`ad-${idx}`} className={styles.inFeedAd}>
+                    <AdUnit slot={`infeed-${idx}`} format="horizontal" label="Sponsored Listing" />
                   </div>
-                  {/* Body */}
-                  <div className={styles.vendorCardBody}>
-                    <div className={styles.vendorCatTag}>{v.emoji} {v.category}</div>
-                    <div className={styles.vendorName}>{v.name}</div>
-                    <div className={styles.vendorLocation}>📍 {v.location}</div>
-                    <div className={styles.vendorRating}>
-                      <span className="stars">{'★'.repeat(Math.floor(v.rating))}{'☆'.repeat(5 - Math.floor(v.rating))}</span>
-                      <span className={styles.ratingNum}>{v.rating}</span>
-                      <span className={styles.reviewCount}>({v.reviews} reviews)</span>
-                    </div>
-                    <div className={styles.vendorDesc}>{v.description}</div>
-                    <div className={styles.vendorTags}>
-                      {v.tags.map((t, i) => <span key={i} className={styles.vtag}>{t}</span>)}
-                    </div>
-                    <div className={styles.vendorCardFooter}>
-                      <div className={styles.vendorPrice}>
-                        <div className={styles.priceFrom}>Starting from</div>
-                        <div className={styles.priceAmount}>{v.price} {v.priceLabel}</div>
+                )}
+                  <div key={v.id} className={`${styles.vendorCard} ${v.featured ? `${styles.featured} ${styles.featuredRow}` : ''}`} onClick={() => setSelectedVendor(v)}>
+                    {/* Image Area */}
+                    <div className={styles.vendorCardImg} style={v.photoUrl ? { background: '#1A2535', padding: 0 } : { background: GRADIENTS[v.category] || 'linear-gradient(135deg, #2D4059, #1A2535)' }}>
+                      {v.photoUrl ? (
+                        <img src={v.photoUrl} alt={v.name} style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: 'inherit' }} />
+                      ) : v.emoji}
+                      <div className={styles.vendorBadgeWrap}>
+                        {v.badge === '⭐ Top Rated' && <span className={styles.badgeTop}>⭐ Top Rated</span>}
+                        {v.badge === 'New' && <span className={styles.badgeNew}>New</span>}
+                        {v.badge === 'Popular' && <span className={styles.badgeNew} style={{ background: '#7B5EA7' }}>Popular</span>}
+                        {v.matchScore >= 85 && <span className={styles.badgeMatch}>{v.matchScore}% match</span>}
+                        {v.isOpen !== undefined && (
+                          <span style={{ fontSize: '0.65rem', fontWeight: 800, padding: '0.2rem 0.6rem', borderRadius: 50, background: v.isOpen ? 'rgba(61,140,110,0.9)' : 'rgba(200,60,60,0.9)', color: 'white' }}>
+                            {v.isOpen ? 'Open Now' : 'Closed'}
+                          </span>
+                        )}
                       </div>
-                      <a href={v.websiteUri || v.googleMapsUri || '#'} target="_blank" rel="noopener noreferrer" className={styles.bookBtn} onClick={(e) => e.stopPropagation()} style={{ textDecoration: 'none', color: 'inherit', background: 'var(--light-bg)', border: '1.5px solid var(--border)' }}>Visit →</a>
-                      {activeEvents.length > 0 && (
-                        <div style={{ position: 'relative' }}>
-                          <button onClick={(e) => { e.stopPropagation(); setAddToEventVendor(addToEventVendor === v.id ? null : v.id) }} className={styles.bookBtn}>+ Event</button>
-                          {addToEventVendor === v.id && (
-                            <div style={{ position: 'absolute', bottom: '110%', right: 0, background: 'white', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '1.5px solid var(--border)', padding: '0.5rem', zIndex: 100, minWidth: 180 }} onClick={(e) => e.stopPropagation()}>
-                              <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', padding: '0.2rem 0.4rem', marginBottom: '0.3rem' }}>Add to event:</div>
-                              {activeEvents.map(ev => (
-                                <button key={ev.eventId} onClick={(e) => {
-                                  e.stopPropagation()
-                                  const existingVendors = userGetJSON<any[]>(`partypal_vendors_${ev.eventId}`, [])
-                                  if (existingVendors.some((vn: any) => vn.name === v.name)) {
-                                    showToast(`${v.name} is already in ${ev.eventType}`, 'info')
-                                    setAddToEventVendor(null)
-                                    return
-                                  }
-                                  const newVendor = { name: v.name, category: v.category, notes: `${v.rating}★ · ${v.price} · ${v.location}`, confirmed: false, costEstimate: undefined }
-                                  const updated = [...existingVendors, newVendor]
-                                  userSetJSON(`partypal_vendors_${ev.eventId}`, updated)
-                                  // Sync to cloud
-                                  fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: ev.eventId, vendors: updated }) }).catch(() => { })
-                                  showToast(`Added ${v.name} to ${ev.eventType}!`, 'success')
-                                  setAddToEventVendor(null)
-                                }} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '0.4rem 0.5rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 700, color: 'var(--navy)', cursor: 'pointer' }}
-                                  onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(74,173,168,0.08)')}
-                                  onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
-                                >{ev.eventType}</button>
-                              ))}
-                            </div>
-                          )}
+                      <button className={`${styles.favBtn} ${shortlist.includes(v.id) ? styles.favBtnActive : ''}`} onClick={(e) => toggleShortlist(v.id, e)}>
+                        {shortlist.includes(v.id) ? '❤️' : '🤍'}
+                      </button>
+                    </div>
+                    {/* Body */}
+                    <div className={styles.vendorCardBody}>
+                      <div className={styles.vendorCatTag}>{v.emoji} {v.category}</div>
+                      <div className={styles.vendorName}>{v.name}</div>
+                      <div className={styles.vendorLocation}>📍 {v.location}</div>
+                      <div className={styles.vendorRating}>
+                        <span className="stars">{'★'.repeat(Math.floor(v.rating))}{'☆'.repeat(5 - Math.floor(v.rating))}</span>
+                        <span className={styles.ratingNum}>{v.rating}</span>
+                        <span className={styles.reviewCount}>({v.reviews} reviews)</span>
+                      </div>
+                      <div className={styles.vendorDesc}>{v.description}</div>
+                      <div className={styles.vendorTags}>
+                        {v.tags.map((t, i) => <span key={i} className={styles.vtag}>{t}</span>)}
+                      </div>
+                      <div className={styles.vendorCardFooter}>
+                        <div className={styles.vendorPrice}>
+                          <div className={styles.priceFrom}>Starting from</div>
+                          <div className={styles.priceAmount}>{v.price} {v.priceLabel}</div>
                         </div>
-                      )}
+                        <a href={v.websiteUri || v.googleMapsUri || '#'} target="_blank" rel="noopener noreferrer" className={styles.bookBtn} onClick={(e) => e.stopPropagation()} style={{ textDecoration: 'none', color: 'inherit', background: 'var(--light-bg)', border: '1.5px solid var(--border)' }}>Visit →</a>
+                        {activeEvents.length > 0 && (
+                          <div style={{ position: 'relative' }}>
+                            <button onClick={(e) => { e.stopPropagation(); setAddToEventVendor(addToEventVendor === v.id ? null : v.id) }} className={styles.bookBtn}>+ Event</button>
+                            {addToEventVendor === v.id && (
+                              <div style={{ position: 'absolute', bottom: '110%', right: 0, background: 'white', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '1.5px solid var(--border)', padding: '0.5rem', zIndex: 100, minWidth: 180 }} onClick={(e) => e.stopPropagation()}>
+                                <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', padding: '0.2rem 0.4rem', marginBottom: '0.3rem' }}>Add to event:</div>
+                                {activeEvents.map(ev => (
+                                  <button key={ev.eventId} onClick={(e) => {
+                                    e.stopPropagation()
+                                    const existingVendors = userGetJSON<any[]>(`partypal_vendors_${ev.eventId}`, [])
+                                    if (existingVendors.some((vn: any) => vn.name === v.name)) {
+                                      showToast(`${v.name} is already in ${ev.eventType}`, 'info')
+                                      setAddToEventVendor(null)
+                                      return
+                                    }
+                                    const newVendor = { name: v.name, category: v.category, notes: `${v.rating}★ · ${v.price} · ${v.location}`, confirmed: false, costEstimate: undefined }
+                                    const updated = [...existingVendors, newVendor]
+                                    userSetJSON(`partypal_vendors_${ev.eventId}`, updated)
+                                    // Sync to cloud
+                                    fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: ev.eventId, vendors: updated }) }).catch(() => { })
+                                    showToast(`Added ${v.name} to ${ev.eventType}!`, 'success')
+                                    setAddToEventVendor(null)
+                                  }} style={{ display: 'block', width: '100%', textAlign: 'left', background: 'transparent', border: 'none', padding: '0.4rem 0.5rem', borderRadius: 6, fontSize: '0.78rem', fontWeight: 700, color: 'var(--navy)', cursor: 'pointer' }}
+                                    onMouseEnter={(e) => (e.currentTarget.style.background = 'rgba(74,173,168,0.08)')}
+                                    onMouseLeave={(e) => (e.currentTarget.style.background = 'transparent')}
+                                  >{ev.eventType}</button>
+                                ))}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
+                </>
               ))}
             </div>
           )}
@@ -664,6 +676,11 @@ function VendorsContent() {
                 >
                   {shortlist.includes(selectedVendor.id) ? '❤️' : '🤍'}
                 </button>
+              </div>
+
+              {/* ── Modal Ad ── */}
+              <div className={styles.modalAd}>
+                <AdUnit slot="modal-1" format="horizontal" label="Party Deals" />
               </div>
             </div>
           </div>

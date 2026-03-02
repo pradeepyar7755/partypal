@@ -176,6 +176,7 @@ function DashboardContent() {
     const [showAddGuest, setShowAddGuest] = useState(false)
     const [showBulkImport, setShowBulkImport] = useState(false)
     const [guestAlertDismissed, setGuestAlertDismissed] = useState(false)
+    const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null)
     const isGuest = !user || user.isAnonymous === true
     const showGuestAlert = isGuest && !isDemo && !guestAlertDismissed && allEvents.filter(e => e.eventId !== 'demo').length > 0
     const [bulkText, setBulkText] = useState('')
@@ -982,7 +983,14 @@ function DashboardContent() {
     const deleteEvent = (eventId: string, e: React.MouseEvent) => {
         e.stopPropagation()
         e.preventDefault()
-        if (!confirm('Delete this event? This cannot be undone.')) return
+        // Two-tap confirm: first click sets confirmDeleteId, second click deletes
+        if (confirmDeleteId !== eventId) {
+            setConfirmDeleteId(eventId)
+            // Auto-clear after 3 seconds if user doesn't confirm
+            setTimeout(() => setConfirmDeleteId(prev => prev === eventId ? null : prev), 3000)
+            return
+        }
+        setConfirmDeleteId(null)
         // Remove from both own events and shared events
         const updated = allEvents.filter(ev => ev.eventId !== eventId)
         setAllEvents(updated)
@@ -1169,27 +1177,30 @@ function DashboardContent() {
                 }}>
                     <div style={{
                         display: 'flex', alignItems: 'center', gap: '0.8rem',
-                        padding: '0.8rem 1.2rem', borderRadius: 14,
-                        background: 'linear-gradient(135deg, rgba(247,201,72,0.12), rgba(232,137,106,0.08))',
-                        border: '1.5px solid rgba(247,201,72,0.25)',
+                        padding: '0.9rem 1.2rem', borderRadius: 14,
+                        background: 'linear-gradient(135deg, #FFF3CD, #FFE8CC)',
+                        border: '1.5px solid #F0C040',
+                        boxShadow: '0 2px 12px rgba(240,192,64,0.15)',
                         marginBottom: '0.5rem',
                     }}>
                         <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>⚠️</span>
                         <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#F7C948', marginBottom: '0.15rem', fontFamily: "'Nunito', sans-serif" }}>
+                            <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#8B5E00', marginBottom: '0.15rem', fontFamily: "'Nunito', sans-serif" }}>
                                 Your events will expire with this session
                             </div>
-                            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>
-                                Sign up or log in <strong style={{ color: 'rgba(255,255,255,0.8)' }}>for free</strong> to save your events, manage logistics, collaborate with friends, and unlock all member features.
+                            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#6D4C00', lineHeight: 1.4, opacity: 0.85 }}>
+                                Sign up or log in <strong style={{ color: '#5A3D00' }}>for free</strong> to save your events, manage logistics, collaborate with friends, and unlock all member features.
                             </div>
                         </div>
                         <a href="/login?redirect=/dashboard" style={{
-                            padding: '0.5rem 1.1rem', borderRadius: 50,
-                            background: '#F7C948', color: '#1A2535',
+                            padding: '0.55rem 1.2rem', borderRadius: 50,
+                            background: 'linear-gradient(135deg, #E8890A, #D47706)',
+                            color: 'white',
                             fontWeight: 800, fontSize: '0.82rem', textDecoration: 'none',
                             fontFamily: "'Fredoka One', cursive",
                             whiteSpace: 'nowrap', flexShrink: 0,
                             transition: 'transform 0.15s',
+                            boxShadow: '0 2px 8px rgba(212,119,6,0.3)',
                         }}
                             onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.05)')}
                             onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
@@ -1198,8 +1209,8 @@ function DashboardContent() {
                         </a>
                         <button onClick={() => setGuestAlertDismissed(true)} style={{
                             background: 'none', border: 'none', cursor: 'pointer',
-                            color: 'rgba(255,255,255,0.3)', fontSize: '1.1rem', padding: '0.2rem',
-                            lineHeight: 1, flexShrink: 0,
+                            color: '#B8860B', fontSize: '1.1rem', padding: '0.2rem',
+                            lineHeight: 1, flexShrink: 0, opacity: 0.6,
                         }}>✕</button>
                     </div>
                 </div>
@@ -1279,9 +1290,21 @@ function DashboardContent() {
                                         </div>
                                         {!isShared && <button
                                             onClick={(e) => { e.stopPropagation(); e.preventDefault(); deleteEvent(ev.eventId!, e) }}
-                                            style={{ position: 'absolute', top: 4, right: 4, background: 'rgba(232,137,106,0.15)', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, width: 26, height: 26, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.75rem', color: '#E8896A', padding: 0, lineHeight: 1, zIndex: 10 }}
-                                            title="Delete event"
-                                        >✕</button>}
+                                            style={{
+                                                position: 'absolute', top: 4, right: 4,
+                                                background: confirmDeleteId === ev.eventId ? '#c0392b' : 'rgba(232,137,106,0.15)',
+                                                border: confirmDeleteId === ev.eventId ? '1px solid #c0392b' : '1px solid rgba(232,137,106,0.3)',
+                                                borderRadius: confirmDeleteId === ev.eventId ? 8 : 6,
+                                                minWidth: 26, height: confirmDeleteId === ev.eventId ? 'auto' : 26,
+                                                padding: confirmDeleteId === ev.eventId ? '0.15rem 0.4rem' : 0,
+                                                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                                cursor: 'pointer', fontSize: confirmDeleteId === ev.eventId ? '0.6rem' : '0.75rem',
+                                                color: confirmDeleteId === ev.eventId ? 'white' : '#E8896A',
+                                                fontWeight: 800, lineHeight: 1, zIndex: 10,
+                                                transition: 'all 0.2s',
+                                            }}
+                                            title={confirmDeleteId === ev.eventId ? 'Click again to confirm deletion' : 'Delete event'}
+                                        >{confirmDeleteId === ev.eventId ? 'Delete?' : '✕'}</button>}
                                         {isShared && <button
                                             onClick={(e) => resignFromEvent(ev.eventId!, e)}
                                             style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(123,94,167,0.1)', border: '1px solid rgba(123,94,167,0.3)', borderRadius: 6, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.6rem', color: '#7B5EA7', padding: 0, lineHeight: 1 }}
