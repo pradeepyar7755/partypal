@@ -44,6 +44,22 @@ interface DashboardData {
         locations: Record<string, number>
         themes: Record<string, number>
     }
+    churn: {
+        totalDeleted: number
+        deletedInPeriod: number
+        deletionsByDay: Record<string, number>
+        reasons: Record<string, number>
+        avgTenureDays: number
+        avgEventsCreated: number
+        avgSessions: number
+        churnRate: number
+        netGrowth: number
+        retentionRate: number
+        recentDeletions: {
+            displayName: string; email: string; tenureDays: number
+            reason: string; deletedAt: string; eventsCreated: number; totalSessions: number
+        }[]
+    }
 }
 
 const EVENT_COLORS: Record<string, string> = {
@@ -827,12 +843,104 @@ export default function AdminDashboard() {
                             </div>
                         )}
 
+                        {/* ══ HEALTH & ALERTS ══ */}
+                        {(() => {
+                            const c = data.churn
+                            const alerts: { emoji: string; title: string; description: string; color: string; severity: 'warning' | 'caution' | 'info' }[] = []
+
+                            // Churn spike: any deletions is notable at early stage
+                            if (c.deletedInPeriod > 0) {
+                                alerts.push({
+                                    emoji: '👋', title: `${c.deletedInPeriod} user${c.deletedInPeriod > 1 ? 's' : ''} churned`,
+                                    description: `${c.churnRate}% churn rate in the last ${data.period}. Avg tenure: ${c.avgTenureDays} days.`,
+                                    color: c.churnRate > 5 ? '#E8896A' : '#F7C948', severity: c.churnRate > 5 ? 'caution' : 'warning',
+                                })
+                            }
+                            // Error rate
+                            const errorRate = k!.totalEvents > 0 ? (k!.totalErrors / k!.totalEvents) * 100 : 0
+                            if (errorRate > 1) {
+                                alerts.push({
+                                    emoji: '🐛', title: `Error rate at ${errorRate.toFixed(1)}%`,
+                                    description: `${k!.totalErrors} errors across ${k!.totalEvents} events. Check the Errors section below.`,
+                                    color: '#E8896A', severity: 'caution',
+                                })
+                            }
+                            // API cost alert
+                            if (usageData?.apiMetrics?.estMonthlyCost) {
+                                const cost = parseFloat(usageData.apiMetrics.estMonthlyCost.replace('$', ''))
+                                if (cost > 10) {
+                                    alerts.push({
+                                        emoji: '💰', title: `Monthly API cost est. ${usageData.apiMetrics.estMonthlyCost}`,
+                                        description: 'Consider enabling caching or reducing per-user API limits.',
+                                        color: cost > 25 ? '#E8896A' : '#F7C948', severity: cost > 25 ? 'caution' : 'warning',
+                                    })
+                                }
+                            }
+                            // Low engagement
+                            if (k!.totalSessions > 0 && k!.totalRegisteredUsers > 3 && (k!.totalSessions / k!.totalRegisteredUsers) < 2) {
+                                alerts.push({
+                                    emoji: '📉', title: 'Low session engagement',
+                                    description: `Only ${(k!.totalSessions / k!.totalRegisteredUsers).toFixed(1)} sessions per registered user. Consider re-engagement campaigns.`,
+                                    color: '#F7C948', severity: 'warning',
+                                })
+                            }
+                            // Positive signal
+                            if (alerts.length === 0) {
+                                alerts.push({
+                                    emoji: '✅', title: 'All systems healthy',
+                                    description: 'No churn, errors within limits, API costs normal, engagement solid.',
+                                    color: '#3D8C6E', severity: 'info',
+                                })
+                            }
+
+                            return (
+                                <>
+                                    <div className={styles.sectionHeader}>
+                                        <span className={styles.sectionEmoji}>🚨</span>
+                                        <span className={styles.sectionTitle}>Health & Alerts</span>
+                                        <span className={styles.sectionSub}>{alerts.length} alert{alerts.length !== 1 ? 's' : ''}</span>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '0.8rem' }}>
+                                        {alerts.map((alert, i) => (
+                                            <div key={i} style={{
+                                                padding: '1rem 1.2rem', borderRadius: 14,
+                                                background: `linear-gradient(135deg, ${alert.color}12, ${alert.color}06)`,
+                                                border: `1.5px solid ${alert.color}30`,
+                                                boxShadow: `0 0 20px ${alert.color}08`,
+                                            }}>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.4rem' }}>
+                                                    <span style={{ fontSize: '1.2rem' }}>{alert.emoji}</span>
+                                                    <span style={{ fontWeight: 800, fontSize: '0.85rem', color: 'var(--navy)' }}>{alert.title}</span>
+                                                </div>
+                                                <div style={{ fontSize: '0.75rem', fontWeight: 600, color: '#6b7f94', lineHeight: 1.4 }}>
+                                                    {alert.description}
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </>
+                            )
+                        })()}
+
                         {/* ══ GROWTH ACCOUNTING ══ */}
                         <div className={styles.sectionHeader}>
                             <span className={styles.sectionEmoji}>🌱</span>
                             <span className={styles.sectionTitle}>Growth Accounting</span>
                         </div>
                         <div className={styles.kpiGrid}>
+                            <KPICard
+                                label="Net Growth"
+                                value={data.churn.netGrowth >= 0 ? `+${data.churn.netGrowth}` : `${data.churn.netGrowth}`}
+                                icon="📈"
+                                color={data.churn.netGrowth >= 0 ? '#3D8C6E' : '#E8896A'}
+                                subtitle={`${k!.totalSignUps} signups − ${data.churn.deletedInPeriod} deletions`}
+                            />
+                            <KPICard
+                                label="Retention Rate"
+                                value={`${data.churn.retentionRate}%`}
+                                icon="💪"
+                                color={data.churn.retentionRate >= 95 ? '#3D8C6E' : data.churn.retentionRate >= 85 ? '#F7C948' : '#E8896A'}
+                            />
                             <KPICard
                                 label="Events / Session"
                                 value={k!.totalSessions > 0 ? (k!.totalEvents / k!.totalSessions).toFixed(1) : '0'}
@@ -856,6 +964,160 @@ export default function AdminDashboard() {
                                 subtitle="Sign Up → Plan"
                             />
                         </div>
+
+                        {/* ══ USER LIFECYCLE & CHURN ══ */}
+                        <div className={styles.sectionHeader}>
+                            <span className={styles.sectionEmoji}>👋</span>
+                            <span className={styles.sectionTitle}>User Lifecycle & Churn</span>
+                            <span className={styles.sectionSub}>{data.churn.totalDeleted} total deleted</span>
+                        </div>
+                        <div className={styles.kpiGrid}>
+                            <KPICard label="Deleted (Period)" value={data.churn.deletedInPeriod} icon="🚪" color="#E8896A" />
+                            <KPICard label="Churn Rate" value={`${data.churn.churnRate}%`} icon="📉" color={data.churn.churnRate > 5 ? '#E8896A' : data.churn.churnRate > 0 ? '#F7C948' : '#3D8C6E'} />
+                            <KPICard label="Avg Tenure" value={`${data.churn.avgTenureDays}d`} icon="📅" subtitle="before deletion" />
+                            <KPICard label="Avg Events" value={data.churn.avgEventsCreated} icon="🎉" subtitle="before deletion" />
+                        </div>
+
+                        {data.churn.totalDeleted > 0 && (
+                            <>
+                                {/* Deletion reason breakdown + timeline */}
+                                <div className={styles.twoCol}>
+                                    {/* Reason Breakdown */}
+                                    <div className={styles.chartCard}>
+                                        <div className={styles.chartTitle}>Deletion Reasons</div>
+                                        <div style={{ padding: '0.3rem 0' }}>
+                                            {(() => {
+                                                const REASON_LABELS: Record<string, { label: string; emoji: string }> = {
+                                                    'not_specified': { label: 'Not specified', emoji: '❓' },
+                                                    'not_useful': { label: 'Not useful for me', emoji: '🤷' },
+                                                    'privacy': { label: 'Privacy concerns', emoji: '🔒' },
+                                                    'another_tool': { label: 'Using another tool', emoji: '🔄' },
+                                                    'too_complicated': { label: 'Too complicated', emoji: '😵' },
+                                                    'just_testing': { label: 'Just testing', emoji: '🧪' },
+                                                    'other': { label: 'Other', emoji: '💬' },
+                                                }
+                                                const entries = Object.entries(data.churn.reasons).sort((a, b) => b[1] - a[1])
+                                                const maxCount = Math.max(...entries.map(([, c]) => c), 1)
+                                                return entries.map(([reason, count], i) => {
+                                                    const meta = REASON_LABELS[reason] || { label: reason, emoji: '📊' }
+                                                    return (
+                                                        <div key={reason} style={{ marginBottom: '0.6rem' }}>
+                                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, color: 'white', marginBottom: '0.2rem' }}>
+                                                                <span>{meta.emoji} {meta.label}</span>
+                                                                <span style={{ color: 'rgba(255,255,255,0.5)' }}>{count}</span>
+                                                            </div>
+                                                            <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.04)' }}>
+                                                                <div style={{
+                                                                    height: '100%', borderRadius: 4,
+                                                                    width: `${(count / maxCount) * 100}%`,
+                                                                    background: DONUT_COLORS[i % DONUT_COLORS.length],
+                                                                    transition: 'width 0.6s ease',
+                                                                }} />
+                                                            </div>
+                                                        </div>
+                                                    )
+                                                })
+                                            })()}
+                                        </div>
+                                    </div>
+
+                                    {/* Deletion Timeline */}
+                                    <div className={styles.chartCard}>
+                                        <div className={styles.chartTitle}>Deletion Timeline</div>
+                                        {(() => {
+                                            const days14: string[] = []
+                                            for (let i = 13; i >= 0; i--) {
+                                                const d = new Date()
+                                                d.setDate(d.getDate() - i)
+                                                days14.push(d.toISOString().split('T')[0])
+                                            }
+                                            const maxDay = Math.max(...days14.map(d => data.churn.deletionsByDay[d] || 0), 1)
+                                            return (
+                                                <div style={{ display: 'flex', gap: 3, alignItems: 'flex-end', height: 100, padding: '0.5rem 0' }}>
+                                                    {days14.map((day, j) => {
+                                                        const count = data.churn.deletionsByDay[day] || 0
+                                                        const h = maxDay > 0 ? Math.max(count > 0 ? 8 : 2, (count / maxDay) * 100) : 2
+                                                        return (
+                                                            <div key={day} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 2 }}>
+                                                                {count > 0 && <span style={{ fontSize: '0.6rem', fontWeight: 800, color: '#E8896A' }}>{count}</span>}
+                                                                <div style={{
+                                                                    width: '100%', maxWidth: 24, borderRadius: 3,
+                                                                    height: `${h}%`, minHeight: 2,
+                                                                    background: count > 0 ? '#E8896A' : 'rgba(255,255,255,0.05)',
+                                                                    transition: 'height 0.5s ease',
+                                                                }} />
+                                                                {j % 3 === 0 && (
+                                                                    <span style={{ fontSize: '0.5rem', color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>
+                                                                        {new Date(day + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                                    </span>
+                                                                )}
+                                                            </div>
+                                                        )
+                                                    })}
+                                                </div>
+                                            )
+                                        })()}
+                                    </div>
+                                </div>
+
+                                {/* Churned User Profiles */}
+                                {data.churn.recentDeletions.length > 0 && (
+                                    <div className={styles.feedCard} style={{ marginTop: '0.8rem' }}>
+                                        <div style={{ padding: '0.8rem 1rem', borderBottom: '1px solid rgba(255,255,255,0.06)' }}>
+                                            <div style={{ fontWeight: 800, color: 'white', fontSize: '0.88rem' }}>🚪 Churned User Profiles</div>
+                                            <div style={{ color: 'rgba(255,255,255,0.35)', fontSize: '0.72rem', marginTop: 2 }}>Users who deleted their accounts</div>
+                                        </div>
+                                        <div style={{ overflowX: 'auto' }}>
+                                            <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.78rem', fontFamily: "'Nunito', sans-serif" }}>
+                                                <thead>
+                                                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.08)', textTransform: 'uppercase', fontSize: '0.62rem', fontWeight: 800, color: 'rgba(255,255,255,0.3)', letterSpacing: '0.5px' }}>
+                                                        <th style={{ padding: '0.5rem 0.8rem', textAlign: 'left' }}>User</th>
+                                                        <th style={{ padding: '0.5rem', textAlign: 'center' }}>Tenure</th>
+                                                        <th style={{ padding: '0.5rem', textAlign: 'center' }}>Events</th>
+                                                        <th style={{ padding: '0.5rem', textAlign: 'center' }}>Sessions</th>
+                                                        <th style={{ padding: '0.5rem', textAlign: 'left' }}>Reason</th>
+                                                        <th style={{ padding: '0.5rem 0.8rem', textAlign: 'right' }}>Deleted</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    {data.churn.recentDeletions.map((u, i) => (
+                                                        <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                                                            <td style={{ padding: '0.6rem 0.8rem' }}>
+                                                                <div style={{ fontWeight: 700, color: 'white', fontSize: '0.8rem' }}>
+                                                                    {u.displayName || 'Unknown'}
+                                                                </div>
+                                                                <div style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.3)', fontWeight: 600 }}>{u.email}</div>
+                                                            </td>
+                                                            <td style={{ padding: '0.6rem 0.5rem', textAlign: 'center', fontWeight: 700, color: u.tenureDays < 7 ? '#E8896A' : 'rgba(255,255,255,0.7)' }}>
+                                                                {u.tenureDays}d
+                                                            </td>
+                                                            <td style={{ padding: '0.6rem 0.5rem', textAlign: 'center', fontWeight: 700, color: 'rgba(255,255,255,0.7)' }}>
+                                                                {u.eventsCreated}
+                                                            </td>
+                                                            <td style={{ padding: '0.6rem 0.5rem', textAlign: 'center', fontWeight: 700, color: 'rgba(255,255,255,0.7)' }}>
+                                                                {u.totalSessions}
+                                                            </td>
+                                                            <td style={{ padding: '0.6rem 0.5rem' }}>
+                                                                <span style={{
+                                                                    padding: '0.15rem 0.5rem', borderRadius: 6, fontSize: '0.68rem', fontWeight: 700,
+                                                                    background: u.reason === 'not_specified' ? 'rgba(155,171,187,0.1)' : 'rgba(232,137,106,0.1)',
+                                                                    color: u.reason === 'not_specified' ? 'rgba(255,255,255,0.4)' : '#E8896A',
+                                                                }}>
+                                                                    {u.reason === 'not_specified' ? 'No reason' : u.reason.replace(/_/g, ' ')}
+                                                                </span>
+                                                            </td>
+                                                            <td style={{ padding: '0.6rem 0.8rem', textAlign: 'right', fontSize: '0.72rem', color: 'rgba(255,255,255,0.35)', fontWeight: 600 }}>
+                                                                {u.deletedAt ? timeAgo(u.deletedAt) : '—'}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                )}
+                            </>
+                        )}
 
                         {/* ══ ACTIVITY FEED ══ */}
                         <div className={styles.sectionHeader}>

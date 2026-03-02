@@ -49,8 +49,47 @@ export async function POST(req: NextRequest) {
 
         const deletionLog: string[] = []
 
-        // 1. Delete all user events + their rsvps subcollections
+        // ── Gather pre-deletion metrics for churn analytics ──
+        const userDoc = await db.collection('users').doc(uid).get()
+        const userData = userDoc.exists ? userDoc.data()! : {}
+        const createdAt = (userData.createdAt as string) || ''
+        const displayName = (userData.displayName as string) || ''
+        const signInMethod = (userData.signInMethod as string) || 'unknown'
+        const tenureDays = createdAt ? Math.max(0, Math.floor((Date.now() - new Date(createdAt).getTime()) / 86400000)) : 0
+
+        // Count events created
         const eventsSnapshot = await db.collection('events').where('uid', '==', uid).get()
+        const eventsCreated = eventsSnapshot.size
+
+        // Count sessions from analytics
+        const analyticsSnap = await db.collection('analytics_events')
+            .where('userId', '==', uid).limit(1000).get()
+        const sessionIds = new Set<string>()
+        let lastActiveAt = ''
+        analyticsSnap.forEach(doc => {
+            const d = doc.data()
+            if (d.sessionId) sessionIds.add(d.sessionId as string)
+            const ts = (d.timestamp as string) || ''
+            if (ts > lastActiveAt) lastActiveAt = ts
+        })
+
+        // Write deletion record (persists after user data is wiped)
+        await db.collection('account_deletions').add({
+            uid,
+            email,
+            displayName,
+            deletedAt: new Date().toISOString(),
+            reason: body.reason || 'not_specified',
+            tenureDays,
+            eventsCreated,
+            totalSessions: sessionIds.size,
+            lastActiveAt: lastActiveAt || createdAt,
+            signUpMethod: signInMethod,
+        })
+        deletionLog.push('Recorded deletion for churn analytics')
+
+        // 1. Delete all user events + their rsvps subcollections
+        // eventsSnapshot already fetched above for metrics
         for (const doc of eventsSnapshot.docs) {
             // Delete rsvps subcollection
             const rsvpsSnapshot = await doc.ref.collection('rsvps').get()
@@ -80,18 +119,16 @@ export async function POST(req: NextRequest) {
         }
 
         // 4. Anonymize analytics events (preserve data, remove identity)
-        const analyticsSnapshot = await db.collection('analytics_events')
-            .where('userId', '==', uid).limit(500).get()
+        // analyticsSnap already fetched above; re-use for efficiency
+        const analyticsSnapshot = analyticsSnap
         for (const doc of analyticsSnapshot.docs) {
             await doc.ref.update({ userId: 'deleted', userEmail: null })
         }
         deletionLog.push(`Anonymized ${analyticsSnapshot.size} analytics entries`)
 
         // 5. Delete user profile from Firestore
-        const userRef = db.collection('users').doc(uid)
-        const userDoc = await userRef.get()
         if (userDoc.exists) {
-            await userRef.delete()
+            await db.collection('users').doc(uid).delete()
             deletionLog.push('Deleted user profile')
         }
 

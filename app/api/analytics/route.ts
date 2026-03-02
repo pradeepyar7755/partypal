@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
                 }
 
                 // Run ALL Firestore queries in parallel (3s timeout each)
-                const [dailyData, recentErrors, recentActivity, , totalRegisteredUsers] = await Promise.all([
+                const [dailyData, recentErrors, recentActivity, , totalRegisteredUsers, churnData] = await Promise.all([
                     firestoreQuery(
                         async () => {
                             const snap = await db.collection('analytics_daily')
@@ -192,6 +192,69 @@ export async function GET(req: NextRequest) {
                             return snap.data().count
                         },
                         0
+                    ),
+                    // Churn / account deletion analytics
+                    firestoreQuery(
+                        async () => {
+                            const allDeletions = await db.collection('account_deletions')
+                                .orderBy('deletedAt', 'desc')
+                                .limit(200)
+                                .get()
+                            const totalDeleted = allDeletions.size
+                            const reasons: Record<string, number> = {}
+                            let totalTenure = 0, totalEvents = 0, totalSessions = 0
+                            let deletedInPeriod = 0
+                            const deletionsByDay: Record<string, number> = {}
+                            const recentDeletions: { displayName: string; email: string; tenureDays: number; reason: string; deletedAt: string; eventsCreated: number; totalSessions: number }[] = []
+
+                            allDeletions.forEach(doc => {
+                                const d = doc.data()
+                                const deletedAt = (d.deletedAt as string) || ''
+                                const reason = (d.reason as string) || 'not_specified'
+                                const tenure = (d.tenureDays as number) || 0
+                                const events = (d.eventsCreated as number) || 0
+                                const sessions = (d.totalSessions as number) || 0
+
+                                reasons[reason] = (reasons[reason] || 0) + 1
+                                totalTenure += tenure
+                                totalEvents += events
+                                totalSessions += sessions
+
+                                if (deletedAt >= startKey) {
+                                    deletedInPeriod++
+                                    const day = deletedAt.split('T')[0]
+                                    deletionsByDay[day] = (deletionsByDay[day] || 0) + 1
+                                }
+
+                                if (recentDeletions.length < 10) {
+                                    recentDeletions.push({
+                                        displayName: (d.displayName as string) || '',
+                                        email: ((d.email as string) || '').replace(/(.{2}).*(@.*)/, '$1***$2'),
+                                        tenureDays: tenure,
+                                        reason,
+                                        deletedAt,
+                                        eventsCreated: events,
+                                        totalSessions: sessions,
+                                    })
+                                }
+                            })
+
+                            return {
+                                totalDeleted,
+                                deletedInPeriod,
+                                deletionsByDay,
+                                reasons,
+                                avgTenureDays: totalDeleted > 0 ? Math.round(totalTenure / totalDeleted) : 0,
+                                avgEventsCreated: totalDeleted > 0 ? parseFloat((totalEvents / totalDeleted).toFixed(1)) : 0,
+                                avgSessions: totalDeleted > 0 ? parseFloat((totalSessions / totalDeleted).toFixed(1)) : 0,
+                                recentDeletions,
+                            }
+                        },
+                        {
+                            totalDeleted: 0, deletedInPeriod: 0, deletionsByDay: {} as Record<string, number>,
+                            reasons: {} as Record<string, number>, avgTenureDays: 0, avgEventsCreated: 0,
+                            avgSessions: 0, recentDeletions: [] as { displayName: string; email: string; tenureDays: number; reason: string; deletedAt: string; eventsCreated: number; totalSessions: number }[],
+                        }
                     ),
                 ])
 
@@ -267,6 +330,16 @@ export async function GET(req: NextRequest) {
                     recentErrors,
                     recentActivity,
                     eventInsights,
+                    churn: {
+                        ...churnData,
+                        churnRate: totalRegisteredUsers > 0
+                            ? parseFloat(((churnData.deletedInPeriod / (totalRegisteredUsers + churnData.totalDeleted)) * 100).toFixed(1))
+                            : 0,
+                        netGrowth: totalSignUps - churnData.deletedInPeriod,
+                        retentionRate: totalRegisteredUsers > 0
+                            ? parseFloat((100 - ((churnData.deletedInPeriod / (totalRegisteredUsers + churnData.totalDeleted)) * 100)).toFixed(1))
+                            : 100,
+                    },
                 })
             }
 

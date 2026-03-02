@@ -48,6 +48,7 @@ export default function SettingsPage() {
     // Delete account
     const [showDeleteModal, setShowDeleteModal] = useState(false)
     const [deleteConfirmEmail, setDeleteConfirmEmail] = useState('')
+    const [deleteReason, setDeleteReason] = useState('not_specified')
     const [deleting, setDeleting] = useState(false)
     const [deleteError, setDeleteError] = useState('')
 
@@ -197,7 +198,7 @@ export default function SettingsPage() {
             const res = await fetch('/api/account/delete', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
-                body: JSON.stringify({ confirmEmail: deleteConfirmEmail }),
+                body: JSON.stringify({ confirmEmail: deleteConfirmEmail, reason: deleteReason }),
             })
             const data = await res.json()
             if (!res.ok) throw new Error(data.error || 'Deletion failed')
@@ -590,6 +591,29 @@ export default function SettingsPage() {
                                 placeholder={user.email || ''}
                                 className={styles.fieldInput}
                             />
+                        </div>
+
+                        <div style={{ marginBottom: '1rem' }}>
+                            <label style={{
+                                display: 'block', fontSize: '0.75rem', fontWeight: 800,
+                                color: '#9aabbb', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: '0.4rem',
+                            }}>
+                                Why are you leaving? (optional)
+                            </label>
+                            <select
+                                value={deleteReason}
+                                onChange={e => setDeleteReason(e.target.value)}
+                                className={styles.fieldInput}
+                                style={{ cursor: 'pointer' }}
+                            >
+                                <option value="not_specified">Prefer not to say</option>
+                                <option value="not_useful">Not useful for me</option>
+                                <option value="privacy">Privacy concerns</option>
+                                <option value="another_tool">Using another tool</option>
+                                <option value="too_complicated">Too complicated</option>
+                                <option value="just_testing">Just testing</option>
+                                <option value="other">Other</option>
+                            </select>
                         </div>
 
                         {deleteError && (
