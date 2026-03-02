@@ -45,6 +45,8 @@ export default function ContactPage() {
     const [copied, setCopied] = useState(false)
     const [feedbackForm, setFeedbackForm] = useState({ category: '', description: '', email: '', name: '' })
     const [submitted, setSubmitted] = useState(false)
+    const [submitting, setSubmitting] = useState(false)
+    const [submitError, setSubmitError] = useState('')
 
     const supportEmail = 'support@partypal.social'
 
@@ -54,15 +56,35 @@ export default function ContactPage() {
         setTimeout(() => setCopied(false), 2000)
     }
 
-    const handleFeedbackSubmit = (e: React.FormEvent) => {
+    const handleFeedbackSubmit = async (e: React.FormEvent) => {
         e.preventDefault()
         if (!feedbackForm.category || !feedbackForm.description.trim()) return
-        // In a real app this would POST to an API
-        setSubmitted(true)
-        setTimeout(() => {
-            setSubmitted(false)
-            setFeedbackForm({ category: '', description: '', email: '', name: '' })
-        }, 4000)
+        setSubmitting(true)
+        setSubmitError('')
+        try {
+            const res = await fetch('/api/bugs', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    category: feedbackForm.category,
+                    description: feedbackForm.description.trim(),
+                    page: '/contact',
+                    userAgent: typeof navigator !== 'undefined' ? navigator.userAgent : 'unknown',
+                    email: feedbackForm.email || '',
+                    name: feedbackForm.name || '',
+                }),
+            })
+            if (!res.ok) throw new Error('Failed to submit')
+            setSubmitted(true)
+            setTimeout(() => {
+                setSubmitted(false)
+                setFeedbackForm({ category: '', description: '', email: '', name: '' })
+            }, 4000)
+        } catch {
+            setSubmitError('Failed to submit. Please try again.')
+        } finally {
+            setSubmitting(false)
+        }
     }
 
     return (
@@ -202,10 +224,15 @@ export default function ContactPage() {
                                     <button
                                         type="submit"
                                         className={styles.submitBtn}
-                                        disabled={!feedbackForm.category || !feedbackForm.description.trim()}
+                                        disabled={!feedbackForm.category || !feedbackForm.description.trim() || submitting}
                                     >
-                                        🚀 Submit Feedback
+                                        {submitting ? '⏳ Submitting...' : '🚀 Submit Feedback'}
                                     </button>
+                                    {submitError && (
+                                        <div style={{ color: '#E8896A', fontSize: '0.82rem', fontWeight: 700, marginTop: '0.5rem', textAlign: 'center' }}>
+                                            {submitError}
+                                        </div>
+                                    )}
                                 </form>
                             )}
                         </div>

@@ -5,6 +5,7 @@ import ToastContainer from '@/components/Toast'
 import { AuthProvider } from '@/components/AuthContext'
 import AnalyticsProvider from '@/components/AnalyticsProvider'
 import NativeInit from '@/components/NativeInit'
+import BugReportButton from '@/components/BugReportButton'
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -49,6 +50,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <Nav />
             <ToastContainer />
             {children}
+            <BugReportButton />
           </AnalyticsProvider>
         </AuthProvider>
       </body>

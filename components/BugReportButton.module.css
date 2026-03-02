@@ -1,0 +1,263 @@
+.fab {
+    position: fixed;
+    bottom: 1.5rem;
+    right: 1.5rem;
+    z-index: 9999;
+    font-family: 'Nunito', sans-serif;
+}
+
+/* ── Trigger Button ── */
+.fabBtn {
+    width: 52px;
+    height: 52px;
+    border-radius: 50%;
+    border: 1.5px solid rgba(247, 201, 72, 0.35);
+    background: linear-gradient(135deg, #1a2535, #2d4059);
+    color: #F7C948;
+    font-size: 1.4rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45);
+    transition: all 0.25s ease;
+}
+
+.fabBtn:hover {
+    transform: scale(1.08);
+    box-shadow: 0 8px 32px rgba(247, 201, 72, 0.25);
+    border-color: rgba(247, 201, 72, 0.6);
+}
+
+.fabBtnOpen {
+    background: rgba(232, 137, 106, 0.15);
+    border-color: rgba(232, 137, 106, 0.4);
+    color: #E8896A;
+}
+
+.fabBtnOpen:hover {
+    box-shadow: 0 8px 32px rgba(232, 137, 106, 0.2);
+}
+
+/* ── Panel ── */
+.panel {
+    position: absolute;
+    bottom: calc(100% + 12px);
+    right: 0;
+    width: 340px;
+    background: linear-gradient(135deg, rgba(26, 37, 53, 0.98), rgba(45, 64, 89, 0.98));
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    border-radius: 20px;
+    box-shadow: 0 12px 48px rgba(0, 0, 0, 0.5);
+    animation: panelIn 0.25s ease-out;
+    overflow: hidden;
+}
+
+@keyframes panelIn {
+    from {
+        opacity: 0;
+        transform: translateY(12px) scale(0.95);
+    }
+
+    to {
+        opacity: 1;
+        transform: translateY(0) scale(1);
+    }
+}
+
+/* ── Header ── */
+.panelHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.2rem 0.6rem;
+}
+
+.panelTitle {
+    font-size: 0.88rem;
+    font-weight: 800;
+    color: white;
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.panelClose {
+    width: 28px;
+    height: 28px;
+    border-radius: 50%;
+    border: none;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.85rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.2s;
+}
+
+.panelClose:hover {
+    background: rgba(232, 137, 106, 0.15);
+    color: #E8896A;
+}
+
+/* ── Form ── */
+.panelBody {
+    padding: 0.3rem 1.2rem 1.2rem;
+}
+
+.formGroup {
+    margin-bottom: 0.85rem;
+}
+
+.formGroup label {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.5);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 0.35rem;
+}
+
+.formGroup select,
+.formGroup textarea {
+    width: 100%;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    padding: 0.65rem 0.9rem;
+    color: white;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.formGroup select:focus,
+.formGroup textarea:focus {
+    border-color: rgba(247, 201, 72, 0.5);
+}
+
+.formGroup textarea {
+    min-height: 90px;
+    resize: vertical;
+    line-height: 1.5;
+}
+
+.formGroup textarea::placeholder {
+    color: rgba(255, 255, 255, 0.25);
+}
+
+.formGroup select option {
+    background: #1a2535;
+    color: white;
+}
+
+.submitBtn {
+    width: 100%;
+    background: var(--yellow, #F7C948);
+    color: #1a2535;
+    border: none;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.9rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+}
+
+.submitBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 6px 20px rgba(247, 201, 72, 0.35);
+}
+
+.submitBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+/* ── Success state ── */
+.success {
+    text-align: center;
+    padding: 1.5rem 1rem;
+    animation: panelIn 0.3s ease;
+}
+
+.successIcon {
+    font-size: 2.5rem;
+    display: block;
+    margin-bottom: 0.6rem;
+}
+
+.success h4 {
+    font-family: 'Fredoka One', cursive;
+    color: white;
+    font-size: 1.1rem;
+    margin-bottom: 0.3rem;
+}
+
+.success p {
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.82rem;
+    font-weight: 600;
+}
+
+/* ── Page context pill ── */
+.pagePill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    background: rgba(74, 173, 168, 0.1);
+    border: 1px solid rgba(74, 173, 168, 0.2);
+    padding: 0.2rem 0.6rem;
+    border-radius: 50px;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: rgba(74, 173, 168, 0.8);
+    margin-bottom: 0.7rem;
+}
+
+/* ── Spinner ── */
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(26, 37, 53, 0.3);
+    border-top-color: #1a2535;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+}
+
+@keyframes spin {
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* ── Responsive ── */
+@media (max-width: 500px) {
+    .panel {
+        width: calc(100vw - 2rem);
+        right: -0.5rem;
+    }
+
+    .fab {
+        bottom: 1rem;
+        right: 1rem;
+    }
+
+    .fabBtn {
+        width: 46px;
+        height: 46px;
+        font-size: 1.2rem;
+    }
+}
