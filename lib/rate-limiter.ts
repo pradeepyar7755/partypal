@@ -59,25 +59,62 @@ export async function checkRateLimit(
     identifier: string,   // uid or IP address
     endpoint: string
 ): Promise<{ allowed: boolean; remaining: number; limit: number; resetAt: string }> {
-    const db = getDb()
     const today = new Date().toISOString().split('T')[0]
-    const safeId = identifier.replace(/[./]/g, '_')   // sanitize IPs for Firestore doc ids
-    const rateLimitRef = db.collection('rate_limits').doc(`${safeId}_${today}`)
 
-    const doc = await rateLimitRef.get()
-    const currentCount = doc.exists ? (doc.data()?.count || 0) : 0
+    // Gracefully handle missing Firebase Admin credentials
+    // (e.g. local dev without FIREBASE_SERVICE_ACCOUNT)
+    let db: ReturnType<typeof getDb>
+    try {
+        db = getDb()
+    } catch {
+        // Firebase not available — allow all requests (no rate limiting)
+        return { allowed: true, remaining: 999, limit: 999, resetAt: `${today}T23:59:59Z` }
+    }
 
-    // Get current user count to determine tier
-    const usersSnap = await db.collection('users').count().get()
-    const registeredUsers = usersSnap.data().count || 1
-    const tier = getCurrentTier(registeredUsers)
+    try {
+        const safeId = identifier.replace(/[./]/g, '_')   // sanitize IPs for Firestore doc ids
+        const rateLimitRef = db.collection('rate_limits').doc(`${safeId}_${today}`)
 
-    const limit = tier.dailyLimitPerUser
-    const remaining = Math.max(0, limit - currentCount)
+        const doc = await rateLimitRef.get()
+        const currentCount = doc.exists ? (doc.data()?.count || 0) : 0
 
-    // If under the "no limits needed" threshold, always allow
-    if (registeredUsers <= PLAN_CONFIG.thresholds[0].maxUsers) {
-        // Still track for analytics, but don't block
+        // Get current user count to determine tier
+        const usersSnap = await db.collection('users').count().get()
+        const registeredUsers = usersSnap.data().count || 1
+        const tier = getCurrentTier(registeredUsers)
+
+        const limit = tier.dailyLimitPerUser
+        const remaining = Math.max(0, limit - currentCount)
+
+        // If under the "no limits needed" threshold, always allow
+        if (registeredUsers <= PLAN_CONFIG.thresholds[0].maxUsers) {
+            // Still track for analytics, but don't block
+            await rateLimitRef.set({
+                uid: safeId,
+                count: currentCount + 1,
+                date: today,
+                lastEndpoint: endpoint,
+                updatedAt: new Date().toISOString(),
+            }, { merge: true })
+
+            return {
+                allowed: true,
+                remaining: limit - currentCount - 1,
+                limit,
+                resetAt: `${today}T23:59:59Z`,
+            }
+        }
+
+        if (currentCount >= limit) {
+            return {
+                allowed: false,
+                remaining: 0,
+                limit,
+                resetAt: `${today}T23:59:59Z`,
+            }
+        }
+
+        // Increment counter
         await rateLimitRef.set({
             uid: safeId,
             count: currentCount + 1,
@@ -92,31 +129,9 @@ export async function checkRateLimit(
             limit,
             resetAt: `${today}T23:59:59Z`,
         }
-    }
-
-    if (currentCount >= limit) {
-        return {
-            allowed: false,
-            remaining: 0,
-            limit,
-            resetAt: `${today}T23:59:59Z`,
-        }
-    }
-
-    // Increment counter
-    await rateLimitRef.set({
-        uid: safeId,
-        count: currentCount + 1,
-        date: today,
-        lastEndpoint: endpoint,
-        updatedAt: new Date().toISOString(),
-    }, { merge: true })
-
-    return {
-        allowed: true,
-        remaining: limit - currentCount - 1,
-        limit,
-        resetAt: `${today}T23:59:59Z`,
+    } catch {
+        // If Firestore calls fail (e.g. credentials issue), allow the request
+        return { allowed: true, remaining: 999, limit: 999, resetAt: `${today}T23:59:59Z` }
     }
 }
 

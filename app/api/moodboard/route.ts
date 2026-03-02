@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { assembleContext, hasContext } from '@/lib/ai-context-server'
 import { checkRateLimit } from '@/lib/rate-limiter'
 
-const genAI = new GoogleGenerativeAI(process.env.GOOGLE_MAPS_API_KEY || '')
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY || '')
 
 export async function POST(req: NextRequest) {
   try {
