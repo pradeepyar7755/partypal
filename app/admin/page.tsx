@@ -328,7 +328,79 @@ export default function AdminDashboard() {
                             <KPICard label="Vendor Searches" value={formatNumber(k!.totalVendorSearches)} icon="🔍" />
                             <KPICard label="RSVPs" value={formatNumber(k!.totalRSVPs)} icon="✅" />
                             <KPICard label="Errors" value={formatNumber(k!.totalErrors)} icon="🐛" color={k!.totalErrors > 0 ? '#E8896A' : undefined} />
+                            {usageData && (
+                                <>
+                                    <KPICard label="Gemini AI Calls" value={formatNumber(usageData.apiMetrics?.totals?.gemini || 0)} icon="🧠" color="#7B5EA7" subtitle={`Est. ${usageData.apiMetrics?.estMonthlyCost || '$0'}/mo`} />
+                                    <KPICard label="Places API Calls" value={formatNumber(usageData.apiMetrics?.totals?.maps || 0)} icon="🗺️" color="#4AADA8" subtitle={`Today: ${usageData.apiMetrics?.todayCost || '$0'}`} />
+                                </>
+                            )}
                         </div>
+
+                        {/* ══ API USAGE TREND ══ */}
+                        {usageData?.apiMetrics?.days && usageData.apiMetrics.days.length > 0 && (() => {
+                            const apiDays = usageData.apiMetrics.days as { date: string; services: Record<string, number>; totalCalls: number }[]
+                            const maxApiCalls = Math.max(...apiDays.map((d: { totalCalls: number }) => d.totalCalls), 1)
+                            return (
+                                <>
+                                    <div className={styles.sectionHeader}>
+                                        <span className={styles.sectionEmoji}>⚡</span>
+                                        <span className={styles.sectionTitle}>API Usage Trend</span>
+                                        <span className={styles.sectionSub}>Last 7 days</span>
+                                    </div>
+                                    <div className={styles.chartCard}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.8rem' }}>
+                                            <div className={styles.chartTitle}>Daily API Calls (Gemini AI vs Google Places)</div>
+                                            <div style={{ display: 'flex', gap: '1rem', fontSize: '0.7rem', fontWeight: 700 }}>
+                                                <span style={{ color: '#7B5EA7' }}>● Gemini AI</span>
+                                                <span style={{ color: '#4AADA8' }}>● Places API</span>
+                                            </div>
+                                        </div>
+                                        <div style={{ display: 'flex', alignItems: 'end', gap: '6px', height: 160, padding: '0 0.5rem' }}>
+                                            {apiDays.map((d: { date: string; services: Record<string, number>; totalCalls: number }, i: number) => {
+                                                const gemini = d.services?.gemini || 0
+                                                const maps = d.services?.maps || 0
+                                                const total = gemini + maps
+                                                const heightPct = total > 0 ? Math.max(8, (total / maxApiCalls) * 100) : 4
+                                                const geminiPct = total > 0 ? (gemini / total) * 100 : 50
+                                                return (
+                                                    <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '4px' }}>
+                                                        <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--navy)' }}>{total}</span>
+                                                        <div style={{
+                                                            width: '100%', height: `${heightPct}%`, borderRadius: 6, overflow: 'hidden',
+                                                            display: 'flex', flexDirection: 'column', minHeight: 4,
+                                                        }}>
+                                                            <div style={{ height: `${geminiPct}%`, background: '#7B5EA7', minHeight: gemini > 0 ? 3 : 0 }} />
+                                                            <div style={{ height: `${100 - geminiPct}%`, background: '#4AADA8', minHeight: maps > 0 ? 3 : 0 }} />
+                                                        </div>
+                                                        <span style={{ fontSize: '0.6rem', color: '#9aabbb', fontWeight: 600, whiteSpace: 'nowrap' }}>
+                                                            {new Date(d.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                                        </span>
+                                                    </div>
+                                                )
+                                            })}
+                                        </div>
+                                        {/* Cost summary row */}
+                                        <div style={{
+                                            display: 'flex', justifyContent: 'space-around', marginTop: '1rem',
+                                            padding: '0.6rem 0', borderTop: '1px solid var(--border)',
+                                        }}>
+                                            <div style={{ textAlign: 'center' }}>
+                                                <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' }}>Today&apos;s Cost</div>
+                                                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--navy)', fontFamily: "'Fredoka One', cursive" }}>{usageData.apiMetrics.todayCost}</div>
+                                            </div>
+                                            <div style={{ textAlign: 'center' }}>
+                                                <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' }}>7-Day Total</div>
+                                                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: 'var(--navy)', fontFamily: "'Fredoka One', cursive" }}>{usageData.apiMetrics.weekCost}</div>
+                                            </div>
+                                            <div style={{ textAlign: 'center' }}>
+                                                <div style={{ fontSize: '0.62rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' }}>Est. Monthly</div>
+                                                <div style={{ fontSize: '1.1rem', fontWeight: 800, color: usageData.apiMetrics.estMonthlyCost > '$10' ? '#E8896A' : '#3D8C6E', fontFamily: "'Fredoka One', cursive" }}>{usageData.apiMetrics.estMonthlyCost}</div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </>
+                            )
+                        })()}
 
                         {/* ══ USERS DRILL-DOWN ══ */}
                         <div className={styles.sectionHeader}>
