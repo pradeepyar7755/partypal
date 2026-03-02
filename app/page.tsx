@@ -157,6 +157,7 @@ export default function Home() {
   const [locationTBD, setLocationTBD] = useState(false)
   const [loading, setLoading] = useState(false)
   const [showVideo, setShowVideo] = useState(false)
+  const [showDemoHover, setShowDemoHover] = useState(false)
   const [slide, setSlide] = useState(0)
   const [videoTab, setVideoTab] = useState<'interactive' | 'video'>('interactive')
   const catRef = useRef<HTMLDivElement>(null)
@@ -331,37 +332,6 @@ export default function Home() {
         </div>
       </div>
 
-      {/* SEE IT IN ACTION — Maya's 30th Birthday Demo Card */}
-      <div className="section" style={{ paddingTop: 0 }}>
-        <div style={{
-          maxWidth: 720, margin: '0 auto', padding: '1.8rem 2rem', borderRadius: 20,
-          background: 'linear-gradient(135deg, rgba(74,173,168,0.08), rgba(123,94,167,0.06), rgba(247,201,72,0.06))',
-          border: '1.5px solid rgba(74,173,168,0.2)', position: 'relative', overflow: 'hidden',
-        }}>
-          <div style={{ position: 'absolute', top: -30, right: -30, fontSize: '6rem', opacity: 0.06, transform: 'rotate(-15deg)' }}>🌴</div>
-          <div style={{ position: 'absolute', bottom: -20, left: -20, fontSize: '4rem', opacity: 0.06, transform: 'rotate(20deg)' }}>🎂</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem' }}>
-            <span style={{ fontSize: '0.65rem', fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', color: 'var(--teal)', background: 'rgba(74,173,168,0.1)', padding: '0.2rem 0.6rem', borderRadius: 50 }}>✨ See it in Action</span>
-          </div>
-          <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.3rem', color: 'var(--navy)', marginBottom: '0.3rem' }}>Maya&apos;s 30th Birthday 🎂</h3>
-          <p style={{ color: '#6b7c93', fontWeight: 600, fontSize: '0.88rem', marginBottom: '0.8rem', lineHeight: 1.5 }}>
-            Explore a complete AI-generated party plan — timeline, budget, vendor matches, and guest management — all ready to go.
-          </p>
-          <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '1rem' }}>
-            {['🎉 40 Guests', '📍 Atlanta, GA', '🌴 Tropical Theme', '💰 $2,000 Budget'].map(tag => (
-              <span key={tag} style={{ background: 'rgba(255,255,255,0.7)', border: '1px solid rgba(0,0,0,0.08)', borderRadius: 50, padding: '0.2rem 0.7rem', fontSize: '0.75rem', fontWeight: 700, color: 'var(--navy)' }}>{tag}</span>
-            ))}
-          </div>
-          <button onClick={() => router.push('/dashboard')} style={{
-            background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', padding: '0.6rem 1.5rem',
-            borderRadius: 50, border: 'none', fontWeight: 800, fontSize: '0.88rem', cursor: 'pointer',
-            boxShadow: '0 4px 16px rgba(74,173,168,0.3)', transition: 'transform 0.2s, box-shadow 0.2s',
-          }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-1px)'; e.currentTarget.style.boxShadow = '0 6px 20px rgba(74,173,168,0.4)' }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 16px rgba(74,173,168,0.3)' }}
-          >View Demo Plan →</button>
-        </div>
-      </div>
 
       {/* WIZARD */}
       <section className={styles.wizardSection} id="wizard">
@@ -462,6 +432,52 @@ export default function Home() {
                 </span>
               ) : '🪄 Generate My Party Plan with AI'}
             </button>
+            {/* View Demo Plan button with hover popover */}
+            <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', marginTop: '0.6rem' }}
+              onMouseEnter={() => setShowDemoHover(true)}
+              onMouseLeave={() => setShowDemoHover(false)}
+            >
+              <button onClick={() => router.push('/dashboard')} style={{
+                background: 'transparent', color: 'rgba(255,255,255,0.6)', padding: '0.5rem 1.2rem',
+                borderRadius: 50, border: '1px solid rgba(255,255,255,0.2)', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
+                transition: 'all 0.2s',
+              }}
+                onMouseEnter={e => { e.currentTarget.style.color = '#fff'; e.currentTarget.style.borderColor = 'rgba(74,173,168,0.5)'; e.currentTarget.style.background = 'rgba(74,173,168,0.1)' }}
+                onMouseLeave={e => { e.currentTarget.style.color = 'rgba(255,255,255,0.6)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; e.currentTarget.style.background = 'transparent' }}
+              >✨ View Demo Plan →</button>
+              {showDemoHover && (
+                <div style={{
+                  position: 'absolute', bottom: 'calc(100% + 12px)', left: '50%', transform: 'translateX(-50%)',
+                  width: 360, padding: '1.2rem 1.4rem', borderRadius: 16,
+                  background: 'linear-gradient(135deg, rgba(26,37,53,0.97), rgba(45,64,89,0.97))',
+                  border: '1.5px solid rgba(74,173,168,0.3)',
+                  boxShadow: '0 12px 40px rgba(0,0,0,0.4)', zIndex: 50,
+                  animation: 'fadeInUp 0.2s ease-out',
+                  pointerEvents: 'auto',
+                }}>
+                  {/* Arrow */}
+                  <div style={{
+                    position: 'absolute', bottom: -7, left: '50%', transform: 'translateX(-50%) rotate(45deg)',
+                    width: 12, height: 12, background: 'rgba(45,64,89,0.97)',
+                    borderRight: '1.5px solid rgba(74,173,168,0.3)', borderBottom: '1.5px solid rgba(74,173,168,0.3)',
+                  }} />
+                  <div style={{ position: 'absolute', top: -20, right: -20, fontSize: '3.5rem', opacity: 0.06, transform: 'rotate(-15deg)' }}>🌴</div>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.4rem' }}>
+                    <span style={{ fontSize: '0.6rem', fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', color: '#4AADA8', background: 'rgba(74,173,168,0.15)', padding: '0.15rem 0.5rem', borderRadius: 50 }}>✨ See it in Action</span>
+                  </div>
+                  <h4 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.05rem', color: 'white', marginBottom: '0.25rem' }}>Maya&apos;s 30th Birthday 🎂</h4>
+                  <p style={{ color: 'rgba(255,255,255,0.55)', fontWeight: 600, fontSize: '0.78rem', marginBottom: '0.6rem', lineHeight: 1.4 }}>
+                    Explore a complete AI-generated party plan — timeline, budget, vendor matches, and more.
+                  </p>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.3rem', marginBottom: '0.6rem' }}>
+                    {['🎉 40 Guests', '📍 Atlanta', '🌴 Tropical', '💰 $2K'].map(tag => (
+                      <span key={tag} style={{ background: 'rgba(255,255,255,0.08)', border: '1px solid rgba(255,255,255,0.1)', borderRadius: 50, padding: '0.15rem 0.5rem', fontSize: '0.68rem', fontWeight: 700, color: 'rgba(255,255,255,0.7)' }}>{tag}</span>
+                    ))}
+                  </div>
+                  <div style={{ fontSize: '0.72rem', color: '#4AADA8', fontWeight: 800, textAlign: 'center' }}>Click to explore the full demo →</div>
+                </div>
+              )}
+            </div>
           </div>
         </div>
       </section>

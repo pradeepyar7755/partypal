@@ -1,0 +1,474 @@
+.docsPage {
+    min-height: 100vh;
+    background: #0d1117;
+    padding: 0;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+/* Header */
+.header {
+    background: linear-gradient(135deg, #1a2535 0%, #2D4059 100%);
+    padding: 1.5rem 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    backdrop-filter: blur(20px);
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.logo {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.3rem;
+    color: white;
+}
+
+.logo span {
+    color: #F7C948;
+}
+
+.docsBadge {
+    background: rgba(123, 94, 167, 0.15);
+    color: #7B5EA7;
+    font-size: 0.7rem;
+    font-weight: 800;
+    padding: 0.25rem 0.65rem;
+    border-radius: 50px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.headerRight {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.backLink {
+    color: rgba(255, 255, 255, 0.5);
+    text-decoration: none;
+    font-size: 0.8rem;
+    font-weight: 700;
+    transition: color 0.2s;
+}
+
+.backLink:hover {
+    color: white;
+}
+
+/* Layout */
+.layout {
+    display: flex;
+    max-width: 1600px;
+    margin: 0 auto;
+    min-height: calc(100vh - 70px);
+}
+
+/* Sidebar Tabs */
+.sidebar {
+    width: 260px;
+    border-right: 1px solid rgba(255, 255, 255, 0.06);
+    padding: 1.5rem 0;
+    flex-shrink: 0;
+    position: sticky;
+    top: 70px;
+    height: calc(100vh - 70px);
+    overflow-y: auto;
+}
+
+.sidebarTitle {
+    font-size: 0.65rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.3);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    padding: 0 1.5rem;
+    margin-bottom: 0.8rem;
+}
+
+.tabList {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.tab {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.7rem 1.5rem;
+    cursor: pointer;
+    border: none;
+    background: transparent;
+    color: rgba(255, 255, 255, 0.5);
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-align: left;
+    transition: all 0.15s;
+    border-left: 3px solid transparent;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+.tab:hover {
+    color: rgba(255, 255, 255, 0.8);
+    background: rgba(255, 255, 255, 0.03);
+}
+
+.tabActive {
+    display: flex;
+    align-items: center;
+    gap: 0.7rem;
+    padding: 0.7rem 1.5rem;
+    cursor: pointer;
+    border: none;
+    background: rgba(247, 201, 72, 0.06);
+    color: #F7C948;
+    font-size: 0.82rem;
+    font-weight: 700;
+    text-align: left;
+    transition: all 0.15s;
+    border-left: 3px solid #F7C948;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+
+.tabNumber {
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.68rem;
+    font-weight: 800;
+    flex-shrink: 0;
+    background: rgba(255, 255, 255, 0.06);
+    color: rgba(255, 255, 255, 0.4);
+}
+
+.tabActive .tabNumber {
+    background: rgba(247, 201, 72, 0.15);
+    color: #F7C948;
+}
+
+/* Content Area */
+.content {
+    flex: 1;
+    padding: 2rem 3rem 4rem;
+    max-width: 960px;
+    overflow-x: hidden;
+}
+
+/* Loading */
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 1rem;
+}
+
+.loadingText {
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: rgba(255, 255, 255, 0.4);
+}
+
+/* Access Denied */
+.accessDenied {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    gap: 1rem;
+    text-align: center;
+}
+
+.accessTitle {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.accessSub {
+    color: rgba(255, 255, 255, 0.4);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+/* ═══════════════════════════════════════════ */
+/*  Markdown Rendered Content                  */
+/* ═══════════════════════════════════════════ */
+.markdown {
+    color: rgba(255, 255, 255, 0.85);
+    line-height: 1.7;
+    font-size: 0.92rem;
+}
+
+/* Headings */
+.markdown h1 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 2rem;
+    color: white;
+    margin: 0 0 0.5rem;
+    padding-bottom: 0.7rem;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+    line-height: 1.3;
+}
+
+.markdown h2 {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.35rem;
+    color: #F7C948;
+    margin: 2.5rem 0 0.8rem;
+    padding-bottom: 0.4rem;
+    border-bottom: 1px solid rgba(247, 201, 72, 0.15);
+}
+
+.markdown h3 {
+    font-size: 1.05rem;
+    font-weight: 800;
+    color: #4AADA8;
+    margin: 1.8rem 0 0.6rem;
+}
+
+.markdown h4 {
+    font-size: 0.92rem;
+    font-weight: 800;
+    color: rgba(255, 255, 255, 0.7);
+    margin: 1.4rem 0 0.4rem;
+}
+
+/* Paragraphs */
+.markdown p {
+    margin: 0.5rem 0 1rem;
+}
+
+.markdown strong {
+    color: white;
+    font-weight: 800;
+}
+
+.markdown em {
+    color: rgba(255, 255, 255, 0.6);
+    font-style: italic;
+}
+
+/* Links */
+.markdown a {
+    color: #4AADA8;
+    text-decoration: none;
+    font-weight: 700;
+    border-bottom: 1px solid rgba(74, 173, 168, 0.3);
+    transition: all 0.2s;
+}
+
+.markdown a:hover {
+    color: #F7C948;
+    border-bottom-color: rgba(247, 201, 72, 0.5);
+}
+
+/* Lists */
+.markdown ul,
+.markdown ol {
+    padding-left: 1.5rem;
+    margin: 0.5rem 0 1rem;
+}
+
+.markdown li {
+    margin: 0.3rem 0;
+    line-height: 1.6;
+}
+
+.markdown li::marker {
+    color: #4AADA8;
+}
+
+/* Tables */
+.markdown table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 1rem 0 1.5rem;
+    font-size: 0.85rem;
+    border-radius: 12px;
+    overflow: hidden;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.markdown thead {
+    background: rgba(255, 255, 255, 0.05);
+}
+
+.markdown th {
+    padding: 0.7rem 1rem;
+    text-align: left;
+    font-weight: 800;
+    color: #F7C948;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    border-bottom: 2px solid rgba(255, 255, 255, 0.08);
+}
+
+.markdown td {
+    padding: 0.6rem 1rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.04);
+    color: rgba(255, 255, 255, 0.75);
+}
+
+.markdown tr:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+/* Code Blocks */
+.markdown code {
+    font-family: 'SF Mono', 'Fira Code', 'JetBrains Mono', monospace;
+    font-size: 0.83em;
+    background: rgba(255, 255, 255, 0.06);
+    color: #E8896A;
+    padding: 0.15em 0.4em;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+.markdown pre {
+    background: rgba(0, 0, 0, 0.4);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 12px;
+    padding: 1.2rem 1.5rem;
+    margin: 1rem 0 1.5rem;
+    overflow-x: auto;
+    line-height: 1.5;
+}
+
+.markdown pre code {
+    background: none;
+    color: rgba(255, 255, 255, 0.75);
+    padding: 0;
+    font-size: 0.82rem;
+    font-weight: 500;
+}
+
+/* Blockquotes */
+.markdown blockquote {
+    border-left: 4px solid #7B5EA7;
+    margin: 1rem 0;
+    padding: 0.8rem 1.2rem;
+    background: rgba(123, 94, 167, 0.08);
+    border-radius: 0 10px 10px 0;
+    color: rgba(255, 255, 255, 0.7);
+    font-style: italic;
+}
+
+.markdown blockquote p {
+    margin: 0;
+}
+
+/* Horizontal rules */
+.markdown hr {
+    border: none;
+    height: 1px;
+    background: rgba(255, 255, 255, 0.08);
+    margin: 2rem 0;
+}
+
+/* Images */
+.markdown img {
+    max-width: 100%;
+    border-radius: 10px;
+    margin: 1rem 0;
+}
+
+/* Checkboxes in lists */
+.markdown input[type="checkbox"] {
+    margin-right: 0.5rem;
+    accent-color: #4AADA8;
+}
+
+/* Mermaid code blocks — show as styled code */
+.markdown pre code.language-mermaid {
+    color: #7B5EA7;
+}
+
+/* ═══════════════════════════════════════════ */
+/*  Responsive                                 */
+/* ═══════════════════════════════════════════ */
+@media (max-width: 1024px) {
+    .content {
+        padding: 1.5rem 2rem 3rem;
+    }
+
+    .sidebar {
+        width: 220px;
+    }
+}
+
+@media (max-width: 768px) {
+    .layout {
+        flex-direction: column;
+    }
+
+    .sidebar {
+        width: 100%;
+        position: static;
+        height: auto;
+        border-right: none;
+        border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+        padding: 1rem 0;
+    }
+
+    .tabList {
+        flex-direction: row;
+        overflow-x: auto;
+        padding: 0 1rem;
+        gap: 0;
+    }
+
+    .tab,
+    .tabActive {
+        white-space: nowrap;
+        padding: 0.5rem 1rem;
+        border-left: none;
+        border-bottom: 3px solid transparent;
+        font-size: 0.75rem;
+    }
+
+    .tabActive {
+        border-bottom-color: #F7C948;
+        border-left-color: transparent;
+    }
+
+    .content {
+        padding: 1.5rem 1rem 3rem;
+    }
+
+    .header {
+        padding: 1rem;
+    }
+
+    .markdown h1 {
+        font-size: 1.5rem;
+    }
+
+    .markdown h2 {
+        font-size: 1.15rem;
+    }
+
+    .markdown table {
+        font-size: 0.78rem;
+    }
+
+    .markdown th,
+    .markdown td {
+        padding: 0.4rem 0.6rem;
+    }
+}
