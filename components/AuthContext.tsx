@@ -79,7 +79,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const provider = new OAuthProvider('apple.com')
         provider.addScope('email')
         provider.addScope('name')
-        await signInWithPopup(auth, provider)
+        const result = await signInWithPopup(auth, provider)
+        if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
+            trackSignUp('apple')
+        } else {
+            trackLogin('apple')
+        }
     }
 
     const signInWithEmail = async (email: string, password: string) => {

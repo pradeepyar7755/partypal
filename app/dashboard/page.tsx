@@ -444,16 +444,45 @@ function DashboardContent() {
                         merged.push(sev)
                     }
                 }
-                // Prune local events that no longer exist on server (deleted from another device/admin)
-                const serverIds = new Set(serverEvents.map(e => e.eventId))
-                const pruned = merged.filter(e => {
-                    // Keep events that exist on server, plus the demo event
-                    if (e.eventId === 'demo') return true
-                    return serverIds.has(e.eventId)
-                })
-                userSetJSON('partypal_events', pruned)
-                return pruned
+                // Only prune if server returned events (not empty) to avoid deleting
+                // events that haven't finished uploading yet (race condition)
+                if (serverEvents.length > 0) {
+                    const serverIds = new Set(serverEvents.map(e => e.eventId))
+                    const pruned = merged.filter(e => {
+                        // Always keep the demo event
+                        if (e.eventId === 'demo') return true
+                        // Keep events that exist on server
+                        if (serverIds.has(e.eventId)) return true
+                        // Keep very recent local events that may not have synced yet
+                        // (created within the last 60 seconds)
+                        if (e.createdAt) {
+                            const age = Date.now() - new Date(e.createdAt).getTime()
+                            if (age < 60000) return true
+                        }
+                        return false
+                    })
+                    userSetJSON('partypal_events', pruned)
+                    return pruned
+                }
+                userSetJSON('partypal_events', merged)
+                return merged
             })
+
+            // Backfill uid for local events not yet on server (created without uid)
+            if (isInitial) {
+                const localEvents = userGetJSON<PlanData[]>('partypal_events', [])
+                const serverIds = new Set(serverEvents.map(e => e.eventId))
+                for (const le of localEvents) {
+                    if (le.eventId && le.eventId !== 'demo' && !serverIds.has(le.eventId)) {
+                        // This event exists locally but not on server — re-push with uid
+                        fetch('/api/events', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ ...le, uid: user.uid }),
+                        }).catch(() => { })
+                    }
+                }
+            }
 
             // Also sync the active plan if it's newer on the server
             const activePlan = userGetJSON<PlanData>('partyplan', null as any)
@@ -884,7 +913,9 @@ function DashboardContent() {
                 setAllEvents(updatedEvents)
                 userSetJSON('partypal_events', updatedEvents)
                 // Sync to Firestore
-                fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => { })
+                const syncPayload: Record<string, unknown> = { ...updated }
+                if (user?.uid) syncPayload.uid = user.uid
+                fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(syncPayload) }).catch(() => { })
             }
         }
         setIsEditing(false)

@@ -454,11 +454,6 @@ function VendorsContent() {
                 ))}
               </div>
             </div>
-
-            {/* ── Sidebar Ad ── */}
-            <div className={styles.sidebarAd}>
-              <AdUnit slot="sidebar-1" format="vertical" label="Vendor Promo" />
-            </div>
           </div>
         )}
 

@@ -4,6 +4,7 @@ import { useRouter } from 'next/navigation'
 import styles from './page.module.css'
 import LocationSearch from '@/components/LocationSearch'
 import { userGet, userGetJSON, userSetJSON } from '@/lib/userStorage'
+import { useAuth } from '@/components/AuthContext'
 import { trackPlanGenerated, trackError, trackFeatureUsed } from '@/lib/analytics'
 
 const CATEGORIES = [
@@ -152,6 +153,7 @@ const PARTICLE_COLORS = ['#F7C948', '#E8896A', '#4AADA8', '#7B5EA7', '#3D8C6E', 
 
 export default function Home() {
   const router = useRouter()
+  const { user } = useAuth()
   const [form, setForm] = useState({ eventType: '', date: '', guests: '', location: '', theme: '', budget: '' })
   const [locationDetails, setLocationDetails] = useState<{ lat?: number; lng?: number; name?: string; city?: string; state?: string; type?: string } | null>(null)
   const [locationTBD, setLocationTBD] = useState(false)
@@ -207,17 +209,20 @@ export default function Home() {
       if (data.error) throw new Error(data.error)
       data.eventId = Math.random().toString(36).substring(2, 10)
       data.createdAt = new Date().toISOString()
+      data.updatedAt = new Date().toISOString()
       // Store in events array for multi-event support
       const existing = userGetJSON('partypal_events', [] as Record<string, unknown>[])
       existing.push(data)
       userSetJSON('partypal_events', existing)
       // Also set as active plan for backward compat
       userSetJSON('partyplan', data)
-      // Save to Firestore
+      // Save to Firestore (include uid so sync can find this event)
+      const savePayload: Record<string, unknown> = { ...data }
+      if (user?.uid) savePayload.uid = user.uid
       fetch('/api/events', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
+        body: JSON.stringify(savePayload),
       }).catch(() => { })
       trackPlanGenerated(form.eventType, form.guests, form.budget)
       router.push('/dashboard')

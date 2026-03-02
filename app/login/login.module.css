@@ -8,6 +8,7 @@
     position: relative;
     overflow: hidden;
 }
+
 .loginPage::before {
     content: '';
     position: absolute;
@@ -15,14 +16,22 @@
     left: -50%;
     width: 200%;
     height: 200%;
-    background: radial-gradient(ellipse at 30% 20%, rgba(74,173,168,0.08) 0%, transparent 50%),
-                radial-gradient(ellipse at 70% 80%, rgba(247,201,72,0.05) 0%, transparent 50%),
-                radial-gradient(ellipse at 50% 50%, rgba(232,137,106,0.04) 0%, transparent 40%);
+    background: radial-gradient(ellipse at 30% 20%, rgba(74, 173, 168, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 70% 80%, rgba(247, 201, 72, 0.05) 0%, transparent 50%),
+        radial-gradient(ellipse at 50% 50%, rgba(232, 137, 106, 0.04) 0%, transparent 40%);
     animation: authBgFloat 20s ease-in-out infinite;
 }
+
 @keyframes authBgFloat {
-    0%, 100% { transform: translate(0, 0) rotate(0deg); }
-    50% { transform: translate(-2%, 2%) rotate(1deg); }
+
+    0%,
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+
+    50% {
+        transform: translate(-2%, 2%) rotate(1deg);
+    }
 }
 
 .loginCard {
@@ -30,8 +39,8 @@
     z-index: 1;
     width: 100%;
     max-width: 440px;
-    background: rgba(255,255,255,0.04);
-    border: 1px solid rgba(255,255,255,0.08);
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
     border-radius: 24px;
     padding: 2.5rem 2rem;
     backdrop-filter: blur(20px);
@@ -42,6 +51,7 @@
     margin-bottom: 0.3rem;
     font-size: 2.5rem;
 }
+
 .loginTitle {
     text-align: center;
     font-family: 'Fredoka One', cursive;
@@ -49,12 +59,14 @@
     color: #fff;
     margin-bottom: 0.3rem;
 }
+
 .loginTitle span {
     color: #F7C948;
 }
+
 .loginSub {
     text-align: center;
-    color: rgba(255,255,255,0.5);
+    color: rgba(255, 255, 255, 0.5);
     font-size: 0.85rem;
     font-weight: 600;
     margin-bottom: 2rem;
@@ -64,24 +76,26 @@
     display: flex;
     gap: 0;
     margin-bottom: 1.5rem;
-    background: rgba(255,255,255,0.05);
+    background: rgba(255, 255, 255, 0.05);
     border-radius: 12px;
     padding: 4px;
 }
+
 .tab {
     flex: 1;
     padding: 0.6rem;
     border: none;
     background: transparent;
-    color: rgba(255,255,255,0.5);
+    color: rgba(255, 255, 255, 0.5);
     font-weight: 800;
     font-size: 0.85rem;
     border-radius: 10px;
     cursor: pointer;
     transition: all 0.2s;
 }
+
 .tabActive {
-    background: rgba(74,173,168,0.2);
+    background: rgba(74, 173, 168, 0.2);
     color: #4AADA8;
 }
 
@@ -91,6 +105,7 @@
     gap: 0.7rem;
     margin-bottom: 1.2rem;
 }
+
 .socialBtn {
     display: flex;
     align-items: center;
@@ -103,18 +118,32 @@
     font-size: 0.88rem;
     cursor: pointer;
     transition: all 0.2s;
-    border: 1.5px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
     color: #fff;
 }
+
 .socialBtn:hover {
-    background: rgba(255,255,255,0.08);
-    border-color: rgba(255,255,255,0.2);
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(255, 255, 255, 0.2);
     transform: translateY(-1px);
 }
+
 .socialBtn svg {
     width: 20px;
     height: 20px;
+}
+
+.appleBtn {
+    background: #fff;
+    color: #000;
+    border-color: #fff;
+}
+
+.appleBtn:hover {
+    background: #e8e8e8;
+    border-color: #e8e8e8;
+    color: #000;
 }
 
 .divider {
@@ -122,15 +151,17 @@
     align-items: center;
     gap: 1rem;
     margin: 1.2rem 0;
-    color: rgba(255,255,255,0.3);
+    color: rgba(255, 255, 255, 0.3);
     font-size: 0.75rem;
     font-weight: 700;
 }
-.divider::before, .divider::after {
+
+.divider::before,
+.divider::after {
     content: '';
     flex: 1;
     height: 1px;
-    background: rgba(255,255,255,0.1);
+    background: rgba(255, 255, 255, 0.1);
 }
 
 .emailForm {
@@ -138,23 +169,27 @@
     flex-direction: column;
     gap: 0.7rem;
 }
+
 .emailInput {
     padding: 0.75rem 1rem;
     border-radius: 12px;
-    border: 1.5px solid rgba(255,255,255,0.1);
-    background: rgba(255,255,255,0.04);
+    border: 1.5px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.04);
     color: #fff;
     font-size: 0.88rem;
     font-weight: 600;
     outline: none;
     transition: border-color 0.2s;
 }
+
 .emailInput::placeholder {
-    color: rgba(255,255,255,0.3);
+    color: rgba(255, 255, 255, 0.3);
 }
+
 .emailInput:focus {
-    border-color: rgba(74,173,168,0.5);
+    border-color: rgba(74, 173, 168, 0.5);
 }
+
 .submitBtn {
     padding: 0.8rem;
     border-radius: 12px;
@@ -167,10 +202,12 @@
     transition: all 0.2s;
     margin-top: 0.3rem;
 }
+
 .submitBtn:hover {
     transform: translateY(-1px);
-    box-shadow: 0 6px 20px rgba(74,173,168,0.3);
+    box-shadow: 0 6px 20px rgba(74, 173, 168, 0.3);
 }
+
 .submitBtn:disabled {
     opacity: 0.6;
     cursor: not-allowed;
@@ -181,22 +218,24 @@
     text-align: center;
     margin-top: 1.2rem;
 }
+
 .guestBtn {
     background: none;
     border: none;
-    color: rgba(255,255,255,0.4);
+    color: rgba(255, 255, 255, 0.4);
     font-weight: 700;
     font-size: 0.82rem;
     cursor: pointer;
     transition: color 0.2s;
 }
+
 .guestBtn:hover {
     color: #F7C948;
 }
 
 .error {
-    background: rgba(232,137,106,0.1);
-    border: 1px solid rgba(232,137,106,0.3);
+    background: rgba(232, 137, 106, 0.1);
+    border: 1px solid rgba(232, 137, 106, 0.3);
     border-radius: 10px;
     padding: 0.6rem 0.8rem;
     color: #E8896A;
