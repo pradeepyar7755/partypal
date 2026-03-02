@@ -44,6 +44,26 @@ export async function POST(req: NextRequest) {
 
         await db.collection('user_data').doc(uid).set(updateData, { merge: true })
 
+        // Also sync profile to the `users` collection (drives admin Registered Users count)
+        if (fields.profile) {
+            const profileData = {
+                uid,
+                email: fields.profile.email || '',
+                displayName: fields.profile.displayName || '',
+                signInMethod: fields.profile.signInMethod || 'unknown',
+                lastLoginAt: fields.profile.lastLoginAt || new Date().toISOString(),
+                updatedAt: new Date().toISOString(),
+            }
+            // Use set+merge so createdAt is preserved if user already exists
+            const userRef = db.collection('users').doc(uid)
+            const userDoc = await userRef.get()
+            if (!userDoc.exists) {
+                await userRef.set({ ...profileData, createdAt: new Date().toISOString() })
+            } else {
+                await userRef.set(profileData, { merge: true })
+            }
+        }
+
         return NextResponse.json({ success: true })
     } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : String(error)

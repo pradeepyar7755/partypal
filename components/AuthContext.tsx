@@ -44,6 +44,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(user)
             setStorageUid(user?.uid || null)
             setLoading(false)
+            // Sync user profile to Firestore (fire-and-forget)
+            if (user && !user.isAnonymous) {
+                fetch('/api/user-data', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        uid: user.uid,
+                        profile: {
+                            email: user.email || '',
+                            displayName: user.displayName || '',
+                            signInMethod: user.providerData?.[0]?.providerId || 'unknown',
+                            lastLoginAt: new Date().toISOString(),
+                        },
+                    }),
+                }).catch(() => { })
+            }
         })
         return unsubscribe
     }, [])
