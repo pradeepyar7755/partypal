@@ -14,39 +14,23 @@ interface LocationResult {
     icon: string
 }
 
+interface Prediction {
+    placeId: string
+    name: string
+    secondary: string
+    description: string
+    type: string
+    icon: string
+    types?: string[]
+    lat?: number
+    lng?: number
+}
+
 interface LocationSearchProps {
     value: string
     onChange: (location: string, details?: LocationResult) => void
     placeholder?: string
     className?: string
-}
-
-function getTypeInfo(types: string[]): { type: string; icon: string } {
-    if (types.some(t => ['restaurant', 'bar', 'cafe', 'food', 'meal_delivery', 'meal_takeaway', 'night_club'].includes(t)))
-        return { type: 'restaurant', icon: '🍽️' }
-    if (types.some(t => ['lodging'].includes(t)))
-        return { type: 'hotel', icon: '🏨' }
-    if (types.some(t => ['stadium', 'gym', 'bowling_alley', 'amusement_park'].includes(t)))
-        return { type: 'venue', icon: '🏟️' }
-    if (types.some(t => ['park', 'campground'].includes(t)))
-        return { type: 'park', icon: '🌳' }
-    if (types.some(t => ['church', 'place_of_worship', 'synagogue', 'mosque', 'hindu_temple'].includes(t)))
-        return { type: 'venue', icon: '⛪' }
-    if (types.some(t => ['art_gallery', 'museum'].includes(t)))
-        return { type: 'venue', icon: '🎨' }
-    if (types.some(t => ['establishment', 'point_of_interest'].includes(t)))
-        return { type: 'venue', icon: '📍' }
-    if (types.some(t => ['street_address', 'premise', 'subpremise', 'route'].includes(t)))
-        return { type: 'address', icon: '🏠' }
-    if (types.some(t => ['locality', 'sublocality'].includes(t)))
-        return { type: 'city', icon: '🏙️' }
-    if (types.some(t => ['postal_code'].includes(t)))
-        return { type: 'zip code', icon: '📮' }
-    if (types.some(t => ['administrative_area_level_1', 'administrative_area_level_2'].includes(t)))
-        return { type: 'region', icon: '🌎' }
-    if (types.some(t => ['neighborhood'].includes(t)))
-        return { type: 'neighborhood', icon: '🏘️' }
-    return { type: 'place', icon: '📍' }
 }
 
 function getBadgeColors(type: string): { bg: string; color: string } {
@@ -59,47 +43,15 @@ function getBadgeColors(type: string): { bg: string; color: string } {
     }
 }
 
-// Load Google Maps JS + Places
-let loadP: Promise<void> | null = null
-function loadGMaps(key: string): Promise<void> {
-    if (typeof window === 'undefined') return Promise.resolve()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const w = window as any
-    if (w.google?.maps?.places?.AutocompleteService) return Promise.resolve()
-    if (loadP) return loadP
-
-    loadP = new Promise((resolve, reject) => {
-        if (document.querySelector('script[src*="maps.googleapis.com"]')) {
-            const i = setInterval(() => { if (w.google?.maps?.places?.AutocompleteService) { clearInterval(i); resolve() } }, 100)
-            setTimeout(() => { clearInterval(i); reject(new Error('Timeout')) }, 10000)
-            return
-        }
-        const s = document.createElement('script')
-        s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places`
-        s.async = true
-        s.onload = () => {
-            const i = setInterval(() => { if (w.google?.maps?.places?.AutocompleteService) { clearInterval(i); resolve() } }, 50)
-            setTimeout(() => { clearInterval(i); reject(new Error('Timeout')) }, 10000)
-        }
-        s.onerror = () => reject(new Error('Script load failed'))
-        document.head.appendChild(s)
-    })
-    return loadP
-}
-
 export default function LocationSearch({ value, onChange, placeholder = 'Search a city, venue, or address...', className }: LocationSearchProps) {
     const [query, setQuery] = useState(value)
-    const [predictions, setPredictions] = useState<google.maps.places.AutocompletePrediction[]>([])
+    const [predictions, setPredictions] = useState<Prediction[]>([])
     const [isOpen, setIsOpen] = useState(false)
     const [loading, setLoading] = useState(false)
     const [selected, setSelected] = useState<LocationResult | null>(null)
     const [focusedIndex, setFocusedIndex] = useState(-1)
-    const [ready, setReady] = useState(false)
     const containerRef = useRef<HTMLDivElement>(null)
     const inputRef = useRef<HTMLInputElement>(null)
-    const acService = useRef<google.maps.places.AutocompleteService | null>(null)
-    const geocoder = useRef<google.maps.Geocoder | null>(null)
-    const token = useRef<google.maps.places.AutocompleteSessionToken | null>(null)
     const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
 
     // Sync external value
@@ -108,22 +60,6 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [value])
 
-    // Initialize
-    useEffect(() => {
-        fetch('/api/location')
-            .then(r => r.json())
-            .then(d => {
-                if (!d.apiKey) return
-                loadGMaps(d.apiKey).then(() => {
-                    acService.current = new google.maps.places.AutocompleteService()
-                    geocoder.current = new google.maps.Geocoder()
-                    token.current = new google.maps.places.AutocompleteSessionToken()
-                    setReady(true)
-                }).catch(e => console.error('Maps init error:', e))
-            })
-            .catch(console.error)
-    }, [])
-
     // Click outside to close
     useEffect(() => {
         const h = (e: MouseEvent) => { if (containerRef.current && !containerRef.current.contains(e.target as Node)) setIsOpen(false) }
@@ -131,59 +67,87 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
         return () => document.removeEventListener('mousedown', h)
     }, [])
 
-    const search = useCallback((input: string) => {
-        if (!ready || !acService.current || input.length < 2) { setPredictions([]); return }
+    const search = useCallback(async (input: string) => {
+        if (input.length < 2) { setPredictions([]); return }
         setLoading(true)
-        acService.current.getPlacePredictions(
-            { input, sessionToken: token.current!, componentRestrictions: { country: 'us' } },
-            (results, status) => {
-                setLoading(false)
-                if (status === google.maps.places.PlacesServiceStatus.OK && results) {
-                    setPredictions(results)
-                    setIsOpen(true)
-                } else { setPredictions([]) }
-            }
-        )
-    }, [ready])
+        try {
+            const res = await fetch(`/api/location?q=${encodeURIComponent(input)}`)
+            const data = await res.json()
+            const results: Prediction[] = (data.results || []).map((r: Prediction) => ({
+                placeId: r.placeId || '',
+                name: r.name || '',
+                secondary: r.secondary || '',
+                description: r.description || r.name || '',
+                type: r.type || 'place',
+                icon: r.icon || '📍',
+                types: r.types || [],
+                lat: r.lat,
+                lng: r.lng,
+            }))
+            setPredictions(results)
+            setIsOpen(results.length > 0)
+        } catch (e) {
+            console.error('Location search error:', e)
+            setPredictions([])
+        } finally {
+            setLoading(false)
+        }
+    }, [])
 
     const handleInput = (val: string) => {
         setQuery(val); setSelected(null); setFocusedIndex(-1)
         if (!val) { setPredictions([]); setIsOpen(false); onChange(''); return }
         if (timerRef.current) clearTimeout(timerRef.current)
-        timerRef.current = setTimeout(() => search(val), 180)
+        timerRef.current = setTimeout(() => search(val), 250)
     }
 
-    const handleSelect = (p: google.maps.places.AutocompletePrediction) => {
-        setQuery(p.description); setIsOpen(false); setFocusedIndex(-1)
-        const { type, icon } = getTypeInfo(p.types)
+    const handleSelect = async (p: Prediction) => {
+        const displayText = p.description || `${p.name}, ${p.secondary}`
+        setQuery(displayText); setIsOpen(false); setFocusedIndex(-1)
 
-        // Use Geocoder (Maps JS API) to get lat/lng — always works
-        if (geocoder.current) {
-            geocoder.current.geocode({ placeId: p.place_id }, (results, status) => {
-                token.current = new google.maps.places.AutocompleteSessionToken()
-                if (status === google.maps.GeocoderStatus.OK && results?.[0]) {
-                    const r = results[0]
-                    let city = '', state = '', country = ''
-                    r.address_components.forEach(c => {
-                        if (c.types.includes('locality')) city = c.long_name
-                        if (c.types.includes('sublocality_level_1') && !city) city = c.long_name
-                        if (c.types.includes('administrative_area_level_1')) state = c.short_name
-                        if (c.types.includes('country')) country = c.long_name
-                    })
-                    const result: LocationResult = {
-                        placeId: p.place_id,
-                        name: p.structured_formatting.main_text,
-                        address: r.formatted_address,
-                        city, state, country,
-                        lat: r.geometry.location.lat(),
-                        lng: r.geometry.location.lng(),
-                        type, icon,
-                    }
-                    setSelected(result)
-                    onChange(p.description, result)
-                } else { onChange(p.description) }
+        // If we already have lat/lng from the search (Nominatim fallback), use directly
+        if (p.lat && p.lng) {
+            const result: LocationResult = {
+                placeId: p.placeId,
+                name: p.name,
+                address: displayText,
+                city: '', state: '', country: '',
+                lat: p.lat, lng: p.lng,
+                type: p.type, icon: p.icon,
+            }
+            setSelected(result)
+            onChange(displayText, result)
+            return
+        }
+
+        // Use server-side geocoding for Google Places results
+        try {
+            const res = await fetch('/api/location', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ placeId: p.placeId }),
             })
-        } else { onChange(p.description) }
+            const data = await res.json()
+            if (data.lat) {
+                const result: LocationResult = {
+                    placeId: p.placeId,
+                    name: p.name || data.name,
+                    address: data.address || displayText,
+                    city: data.city || '',
+                    state: data.state || '',
+                    country: data.country || '',
+                    lat: data.lat,
+                    lng: data.lng,
+                    type: p.type, icon: p.icon,
+                }
+                setSelected(result)
+                onChange(displayText, result)
+            } else {
+                onChange(displayText)
+            }
+        } catch {
+            onChange(displayText)
+        }
     }
 
     const handleKey = (e: React.KeyboardEvent) => {
@@ -258,10 +222,9 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
                     maxHeight: 360, overflowY: 'auto', animation: 'locDrop 0.15s ease'
                 }}>
                     {predictions.map((p, idx) => {
-                        const { type, icon } = getTypeInfo(p.types)
-                        const badge = getBadgeColors(type)
+                        const badge = getBadgeColors(p.type)
                         return (
-                            <div key={p.place_id} onClick={() => handleSelect(p)} onMouseEnter={() => setFocusedIndex(idx)}
+                            <div key={p.placeId + idx} onClick={() => handleSelect(p)} onMouseEnter={() => setFocusedIndex(idx)}
                                 style={{
                                     display: 'flex', alignItems: 'center', gap: '0.7rem',
                                     padding: '0.65rem 1rem', cursor: 'pointer', transition: 'background 0.1s',
@@ -272,20 +235,20 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
                                     width: 34, height: 34, borderRadius: 9, flexShrink: 0,
                                     display: 'flex', alignItems: 'center', justifyContent: 'center',
                                     fontSize: '1.05rem', background: badge.bg
-                                }}>{icon}</div>
+                                }}>{p.icon}</div>
                                 <div style={{ flex: 1, minWidth: 0 }}>
                                     <div style={{ fontWeight: 800, fontSize: '0.86rem', color: '#2D4059', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {p.structured_formatting.main_text}
+                                        {p.name}
                                     </div>
                                     <div style={{ fontSize: '0.72rem', color: '#9aabbb', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
-                                        {p.structured_formatting.secondary_text}
+                                        {p.secondary}
                                     </div>
                                 </div>
                                 <div style={{
                                     fontSize: '0.58rem', fontWeight: 800, textTransform: 'uppercase',
                                     letterSpacing: '0.3px', padding: '0.15rem 0.45rem', borderRadius: 50,
                                     flexShrink: 0, background: badge.bg, color: badge.color
-                                }}>{type}</div>
+                                }}>{p.type}</div>
                             </div>
                         )
                     })}
