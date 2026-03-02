@@ -175,6 +175,9 @@ function DashboardContent() {
     const [guestFilter, setGuestFilter] = useState<'all' | 'invited' | 'confirmed' | 'declined'>('all')
     const [showAddGuest, setShowAddGuest] = useState(false)
     const [showBulkImport, setShowBulkImport] = useState(false)
+    const [guestAlertDismissed, setGuestAlertDismissed] = useState(false)
+    const isGuest = user?.isAnonymous === true
+    const showGuestAlert = isGuest && !isDemo && !guestAlertDismissed && allEvents.filter(e => e.eventId !== 'demo').length > 0
     const [bulkText, setBulkText] = useState('')
     const [refineTimelineInput, setRefineTimelineInput] = useState('')
     const [isRefiningTimeline, setIsRefiningTimeline] = useState(false)
@@ -1158,6 +1161,49 @@ function DashboardContent() {
                     <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.5rem' }}>Create, manage, and share your party plans — all powered by AI.</p>
                 </div>
             </header>
+
+            {/* ══ GUEST SESSION ALERT ══ */}
+            {showGuestAlert && (
+                <div style={{
+                    maxWidth: 1200, margin: '0 auto', padding: '0 0.75rem',
+                }}>
+                    <div style={{
+                        display: 'flex', alignItems: 'center', gap: '0.8rem',
+                        padding: '0.8rem 1.2rem', borderRadius: 14,
+                        background: 'linear-gradient(135deg, rgba(247,201,72,0.12), rgba(232,137,106,0.08))',
+                        border: '1.5px solid rgba(247,201,72,0.25)',
+                        marginBottom: '0.5rem',
+                    }}>
+                        <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>⚠️</span>
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#F7C948', marginBottom: '0.15rem', fontFamily: "'Nunito', sans-serif" }}>
+                                Your events will expire with this session
+                            </div>
+                            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'rgba(255,255,255,0.55)', lineHeight: 1.4 }}>
+                                Sign up or log in <strong style={{ color: 'rgba(255,255,255,0.8)' }}>for free</strong> to save your events, manage logistics, collaborate with friends, and unlock all member features.
+                            </div>
+                        </div>
+                        <a href="/login?redirect=/dashboard" style={{
+                            padding: '0.5rem 1.1rem', borderRadius: 50,
+                            background: '#F7C948', color: '#1A2535',
+                            fontWeight: 800, fontSize: '0.82rem', textDecoration: 'none',
+                            fontFamily: "'Fredoka One', cursive",
+                            whiteSpace: 'nowrap', flexShrink: 0,
+                            transition: 'transform 0.15s',
+                        }}
+                            onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.05)')}
+                            onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+                        >
+                            🔗 Sign Up Free
+                        </a>
+                        <button onClick={() => setGuestAlertDismissed(true)} style={{
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            color: 'rgba(255,255,255,0.3)', fontSize: '1.1rem', padding: '0.2rem',
+                            lineHeight: 1, flexShrink: 0,
+                        }}>✕</button>
+                    </div>
+                </div>
+            )}
 
             {/* ══ EVENT CARDS ══ */}
             {(() => {
