@@ -89,7 +89,6 @@ nav {
 
 .nav-logo-img {
   height: 36px;
-  /* Explicit height constraint for 2x logo */
   width: auto;
   object-fit: contain;
   border-radius: 8px;
