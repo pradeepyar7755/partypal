@@ -31,9 +31,9 @@ async function getEventData(code: string) {
             coverPhoto: data.invite?.coverPhoto || '',
             customImage: data.invite?.customImage || '',
         }
-    } catch (error) {
+    } catch (error: any) {
         console.error('getEventData error:', error)
-        return null
+        return { error: error.message || 'Unknown error' } as any
     }
 }
 
@@ -49,9 +49,9 @@ function formatTime12h(t: string, tz?: string): string {
 export async function generateMetadata({ params }: JoinPageProps): Promise<Metadata> {
     const data = await getEventData(params.code)
 
-    if (!data) {
+    if (!data || data.error) {
         return {
-            title: 'Event Not Found — PartyPal',
+            title: `Error: ${data?.error || 'Not Found'}`,
             description: 'This event invite could not be found.',
         }
     }
