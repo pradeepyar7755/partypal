@@ -34,7 +34,7 @@ const DEMO_SLIDES = [
     url: 'partypal.social',
     content: (
       <div style={{ textAlign: 'center', padding: '2rem' }}>
-        <div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', color: '#F7C948', background: 'rgba(247,201,72,0.12)', padding: '0.3rem 0.9rem', borderRadius: 50, display: 'inline-block', marginBottom: '1rem' }}>✨ AI-Powered Party Planning</div>
+        <div style={{ fontSize: '0.7rem', fontWeight: 800, letterSpacing: 2, textTransform: 'uppercase', color: '#F7C948', background: 'rgba(247,201,72,0.12)', padding: '0.3rem 0.9rem', borderRadius: 50, display: 'inline-block', marginBottom: '1rem' }}>✨ AI Party Planner</div>
         <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.6rem', color: 'white', marginBottom: '0.5rem' }}>Plan the <em style={{ color: '#F7C948', fontStyle: 'normal' }}>Perfect</em> Party</h3>
         <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.82rem', marginBottom: '1rem' }}>From venue to entertainment — powered by AI.</p>
         <div style={{ display: 'flex', gap: '0.6rem', justifyContent: 'center' }}>
@@ -311,7 +311,7 @@ export default function Home() {
           ))}
         </div>
         <div className={styles.heroInner}>
-          <div className={styles.heroBadge}>✨ AI-Powered Party Planning</div>
+          <div className={styles.heroBadge}>✨ AI Party Planner</div>
           <h1 className={styles.heroTitle}>Plan the <em>Perfect</em> Party,<br />Stress-Free</h1>
           <p className={styles.heroSub}>From venue to entertainment, connect with everything you need to throw a memorable celebration — powered by AI.</p>
           <div className={styles.heroBtns}>

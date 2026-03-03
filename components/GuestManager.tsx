@@ -103,6 +103,11 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const [inviteCollapsed, setInviteCollapsed] = useState(false)
     const [showPreview, setShowPreview] = useState(false)
     const [isPublished, setIsPublished] = useState(false)
+    const publishedInviteKey = eventId ? `partypal_published_${eventId}` : 'partypal_published'
+    const [publishedInvite, setPublishedInvite] = useState<{ subject?: string; message?: string; smsVersion?: string; customImage?: string; coverPhoto?: string } | null>(() => {
+        if (typeof window === 'undefined') return null
+        return userGetJSON(publishedInviteKey, null)
+    })
     const [lastPublishedInvite, setLastPublishedInvite] = useState<string>('')
     const registryKey = eventId ? `partypal_registry_${eventId}` : 'partypal_registry'
     const [giftRegistry, setGiftRegistry] = useState<{ name: string; url: string }[]>(() => {
@@ -448,10 +453,20 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
             const data = await res.json()
             if (data.joinCode) setJoinCode(data.joinCode)
             setIsPublished(true)
+            const savedPayload = { ...invitePayload, customImage: invitePayload.customImage || undefined, coverPhoto: invitePayload.coverPhoto || undefined }
+            setPublishedInvite(savedPayload)
+            userSetJSON(publishedInviteKey, savedPayload)
             setLastPublishedInvite(JSON.stringify({ s: invite.subject, m: invite.message, sm: invite.smsVersion, ci: invite.customImage, cp: invite.coverPhoto }))
             showToast('Invite published! Live RSVP page updated.', 'success')
         } catch {
             showToast('Failed to publish', 'error')
+        }
+    }
+
+    const revertToPublished = () => {
+        if (publishedInvite) {
+            setInvite(publishedInvite)
+            showToast('Reverted to published invite', 'success')
         }
     }
 
@@ -500,8 +515,18 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                         <button className={styles.actionBtn} onClick={() => generateInvite()} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
                         <button className={styles.secondaryBtn} onClick={() => setShowPreview(true)} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>👁️ Preview</button>
                         {hasUnpublishedChanges
-                            ? <button onClick={publishInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', background: 'rgba(74,173,168,0.12)', border: '1.5px solid rgba(74,173,168,0.4)', borderRadius: 6, fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>📤 Publish</button>
-                            : <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
+                            ? (
+                                <>
+                                    {publishedInvite && <button className={styles.secondaryBtn} onClick={revertToPublished} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', borderColor: 'rgba(244,180,26,0.4)', color: '#c4880a' }}>🌟 Revert</button>}
+                                    <button onClick={publishInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', background: 'rgba(74,173,168,0.12)', border: '1.5px solid rgba(74,173,168,0.4)', borderRadius: 6, fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>📤 Publish</button>
+                                </>
+                            )
+                            : (
+                                <>
+                                    {publishedInvite && <button className={styles.secondaryBtn} onClick={revertToPublished} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', borderColor: 'rgba(244,180,26,0.4)', color: '#c4880a' }}>🌟 Revert</button>}
+                                    <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
+                                </>
+                            )
                         }
                     </div>
                 )}
@@ -516,8 +541,18 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                 <button className={styles.actionBtn} onClick={() => generateInvite()} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
                                 <button className={styles.secondaryBtn} onClick={() => setShowPreview(true)} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>👁️ Preview</button>
                                 {hasUnpublishedChanges
-                                    ? <button onClick={publishInvite} style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', background: 'rgba(74,173,168,0.12)', border: '1.5px solid rgba(74,173,168,0.4)', borderRadius: 6, fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>📤 Publish</button>
-                                    : <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
+                                    ? (
+                                        <>
+                                            {publishedInvite && <button className={styles.secondaryBtn} onClick={revertToPublished} style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', borderColor: 'rgba(244,180,26,0.4)', color: '#c4880a' }}>🌟 Revert</button>}
+                                            <button onClick={publishInvite} style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', background: 'rgba(74,173,168,0.12)', border: '1.5px solid rgba(74,173,168,0.4)', borderRadius: 6, fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>📤 Publish</button>
+                                        </>
+                                    )
+                                    : (
+                                        <>
+                                            {publishedInvite && <button className={styles.secondaryBtn} onClick={revertToPublished} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', borderColor: 'rgba(244,180,26,0.4)', color: '#c4880a' }}>🌟 Revert</button>}
+                                            <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
+                                        </>
+                                    )
                                 }
                             </div>
                             <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.3rem', alignItems: 'center', flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
