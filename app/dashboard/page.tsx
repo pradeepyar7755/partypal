@@ -121,6 +121,41 @@ const NUDGE_MESSAGES: { keywords: string[]; message: string }[] = [
 
 function getQuickActionForMilestone(t: TimelineItem, eventLocation?: string): { emoji: string; label: string; action: 'url' | 'tab' | 'expand'; target: string } | null {
     const text = `${t.task} ${t.category}`.toLowerCase()
+    // Detect which keyword groups are present in this milestone
+    const hasVenueKw = ['venue', 'book', 'location', 'space', 'room'].some(kw => text.includes(kw))
+    const hasGuestKw = ['invite', 'invitation', 'rsvp', 'guest', 'send'].some(kw => text.includes(kw))
+    const hasFoodKw = ['food', 'drink', 'cater', 'menu', 'cocktail', 'snack', 'bar'].some(kw => text.includes(kw))
+    const venueIsConfirmed = eventLocation ? (eventLocation.split(',').map(p => p.trim()).filter(Boolean).length >= 3 || /\d+\s/.test(eventLocation.split(',')[0]?.trim() || '')) : false
+    const venueIsTBD = !eventLocation || /^tbd$/i.test(eventLocation.trim()) || eventLocation.trim() === ''
+
+    // Compound milestone: venue + guests
+    if (hasVenueKw && hasGuestKw) {
+        if (venueIsConfirmed) {
+            // Venue is locked — push host to send invitations
+            return { emoji: '💌', label: 'Send Invitations', action: 'tab', target: 'guests' }
+        }
+        if (venueIsTBD) {
+            // No venue yet — help them find one or poll friends
+            return { emoji: '🏛️', label: 'Browse Venues', action: 'url', target: '/vendors?cat=venue' }
+        }
+        // City-only location — still push invitations since venue is a soft-confirm
+        return { emoji: '💌', label: 'Send Invitations', action: 'tab', target: 'guests' }
+    }
+
+    // Single-focus venue milestone
+    if (hasVenueKw) {
+        if (venueIsConfirmed) return { emoji: '✅', label: 'Confirm Venue', action: 'expand', target: '' }
+        if (venueIsTBD) return { emoji: '🗳️', label: 'Poll for Venue Ideas', action: 'tab', target: 'polls' }
+        return { emoji: '🏛️', label: 'Browse Venues', action: 'url', target: '/vendors?cat=venue' }
+    }
+
+    // Guest-focused milestone
+    if (hasGuestKw) return { emoji: '💌', label: 'Send Invitations', action: 'tab', target: 'guests' }
+
+    // Food-focused milestone
+    if (hasFoodKw) return { emoji: '🍽️', label: 'Find Caterers', action: 'url', target: '/vendors?cat=food' }
+
+    // Fall through to generic keyword matching for other milestones
     let bestAction: typeof QUICK_ACTION_RULES[0] | null = null
     let bestScore = 0
     for (const rule of QUICK_ACTION_RULES) {
@@ -128,13 +163,6 @@ function getQuickActionForMilestone(t: TimelineItem, eventLocation?: string): { 
         if (score > bestScore) { bestScore = score; bestAction = rule }
     }
     if (!bestAction || bestScore === 0) return null
-    // If venue matched and location looks like a specific venue (3+ comma parts = address), show "Confirm Venue" instead of "Browse Venues"
-    if (bestAction.label === 'Browse Venues' && eventLocation) {
-        const parts = eventLocation.split(',').map(p => p.trim()).filter(Boolean)
-        if (parts.length >= 3 || /\d+\s/.test(parts[0] || '')) {
-            return { emoji: '✅', label: 'Confirm Venue', action: 'expand', target: '' }
-        }
-    }
     return { emoji: bestAction.emoji, label: bestAction.label, action: bestAction.action, target: bestAction.target }
 }
 
@@ -337,7 +365,8 @@ function DashboardContent() {
             priority: 'high',
         }]
 
-        return items.map(t => {
+        // Compute dates and attach sortKey for chronological ordering
+        const withDates = items.map(t => {
             let weeks = t.weeks
             // Parse various time offset formats
             const wMatch = weeks.match(/(\d+)\s*w(?:ee)?ks?\s*out/i)
@@ -365,6 +394,7 @@ function DashboardContent() {
                 const wks = parseInt(wMatch[1])
                 targetDate = new Date(ev); targetDate.setDate(targetDate.getDate() - wks * 7)
             }
+            let sortKey = targetDate && !isNaN(targetDate.getTime()) ? targetDate.getTime() : Infinity
             if (targetDate && !isNaN(targetDate.getTime())) {
                 const label = targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                 // Strip existing date prefix if present
@@ -376,8 +406,12 @@ function DashboardContent() {
                 .replace(/\s*\([^)]*(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|Jun(?:e)?|Jul(?:y)?|Aug(?:ust)?|Sep(?:tember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)\s*\d{0,2}[^)]*\)/gi, '')
                 .replace(/\s*\(\d{1,2}\/\d{1,2}[^)]*\)/g, '')
             weeks = stripParenDates(weeks)
-            return { ...t, weeks, task: stripParenDates(t.task), category: stripParenDates(t.category) }
+            return { item: { ...t, weeks, task: stripParenDates(t.task), category: stripParenDates(t.category) }, sortKey }
         })
+
+        // Sort chronologically by computed date
+        withDates.sort((a, b) => a.sortKey - b.sortKey)
+        return withDates.map(d => d.item)
     }
 
     const loadEvent = (plan: PlanData, demo: boolean, initialTab?: 'plan' | 'theme' | 'vendors' | 'guests' | 'polls', preserveTab = false) => {
@@ -1775,6 +1809,22 @@ function DashboardContent() {
                                         )
                                     })()}
                                 </div>
+                                {/* Planning Progress (Venue & Vendors Booked) */}
+                                <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
+                                    <div style={{ fontSize: '1.3rem', textAlign: 'center', marginBottom: '0.2rem' }}>📊</div>
+                                    <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', marginBottom: '0.7rem', textAlign: 'center' }}>Planning Progress</h3>
+                                    {progressItems.filter(p => p.name === 'Venue' || p.name === 'Vendors Booked').map((p, i) => (
+                                        <div key={i} style={{ marginBottom: i === 0 ? '0.6rem' : 0 }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.72rem', fontWeight: 700, marginBottom: '0.2rem' }}>
+                                                <span style={{ color: 'var(--navy)' }}>{p.name}</span>
+                                                <span style={{ color: p.pct >= 100 ? '#3D8C6E' : p.color, fontWeight: 800 }}>{p.pct}%</span>
+                                            </div>
+                                            <div style={{ height: 6, background: 'var(--border)', borderRadius: 50, overflow: 'hidden' }}>
+                                                <div style={{ height: '100%', width: `${p.pct}%`, background: p.pct >= 100 ? 'linear-gradient(90deg, #3D8C6E, #4AADA8)' : p.color, borderRadius: 50, transition: 'width 0.4s ease' }} />
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
                                 {/* Actuals vs Budget */}
                                 {data.plan?.budget?.breakdown?.length > 0 && (
                                     <div className="card" style={{ padding: '1.2rem' }}>
@@ -2164,7 +2214,31 @@ function DashboardContent() {
                                                                         isOverdue = daysUntil < 0
                                                                         isDueSoon = daysUntil >= 0 && daysUntil <= 7
                                                                     }
-                                                                    if (qa && qa.action !== 'expand') {
+                                                                    // Quick action always takes priority over nudge
+                                                                    if (qa) {
+                                                                        if (qa.action === 'expand') {
+                                                                            // Expand-type: show button if tasks collapsed, otherwise show as completed hint
+                                                                            if (tasksCollapsed) {
+                                                                                return (
+                                                                                    <button
+                                                                                        className={`${styles.tlQuickAction} ${isOverdue ? styles.tlQuickActionOverdue : isDueSoon ? styles.tlQuickActionDueSoon : ''}`}
+                                                                                        onClick={() => { setTasksCollapsed(false); setShowChecklistHint(false) }}
+                                                                                    >
+                                                                                        <span>{qa.emoji}</span>
+                                                                                        <span>{qa.label}</span>
+                                                                                        <span style={{ marginLeft: 'auto', fontSize: '0.75rem' }}>→</span>
+                                                                                    </button>
+                                                                                )
+                                                                            }
+                                                                            // Tasks already expanded — show a subtle "review below" hint
+                                                                            return (
+                                                                                <div className={`${styles.tlNudge} ${styles.tlNudgeDueSoon}`}>
+                                                                                    <span>👇</span>
+                                                                                    <span>Review tasks below to complete this milestone</span>
+                                                                                </div>
+                                                                            )
+                                                                        }
+                                                                        // url / tab actions
                                                                         return (
                                                                             <button
                                                                                 className={`${styles.tlQuickAction} ${isOverdue ? styles.tlQuickActionOverdue : isDueSoon ? styles.tlQuickActionDueSoon : ''}`}
@@ -2184,7 +2258,7 @@ function DashboardContent() {
                                                                             </button>
                                                                         )
                                                                     }
-                                                                    // For non-actionable items, show nudge if due/overdue
+                                                                    // No quick action — show nudge only if due/overdue
                                                                     if (isOverdue || isDueSoon) {
                                                                         const nudgeMsg = getNudgeForMilestone(t)
                                                                         const genericMsg = isOverdue
@@ -2195,19 +2269,6 @@ function DashboardContent() {
                                                                                 <span>{isOverdue ? '⏰' : '📅'}</span>
                                                                                 <span>{nudgeMsg || genericMsg}</span>
                                                                             </div>
-                                                                        )
-                                                                    }
-                                                                    // For expand-type actions (Review Checklist), expand tasks
-                                                                    if (qa && qa.action === 'expand' && tasksCollapsed) {
-                                                                        return (
-                                                                            <button
-                                                                                className={styles.tlQuickAction}
-                                                                                onClick={() => { setTasksCollapsed(false); setShowChecklistHint(false) }}
-                                                                            >
-                                                                                <span>{qa.emoji}</span>
-                                                                                <span>{qa.label}</span>
-                                                                                <span style={{ marginLeft: 'auto', fontSize: '0.75rem' }}>→</span>
-                                                                            </button>
                                                                         )
                                                                     }
                                                                     return null

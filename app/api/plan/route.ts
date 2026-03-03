@@ -62,12 +62,22 @@ IMPORTANT TIMELINE RULES:
 - Each milestone task description must be SHORT: 5-8 words max (e.g. "Book venue & photographer", "Order decor & cake")
 - Combine related tasks into single milestones (e.g. "Book venue & photographer" not separate entries)
 - Always include a "Final prep" milestone and an "Event Day" milestone
+- CRITICAL: Milestones MUST be in chronological order (earliest date first, event day last). Never place a later date before an earlier one.
 
 NON-NEGOTIABLE MILESTONES — these three MUST appear in every timeline:
 1. 🏠 Venue (category: "venue") — If the user's location looks like a specific venue or address (not just a city), frame this as "Confirm venue details" or "Confirm venue & logistics" rather than "Book venue". Only suggest browsing/booking a new venue when the location is just a city name.
 2. 💌 Guests (category: "guests") — Always include a milestone for guest management: sending invitations, tracking RSVPs, collecting dietary preferences.
 3. 🍽️ Food (category: "food") — Always include a milestone for food/catering: menu planning, dietary accommodations, drinks.
 These three can be combined with other related tasks in the same milestone (e.g. "Book venue & photographer"), but the core non-negotiable item MUST be present. Never omit any of these three.
+
+VENDOR RELEVANCE — match vendors and tasks to the event type logically:
+- Casual/game parties (poker, trivia, game night, board games): Skip photographer, DJ, florist. Focus on food, drinks, games, seating.
+- Kid birthday parties: Skip DJ, bar service. Focus on cake, decorations, entertainment, games.
+- Formal events (wedding, gala, anniversary): Include photographer, DJ/band, florist, caterer.
+- Dinner parties / brunch: Focus on chef/caterer, wine/drinks, table decor. Skip DJ, photographer unless requested.
+- Corporate events: Include AV/tech, catering, venue. Skip florist, DJ unless requested.
+- Do NOT include vendors just to fill categories — only include what makes logical sense for the specific event type.
+- Apply this same logic to budget breakdown: don't allocate budget to irrelevant vendor categories.
 
 CROSS-PORTAL INTELLIGENCE RULES:
 - If guest dietary data is provided, reflect that in food/catering budget allocation and checklist items
