@@ -100,7 +100,10 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const [editingBookmarkIdx, setEditingBookmarkIdx] = useState<number | null>(null)
     const [isRefining, setIsRefining] = useState(false)
     const [isEditingInvite, setIsEditingInvite] = useState(false)
+    const [draftInvite, setDraftInvite] = useState<{ subject?: string; message?: string; smsVersion?: string; customImage?: string; coverPhoto?: string } | null>(null)
     const [inviteCollapsed, setInviteCollapsed] = useState(false)
+    const [isEditingStrip, setIsEditingStrip] = useState(false)
+    const [draftDetails, setDraftDetails] = useState<{ hostName: string; rsvpBy: string; time: string; timezone: string } | null>(null)
     const [showPreview, setShowPreview] = useState(false)
     const [isPublished, setIsPublished] = useState(false)
     const publishedInviteKey = eventId ? `partypal_published_${eventId}` : 'partypal_published'
@@ -167,35 +170,51 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
         // (We no longer auto-sync — user must explicitly Publish)
     }, [invite, inviteKey])
 
-    // Sync rsvpByDate to Firestore + localStorage independently (always ok to sync)
-    useEffect(() => {
-        if (rsvpByDate) {
-            const stored = userGet('partyplan')
-            if (stored) { try { const d = JSON.parse(stored); d.rsvpBy = rsvpByDate; userSetJSON('partyplan', d) } catch { /* */ } }
-        }
-        if (planData.eventId && rsvpByDate) {
-            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, rsvpBy: rsvpByDate }) }).catch(() => { })
-        }
-    }, [rsvpByDate, planData.eventId])
+    // Unified save function for event details
+    const saveEventDetails = async () => {
+        if (!draftDetails) return
 
-    // Sync host details & event time to localStorage / Firestore
-    useEffect(() => {
-        if (typeof window === 'undefined') return
+        // Update local states immediately
+        setEditableHostName(draftDetails.hostName)
+        setRsvpByDate(draftDetails.rsvpBy)
+        setEditableEventTime(draftDetails.time)
+        setEditableTimezone(draftDetails.timezone)
+
+        // Persist to localStorage
         const stored = userGet('partyplan')
         if (stored) {
-            const d = JSON.parse(stored)
-            let changed = false
-            if (editableHostName && d.hostName !== editableHostName) { d.hostName = editableHostName; changed = true }
-            if (editableHostContact && d.hostContact !== editableHostContact) { d.hostContact = editableHostContact; changed = true }
-            if (editableEventTime && d.time !== editableEventTime) { d.time = editableEventTime; changed = true }
-            if (changed) {
+            try {
+                const d = JSON.parse(stored)
+                d.hostName = draftDetails.hostName
+                d.rsvpBy = draftDetails.rsvpBy
+                d.time = draftDetails.time
+                d.timezone = draftDetails.timezone
                 userSetJSON('partyplan', d)
+
+                // Sync to Firestore
                 if (d.eventId) {
-                    fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: d.eventId, hostName: editableHostName || undefined, hostContact: editableHostContact || undefined, time: editableEventTime || undefined }) }).catch(() => { })
+                    await fetch('/api/events', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            eventId: d.eventId,
+                            hostName: draftDetails.hostName || undefined,
+                            rsvpBy: draftDetails.rsvpBy || undefined,
+                            time: draftDetails.time || undefined,
+                            timezone: draftDetails.timezone || undefined
+                        })
+                    })
                 }
-            }
+            } catch (e) { console.error('Error saving details:', e) }
         }
-    }, [editableHostName, editableHostContact, editableEventTime])
+
+        setIsEditingStrip(false)
+        setDraftDetails(null)
+        showToast('Event details saved!', 'success')
+    }
+
+    // (Effects for sync removed in favor of explicit save)
+
 
     // Sync timezone to localStorage
     useEffect(() => {
@@ -565,16 +584,38 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                 }
                             </div>
                             <div style={{ marginLeft: 'auto', display: 'flex', gap: '0.3rem', alignItems: 'center', flexWrap: 'wrap' }} onClick={e => e.stopPropagation()}>
-                                {!inviteCollapsed && <button onClick={() => setIsEditingInvite(!isEditingInvite)} style={{ background: 'none', border: '1px solid var(--teal)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.68rem', fontWeight: 700, color: 'var(--teal)', cursor: 'pointer' }}>
-                                    {isEditingInvite ? '✕ Cancel' : '✏️ Edit'}
-                                </button>}
+                                {!inviteCollapsed && (
+                                    isEditingInvite ? (
+                                        <>
+                                            <button onClick={() => {
+                                                if (draftInvite) setInvite(draftInvite)
+                                                setIsEditingInvite(false)
+                                            }} style={{ background: 'var(--teal)', border: 'none', borderRadius: 6, padding: '0.15rem 0.6rem', fontSize: '0.68rem', fontWeight: 700, color: 'white', cursor: 'pointer' }}>
+                                                ✓ Save
+                                            </button>
+                                            <button onClick={() => {
+                                                setDraftInvite(null)
+                                                setIsEditingInvite(false)
+                                            }} style={{ background: 'none', border: '1px solid #9aabbb', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.68rem', fontWeight: 700, color: '#9aabbb', cursor: 'pointer' }}>
+                                                ✕ Cancel
+                                            </button>
+                                        </>
+                                    ) : (
+                                        <button onClick={() => {
+                                            setDraftInvite(invite)
+                                            setIsEditingInvite(true)
+                                        }} style={{ background: 'none', border: '1px solid var(--teal)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.68rem', fontWeight: 700, color: 'var(--teal)', cursor: 'pointer' }}>
+                                            ✏️ Edit
+                                        </button>
+                                    )
+                                )}
                             </div>
                         </div>
                         {!inviteCollapsed && (<div style={{ paddingTop: '0.8rem' }}>
                             {isEditingInvite ? (
                                 <>
-                                    <input value={invite.subject || ''} onChange={e => setInvite(prev => prev ? { ...prev, subject: e.target.value } : prev)} className={styles.addInput} style={{ width: '100%', marginBottom: '0.4rem', fontWeight: 700 }} placeholder="Subject line" />
-                                    <textarea value={invite.message || ''} onChange={e => setInvite(prev => prev ? { ...prev, message: e.target.value } : prev)} className={styles.addInput} style={{ width: '100%', minHeight: 100, marginBottom: '0.4rem', resize: 'vertical', lineHeight: 1.5 }} />
+                                    <input value={draftInvite?.subject || ''} onChange={e => setDraftInvite(prev => prev ? { ...prev, subject: e.target.value } : { subject: e.target.value })} className={styles.addInput} style={{ width: '100%', marginBottom: '0.4rem', fontWeight: 700 }} placeholder="Subject line" />
+                                    <textarea value={draftInvite?.message || ''} onChange={e => setDraftInvite(prev => prev ? { ...prev, message: e.target.value } : { message: e.target.value })} className={styles.addInput} style={{ width: '100%', minHeight: 100, marginBottom: '0.4rem', resize: 'vertical', lineHeight: 1.5 }} />
                                 </>
                             ) : isRefining ? (
                                 <div style={{ position: 'relative' }}>
@@ -655,43 +696,50 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                 )}
                 {/* Event details + Host Name + RSVP by + Location + Upload — always visible below invitation */}
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.2rem', marginBottom: '1rem', background: '#fff', borderRadius: '0 0 12px 12px', borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
-                    {/* Event Date & Time — date from plan, time editable */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginRight: '0.2rem', borderRight: '1px solid var(--border)', paddingRight: '0.6rem' }}>
-                        {planData?.date && <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--navy)' }}>🗓️ {new Date(planData.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
-                        <span style={{ fontSize: '0.58rem', fontWeight: 700, color: '#9aabbb' }}>⏰</span>
-                        <input
-                            type="time"
-                            value={editableEventTime}
-                            onChange={e => setEditableEventTime(e.target.value)}
-                            className={styles.addInput}
-                            style={{ margin: 0, padding: '0.1rem 0.25rem', fontSize: '0.65rem', fontWeight: 700, width: 90, color: 'var(--teal)' }}
-                        />
-                        <select
-                            value={editableTimezone}
-                            onChange={e => setEditableTimezone(e.target.value)}
-                            className={styles.addInput}
-                            style={{ margin: 0, padding: '0.1rem 0.15rem', fontSize: '0.58rem', fontWeight: 700, width: 55, color: '#9aabbb', appearance: 'auto' }}
-                        >
-                            <option value="">TZ</option>
-                            {TZ_OPTIONS.map(tz => <option key={tz} value={tz}>{tz}</option>)}
-                        </select>
-                    </div>
-                    {/* Host Name — editable, text label like RSVP by */}
-                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb' }}>Host Name</span>
-                    <input
-                        value={editableHostName}
-                        onChange={e => setEditableHostName(e.target.value)}
-                        placeholder="Enter host name"
-                        className={styles.addInput}
-                        style={{ margin: 0, padding: '0.15rem 0.35rem', fontSize: '0.68rem', fontWeight: 700, width: 120, color: 'var(--navy)' }}
-                    />
-                    <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb' }}>RSVP by</span>
-                    <input type="date" value={rsvpByDate} onChange={e => setRsvpByDate(e.target.value)} className={styles.addInput} style={{ margin: 0, padding: '0.15rem 0.35rem', fontSize: '0.68rem', width: 120 }} />
-                    <input ref={customInviteRef} type="file" accept="image/*" onChange={handleCustomInviteUpload} style={{ display: 'none' }} />
-                    <input ref={coverPhotoRef} type="file" accept="image/*" onChange={handleCoverPhotoUpload} style={{ display: 'none' }} />
-                    <button onClick={() => customInviteRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>🖼️ Invite</button>
-                    <button onClick={() => coverPhotoRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>📸 Cover</button>
-                    <button onClick={() => setShowRegistryForm(!showRegistryForm)} style={{ background: giftRegistry.length > 0 ? 'rgba(123,94,167,0.08)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${giftRegistry.length > 0 ? 'rgba(123,94,167,0.3)' : 'var(--border)'}`, borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: giftRegistry.length > 0 ? '#7B5EA7' : 'var(--navy)', cursor: 'pointer' }}>🎁 Registry{giftRegistry.length > 0 ? ` (${giftRegistry.length})` : ''}</button>
+                    {isEditingStrip ? (
+                        <>
+                            {/* Editable Fields */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', borderRight: '1px solid var(--border)', paddingRight: '0.6rem' }}>
+                                <span style={{ fontSize: '0.58rem', fontWeight: 700, color: '#9aabbb' }}>⏰</span>
+                                <input type="time" value={draftDetails?.time || ''} onChange={e => setDraftDetails(prev => prev ? { ...prev, time: e.target.value } : prev)} className={styles.addInput} style={{ margin: 0, padding: '0.1rem 0.25rem', fontSize: '0.65rem', fontWeight: 700, width: 85, color: 'var(--teal)' }} />
+                                <select value={draftDetails?.timezone || ''} onChange={e => setDraftDetails(prev => prev ? { ...prev, timezone: e.target.value } : prev)} className={styles.addInput} style={{ margin: 0, padding: '0.1rem 0.15rem', fontSize: '0.58rem', fontWeight: 700, width: 55, color: '#9aabbb', appearance: 'auto' }}>
+                                    <option value="">TZ</option>
+                                    {TZ_OPTIONS.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+                                </select>
+                            </div>
+                            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb' }}>Host</span>
+                            <input value={draftDetails?.hostName || ''} onChange={e => setDraftDetails(prev => prev ? { ...prev, hostName: e.target.value } : prev)} className={styles.addInput} style={{ margin: 0, padding: '0.15rem 0.35rem', fontSize: '0.68rem', fontWeight: 700, width: 100 }} />
+                            <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb' }}>RSVP by</span>
+                            <input type="date" value={draftDetails?.rsvpBy || ''} onChange={e => setDraftDetails(prev => prev ? { ...prev, rsvpBy: e.target.value } : prev)} className={styles.addInput} style={{ margin: 0, padding: '0.15rem 0.35rem', fontSize: '0.68rem', width: 110 }} />
+
+                            <button onClick={saveEventDetails} style={{ background: 'var(--teal)', border: 'none', borderRadius: 6, padding: '0.2rem 0.6rem', fontSize: '0.65rem', fontWeight: 800, color: '#fff', cursor: 'pointer' }}>✓ Save</button>
+                            <button onClick={() => { setIsEditingStrip(false); setDraftDetails(null) }} style={{ background: 'none', border: '1px solid #ccc', borderRadius: 6, padding: '0.2rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', cursor: 'pointer' }}>✕ Cancel</button>
+                        </>
+                    ) : (
+                        <>
+                            {/* Read-only (Label mode) */}
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', borderRight: '1px solid var(--border)', paddingRight: '0.6rem', cursor: 'pointer' }} onClick={() => { setDraftDetails({ hostName: editableHostName, rsvpBy: rsvpByDate || '', time: editableEventTime, timezone: editableTimezone }); setIsEditingStrip(true) }}>
+                                {planData?.date && <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)' }}>🗓️ {new Date(planData.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                                {editableEventTime && <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--teal)' }}>⏰ {formatTime12h(editableEventTime, editableTimezone || undefined)}</span>}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', borderRight: '1px solid var(--border)', paddingRight: '0.6rem', cursor: 'pointer' }} onClick={() => { setDraftDetails({ hostName: editableHostName, rsvpBy: rsvpByDate || '', time: editableEventTime, timezone: editableTimezone }); setIsEditingStrip(true) }}>
+                                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb' }}>Host:</span>
+                                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)' }}>{editableHostName || 'TBD'}</span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginRight: 'auto', cursor: 'pointer' }} onClick={() => { setDraftDetails({ hostName: editableHostName, rsvpBy: rsvpByDate || '', time: editableEventTime, timezone: editableTimezone }); setIsEditingStrip(true) }}>
+                                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb' }}>RSVP by:</span>
+                                <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)' }}>{rsvpByDate ? new Date(rsvpByDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Set date'}</span>
+                            </div>
+
+                            <button onClick={() => { setDraftDetails({ hostName: editableHostName, rsvpBy: rsvpByDate || '', time: editableEventTime, timezone: editableTimezone }); setIsEditingStrip(true) }} style={{ background: 'none', border: '1px solid var(--teal)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>✏️ Edit Details</button>
+
+                            <input ref={customInviteRef} type="file" accept="image/*" onChange={handleCustomInviteUpload} style={{ display: 'none' }} />
+                            <input ref={coverPhotoRef} type="file" accept="image/*" onChange={handleCoverPhotoUpload} style={{ display: 'none' }} />
+                            <button onClick={() => customInviteRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>🖼️ Invite</button>
+                            <button onClick={() => coverPhotoRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>📸 Cover</button>
+                            <button onClick={() => setShowRegistryForm(!showRegistryForm)} style={{ background: giftRegistry.length > 0 ? 'rgba(123,94,167,0.08)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${giftRegistry.length > 0 ? 'rgba(123,94,167,0.3)' : 'var(--border)'}`, borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: giftRegistry.length > 0 ? '#7B5EA7' : 'var(--navy)', cursor: 'pointer' }}>🎁 Registry{giftRegistry.length > 0 ? ` (${giftRegistry.length})` : ''}</button>
+                        </>
+                    )}
                 </div>
                 {/* Gift Registry Section */}
                 {showRegistryForm && (

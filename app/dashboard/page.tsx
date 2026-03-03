@@ -434,15 +434,11 @@ function DashboardContent() {
             const targetEvent = storedEvents.find(ev => ev.eventId === urlEventId)
             if (targetEvent) {
                 loadEvent(targetEvent, false, urlTab || 'plan')
-                // Clean up URL params
-                window.history.replaceState({}, '', '/dashboard')
                 return
             }
         }
 
         loadEvent(parsed, !stored, urlTab || undefined)
-        // Clean up URL params if present
-        if (urlTab) window.history.replaceState({}, '', '/dashboard')
     }, [])
 
     // React to URL search param changes during SPA navigation
@@ -456,7 +452,6 @@ function DashboardContent() {
         if (targetEvent) {
             loadEvent(targetEvent, false, (urlTabParam as 'plan' | 'theme' | 'vendors' | 'guests' | 'polls') || 'plan')
         }
-        window.history.replaceState({}, '', '/dashboard')
     }, [urlEventParam, urlTabParam])
 
     // Multi-device sync: merge Firestore events with localStorage
@@ -568,6 +563,25 @@ function DashboardContent() {
         const interval = setInterval(() => syncFromFirestore(false), 30000)
         return () => clearInterval(interval)
     }, [syncFromFirestore])
+
+    // Update URL search params when event or tab changes
+    useEffect(() => {
+        if (!data.eventId) return
+        const params = new URLSearchParams(window.location.search)
+        let changed = false
+        if (params.get('event') !== data.eventId) {
+            params.set('event', data.eventId)
+            changed = true
+        }
+        if (params.get('tab') !== selectedTab) {
+            params.set('tab', selectedTab)
+            changed = true
+        }
+        if (changed) {
+            const newUrl = `${window.location.pathname}?${params.toString()}`
+            window.history.replaceState({}, '', newUrl)
+        }
+    }, [data.eventId, selectedTab])
 
     // Re-read vendors from localStorage when window gains focus (returning from vendor marketplace)
     useEffect(() => {
