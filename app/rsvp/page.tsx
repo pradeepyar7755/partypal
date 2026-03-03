@@ -13,6 +13,40 @@ const RELATIONSHIP_OPTIONS = ['Partner', 'Spouse', 'Child', 'Family', 'Friend', 
 const getTZAbbr = () => { try { const d = new Date(); const parts = d.toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' '); return parts[parts.length - 1] } catch { return '' } }
 const formatTime12h = (t: string, tz?: string) => { if (!t) return ''; const [h, m] = t.split(':').map(Number); const ampm = h >= 12 ? 'PM' : 'AM'; const h12 = h % 12 || 12; const tzStr = tz ? ` ${tz}` : ''; return `${h12}:${m.toString().padStart(2, '0')} ${ampm}${tzStr}` }
 
+function generateICS(event: { name: string; date?: string; time?: string; timezone?: string; location?: string; description?: string }): string {
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    const now = new Date()
+    const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`
+    let dtStart = stamp
+    let dtEnd = stamp
+    if (event.date) {
+        const [y, mo, d] = event.date.split('-').map(Number)
+        const hh = event.time ? parseInt(event.time.split(':')[0]) : 18
+        const mm = event.time ? parseInt(event.time.split(':')[1]) : 0
+        dtStart = `${y}${pad(mo)}${pad(d)}T${pad(hh)}${pad(mm)}00`
+        const endH = hh + 2
+        dtEnd = `${y}${pad(mo)}${pad(d)}T${pad(endH > 23 ? 23 : endH)}${pad(mm)}00`
+    }
+    const esc = (s: string) => s.replace(/[\\;,]/g, (m) => `\\${m}`).replace(/\n/g, '\\n')
+    const lines = [
+        'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//PartyPal//RSVP//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
+        'BEGIN:VEVENT', `DTSTART:${dtStart}`, `DTEND:${dtEnd}`, `DTSTAMP:${stamp}`,
+        `UID:${Date.now()}@partypal.social`, `SUMMARY:${esc(event.name)}`,
+        event.location ? `LOCATION:${esc(event.location)}` : '',
+        event.description ? `DESCRIPTION:${esc(event.description)}` : '',
+        'STATUS:CONFIRMED', 'END:VEVENT', 'END:VCALENDAR',
+    ].filter(Boolean)
+    return lines.join('\r\n')
+}
+function downloadICS(icsContent: string, filename: string) {
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url; a.download = filename
+    document.body.appendChild(a); a.click(); document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+}
+
 function RSVPContent() {
     const params = useSearchParams()
     const [eventData, setEventData] = useState<{ eventType?: string; date?: string; time?: string; timezone?: string; location?: string; theme?: string; eventId?: string; inviteSubject?: string; inviteMessage?: string; rsvpBy?: string; customImage?: string; coverPhoto?: string; hostName?: string }>({})
@@ -115,7 +149,7 @@ function RSVPContent() {
     }
 
     const handleSubmit = () => {
-        if (!name || !response) return
+        if (!name || !email || !response) return
         const validAdditional = additionalGuests.filter(ag => ag.name.trim())
         // Save to localStorage
         const rsvps = userGetJSON('partypal_rsvps', [] as Record<string, unknown>[])
@@ -137,7 +171,42 @@ function RSVPContent() {
                 body: JSON.stringify({ name, email, response, dietary, additionalGuests: validAdditional, totalPartySize: 1 + validAdditional.length, kidCount: validAdditional.filter(ag => ag.isChild).length }),
             }).catch(() => { })
         }
+        // Send thank-you email
+        if (email) {
+            const eventDateStr = eventData.date
+                ? new Date(eventData.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+                : 'TBD'
+            fetch('/api/email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'rsvp_confirmation',
+                    guestEmail: email,
+                    guestName: name,
+                    eventName: eventName,
+                    eventDate: eventDateStr,
+                    eventTime: eventData.time ? formatTime12h(eventData.time, eventData.timezone) : undefined,
+                    eventLocation: eventData.location || 'Location TBD',
+                    response,
+                    additionalGuests: validAdditional.length,
+                    rsvpLink: typeof window !== 'undefined' ? window.location.href : '',
+                }),
+            }).catch(() => { })
+        }
         setSubmitted(true)
+    }
+
+    const handleAddToCalendar = () => {
+        const desc = eventData.inviteMessage || `You're invited to ${eventName}!`
+        const ics = generateICS({
+            name: eventName,
+            date: eventData.date,
+            time: eventData.time,
+            timezone: eventData.timezone,
+            location: eventData.location,
+            description: desc,
+        })
+        downloadICS(ics, `${eventName.replace(/[^a-zA-Z0-9]/g, '_')}.ics`)
     }
 
     const eventEmoji = eventData.eventType?.split(' ')[0] || '🎉'
@@ -194,8 +263,9 @@ function RSVPContent() {
                             <input className={styles.rsvpInput} placeholder="Full name" value={name} onChange={e => setName(e.target.value)} />
                         </div>
                         <div>
-                            <div className={styles.rsvpLabel}>Email</div>
-                            <input className={styles.rsvpInput} type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} />
+                            <div className={styles.rsvpLabel}>Email *</div>
+                            <input className={styles.rsvpInput} type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} required style={{ borderColor: !email && name ? '#E8896A' : undefined }} />
+                            {!email && name && <div style={{ fontSize: '0.7rem', color: '#E8896A', fontWeight: 700, marginTop: '0.2rem' }}>Email is required so we can send you event details</div>}
                         </div>
                         <div>
                             <div className={styles.rsvpLabel}>Will You Attend? *</div>
@@ -310,7 +380,7 @@ function RSVPContent() {
                             )
                         })()}
 
-                        <button className={styles.rsvpSubmit} onClick={handleSubmit} disabled={!name || !response}>
+                        <button className={styles.rsvpSubmit} onClick={handleSubmit} disabled={!name || !email || !response}>
                             Send My RSVP {totalPartySize > 1 ? `(${totalPartySize} people)` : ''} 🎊
                         </button>
                     </div>
@@ -347,12 +417,17 @@ function RSVPContent() {
                                 ))}
                             </div>
                         )}
+                        {(response === 'going' || response === 'maybe') && eventData.date && (
+                            <button onClick={handleAddToCalendar} className={styles.rsvpSubmit} style={{ marginTop: '0.8rem', background: 'linear-gradient(135deg, #667eea, #764ba2)' }}>
+                                📅 Add to Calendar
+                            </button>
+                        )}
                     </div>
                 )}
 
                 <div className={styles.rsvpPowered}>Powered by <img src="/logo.png" alt="PartyPal" style={{ height: 16, borderRadius: 3, verticalAlign: 'middle' }} /> PartyPal</div>
             </div>
-        </div>
+        </div >
     )
 }
 

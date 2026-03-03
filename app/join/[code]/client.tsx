@@ -9,6 +9,59 @@ const DIETARY_OPTIONS = ['None', 'Vegetarian', 'Vegan', 'Gluten-Free', 'Nut Alle
 
 const formatTime12h = (t: string, tz?: string) => { if (!t) return ''; const [h, m] = t.split(':').map(Number); const ampm = h >= 12 ? 'PM' : 'AM'; const h12 = h % 12 || 12; const tzStr = tz ? ` ${tz}` : ''; return `${h12}:${m.toString().padStart(2, '0')} ${ampm}${tzStr}` }
 
+function generateICS(event: { name: string; date?: string; time?: string; timezone?: string; location?: string; description?: string }): string {
+    const pad = (n: number) => n.toString().padStart(2, '0')
+    const now = new Date()
+    const stamp = `${now.getUTCFullYear()}${pad(now.getUTCMonth() + 1)}${pad(now.getUTCDate())}T${pad(now.getUTCHours())}${pad(now.getUTCMinutes())}${pad(now.getUTCSeconds())}Z`
+
+    let dtStart = stamp
+    let dtEnd = stamp
+    if (event.date) {
+        const [y, mo, d] = event.date.split('-').map(Number)
+        const hh = event.time ? parseInt(event.time.split(':')[0]) : 18
+        const mm = event.time ? parseInt(event.time.split(':')[1]) : 0
+        dtStart = `${y}${pad(mo)}${pad(d)}T${pad(hh)}${pad(mm)}00`
+        // Default 2h duration
+        const endH = hh + 2
+        dtEnd = `${y}${pad(mo)}${pad(d)}T${pad(endH > 23 ? 23 : endH)}${pad(mm)}00`
+    }
+
+    const esc = (s: string) => s.replace(/[\\;,]/g, (m) => `\\${m}`).replace(/\n/g, '\\n')
+
+    const lines = [
+        'BEGIN:VCALENDAR',
+        'VERSION:2.0',
+        'PRODID:-//PartyPal//RSVP//EN',
+        'CALSCALE:GREGORIAN',
+        'METHOD:PUBLISH',
+        'BEGIN:VEVENT',
+        `DTSTART:${dtStart}`,
+        `DTEND:${dtEnd}`,
+        `DTSTAMP:${stamp}`,
+        `UID:${Date.now()}@partypal.social`,
+        `SUMMARY:${esc(event.name)}`,
+        event.location ? `LOCATION:${esc(event.location)}` : '',
+        event.description ? `DESCRIPTION:${esc(event.description)}` : '',
+        'STATUS:CONFIRMED',
+        'END:VEVENT',
+        'END:VCALENDAR',
+    ].filter(Boolean)
+
+    return lines.join('\r\n')
+}
+
+function downloadICS(icsContent: string, filename: string) {
+    const blob = new Blob([icsContent], { type: 'text/calendar;charset=utf-8' })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    document.body.appendChild(a)
+    a.click()
+    document.body.removeChild(a)
+    URL.revokeObjectURL(url)
+}
+
 interface EventData {
     eventId: string
     eventType?: string
@@ -60,7 +113,7 @@ export default function JoinRSVPClient({ eventData }: { eventData: EventData }) 
     }
 
     const handleSubmit = () => {
-        if (!name || !response) return
+        if (!name || !email || !response) return
         const validAdditional = additionalGuests.filter(ag => ag.name.trim())
         const kidCount = validAdditional.filter(ag => ag.isChild).length
         // Save to Firestore
@@ -76,7 +129,42 @@ export default function JoinRSVPClient({ eventData }: { eventData: EventData }) 
                 }),
             }).catch(() => { })
         }
+        // Send thank-you email
+        if (email) {
+            const eventDateStr = eventData.date
+                ? new Date(eventData.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
+                : 'TBD'
+            fetch('/api/email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'rsvp_confirmation',
+                    guestEmail: email,
+                    guestName: name,
+                    eventName: eventName,
+                    eventDate: eventDateStr,
+                    eventTime: eventData.time ? formatTime12h(eventData.time, eventData.timezone) : undefined,
+                    eventLocation: eventData.location || 'Location TBD',
+                    response,
+                    additionalGuests: validAdditional.length,
+                    rsvpLink: typeof window !== 'undefined' ? window.location.href : '',
+                }),
+            }).catch(() => { })
+        }
         setSubmitted(true)
+    }
+
+    const handleAddToCalendar = () => {
+        const desc = inviteMessage || `You're invited to ${eventName}!`
+        const ics = generateICS({
+            name: eventName,
+            date: eventData.date,
+            time: eventData.time,
+            timezone: eventData.timezone,
+            location: eventData.location,
+            description: desc,
+        })
+        downloadICS(ics, `${eventName.replace(/[^a-zA-Z0-9]/g, '_')}.ics`)
     }
 
     return (
@@ -197,19 +285,21 @@ export default function JoinRSVPClient({ eventData }: { eventData: EventData }) 
                             />
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
-                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#1a2535', marginBottom: '0.3rem', letterSpacing: '0.03em' }}>Email</label>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#1a2535', marginBottom: '0.3rem', letterSpacing: '0.03em' }}>Email *</label>
                             <input
                                 type="email"
                                 placeholder="your@email.com"
                                 value={email}
                                 onChange={e => setEmail(e.target.value)}
+                                required
                                 style={{
                                     width: '100%', padding: '0.65rem 0.8rem', borderRadius: 10,
-                                    border: '1.5px solid #e2e8f0', fontSize: '0.9rem', fontWeight: 600,
+                                    border: `1.5px solid ${!email && name ? '#E8896A' : '#e2e8f0'}`, fontSize: '0.9rem', fontWeight: 600,
                                     outline: 'none', boxSizing: 'border-box',
                                     fontFamily: "'Nunito', sans-serif",
                                 }}
                             />
+                            {!email && name && <div style={{ fontSize: '0.7rem', color: '#E8896A', fontWeight: 700, marginTop: '0.2rem' }}>Email is required so we can send you event details</div>}
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#1a2535', marginBottom: '0.3rem', letterSpacing: '0.03em' }}>Will You Attend? *</label>
@@ -372,12 +462,12 @@ export default function JoinRSVPClient({ eventData }: { eventData: EventData }) 
 
                         <button
                             onClick={handleSubmit}
-                            disabled={!name || !response}
+                            disabled={!name || !email || !response}
                             style={{
                                 width: '100%', padding: '0.85rem',
-                                background: !name || !response ? '#ccc' : 'linear-gradient(135deg, #4AADA8, #3D8C6E)',
+                                background: !name || !email || !response ? '#ccc' : 'linear-gradient(135deg, #4AADA8, #3D8C6E)',
                                 color: '#fff', border: 'none', borderRadius: 12,
-                                fontSize: '1rem', fontWeight: 800, cursor: !name || !response ? 'not-allowed' : 'pointer',
+                                fontSize: '1rem', fontWeight: 800, cursor: !name || !email || !response ? 'not-allowed' : 'pointer',
                                 fontFamily: "'Fredoka One', cursive",
                                 transition: 'all 0.2s',
                             }}
@@ -427,6 +517,27 @@ export default function JoinRSVPClient({ eventData }: { eventData: EventData }) 
                                     </div>
                                 ))}
                             </div>
+                        )}
+                        {(response === 'going' || response === 'maybe') && eventData.date && (
+                            <button
+                                onClick={handleAddToCalendar}
+                                style={{
+                                    marginTop: '1rem',
+                                    width: '100%',
+                                    padding: '0.75rem',
+                                    background: 'linear-gradient(135deg, #667eea, #764ba2)',
+                                    color: '#fff',
+                                    border: 'none',
+                                    borderRadius: 12,
+                                    fontSize: '0.9rem',
+                                    fontWeight: 800,
+                                    cursor: 'pointer',
+                                    fontFamily: "'Fredoka One', cursive",
+                                    transition: 'all 0.2s',
+                                }}
+                            >
+                                📅 Add to Calendar
+                            </button>
                         )}
                     </div>
                 )}

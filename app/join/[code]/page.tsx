@@ -1,6 +1,5 @@
 import { Metadata } from 'next'
 import { headers } from 'next/headers'
-import JoinRSVPClient from './client'
 
 interface JoinPageProps {
     params: { code: string }
@@ -155,5 +154,7 @@ export default async function JoinPage({ params }: JoinPageProps) {
         )
     }
 
-    return <JoinRSVPClient eventData={data} />
+    // Redirect to the branded interactive RSVP page
+    const { redirect } = await import('next/navigation')
+    redirect(`/rsvp?e=${data.eventId}`)
 }
