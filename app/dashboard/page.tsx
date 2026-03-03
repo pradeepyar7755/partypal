@@ -264,7 +264,7 @@ function DashboardContent() {
     const [deletedTasks, setDeletedTasks] = useState<ChecklistItem[]>([])
     const [showDeletedTasks, setShowDeletedTasks] = useState(false)
     const [showCollabModal, setShowCollabModal] = useState(false)
-    const [showSignupPrompt, setShowSignupPrompt] = useState(false)
+    const [showSignupPrompt, setShowSignupPrompt] = useState<'collaborate' | 'rsvp' | false>(false)
     const [collaborators, setCollaborators] = useState<{ email: string; name: string; role: string }[]>([])
     const [collabForm, setCollabForm] = useState({ email: '', name: '', role: 'Viewer' })
     const [assignMenuTask, setAssignMenuTask] = useState<number | null>(null)
@@ -1902,7 +1902,7 @@ function DashboardContent() {
             {/* ══ GUESTS TAB ══ */}
             {selectedTab === 'guests' && (
                 <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1rem 0.75rem' }}>
-                    <GuestManager eventId={data.eventId} planData={{ eventType: data.eventType, theme: data.theme, date: data.date, location: data.location, eventId: data.eventId, time: data.time, hostName: user?.displayName || undefined, hostContact: user?.email || undefined }} isDemo={isDemo} isGuest={isGuest} onRequireSignup={() => setShowSignupPrompt(true)} />
+                    <GuestManager eventId={data.eventId} planData={{ eventType: data.eventType, theme: data.theme, date: data.date, location: data.location, eventId: data.eventId, time: data.time, hostName: user?.displayName || undefined, hostContact: user?.email || undefined }} isDemo={isDemo} isGuest={isGuest} onRequireSignup={() => setShowSignupPrompt('rsvp')} />
                 </div>
             )}
 
@@ -2049,7 +2049,7 @@ function DashboardContent() {
                                                 ⏳ Event Countdown
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                                <button onClick={() => isGuest ? setShowSignupPrompt(true) : setShowCollabModal(true)} style={{ background: collaborators.length > 0 ? 'rgba(74,173,168,0.08)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${collaborators.length > 0 ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`, borderRadius: 8, padding: '0.2rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: collaborators.length > 0 ? 'var(--teal)' : 'var(--navy)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>👥 Add Collaborators{collaborators.length > 0 && <span style={{ background: 'var(--teal)', color: '#fff', fontSize: '0.58rem', fontWeight: 900, borderRadius: '50%', width: 16, height: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{collaborators.length}</span>}</button>
+                                                <button onClick={() => isGuest ? setShowSignupPrompt('collaborate') : setShowCollabModal(true)} style={{ background: collaborators.length > 0 ? 'rgba(74,173,168,0.08)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${collaborators.length > 0 ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`, borderRadius: 8, padding: '0.2rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: collaborators.length > 0 ? 'var(--teal)' : 'var(--navy)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>👥 Add Collaborators{collaborators.length > 0 && <span style={{ background: 'var(--teal)', color: '#fff', fontSize: '0.58rem', fontWeight: 900, borderRadius: '50%', width: 16, height: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{collaborators.length}</span>}</button>
                                                 <div style={{ fontSize: '0.78rem', fontWeight: 800, color: daysLeft !== null && daysLeft <= 7 ? '#E8896A' : 'var(--teal)' }}>
                                                     {daysLeft !== null ? (daysLeft === 0 ? '🎉 Today!' : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`) : 'No date set'}
                                                 </div>
@@ -2740,10 +2740,14 @@ function DashboardContent() {
             {showSignupPrompt && (
                 <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }} onClick={() => setShowSignupPrompt(false)}>
                     <div className="card" style={{ padding: '2.5rem', width: '100%', maxWidth: 420, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
-                        <div style={{ fontSize: '3rem', marginBottom: '0.8rem' }}>👥</div>
-                        <h2 style={{ fontFamily: "'Fredoka One',cursive", color: 'var(--navy)', marginBottom: '0.5rem', fontSize: '1.3rem' }}>Collaborate with Friends</h2>
+                        <div style={{ fontSize: '3rem', marginBottom: '0.8rem' }}>{showSignupPrompt === 'rsvp' ? '📩' : '👥'}</div>
+                        <h2 style={{ fontFamily: "'Fredoka One',cursive", color: 'var(--navy)', marginBottom: '0.5rem', fontSize: '1.3rem' }}>
+                            {showSignupPrompt === 'rsvp' ? 'Save Your RSVPs' : 'Collaborate with Friends'}
+                        </h2>
                         <p style={{ fontSize: '0.88rem', color: '#6b7c93', fontWeight: 600, lineHeight: 1.5, marginBottom: '1.5rem' }}>
-                            Invite friends and family to help plan your event! Assign tasks, share updates, and coordinate together — all for free.
+                            {showSignupPrompt === 'rsvp'
+                                ? 'Sign up for free to track your RSVPs, share invites, and ensure your guest list is safely stored.'
+                                : 'Invite friends and family to help plan your event! Assign tasks, share updates, and coordinate together — all for free.'}
                         </p>
                         <a href="/login?redirect=/dashboard" style={{
                             display: 'inline-block', padding: '0.7rem 2rem', borderRadius: 50,
