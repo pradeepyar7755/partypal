@@ -1684,7 +1684,7 @@ function DashboardContent() {
                                                 {data.plan.budget.breakdown.map((b, bi) => <option key={bi} value={b.category}>{b.category}</option>)}
                                             </select>
                                         )}
-                                        <input placeholder="Cost estimate $" value={vendorForm.costEstimate} onChange={e => setVendorForm(p => ({ ...p, costEstimate: e.target.value.replace(/[^0-9.]/g, '') }))} style={{ width: 110, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
+                                        <input placeholder="Cost $" value={vendorForm.costEstimate} onChange={e => setVendorForm(p => ({ ...p, costEstimate: e.target.value.replace(/[^0-9.]/g, '') }))} style={{ width: 110, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
                                         <input placeholder="Notes (optional)" value={vendorForm.notes} onChange={e => setVendorForm(p => ({ ...p, notes: e.target.value }))} style={{ flex: 1, minWidth: 100, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
                                         <button onClick={addVendor} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 1.2rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}>Add</button>
                                     </div>
@@ -1784,7 +1784,7 @@ function DashboardContent() {
                                                                         <div style={{ color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 800 }}>{mv.price}</div>
                                                                     </div>
                                                                     <div style={{ display: 'flex', gap: '0.4rem' }}>
-                                                                        <a href={mv.websiteUri || '#'} target="_blank" rel="noopener noreferrer" style={{ flex: 1, padding: '0.4rem 0', background: 'var(--border)', color: 'var(--navy)', border: 'none', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer', textDecoration: 'none', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Visit →</a>
+                                                                        <a href={mv.websiteUri || `https://google.com/search?q=${encodeURIComponent(mv.name + ' Atlanta')}`} target="_blank" rel="noopener noreferrer" style={{ flex: 1, padding: '0.4rem 0', background: 'var(--border)', color: 'var(--navy)', border: 'none', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer', textDecoration: 'none', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Visit →</a>
                                                                         <button onClick={(e) => {
                                                                             e.stopPropagation()
                                                                             const cat = enabledCats.find(c => mv.cat.toLowerCase().includes(c.toLowerCase())) || 'Misc'
@@ -1818,7 +1818,7 @@ function DashboardContent() {
                             <div>
                                 <div className="card" style={{ padding: '1.2rem', textAlign: 'center', marginBottom: '1rem' }}>
                                     <div style={{ fontSize: '1.5rem', marginBottom: '0.2rem' }}>💰</div>
-                                    <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', marginBottom: '0.5rem' }}>Cost</h3>
+                                    <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', marginBottom: '0.5rem' }}>Cost Estimate</h3>
                                     <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.8rem', color: totalVendorCost > 0 ? 'var(--teal)' : '#ccc', marginBottom: '0.3rem' }}>${totalVendorCost.toLocaleString()}</div>
                                     <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase', marginBottom: '0.6rem' }}>Total Vendor Costs</div>
                                     {data.budget && totalVendorCost > 0 && (() => {
