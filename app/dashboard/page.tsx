@@ -372,7 +372,7 @@ function DashboardContent() {
         })
     }
 
-    const loadEvent = (plan: PlanData, demo: boolean, initialTab?: 'plan' | 'theme' | 'vendors' | 'guests' | 'polls', preserveTab = false) => {
+    const loadEvent = (plan: PlanData, demo: boolean, initialTab?: 'plan' | 'theme' | 'vendors' | 'guests' | 'polls') => {
         // Ensure every plan has an eventId
         if (!plan.eventId) {
             plan.eventId = demo ? 'demo' : Math.random().toString(36).substring(2, 10)
@@ -381,7 +381,7 @@ function DashboardContent() {
         const enrichedPlan = plan.date ? { ...plan, plan: { ...plan.plan, timeline: computeTimelineDates(plan.plan.timeline, plan.date) } } : plan
         setData(enrichedPlan)
         setIsDemo(demo)
-        if (!preserveTab) setSelectedTab(initialTab || 'plan')
+        setSelectedTab(initialTab || 'plan')
         if (!demo) userSetJSON('partyplan', enrichedPlan)
         const TIMELINE_LABELS = ['6 wks out', '6 wks out', '4 wks out', '4 wks out', '3 wks out', '3 wks out', '2 wks out', '2 wks out', '1 wk out', 'Day before']
         const enriched = (enrichedPlan.plan.checklist || []).map((item, i) => ({
@@ -533,7 +533,7 @@ function DashboardContent() {
                     const serverTime = serverVersion.updatedAt ? new Date(serverVersion.updatedAt as string).getTime() : 0
                     if (serverTime > localTime) {
                         userSetJSON('partyplan', serverVersion)
-                        loadEvent(serverVersion, false, undefined, true)
+                        loadEvent(serverVersion, false)
                     }
                     // Sync vendors from cloud if local is empty
                     const localVendors = userGetJSON<EventVendor[]>(`partypal_vendors_${activePlan.eventId}`, [])
@@ -562,10 +562,10 @@ function DashboardContent() {
         } catch { /* silent */ }
     }, [user])
 
-    // Initial Firestore sync + 2-minute polling (reduced from 30s to prevent tab disruption)
+    // Initial Firestore sync + 30-second polling
     useEffect(() => {
         syncFromFirestore(true)
-        const interval = setInterval(() => syncFromFirestore(false), 120000)
+        const interval = setInterval(() => syncFromFirestore(false), 30000)
         return () => clearInterval(interval)
     }, [syncFromFirestore])
 
@@ -1413,28 +1413,23 @@ function DashboardContent() {
                         <div style={{ background: demoBg, padding: '0.6rem 0.75rem', borderRadius: 10, transition: 'background 0.3s' }}>
                             {isDemo ? (
                                 /* Demo: compact disclaimer banner */
-                                <div style={{
-                                    background: 'repeating-linear-gradient(135deg, rgba(0,0,0,0.02), rgba(0,0,0,0.02) 8px, rgba(0,0,0,0.04) 8px, rgba(0,0,0,0.04) 16px)',
-                                    border: '1.5px solid rgba(155,155,155,0.3)',
-                                    borderRadius: 10, padding: '0.6rem 1.2rem',
-                                    display: 'flex', alignItems: 'center', gap: '0.8rem',
-                                }}>
-                                    <span style={{ fontSize: '1rem' }}>💡</span>
-                                    <div style={{ flex: 1, fontSize: '0.78rem', fontWeight: 700, color: '#888' }}>
-                                        For Illustration Purposes Only — this is a sample AI-generated plan.
+                                <div className={styles.demoBanner}>
+                                    <div className={styles.demoTextWrapper}>
+                                        <span style={{ fontSize: '1rem' }}>💡</span>
+                                        <div className={styles.demoText}>
+                                            <span className={styles.demoTextMain}>For Illustration Purposes Only</span>
+                                            <span className={styles.demoTextDash}> — </span>
+                                            <span className={styles.demoTextSub}>This is a sample AI-generated plan.</span>
+                                        </div>
                                     </div>
-                                    <button onClick={() => router.push('/#wizard')} style={{
-                                        background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none',
-                                        borderRadius: 8, padding: '0.4rem 1rem', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap',
-                                    }}>✨ Create My Plan</button>
-                                    <button onClick={() => {
-                                        userRemove('partypal_demo')
-                                        loadEvent(DEFAULT_PLAN, true)
-                                        showToast('Demo reset to original!', 'success')
-                                    }} style={{
-                                        background: 'transparent', color: '#999', border: '1.5px solid rgba(155,155,155,0.3)',
-                                        borderRadius: 8, padding: '0.4rem 1rem', fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap',
-                                    }}>🔄 Reset Demo</button>
+                                    <div className={styles.demoActions}>
+                                        <button onClick={() => router.push('/#wizard')} className={styles.demoCreateBtn}>✨ Create My Plan</button>
+                                        <button onClick={() => {
+                                            userRemove('partypal_demo')
+                                            loadEvent(DEFAULT_PLAN, true)
+                                            showToast('Demo reset to original!', 'success')
+                                        }} className={styles.demoResetBtn}>🔄 Reset Demo</button>
+                                    </div>
                                 </div>
                             ) : (
                                 /* Real event: editable details strip */
@@ -1807,7 +1802,7 @@ function DashboardContent() {
             {/* ══ GUESTS TAB ══ */}
             {selectedTab === 'guests' && (
                 <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1rem 0.75rem' }}>
-                    <GuestManager eventId={data.eventId} planData={{ eventType: data.eventType, theme: data.theme, date: data.date, location: data.location, eventId: data.eventId, time: data.time, hostName: (data as any).hostName || user?.displayName || undefined, hostContact: (data as any).hostContact || user?.email || undefined }} isDemo={isDemo} />
+                    <GuestManager eventId={data.eventId} planData={{ eventType: data.eventType, theme: data.theme, date: data.date, location: data.location, eventId: data.eventId, time: data.time, hostName: user?.displayName || undefined, hostContact: user?.email || undefined }} isDemo={isDemo} />
                 </div>
             )}
 

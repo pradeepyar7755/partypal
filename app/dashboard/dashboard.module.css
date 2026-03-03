@@ -645,8 +645,15 @@
 }
 
 @keyframes qaGlow {
-    0%, 100% { box-shadow: 0 0 0 0 rgba(232, 137, 106, 0); }
-    50% { box-shadow: 0 0 8px 2px rgba(232, 137, 106, 0.25); }
+
+    0%,
+    100% {
+        box-shadow: 0 0 0 0 rgba(232, 137, 106, 0);
+    }
+
+    50% {
+        box-shadow: 0 0 8px 2px rgba(232, 137, 106, 0.25);
+    }
 }
 
 /* ══ TIMELINE NUDGES ══ */
@@ -672,6 +679,73 @@
     background: rgba(247, 201, 72, 0.08);
     border: 1px solid rgba(247, 201, 72, 0.2);
     color: #9a7e18;
+}
+
+/* ══ DEMO BANNER ══ */
+.demoBanner {
+    background: repeating-linear-gradient(135deg, rgba(0, 0, 0, 0.02), rgba(0, 0, 0, 0.02) 8px, rgba(0, 0, 0, 0.04) 8px, rgba(0, 0, 0, 0.04) 16px);
+    border: 1.5px solid rgba(155, 155, 155, 0.3);
+    border-radius: 10px;
+    padding: 0.6rem 1.2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.demoTextWrapper {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex: 1;
+}
+
+.demoText {
+    flex: 1;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #888;
+}
+
+.demoTextMain {
+    display: inline;
+}
+
+.demoTextDash {
+    display: inline;
+}
+
+.demoTextSub {
+    display: inline;
+}
+
+.demoActions {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.demoCreateBtn {
+    background: linear-gradient(135deg, var(--teal), #3D8C6E);
+    color: #fff;
+    border: none;
+    border-radius: 8px;
+    padding: 0.4rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.demoResetBtn {
+    background: transparent;
+    color: #999;
+    border: 1.5px solid rgba(155, 155, 155, 0.3);
+    border-radius: 8px;
+    padding: 0.4rem 1rem;
+    font-size: 0.75rem;
+    font-weight: 800;
+    cursor: pointer;
+    white-space: nowrap;
 }
 
 /* ══ EMPTY STATE ══ */
@@ -769,5 +843,49 @@
 
     .tlDesc {
         font-size: 0.78rem;
+    }
+
+    .demoBanner {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 0.8rem;
+        padding: 1rem;
+    }
+
+    .demoTextWrapper {
+        flex-direction: row;
+        gap: 0.6rem;
+        align-items: flex-start;
+        text-align: left;
+    }
+
+    .demoText {
+        display: block;
+    }
+
+    .demoTextMain {
+        display: block;
+        color: var(--navy);
+        margin-bottom: 0.2rem;
+    }
+
+    .demoTextDash {
+        display: none;
+    }
+
+    .demoTextSub {
+        display: block;
+        font-size: 0.72rem;
+    }
+
+    .demoActions {
+        flex-direction: column;
+        width: 100%;
+        gap: 0.5rem;
+    }
+
+    .demoCreateBtn,
+    .demoResetBtn {
+        width: 100%;
     }
 }
