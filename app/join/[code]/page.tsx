@@ -5,19 +5,34 @@ interface JoinPageProps {
     params: { code: string }
 }
 
-async function getEventData(code: string) {
-    const headersList = headers()
-    const host = headersList.get('host') || process.env.VERCEL_URL || 'partypal.social'
-    const protocol = host.includes('localhost') ? 'http' : 'https'
-    const baseUrl = `${protocol}://${host}`
+import { getDb } from '@/lib/firebase'
 
+async function getEventData(code: string) {
     try {
-        const res = await fetch(`${baseUrl}/api/join/${code}`, {
-            cache: 'no-store',
-        })
-        if (!res.ok) return null
-        return await res.json()
-    } catch {
+        const db = getDb()
+        const snapshot = await db.collection('events').where('joinCode', '==', code).limit(1).get()
+
+        if (snapshot.empty) return null
+
+        const doc = snapshot.docs[0]
+        const data = doc.data()
+
+        return {
+            eventId: doc.id,
+            eventType: data.eventType || 'Party',
+            date: data.date || '',
+            time: data.time || '',
+            timezone: data.timezone || '',
+            location: data.location || '',
+            theme: data.theme || '',
+            hostName: data.hostName || '',
+            rsvpBy: data.rsvpBy || '',
+            invite: data.invite || null,
+            coverPhoto: data.invite?.coverPhoto || '',
+            customImage: data.invite?.customImage || '',
+        }
+    } catch (error) {
+        console.error('getEventData error:', error)
         return null
     }
 }
