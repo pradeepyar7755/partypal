@@ -14,7 +14,7 @@ interface ChecklistItem { item: string; category: string; done: boolean; due?: s
 interface TimelineItem { weeks: string; task: string; category: string; priority: string; emoji?: string; completedAt?: string; assignedTo?: string }
 interface BudgetItem { category: string; amount: number; percentage: number; color: string }
 interface EventGuest { name: string; email: string; status: 'invited' | 'confirmed' | 'declined' }
-interface EventVendor { name: string; category: string; notes: string; confirmed: boolean; costEstimate?: number; budgetCategory?: string }
+interface EventVendor { name: string; category: string; notes: string; confirmed: boolean; costEstimate?: number; budgetCategory?: string; websiteUri?: string; googleMapsUri?: string }
 interface SavedVendor { name: string; category: string; price: string; emoji: string }
 
 interface PlanData {
@@ -35,7 +35,7 @@ const TIMELINE_DOTS = ['coral', 'yellow', 'teal', 'green', 'navy', 'coral']
 
 
 
-const VENDOR_SUGGESTIONS: Record<string, { emoji: string; name: string; cat: string; match: number; stars: number; price: string }[]> = {
+const VENDOR_SUGGESTIONS: Record<string, { emoji: string; name: string; cat: string; match: number; stars: number; price: string; websiteUri?: string }[]> = {
     game: [
         { emoji: '🎲', name: 'The Game Room', cat: 'Game Cafe · Board Games', match: 97, stars: 5, price: 'From $200 / event' },
         { emoji: '🍕', name: 'Snack Attack Catering', cat: 'Snacks · Finger Foods', match: 94, stars: 4.5, price: 'From $150 / event' },
@@ -1706,6 +1706,9 @@ function DashboardContent() {
                                                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginTop: '0.4rem', borderTop: '1px solid var(--border)', paddingTop: '0.5rem' }}>
                                                     <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#9aabbb' }}>💰 Cost:</span>
                                                     <input type="number" placeholder="0" value={v.costEstimate || ''} onChange={e => updateVendorCost(i, e.target.value)} style={{ width: 80, padding: '0.3rem 0.5rem', borderRadius: 6, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.8rem', fontWeight: 700, color: 'var(--navy)', outline: 'none' }} />
+                                                    {v.category !== 'Venue' || v.websiteUri || v.googleMapsUri ? (
+                                                        <a href={v.websiteUri || v.googleMapsUri || `https://google.com/search?q=${encodeURIComponent(v.name)}`} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 'auto', background: 'rgba(0,0,0,0.04)', color: 'var(--navy)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 6, padding: '0.3rem 0.6rem', fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer', textDecoration: 'none' }}>Visit →</a>
+                                                    ) : null}
                                                 </div>
                                                 <button onClick={() => removeVendor(i)} style={{ position: 'absolute', top: 8, right: 8, background: 'none', border: 'none', color: '#E8896A', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 800 }}>✕</button>
                                             </div>
@@ -1717,10 +1720,6 @@ function DashboardContent() {
                                         <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.82rem' }}>No vendors added yet. Add from your shortlist or manually above!</p>
                                     </div>
                                 )}
-                                {/* Browse More Vendors — above shortlisted and matched */}
-                                <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                                    <button onClick={() => router.push('/vendors')} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 10, padding: '0.6rem 1.5rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', color: 'var(--navy)' }}>Browse More Vendors →</button>
-                                </div>
                                 {/* Saved / Shortlisted Vendors */}
                                 {Object.keys(savedVendors).length > 0 && (
                                     <div>
@@ -1785,13 +1784,13 @@ function DashboardContent() {
                                                                         <div style={{ color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 800 }}>{mv.price}</div>
                                                                     </div>
                                                                     <div style={{ display: 'flex', gap: '0.4rem' }}>
-                                                                        <button onClick={(e) => { e.stopPropagation(); router.push(`/vendors?cat=${mv.cat.split(' ')[0].toLowerCase()}`) }} style={{ flex: 1, padding: '0.4rem 0', background: 'var(--border)', color: 'var(--navy)', border: 'none', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>View Details</button>
+                                                                        <a href={`https://google.com/search?q=${encodeURIComponent(mv.name + ' Atlanta')}`} target="_blank" rel="noopener noreferrer" style={{ flex: 1, padding: '0.4rem 0', background: 'var(--border)', color: 'var(--navy)', border: 'none', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer', textDecoration: 'none', textAlign: 'center', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>Visit →</a>
                                                                         <button onClick={(e) => {
                                                                             e.stopPropagation()
                                                                             const cat = enabledCats.find(c => mv.cat.toLowerCase().includes(c.toLowerCase())) || 'Misc'
                                                                             const priceMatch = mv.price.match(/\$(\d+,?\d*)/)
                                                                             const numPrice = priceMatch ? parseInt(priceMatch[1].replace(',', '')) : undefined
-                                                                            const updated = [...eventVendors, { name: mv.name, category: cat, notes: `Matched vendor • ${mv.price}`, confirmed: false, costEstimate: numPrice }]
+                                                                            const updated = [...eventVendors, { name: mv.name, category: cat, notes: `Matched vendor • ${mv.price}`, confirmed: false, costEstimate: numPrice, websiteUri: mv.websiteUri }]
                                                                             setEventVendors(updated)
                                                                             if (data.eventId) {
                                                                                 userSetJSON(`partypal_vendors_${data.eventId}`, updated)
@@ -1811,11 +1810,15 @@ function DashboardContent() {
                                     )
                                 })()}
                             </div>
+                            {/* Browse More Vendors */}
+                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem', marginTop: '1rem' }}>
+                                <button onClick={() => router.push('/vendors')} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 10, padding: '0.6rem 1.5rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', color: 'var(--navy)' }}>Browse More Vendors →</button>
+                            </div>
                             {/* Right Pane — Cost Summary */}
                             <div>
                                 <div className="card" style={{ padding: '1.2rem', textAlign: 'center', marginBottom: '1rem' }}>
                                     <div style={{ fontSize: '1.5rem', marginBottom: '0.2rem' }}>💰</div>
-                                    <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', marginBottom: '0.5rem' }}>Cost Estimate</h3>
+                                    <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)', marginBottom: '0.5rem' }}>Cost</h3>
                                     <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.8rem', color: totalVendorCost > 0 ? 'var(--teal)' : '#ccc', marginBottom: '0.3rem' }}>${totalVendorCost.toLocaleString()}</div>
                                     <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase', marginBottom: '0.6rem' }}>Total Vendor Costs</div>
                                     {data.budget && totalVendorCost > 0 && (() => {

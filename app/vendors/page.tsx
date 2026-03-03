@@ -534,7 +534,7 @@ function VendorsContent() {
                                       setAddToEventVendor(null)
                                       return
                                     }
-                                    const newVendor = { name: v.name, category: v.category, notes: `${v.rating}★ · ${v.price} · ${v.location}`, confirmed: false, costEstimate: undefined }
+                                    const newVendor = { name: v.name, category: v.category, notes: `${v.rating}★ · ${v.price} · ${v.location}`, confirmed: false, costEstimate: undefined, websiteUri: v.websiteUri, googleMapsUri: v.googleMapsUri }
                                     const updated = [...existingVendors, newVendor]
                                     userSetJSON(`partypal_vendors_${ev.eventId}`, updated)
                                     // Sync to cloud

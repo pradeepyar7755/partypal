@@ -143,7 +143,7 @@ export async function GET(req: NextRequest) {
                     flexDirection: 'column',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    background: 'linear-gradient(135deg, #1a2535 0%, #0d1520 40%, #1a2535 100%)',
+                    background: '#ffffff',
                     padding: '60px',
                     position: 'relative',
                 }}
@@ -182,7 +182,7 @@ export async function GET(req: NextRequest) {
                     style={{
                         fontSize: 52,
                         fontWeight: 800,
-                        color: '#ffffff',
+                        color: '#1a2535',
                         textAlign: 'center',
                         lineHeight: 1.15,
                         marginBottom: '20px',
@@ -201,7 +201,7 @@ export async function GET(req: NextRequest) {
                         justifyContent: 'center',
                         fontSize: 22,
                         fontWeight: 600,
-                        color: 'rgba(255,255,255,0.75)',
+                        color: '#6b7f94',
                     }}
                 >
                     {details.map((d, i) => (
@@ -233,7 +233,7 @@ export async function GET(req: NextRequest) {
                         right: 30,
                         fontSize: 16,
                         fontWeight: 700,
-                        color: 'rgba(255,255,255,0.35)',
+                        color: 'rgba(0,0,0,0.5)',
                         display: 'flex',
                         alignItems: 'center',
                         gap: '6px',
