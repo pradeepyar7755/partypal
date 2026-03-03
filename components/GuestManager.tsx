@@ -397,7 +397,23 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     }
 
     const updateStatus = (id: string, status: Guest['status']) => { setGuests(prev => prev.map(g => g.id === id ? { ...g, status } : g)); showToast('RSVP updated', 'info') }
-    const removeGuest = (id: string) => { const g = guests.find(x => x.id === id); setGuests(prev => prev.filter(x => x.id !== id)); showToast(`${g?.name || 'Guest'} removed`, 'info') }
+    const removeGuest = async (id: string) => {
+        const g = guests.find(x => x.id === id);
+
+        // Remove from local state immediately for fast feedback
+        setGuests(prev => prev.filter(x => x.id !== id));
+        showToast(`${g?.name || 'Guest'} removed`, 'info');
+
+        // If this guest was sourced from Firestore RSVPs, delete it permanently
+        if (id.startsWith('rsvp_') && eventId) {
+            const rsvpId = id.replace('rsvp_', '');
+            try {
+                await fetch(`/api/events/${eventId}/rsvp?rsvpId=${rsvpId}`, { method: 'DELETE' });
+            } catch (e) {
+                console.error('Failed to delete RSVP from cloud', e);
+            }
+        }
+    }
     const addAdditionalToExisting = (guestId: string) => { setGuests(prev => prev.map(g => g.id === guestId ? { ...g, additionalGuests: [...g.additionalGuests, { id: Date.now().toString(), name: '', dietary: 'None', relationship: 'Partner' }] } : g)) }
     const updateAdditionalExisting = (guestId: string, addId: string, field: string, value: string) => { setGuests(prev => prev.map(g => g.id === guestId ? { ...g, additionalGuests: g.additionalGuests.map(ag => ag.id === addId ? { ...ag, [field]: value } : ag) } : g)) }
     const removeAdditionalExisting = (guestId: string, addId: string) => { setGuests(prev => prev.map(g => g.id === guestId ? { ...g, additionalGuests: g.additionalGuests.filter(ag => ag.id !== addId) } : g)) }
@@ -498,12 +514,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
             setInvite(publishedInvite)
             showToast('Reverted to published invite', 'success')
         }
-    }
-
-    const shareWhatsApp = () => {
-        const link = getRSVPLink()
-        const text = invite ? `${invite.subject}\n\n${invite.message}\n\nRSVP here: ${link}` : `You're invited! RSVP here: ${link}`
-        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
     }
 
     const dietaryCounts: Record<string, number> = {}
@@ -928,8 +938,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                             <option value="declined">✗ Declined</option>
                                             <option value="pending">⏳ Pending</option>
                                         </select>
-                                        <button onClick={e => { e.stopPropagation(); copyRSVPLink() }} style={{ background: 'none', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 6, padding: '0.15rem 0.4rem', fontSize: '0.62rem', fontWeight: 700, color: 'var(--teal)', cursor: 'pointer', whiteSpace: 'nowrap' }} title="Copy RSVP Link">{copied ? '✓' : '🔗'}</button>
-                                        <button onClick={e => { e.stopPropagation(); shareWhatsApp() }} style={{ background: 'none', border: '1px solid rgba(0,0,0,0.1)', borderRadius: 6, padding: '0.15rem 0.4rem', fontSize: '0.62rem', fontWeight: 700, color: '#25D366', cursor: 'pointer' }} title="Share via WhatsApp">💬</button>
                                         <button className={styles.removeBtn} onClick={e => { e.stopPropagation(); removeGuest(g.id) }}>✕</button>
                                         <span className={styles.expandIcon}>{expandedGuest === g.id ? '▾' : '▸'}</span>
                                     </div>

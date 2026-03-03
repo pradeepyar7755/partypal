@@ -29,3 +29,26 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
         return NextResponse.json({ error: 'Failed to look up RSVP' }, { status: 500 })
     }
 }
+
+// DELETE: Remove a guest RSVP completely
+export async function DELETE(req: NextRequest, { params }: { params: { id: string } }) {
+    try {
+        const url = new URL(req.url)
+        const rsvpId = url.searchParams.get('rsvpId')
+
+        if (!rsvpId) {
+            return NextResponse.json({ error: 'rsvpId is required' }, { status: 400 })
+        }
+
+        const db = getDb()
+        await db
+            .collection('events').doc(params.id)
+            .collection('rsvps').doc(rsvpId)
+            .delete()
+
+        return NextResponse.json({ success: true })
+    } catch (error: unknown) {
+        console.error('RSVP delete error:', error)
+        return NextResponse.json({ error: 'Failed to delete RSVP' }, { status: 500 })
+    }
+}
