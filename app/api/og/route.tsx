@@ -124,7 +124,7 @@ export async function GET(req: NextRequest) {
                             gap: '6px',
                         }}
                     >
-                        🎊 PartyPal
+                        <img src="https://partypal.social/logo.png" alt="" width="24" height="24" style={{ borderRadius: 4 }} /> PartyPal
                     </div>
                 </div>
             ),
@@ -239,7 +239,7 @@ export async function GET(req: NextRequest) {
                         gap: '6px',
                     }}
                 >
-                    🎊 PartyPal
+                    <img src="https://partypal.social/logo.png" alt="" width="20" height="20" style={{ borderRadius: 3 }} /> PartyPal
                 </div>
             </div>
         ),

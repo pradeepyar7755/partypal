@@ -144,7 +144,7 @@ export default function PollPage() {
             <div className={styles.pollCard}>
                 {/* Header */}
                 <div className={styles.pollHeader}>
-                    <div className={styles.pollBadge}>🎊 PartyPal Poll</div>
+                    <div className={styles.pollBadge}><img src="/logo.png" alt="" style={{ height: 16, borderRadius: 3, verticalAlign: 'middle' }} /> PartyPal Poll</div>
 
                     {/* Event context banner */}
                     {poll.eventContext?.eventType && (
@@ -288,7 +288,7 @@ export default function PollPage() {
 
                 {/* Footer */}
                 <div className={styles.pollFooter}>
-                    <a href="/">🎊 Powered by PartyPal</a>
+                    <a href="/"><img src="/logo.png" alt="" style={{ height: 14, borderRadius: 3, verticalAlign: 'middle' }} /> Powered by PartyPal</a>
                 </div>
             </div>
         </main>

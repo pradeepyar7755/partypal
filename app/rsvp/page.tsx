@@ -350,7 +350,7 @@ function RSVPContent() {
                     </div>
                 )}
 
-                <div className={styles.rsvpPowered}>Powered by 🎊 PartyPal</div>
+                <div className={styles.rsvpPowered}>Powered by <img src="/logo.png" alt="PartyPal" style={{ height: 16, borderRadius: 3, verticalAlign: 'middle' }} /> PartyPal</div>
             </div>
         </div>
     )

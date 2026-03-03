@@ -440,7 +440,7 @@ export default function JoinRSVPClient({ eventData }: { eventData: EventData }) 
                     color: '#9aabbb',
                     borderTop: '1px solid #f0f0f0',
                 }}>
-                    Powered by 🎊 PartyPal
+                    Powered by <img src="/logo.png" alt="PartyPal" style={{ height: 14, borderRadius: 3, verticalAlign: 'middle' }} /> PartyPal
                 </div>
             </div>
         </div>

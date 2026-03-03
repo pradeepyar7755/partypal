@@ -932,7 +932,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                     </div>
                                     <div style={{ background: 'var(--teal)', color: '#fff', borderRadius: 10, padding: '0.5rem', textAlign: 'center' as const, fontSize: '0.78rem', fontWeight: 800, opacity: 0.6 }}>Send My RSVP 🎊</div>
                                 </div>
-                                <div style={{ textAlign: 'center' as const, padding: '0.5rem', fontSize: '0.65rem', color: '#ccc', fontWeight: 600 }}>Powered by 🎊 PartyPal</div>
+                                <div style={{ textAlign: 'center' as const, padding: '0.5rem', fontSize: '0.65rem', color: '#ccc', fontWeight: 600 }}>Powered by <img src="/logo.png" alt="" style={{ height: 12, borderRadius: 2, verticalAlign: 'middle' }} /> PartyPal</div>
                             </div>
                         </div>
                     </div>
