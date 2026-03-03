@@ -6,6 +6,7 @@ export const runtime = 'edge'
 export async function GET(req: NextRequest) {
     const { searchParams } = new URL(req.url)
     const title = searchParams.get('title') || 'You\'re Invited!'
+    const emoji = searchParams.get('emoji') || '🎉'
     const date = searchParams.get('date') || ''
     const time = searchParams.get('time') || ''
     const location = searchParams.get('location') || ''
@@ -143,7 +144,7 @@ export async function GET(req: NextRequest) {
                     flexDirection: 'column',
                     justifyContent: 'center',
                     alignItems: 'center',
-                    background: '#ffffff',
+                    background: '#1a2535',
                     padding: '60px',
                     position: 'relative',
                 }}
@@ -154,39 +155,40 @@ export async function GET(req: NextRequest) {
                         position: 'absolute',
                         top: 0,
                         right: 0,
-                        width: '350px',
-                        height: '350px',
+                        width: '450px',
+                        height: '450px',
                         borderRadius: '50%',
-                        background: 'radial-gradient(circle, rgba(74,173,168,0.15) 0%, transparent 70%)',
+                        background: 'radial-gradient(circle, rgba(74,173,168,0.15) 0%, transparent 60%)',
                         display: 'flex',
                     }}
                 />
                 <div
                     style={{
                         position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        width: '300px',
-                        height: '300px',
+                        bottom: -100,
+                        left: -50,
+                        width: '450px',
+                        height: '450px',
                         borderRadius: '50%',
-                        background: 'radial-gradient(circle, rgba(247,201,72,0.12) 0%, transparent 70%)',
+                        background: 'radial-gradient(circle, rgba(247,201,72,0.1) 0%, transparent 60%)',
                         display: 'flex',
                     }}
                 />
 
-                {/* Emoji */}
-                <div style={{ fontSize: 72, marginBottom: '16px', display: 'flex' }}>🎉</div>
+                {/* Emoji / Icon group */}
+                <div style={{ fontSize: 72, marginBottom: '24px', display: 'flex', filter: 'drop-shadow(0px 8px 16px rgba(0,0,0,0.3))' }}>{emoji}</div>
 
                 {/* Title */}
                 <div
                     style={{
-                        fontSize: 52,
+                        fontSize: 64,
                         fontWeight: 800,
-                        color: '#1a2535',
+                        color: '#ffffff',
                         textAlign: 'center',
                         lineHeight: 1.15,
-                        marginBottom: '20px',
+                        marginBottom: '32px',
                         maxWidth: '900px',
+                        textShadow: '0 4px 12px rgba(0,0,0,0.4)',
                     }}
                 >
                     {title}
@@ -199,27 +201,30 @@ export async function GET(req: NextRequest) {
                         gap: '24px',
                         flexWrap: 'wrap',
                         justifyContent: 'center',
-                        fontSize: 22,
-                        fontWeight: 600,
-                        color: '#6b7f94',
+                        fontSize: 24,
+                        fontWeight: 500,
+                        color: '#a0aec0',
                     }}
                 >
                     {details.map((d, i) => (
-                        <span key={i}>{d}</span>
+                        <span key={i} style={{ display: 'flex', alignItems: 'center' }}>
+                            {d}
+                        </span>
                     ))}
                 </div>
 
                 {/* Tap to RSVP pill */}
                 <div
                     style={{
-                        marginTop: '30px',
-                        padding: '12px 36px',
+                        marginTop: '45px',
+                        padding: '16px 48px',
                         borderRadius: '50px',
                         background: 'linear-gradient(135deg, #4AADA8, #3D8C6E)',
                         color: '#fff',
-                        fontSize: 22,
+                        fontSize: 26,
                         fontWeight: 800,
                         display: 'flex',
+                        boxShadow: '0 8px 24px rgba(74,173,168,0.4)',
                     }}
                 >
                     Tap to RSVP →
@@ -229,17 +234,17 @@ export async function GET(req: NextRequest) {
                 <div
                     style={{
                         position: 'absolute',
-                        bottom: 20,
-                        right: 30,
-                        fontSize: 16,
+                        bottom: 30,
+                        right: 40,
+                        fontSize: 20,
                         fontWeight: 700,
-                        color: 'rgba(0,0,0,0.5)',
+                        color: 'rgba(255,255,255,0.6)',
                         display: 'flex',
                         alignItems: 'center',
-                        gap: '6px',
+                        gap: '10px',
                     }}
                 >
-                    <img src="https://partypal.social/logo.png" alt="" width="20" height="20" style={{ borderRadius: 3 }} /> PartyPal
+                    <img src="https://partypal.social/logo.png" alt="" width="28" height="28" style={{ borderRadius: 6, opacity: 0.9 }} /> PartyPal
                 </div>
             </div>
         ),

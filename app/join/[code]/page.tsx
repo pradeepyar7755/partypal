@@ -84,7 +84,8 @@ export async function generateMetadata({ params }: JoinPageProps): Promise<Metad
     const baseUrl = `${protocol}://${host}`
 
     const ogParams = new URLSearchParams()
-    ogParams.set('title', `${eventEmoji} ${eventName}`)
+    ogParams.set('title', eventName)
+    if (eventEmoji) ogParams.set('emoji', eventEmoji)
     if (data.date) ogParams.set('date', data.date)
     if (data.time) ogParams.set('time', formatTime12h(data.time, data.timezone))
     if (data.location) ogParams.set('location', data.location)
