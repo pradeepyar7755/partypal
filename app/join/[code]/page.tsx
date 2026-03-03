@@ -7,7 +7,7 @@ interface JoinPageProps {
 
 async function getEventData(code: string) {
     const headersList = headers()
-    const host = headersList.get('host') || 'localhost:3000'
+    const host = headersList.get('host') || process.env.VERCEL_URL || 'partypal.social'
     const protocol = host.includes('localhost') ? 'http' : 'https'
     const baseUrl = `${protocol}://${host}`
 
@@ -79,7 +79,7 @@ export async function generateMetadata({ params }: JoinPageProps): Promise<Metad
 
     // Build OG image URL
     const headersList = headers()
-    const host = headersList.get('host') || 'localhost:3000'
+    const host = headersList.get('host') || process.env.VERCEL_URL || 'partypal.social'
     const protocol = host.includes('localhost') ? 'http' : 'https'
     const baseUrl = `${protocol}://${host}`
 
