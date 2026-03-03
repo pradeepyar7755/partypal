@@ -37,9 +37,11 @@ interface GuestManagerProps {
     eventId?: string
     planData?: { eventType?: string; theme?: string; date?: string; location?: string; eventId?: string; time?: string; hostName?: string; hostContact?: string }
     isDemo?: boolean
+    isGuest?: boolean
+    onRequireSignup?: () => void
 }
 
-export default function GuestManager({ eventId, planData: propPlanData, isDemo }: GuestManagerProps) {
+export default function GuestManager({ eventId, planData: propPlanData, isDemo, isGuest, onRequireSignup }: GuestManagerProps) {
     const [guests, setGuests] = useState<Guest[]>(isDemo ? DEFAULT_GUESTS : [])
     const [showAdd, setShowAdd] = useState(false)
     const [showBulk, setShowBulk] = useState(false)
@@ -471,6 +473,11 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     }
 
     const copyRSVPLink = async () => {
+        if (isGuest && onRequireSignup) {
+            onRequireSignup()
+            return
+        }
+
         const eid = planData.eventId || eventId || ''
         // Ensure the invite is published and joinCode exists
         if (eid && !joinCode) {

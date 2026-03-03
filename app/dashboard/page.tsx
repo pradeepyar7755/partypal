@@ -1902,7 +1902,7 @@ function DashboardContent() {
             {/* ══ GUESTS TAB ══ */}
             {selectedTab === 'guests' && (
                 <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1rem 0.75rem' }}>
-                    <GuestManager eventId={data.eventId} planData={{ eventType: data.eventType, theme: data.theme, date: data.date, location: data.location, eventId: data.eventId, time: data.time, hostName: user?.displayName || undefined, hostContact: user?.email || undefined }} isDemo={isDemo} />
+                    <GuestManager eventId={data.eventId} planData={{ eventType: data.eventType, theme: data.theme, date: data.date, location: data.location, eventId: data.eventId, time: data.time, hostName: user?.displayName || undefined, hostContact: user?.email || undefined }} isDemo={isDemo} isGuest={isGuest} onRequireSignup={() => setShowSignupPrompt(true)} />
                 </div>
             )}
 
