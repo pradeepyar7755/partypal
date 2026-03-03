@@ -274,6 +274,7 @@ function DashboardContent() {
     const [editBudgetValue, setEditBudgetValue] = useState('')
     const [showBudgetTips, setShowBudgetTips] = useState(false)
     const progressRefs = useRef<HTMLDivElement[]>([])
+    const deletedEventIdsRef = useRef<Set<string>>(new Set())
     // Cross-portal AI context
     const { getContextPayload, learn } = useAIContext(data, eventGuests)
     // Notification state
@@ -503,7 +504,7 @@ function DashboardContent() {
         try {
             const res = await fetch(`/api/events?uid=${user.uid}`)
             const d = await res.json()
-            const serverEvents: PlanData[] = d.events || []
+            const serverEvents: PlanData[] = (d.events || []).filter((e: any) => !deletedEventIdsRef.current.has(e.eventId))
             if (serverEvents.length === 0 && !isInitial) return
 
             setAllEvents(prev => {
@@ -831,8 +832,15 @@ function DashboardContent() {
         const stored = userGet('partyplan')
         if (stored) {
             const d = JSON.parse(stored)
-            d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done, completedAt: c.completedAt }))
+            d.plan.checklist = updated.map((c: any) => ({ item: c.item, category: c.category, done: c.done, completedAt: c.completedAt }))
             userSetJSON('partyplan', d)
+            setData(d)
+            if (d.eventId && d.eventId !== 'demo') {
+                const ue = allEvents.map(ev => ev.eventId === d.eventId ? d : ev)
+                setAllEvents(ue)
+                userSetJSON('partypal_events', ue)
+                fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }).catch(() => { })
+            }
         }
         showToast(`"${removed.item}" moved to Deleted Tasks`, 'info')
     }
@@ -845,8 +853,15 @@ function DashboardContent() {
         const stored = userGet('partyplan')
         if (stored) {
             const d = JSON.parse(stored)
-            d.plan.checklist = updated.map(c => ({ item: c.item, category: c.category, done: c.done, completedAt: c.completedAt }))
+            d.plan.checklist = updated.map((c: any) => ({ item: c.item, category: c.category, done: c.done, completedAt: c.completedAt }))
             userSetJSON('partyplan', d)
+            setData(d)
+            if (d.eventId && d.eventId !== 'demo') {
+                const ue = allEvents.map(ev => ev.eventId === d.eventId ? d : ev)
+                setAllEvents(ue)
+                userSetJSON('partypal_events', ue)
+                fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(d) }).catch(() => { })
+            }
         }
         showToast(`"${task.item}" restored`, 'success')
     }
@@ -1135,6 +1150,7 @@ function DashboardContent() {
             userRemove('partyplan')
         }
         // Delete from Firestore
+        deletedEventIdsRef.current.add(eventId)
         fetch(`/api/events?eventId=${encodeURIComponent(eventId)}`, { method: 'DELETE' }).catch(() => { })
         showToast('Event deleted', 'success')
     }
@@ -2100,7 +2116,15 @@ function DashboardContent() {
                                                 <input value={refineTimelineInput} onChange={e => setRefineTimelineInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') refineTimeline() }} placeholder="Refine with AI..." style={{ flex: 1, padding: '0.22rem 0.5rem', borderRadius: 6, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.68rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
                                                 <button onClick={refineTimeline} disabled={isRefiningTimeline || !refineTimelineInput.trim()} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 6, padding: '0.22rem 0.45rem', fontSize: '0.62rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefiningTimeline || !refineTimelineInput.trim() ? 0.5 : 1 }}>{isRefiningTimeline ? '...' : '✨'}</button>
                                             </div>
-                                            <button onClick={() => setEditTimelineMode(!editTimelineMode)} title={editTimelineMode ? 'Exit edit' : 'Edit'} style={{ background: editTimelineMode ? 'var(--teal)' : 'transparent', color: editTimelineMode ? '#fff' : '#9aabbb', border: `1.5px solid ${editTimelineMode ? 'var(--teal)' : 'var(--border)'}`, borderRadius: 6, padding: '0.18rem 0.35rem', fontSize: '0.65rem', cursor: 'pointer', transition: 'all 0.2s' }}>✏️</button>
+                                            <button onClick={() => {
+                                                if (editTimelineMode && !isDemo && data.eventId) {
+                                                    const updatedEvents = allEvents.map(ev => ev.eventId === data.eventId ? data : ev)
+                                                    setAllEvents(updatedEvents)
+                                                    userSetJSON('partypal_events', updatedEvents)
+                                                    fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(data) }).catch(() => { })
+                                                }
+                                                setEditTimelineMode(!editTimelineMode)
+                                            }} title={editTimelineMode ? 'Exit edit' : 'Edit'} style={{ background: editTimelineMode ? 'var(--teal)' : 'transparent', color: editTimelineMode ? '#fff' : '#9aabbb', border: `1.5px solid ${editTimelineMode ? 'var(--teal)' : 'var(--border)'}`, borderRadius: 6, padding: '0.18rem 0.35rem', fontSize: '0.65rem', cursor: 'pointer', transition: 'all 0.2s' }}>✏️</button>
                                             <div style={{ position: 'relative', display: 'inline-flex' }}>
                                                 <button onClick={() => setTasksCollapsed(!tasksCollapsed)} title={tasksCollapsed ? 'Show smart checklist' : 'Hide smart checklist'} style={{ background: tasksCollapsed ? 'rgba(74,173,168,0.1)' : 'transparent', color: tasksCollapsed ? 'var(--teal)' : '#9aabbb', border: `1.5px solid ${tasksCollapsed ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`, borderRadius: 6, padding: '0.18rem 0.35rem', fontSize: '0.62rem', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>{tasksCollapsed ? '☐' : '☑'}</button>
                                                 {showChecklistHint && tasksCollapsed && (
@@ -2638,7 +2662,7 @@ function DashboardContent() {
                                                 )}
                                                 <div className={styles.budgetPct}>{b.percentage}%</div>
                                                 {editBudgetMode && (
-                                                    <button onClick={(e) => { e.stopPropagation(); const removedCat = b.category; const updated = { ...data, plan: { ...data.plan, budget: { ...data.plan.budget, breakdown: data.plan.budget.breakdown.filter((_, idx) => idx !== i) } } }; setData(updated); if (isDemo) { userSetJSON('partypal_demo', updated) } else { userSetJSON('partyplan', updated); if (updated.eventId) { const ue = allEvents.map(ev => ev.eventId === updated.eventId ? updated : ev); setAllEvents(ue); userSetJSON('partypal_events', ue) } }; const cleanedVendors = eventVendors.map(v => v.budgetCategory === removedCat ? { ...v, budgetCategory: undefined } : v); if (cleanedVendors.some((v, vi) => v !== eventVendors[vi])) { setEventVendors(cleanedVendors); if (data.eventId) { userSetJSON(`partypal_vendors_${data.eventId}`, cleanedVendors); fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, vendors: cleanedVendors }) }).catch(() => { }) } }; showToast(`Removed ${removedCat}`, 'info') }} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.65rem', padding: '0 0.2rem', marginLeft: '0.2rem' }} title="Remove">✕</button>
+                                                    <button onClick={(e) => { e.stopPropagation(); const removedCat = b.category; const updated = { ...data, plan: { ...data.plan, budget: { ...data.plan.budget, breakdown: data.plan.budget.breakdown.filter((_, idx) => idx !== i) } } }; setData(updated); if (isDemo) { userSetJSON('partypal_demo', updated) } else { userSetJSON('partyplan', updated); if (updated.eventId) { const ue = allEvents.map(ev => ev.eventId === updated.eventId ? updated : ev); setAllEvents(ue); userSetJSON('partypal_events', ue); fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => { }) } }; const cleanedVendors = eventVendors.map(v => v.budgetCategory === removedCat ? { ...v, budgetCategory: undefined } : v); if (cleanedVendors.some((v, vi) => v !== eventVendors[vi])) { setEventVendors(cleanedVendors); if (data.eventId) { userSetJSON(`partypal_vendors_${data.eventId}`, cleanedVendors); fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, vendors: cleanedVendors }) }).catch(() => { }) } }; showToast(`Removed ${removedCat}`, 'info') }} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.65rem', padding: '0 0.2rem', marginLeft: '0.2rem' }} title="Remove">✕</button>
                                                 )}
                                             </div>
                                         ))}
@@ -2660,6 +2684,7 @@ function DashboardContent() {
                                                     const ue = allEvents.map(ev => ev.eventId === updated.eventId ? updated : ev)
                                                     setAllEvents(ue)
                                                     userSetJSON('partypal_events', ue)
+                                                    fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(updated) }).catch(() => { })
                                                 }
                                             }
                                             showToast(`Added ${name}`, 'success')
