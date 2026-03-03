@@ -5,6 +5,8 @@ interface JoinPageProps {
     params: { code: string }
 }
 
+export const dynamic = 'force-dynamic'
+
 import { getDb } from '@/lib/firebase'
 
 async function getEventData(code: string) {
