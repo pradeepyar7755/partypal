@@ -38,6 +38,8 @@ ${existingTimeline}
 
 User's refinement request: "${refinement}"
 
+CRITICAL: The refined timeline MUST always include milestones covering: venue (category: "venue"), guests (category: "guests"), and food (category: "food"). These are non-negotiable — never remove them during refinement.
+
 Return ONLY valid JSON with the updated timeline applying the user's feedback. Keep items that don't need changing. The format must be:
 {
   "timeline": [
@@ -60,6 +62,12 @@ IMPORTANT TIMELINE RULES:
 - Each milestone task description must be SHORT: 5-8 words max (e.g. "Book venue & photographer", "Order decor & cake")
 - Combine related tasks into single milestones (e.g. "Book venue & photographer" not separate entries)
 - Always include a "Final prep" milestone and an "Event Day" milestone
+
+NON-NEGOTIABLE MILESTONES — these three MUST appear in every timeline:
+1. 🏠 Venue (category: "venue") — If the user's location looks like a specific venue or address (not just a city), frame this as "Confirm venue details" or "Confirm venue & logistics" rather than "Book venue". Only suggest browsing/booking a new venue when the location is just a city name.
+2. 💌 Guests (category: "guests") — Always include a milestone for guest management: sending invitations, tracking RSVPs, collecting dietary preferences.
+3. 🍽️ Food (category: "food") — Always include a milestone for food/catering: menu planning, dietary accommodations, drinks.
+These three can be combined with other related tasks in the same milestone (e.g. "Book venue & photographer"), but the core non-negotiable item MUST be present. Never omit any of these three.
 
 CROSS-PORTAL INTELLIGENCE RULES:
 - If guest dietary data is provided, reflect that in food/catering budget allocation and checklist items
@@ -120,6 +128,7 @@ CHECKLIST RULES:
 - Each item should be a SHORT, actionable task (e.g. "Book DJ" not "Research and book a DJ for the party")
 - Each checklist item category MUST match one of the timeline milestone categories so they group together
 - Never leave a timeline milestone without at least 1 matching checklist item
+- You MUST include at least one checklist item for each non-negotiable category: venue, guests, and food
 - Categories should be single-word lowercase tags like: venue, vendor, food, decor, guests, music, planning, logistics, photos
 
 Make ALL content specific to the actual event details provided. Adjust budget percentages to make sense for the event type and the budget amount given.`

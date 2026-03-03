@@ -56,6 +56,27 @@ function RSVPContent() {
     const [dietary, setDietary] = useState('None')
     const [additionalGuests, setAdditionalGuests] = useState<AdditionalGuest[]>([])
     const [submitted, setSubmitted] = useState(false)
+    const [isUpdate, setIsUpdate] = useState(false)
+    const [lookingUp, setLookingUp] = useState(false)
+
+    // Look up previous RSVP from Firestore by email
+    const lookupRsvp = async (lookupEmail: string) => {
+        if (!lookupEmail || !eventData.eventId) return
+        setLookingUp(true)
+        try {
+            const res = await fetch(`/api/events/${eventData.eventId}/rsvp?email=${encodeURIComponent(lookupEmail.trim().toLowerCase())}`)
+            const data = await res.json()
+            if (data.found && data.rsvp) {
+                const prev = data.rsvp
+                if (prev.name) setName(prev.name)
+                if (prev.response) setResponse(prev.response)
+                if (prev.dietary && prev.dietary !== 'None') setDietary(prev.dietary)
+                if (prev.additionalGuests?.length) setAdditionalGuests(prev.additionalGuests)
+                setIsUpdate(true)
+            }
+        } catch { /* ignore */ }
+        setLookingUp(false)
+    }
 
     useEffect(() => {
         const eventId = params.get('e') || undefined
@@ -151,27 +172,20 @@ function RSVPContent() {
     const handleSubmit = () => {
         if (!name || !email || !response) return
         const validAdditional = additionalGuests.filter(ag => ag.name.trim())
-        // Save to localStorage
-        const rsvps = userGetJSON('partypal_rsvps', [] as Record<string, unknown>[])
         const kidCount = validAdditional.filter(ag => ag.isChild).length
-        rsvps.push({
-            name, email, response, dietary,
-            eventId: eventData.eventId,
-            additionalGuests: validAdditional,
-            totalPartySize: 1 + validAdditional.length,
-            kidCount,
-            timestamp: new Date().toISOString()
-        })
-        userSetJSON('partypal_rsvps', rsvps)
-        // Save to Firestore
+        // Save to Firestore (upserts by email)
         if (eventData.eventId) {
             fetch(`/api/events/${eventData.eventId}`, {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ name, email, response, dietary, additionalGuests: validAdditional, totalPartySize: 1 + validAdditional.length, kidCount: validAdditional.filter(ag => ag.isChild).length }),
+                body: JSON.stringify({ name, email, response, dietary, additionalGuests: validAdditional, totalPartySize: 1 + validAdditional.length, kidCount }),
             }).catch(() => { })
         }
-        // Send thank-you email
+        // Save to localStorage (legacy)
+        const rsvps = userGetJSON('partypal_rsvps', [] as Record<string, unknown>[])
+        rsvps.push({ name, email, response, dietary, eventId: eventData.eventId, additionalGuests: validAdditional, totalPartySize: 1 + validAdditional.length, kidCount, timestamp: new Date().toISOString() })
+        userSetJSON('partypal_rsvps', rsvps)
+        // Send thank-you / update email
         if (email) {
             const eventDateStr = eventData.date
                 ? new Date(eventData.date + 'T12:00:00').toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })
@@ -264,8 +278,10 @@ function RSVPContent() {
                         </div>
                         <div>
                             <div className={styles.rsvpLabel}>Email *</div>
-                            <input className={styles.rsvpInput} type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} required style={{ borderColor: !email && name ? '#E8896A' : undefined }} />
-                            {!email && name && <div style={{ fontSize: '0.7rem', color: '#E8896A', fontWeight: 700, marginTop: '0.2rem' }}>Email is required so we can send you event details</div>}
+                            <input className={styles.rsvpInput} type="email" placeholder="your@email.com" value={email} onChange={e => setEmail(e.target.value)} onBlur={e => { if (e.target.value.includes('@')) lookupRsvp(e.target.value) }} required style={{ borderColor: !email && name ? '#E8896A' : isUpdate ? '#4AADA8' : undefined }} />
+                            {lookingUp && <div style={{ fontSize: '0.7rem', color: '#4AADA8', fontWeight: 700, marginTop: '0.2rem' }}>🔍 Looking up your RSVP...</div>}
+                            {isUpdate && !lookingUp && <div style={{ fontSize: '0.7rem', color: '#4AADA8', fontWeight: 700, marginTop: '0.2rem' }}>✅ Welcome back! Your previous RSVP has been loaded.</div>}
+                            {!email && name && !isUpdate && <div style={{ fontSize: '0.7rem', color: '#E8896A', fontWeight: 700, marginTop: '0.2rem' }}>Email is required so we can send you event details</div>}
                         </div>
                         <div>
                             <div className={styles.rsvpLabel}>Will You Attend? *</div>
@@ -381,7 +397,7 @@ function RSVPContent() {
                         })()}
 
                         <button className={styles.rsvpSubmit} onClick={handleSubmit} disabled={!name || !email || !response}>
-                            Send My RSVP {totalPartySize > 1 ? `(${totalPartySize} people)` : ''} 🎊
+                            {isUpdate ? 'Update My RSVP' : 'Send My RSVP'} {totalPartySize > 1 ? `(${totalPartySize} people)` : ''} 🎊
                         </button>
                     </div>
                 ) : (

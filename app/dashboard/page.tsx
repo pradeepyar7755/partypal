@@ -119,7 +119,7 @@ const NUDGE_MESSAGES: { keywords: string[]; message: string }[] = [
     { keywords: ['event day', 'big day'], message: 'Enjoy every moment! You\'ve planned this perfectly 🎉' },
 ]
 
-function getQuickActionForMilestone(t: TimelineItem): { emoji: string; label: string; action: 'url' | 'tab' | 'expand'; target: string } | null {
+function getQuickActionForMilestone(t: TimelineItem, eventLocation?: string): { emoji: string; label: string; action: 'url' | 'tab' | 'expand'; target: string } | null {
     const text = `${t.task} ${t.category}`.toLowerCase()
     let bestAction: typeof QUICK_ACTION_RULES[0] | null = null
     let bestScore = 0
@@ -127,7 +127,15 @@ function getQuickActionForMilestone(t: TimelineItem): { emoji: string; label: st
         const score = rule.keywords.filter(kw => text.includes(kw)).length
         if (score > bestScore) { bestScore = score; bestAction = rule }
     }
-    return bestAction && bestScore > 0 ? { emoji: bestAction.emoji, label: bestAction.label, action: bestAction.action, target: bestAction.target } : null
+    if (!bestAction || bestScore === 0) return null
+    // If venue matched and location looks like a specific venue (3+ comma parts = address), show "Confirm Venue" instead of "Browse Venues"
+    if (bestAction.label === 'Browse Venues' && eventLocation) {
+        const parts = eventLocation.split(',').map(p => p.trim()).filter(Boolean)
+        if (parts.length >= 3 || /\d+\s/.test(parts[0] || '')) {
+            return { emoji: '✅', label: 'Confirm Venue', action: 'expand', target: '' }
+        }
+    }
+    return { emoji: bestAction.emoji, label: bestAction.label, action: bestAction.action, target: bestAction.target }
 }
 
 function getNudgeForMilestone(t: TimelineItem): string | null {
@@ -2142,7 +2150,7 @@ function DashboardContent() {
                                                                 })()}
                                                                 {/* ── Inline Quick Action or Nudge ── */}
                                                                 {!t.completedAt && (() => {
-                                                                    const qa = getQuickActionForMilestone(t)
+                                                                    const qa = getQuickActionForMilestone(t, data.location)
                                                                     // Parse date from weeks label for urgency
                                                                     const dateMatch = t.weeks.match(/^([A-Z][a-z]{2})\s(\d{1,2})/)
                                                                     let isOverdue = false

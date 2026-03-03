@@ -84,6 +84,27 @@ export default function JoinRSVPClient({ eventData }: { eventData: EventData }) 
     const [dietary, setDietary] = useState('None')
     const [additionalGuests, setAdditionalGuests] = useState<AdditionalGuest[]>([])
     const [submitted, setSubmitted] = useState(false)
+    const [isUpdate, setIsUpdate] = useState(false)
+    const [lookingUp, setLookingUp] = useState(false)
+
+    // Look up previous RSVP from Firestore by email
+    const lookupRsvp = async (lookupEmail: string) => {
+        if (!lookupEmail || !eventData.eventId) return
+        setLookingUp(true)
+        try {
+            const res = await fetch(`/api/events/${eventData.eventId}/rsvp?email=${encodeURIComponent(lookupEmail.trim().toLowerCase())}`)
+            const data = await res.json()
+            if (data.found && data.rsvp) {
+                const prev = data.rsvp
+                if (prev.name) setName(prev.name)
+                if (prev.response) setResponse(prev.response)
+                if (prev.dietary && prev.dietary !== 'None') setDietary(prev.dietary)
+                if (prev.additionalGuests?.length) setAdditionalGuests(prev.additionalGuests)
+                setIsUpdate(true)
+            }
+        } catch { /* ignore */ }
+        setLookingUp(false)
+    }
 
     const eventEmoji = eventData.eventType?.split(' ')[0] || '🎉'
     const eventName = eventData.eventType?.replace(/^[^\s]+\s/, '') || 'Party'
@@ -291,15 +312,18 @@ export default function JoinRSVPClient({ eventData }: { eventData: EventData }) 
                                 placeholder="your@email.com"
                                 value={email}
                                 onChange={e => setEmail(e.target.value)}
+                                onBlur={e => { if (e.target.value.includes('@')) lookupRsvp(e.target.value) }}
                                 required
                                 style={{
                                     width: '100%', padding: '0.65rem 0.8rem', borderRadius: 10,
-                                    border: `1.5px solid ${!email && name ? '#E8896A' : '#e2e8f0'}`, fontSize: '0.9rem', fontWeight: 600,
+                                    border: `1.5px solid ${!email && name ? '#E8896A' : isUpdate ? '#4AADA8' : '#e2e8f0'}`, fontSize: '0.9rem', fontWeight: 600,
                                     outline: 'none', boxSizing: 'border-box',
                                     fontFamily: "'Nunito', sans-serif",
                                 }}
                             />
-                            {!email && name && <div style={{ fontSize: '0.7rem', color: '#E8896A', fontWeight: 700, marginTop: '0.2rem' }}>Email is required so we can send you event details</div>}
+                            {lookingUp && <div style={{ fontSize: '0.7rem', color: '#4AADA8', fontWeight: 700, marginTop: '0.2rem' }}>🔍 Looking up your RSVP...</div>}
+                            {isUpdate && !lookingUp && <div style={{ fontSize: '0.7rem', color: '#4AADA8', fontWeight: 700, marginTop: '0.2rem' }}>✅ Welcome back! Your previous RSVP has been loaded.</div>}
+                            {!email && name && !isUpdate && <div style={{ fontSize: '0.7rem', color: '#E8896A', fontWeight: 700, marginTop: '0.2rem' }}>Email is required so we can send you event details</div>}
                         </div>
                         <div style={{ marginBottom: '1rem' }}>
                             <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: 800, color: '#1a2535', marginBottom: '0.3rem', letterSpacing: '0.03em' }}>Will You Attend? *</label>
@@ -472,7 +496,7 @@ export default function JoinRSVPClient({ eventData }: { eventData: EventData }) 
                                 transition: 'all 0.2s',
                             }}
                         >
-                            Send My RSVP {totalPartySize > 1 ? `(${totalPartySize} people)` : ''} 🎊
+                            {isUpdate ? 'Update My RSVP' : 'Send My RSVP'} {totalPartySize > 1 ? `(${totalPartySize} people)` : ''} 🎊
                         </button>
                     </div>
                 ) : (
