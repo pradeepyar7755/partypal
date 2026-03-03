@@ -528,14 +528,14 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                         {hasUnpublishedChanges
                             ? (
                                 <>
-                                    {publishedInvite && <button className={styles.secondaryBtn} onClick={revertToPublished} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', borderColor: 'rgba(244,180,26,0.4)', color: '#c4880a' }}>🌟 Revert</button>}
                                     <button onClick={publishInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', background: 'rgba(74,173,168,0.12)', border: '1.5px solid rgba(74,173,168,0.4)', borderRadius: 6, fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>📤 Publish</button>
+                                    {publishedInvite && <button className={styles.secondaryBtn} onClick={revertToPublished} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', borderColor: 'rgba(244,180,26,0.4)', color: '#c4880a' }}>Revert to Published</button>}
                                 </>
                             )
                             : (
                                 <>
-                                    {publishedInvite && <button className={styles.secondaryBtn} onClick={revertToPublished} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', borderColor: 'rgba(244,180,26,0.4)', color: '#c4880a' }}>🌟 Revert</button>}
                                     <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
+                                    {publishedInvite && <button className={styles.secondaryBtn} onClick={revertToPublished} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', borderColor: 'rgba(244,180,26,0.4)', color: '#c4880a' }}>Revert to Published</button>}
                                 </>
                             )
                         }
@@ -554,14 +554,14 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                 {hasUnpublishedChanges
                                     ? (
                                         <>
-                                            {publishedInvite && <button className={styles.secondaryBtn} onClick={revertToPublished} style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', borderColor: 'rgba(244,180,26,0.4)', color: '#c4880a' }}>🌟 Revert</button>}
                                             <button onClick={publishInvite} style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', background: 'rgba(74,173,168,0.12)', border: '1.5px solid rgba(74,173,168,0.4)', borderRadius: 6, fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>📤 Publish</button>
+                                            {publishedInvite && <button className={styles.secondaryBtn} onClick={revertToPublished} style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', borderColor: 'rgba(244,180,26,0.4)', color: '#c4880a' }}>Revert to Published</button>}
                                         </>
                                     )
                                     : (
                                         <>
-                                            {publishedInvite && <button className={styles.secondaryBtn} onClick={revertToPublished} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', borderColor: 'rgba(244,180,26,0.4)', color: '#c4880a' }}>🌟 Revert</button>}
                                             <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
+                                            {publishedInvite && <button className={styles.secondaryBtn} onClick={revertToPublished} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', borderColor: 'rgba(244,180,26,0.4)', color: '#c4880a' }}>Revert to Published</button>}
                                         </>
                                     )
                                 }

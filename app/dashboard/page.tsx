@@ -372,7 +372,7 @@ function DashboardContent() {
         })
     }
 
-    const loadEvent = (plan: PlanData, demo: boolean, initialTab?: 'plan' | 'theme' | 'vendors' | 'guests' | 'polls') => {
+    const loadEvent = (plan: PlanData, demo: boolean, initialTab?: 'plan' | 'theme' | 'vendors' | 'guests' | 'polls', preserveTab = false) => {
         // Ensure every plan has an eventId
         if (!plan.eventId) {
             plan.eventId = demo ? 'demo' : Math.random().toString(36).substring(2, 10)
@@ -381,7 +381,7 @@ function DashboardContent() {
         const enrichedPlan = plan.date ? { ...plan, plan: { ...plan.plan, timeline: computeTimelineDates(plan.plan.timeline, plan.date) } } : plan
         setData(enrichedPlan)
         setIsDemo(demo)
-        setSelectedTab(initialTab || 'plan')
+        if (!preserveTab) setSelectedTab(initialTab || 'plan')
         if (!demo) userSetJSON('partyplan', enrichedPlan)
         const TIMELINE_LABELS = ['6 wks out', '6 wks out', '4 wks out', '4 wks out', '3 wks out', '3 wks out', '2 wks out', '2 wks out', '1 wk out', 'Day before']
         const enriched = (enrichedPlan.plan.checklist || []).map((item, i) => ({
@@ -533,7 +533,7 @@ function DashboardContent() {
                     const serverTime = serverVersion.updatedAt ? new Date(serverVersion.updatedAt as string).getTime() : 0
                     if (serverTime > localTime) {
                         userSetJSON('partyplan', serverVersion)
-                        loadEvent(serverVersion, false)
+                        loadEvent(serverVersion, false, undefined, true)
                     }
                     // Sync vendors from cloud if local is empty
                     const localVendors = userGetJSON<EventVendor[]>(`partypal_vendors_${activePlan.eventId}`, [])
