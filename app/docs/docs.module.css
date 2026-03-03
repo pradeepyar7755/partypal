@@ -29,6 +29,9 @@
     font-family: 'Fredoka One', cursive;
     font-size: 1.3rem;
     color: white;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
 }
 
 .logo span {

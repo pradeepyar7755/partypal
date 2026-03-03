@@ -64,6 +64,9 @@ function VendorsContent() {
   const [activeEvents, setActiveEvents] = useState<{ eventId: string; eventType: string }[]>([])
   const [addToEventVendor, setAddToEventVendor] = useState<string | null>(null)
   const [showEventPicker, setShowEventPicker] = useState(false)
+  const [showSignupPrompt, setShowSignupPrompt] = useState(false)
+
+  const isGuest = !user || user.isAnonymous
 
   const CUISINES = ['Indian', 'Mexican', 'Italian', 'Chinese', 'Thai', 'BBQ', 'Mediterranean', 'Japanese', 'Soul Food', 'American']
 
@@ -220,6 +223,7 @@ function VendorsContent() {
 
   const toggleShortlist = (vendorId: string, e: React.MouseEvent) => {
     e.stopPropagation()
+    if (isGuest) { setShowSignupPrompt(true); return }
     setShortlist(prev => {
       const updated = prev.includes(vendorId) ? prev.filter(id => id !== vendorId) : [...prev, vendorId]
       userSetJSON('partypal_shortlist', updated)
@@ -388,7 +392,7 @@ function VendorsContent() {
             <input className={styles.searchInput} type="text" placeholder="Search vendors, styles, services…" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
           <button className={styles.filterBtn} onClick={() => setShowSidebar(!showSidebar)}>⚙️ Filters</button>
-          <button className={`${styles.shortlistToggle} ${showShortlistOnly ? styles.shortlistActive : ''}`} onClick={() => setShowShortlistOnly(!showShortlistOnly)}>
+          <button className={`${styles.shortlistToggle} ${showShortlistOnly ? styles.shortlistActive : ''}`} onClick={() => { if (isGuest) { setShowSignupPrompt(true); return } setShowShortlistOnly(!showShortlistOnly) }}>
             ❤️ Shortlist ({shortlist.length})
           </button>
           <select className={styles.sortSelect} value={sort} onChange={e => setSort(e.target.value)}>
@@ -677,6 +681,38 @@ function VendorsContent() {
               <div className={styles.modalAd}>
                 <AdUnit slot="modal-1" format="horizontal" label="Party Deals" />
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Signup Prompt Modal */}
+      {showSignupPrompt && (
+        <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }} onClick={() => setShowSignupPrompt(false)}>
+          <div className="card" style={{ padding: '2.5rem', width: '100%', maxWidth: 420, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+            <div style={{ fontSize: '3rem', marginBottom: '0.8rem' }}>❤️</div>
+            <h2 style={{ fontFamily: "'Fredoka One',cursive", color: 'var(--navy)', marginBottom: '0.5rem', fontSize: '1.3rem' }}>Save Your Favorites</h2>
+            <p style={{ fontSize: '0.88rem', color: '#6b7c93', fontWeight: 600, lineHeight: 1.5, marginBottom: '1.5rem' }}>
+              Create a free account to shortlist vendors, compare options, and share your favorites with co-planners!
+            </p>
+            <a href="/login?redirect=/vendors" style={{
+              display: 'inline-block', padding: '0.7rem 2rem', borderRadius: 50,
+              background: 'linear-gradient(135deg, var(--teal), #3D8C6E)',
+              color: 'white', fontWeight: 800, fontSize: '0.92rem',
+              textDecoration: 'none', fontFamily: "'Fredoka One', cursive",
+              transition: 'transform 0.15s',
+              boxShadow: '0 4px 15px rgba(74,173,168,0.3)',
+            }}
+              onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.05)')}
+              onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+            >
+              🔗 Sign Up Free
+            </a>
+            <div style={{ marginTop: '0.8rem' }}>
+              <button onClick={() => setShowSignupPrompt(false)} style={{
+                background: 'none', border: 'none', cursor: 'pointer',
+                color: '#9aabbb', fontSize: '0.82rem', fontWeight: 700,
+              }}>Maybe Later</button>
             </div>
           </div>
         </div>

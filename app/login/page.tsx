@@ -34,7 +34,7 @@ function LoginContent() {
         setForgotMsg('')
         try {
             await resetPassword(forgotEmail)
-            setForgotMsg('✅ Reset link sent! Check your inbox.')
+            setForgotMsg('✅ Reset link sent! Check your inbox (and spam folder). If you signed up with Google or Apple, use those buttons above instead — there\'s no password to reset.')
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : ''
             if (msg.includes('user-not-found')) setForgotMsg('No account found with this email.')
@@ -96,7 +96,7 @@ function LoginContent() {
     return (
         <main className={styles.loginPage}>
             <div className={styles.loginCard}>
-                <div className={styles.loginLogo}>🎊</div>
+                <div className={styles.loginLogo}><img src="/logo.png" alt="PartyPal" style={{ height: 80, borderRadius: 14 }} /></div>
                 <div className={styles.loginTitle}>Party<span>Pal</span></div>
                 <div className={styles.loginSub}>Plan memorable parties with AI</div>
 

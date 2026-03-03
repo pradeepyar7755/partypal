@@ -82,6 +82,16 @@ nav {
   font-family: 'Fredoka One', cursive;
   font-size: 1.5rem;
   color: var(--white);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-logo-img {
+  height: 36px;
+  width: auto;
+  object-fit: contain;
+  border-radius: 8px;
 }
 
 .nav-logo span {

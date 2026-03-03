@@ -101,7 +101,7 @@ export default function DocsPage() {
             {/* Header */}
             <header className={styles.header}>
                 <div className={styles.headerLeft}>
-                    <div className={styles.logo}>🎊 Party<span>Pal</span></div>
+                    <div className={styles.logo}><img src="/logo.png" alt="PartyPal" style={{ height: 30, borderRadius: 6 }} /> Party<span>Pal</span></div>
                     <span className={styles.docsBadge}>Docs</span>
                 </div>
                 <div className={styles.headerRight}>

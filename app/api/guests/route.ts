@@ -96,7 +96,8 @@ Return ONLY valid JSON:
     logApiCall('guests', 'gemini', identifier)
     return NextResponse.json(parsed)
   } catch (error: unknown) {
-    console.error('Guests error:', error)
-    return NextResponse.json({ error: 'Failed to process guests request' }, { status: 500 })
+    const errMsg = error instanceof Error ? error.message : String(error)
+    console.error('Guests error:', errMsg, error)
+    return NextResponse.json({ error: `AI generation failed: ${errMsg}` }, { status: 500 })
   }
 }
