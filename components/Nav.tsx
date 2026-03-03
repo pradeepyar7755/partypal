@@ -52,7 +52,7 @@ export default function Nav() {
 
   return (
     <nav>
-      <Link href="/" className="nav-logo"><img src="/logo.png" alt="PartyPal" className="nav-logo-img" /> Party<span>Pal</span></Link>
+      <Link href="/" className="nav-logo"><img src="/logo.png" alt="PartyPal" className="nav-logo-img" />Party<span>Pal</span></Link>
       <button className={`hamburger ${mobileOpen ? 'open' : ''}`} onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle menu">
         <span /><span /><span />
       </button>

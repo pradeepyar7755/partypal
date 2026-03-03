@@ -507,7 +507,7 @@ export default function Home() {
       <footer className={styles.footer}>
         <div className={styles.footerTop}>
           <div className={styles.footerAbout}>
-            <div className={styles.footerLogo}><img src="/logo.png" alt="PartyPal" style={{ height: 36, borderRadius: 8 }} /> Party<span>Pal</span></div>
+            <div className={styles.footerLogo}><img src="/logo.png" alt="PartyPal" style={{ height: 36, borderRadius: 8, marginRight: '0.4rem' }} />Party<span>Pal</span></div>
             <p className={styles.footerAboutText}>
               PartyPal is your AI-powered party planning companion. We help you plan memorable celebrations by connecting you with the best vendors, managing your guests, and keeping your budget on track — all in one place.
             </p>
