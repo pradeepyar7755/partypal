@@ -216,6 +216,17 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const inviteFingerprint = invite ? JSON.stringify({ s: invite.subject, m: invite.message, sm: invite.smsVersion, ci: invite.customImage, cp: invite.coverPhoto }) : ''
     const hasUnpublishedChanges = invite && (!isPublished || inviteFingerprint !== lastPublishedInvite)
 
+    // Bootstrap publishedInvite from server data if it exists but local state is empty
+    useEffect(() => {
+        if (invite && joinCode && !publishedInvite) {
+            const savedPayload = { ...invite, customImage: invite.customImage || undefined, coverPhoto: invite.coverPhoto || undefined }
+            setPublishedInvite(savedPayload)
+            userSetJSON(publishedInviteKey, savedPayload)
+            setLastPublishedInvite(inviteFingerprint)
+            setIsPublished(true)
+        }
+    }, [invite, joinCode, publishedInvite, publishedInviteKey, inviteFingerprint])
+
     useEffect(() => { userSetJSON(bookmarkKey, bookmarks) }, [bookmarks, bookmarkKey])
 
     // Auto-regenerate invite when theme changes (only if invite already exists)
