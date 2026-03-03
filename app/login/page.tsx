@@ -96,7 +96,7 @@ function LoginContent() {
     return (
         <main className={styles.loginPage}>
             <div className={styles.loginCard}>
-                <div className={styles.loginLogo}><img src="/logo.png" alt="PartyPal" style={{ height: 80, borderRadius: 14 }} /></div>
+                <div className={styles.loginLogo}><img src="/logo.png" alt="PartyPal" style={{ height: 80, width: 'auto', borderRadius: 14 }} /></div>
                 <div className={styles.loginTitle}>Party<span>Pal</span></div>
                 <div className={styles.loginSub}>Plan memorable parties with AI</div>
 

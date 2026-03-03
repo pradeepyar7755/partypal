@@ -697,7 +697,7 @@ export default function SettingsPage() {
 
                 {/* Footer */}
                 <div style={{ textAlign: 'center', padding: '2rem 0 1rem', color: '#bbb', fontSize: '0.72rem', fontWeight: 600 }}>
-                    <img src="/logo.png" alt="" style={{ height: 14, borderRadius: 3, verticalAlign: 'middle' }} /> PartyPal v1.0 · partypal.social
+                    <img src="/logo.png" alt="" style={{ height: 14, width: 'auto', borderRadius: 3, verticalAlign: 'middle' }} /> PartyPal v1.0 · partypal.social
                 </div>
             </div>
 
