@@ -315,11 +315,12 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                             } else {
                                 // Add new guest from RSVP
                                 const avatar = rsvp.name ? rsvp.name.split(' ').map((w: string) => w[0]).join('').slice(0, 2).toUpperCase() : '??'
-                                const additionalGuests = (rsvp.additionalGuests || []).map((ag: { name: string; dietary?: string; relationship?: string }, i: number) => ({
+                                const additionalGuests = (rsvp.additionalGuests || []).map((ag: { name: string; dietary?: string; relationship?: string; isChild?: boolean }, i: number) => ({
                                     id: `rsvp_${rsvp.id}_${i}`,
                                     name: ag.name,
                                     dietary: ag.dietary || 'None',
                                     relationship: ag.relationship || 'Friend',
+                                    isChild: ag.isChild || false,
                                 }))
                                 updated.push({
                                     id: `rsvp_${rsvp.id}`,
@@ -1000,11 +1001,11 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                 </div>
                             </div>
                             <div style={{ display: 'flex', justifyContent: 'center', gap: '1.2rem', marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid var(--border)' }}>
-                                <div>
+                                <div style={{ textAlign: 'center' }}>
                                     <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.5rem', color: 'var(--navy)' }}>{adultsCount}</div>
                                     <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' }}>🧑 Adults</div>
                                 </div>
-                                <div>
+                                <div style={{ textAlign: 'center' }}>
                                     <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.5rem', color: '#c4880a' }}>{kidsCount}</div>
                                     <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' }}>👶 Kids</div>
                                 </div>

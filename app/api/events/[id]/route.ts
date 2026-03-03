@@ -32,7 +32,7 @@ export async function GET(req: NextRequest, { params }: { params: { id: string }
 export async function POST(req: NextRequest, { params }: { params: { id: string } }) {
     try {
         const body = await req.json()
-        const { name, email, response, dietary, additionalGuests, totalPartySize } = body
+        const { name, email, response, dietary, additionalGuests, totalPartySize, kidCount } = body
 
         const db = getDb()
         const rsvpRef = db.collection('events').doc(params.id).collection('rsvps')
@@ -55,6 +55,7 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
             dietary: dietary || 'None',
             additionalGuests: additionalGuests || [],
             totalPartySize: totalPartySize || 1,
+            kidCount: kidCount || 0,
             timestamp: new Date().toISOString(),
         }
 
