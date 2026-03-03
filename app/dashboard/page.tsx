@@ -1297,7 +1297,8 @@ function DashboardContent() {
                     { bg: 'rgba(247,201,72,0.08)', border: 'rgba(247,201,72,0.25)' },
                     { bg: 'rgba(66,133,244,0.08)', border: 'rgba(66,133,244,0.25)' },
                 ]
-                const sortedEvents = [...allEvents.map(e => ({ ...e, _shared: false })), ...sharedEvents.filter(se => !allEvents.some(e => e.eventId === se.eventId)).map(e => ({ ...e, _shared: true }))].sort((a, b) => {
+                const sharedIds = new Set(sharedEvents.map(se => se.eventId))
+                const sortedEvents = [...allEvents.map(e => ({ ...e, _shared: sharedIds.has(e.eventId) })), ...sharedEvents.filter(se => !allEvents.some(e => e.eventId === se.eventId)).map(e => ({ ...e, _shared: true }))].sort((a, b) => {
                     const now = new Date()
                     const aDate = a.date ? new Date(a.date + 'T12:00:00') : null
                     const bDate = b.date ? new Date(b.date + 'T12:00:00') : null
@@ -1505,25 +1506,28 @@ function DashboardContent() {
                                             {/* Location — full width at the end for easy search */}
                                             <div style={{ marginBottom: '0.6rem' }}>
                                                 <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 4, display: 'block' }}>📍 Location</label>
-                                                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'flex-start' }}>
+                                                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                                                     <div style={{ flex: 1 }}>
-                                                        <LocationSearch
-                                                            value={editData.location}
-                                                            onChange={(loc) => setEditData(p => ({ ...p, location: loc }))}
-                                                            placeholder="Search a city, venue, or address..."
-                                                        />
+                                                        {editData.location === 'TBD' ? (
+                                                            <div style={{ background: 'rgba(74,173,168,0.08)', border: '1.5px dashed rgba(74,173,168,0.3)', borderRadius: 8, padding: '0.4rem 0.8rem', color: 'var(--teal)', fontWeight: 700, fontSize: '0.82rem' }}>📍 Location TBD</div>
+                                                        ) : (
+                                                            <LocationSearch
+                                                                value={editData.location}
+                                                                onChange={(loc) => setEditData(p => ({ ...p, location: loc }))}
+                                                                placeholder="Search a city, venue, or address..."
+                                                            />
+                                                        )}
                                                     </div>
-                                                    <button
-                                                        type="button"
-                                                        onClick={() => setEditData(p => ({ ...p, location: 'TBD' }))}
-                                                        style={{
-                                                            padding: '0.45rem 0.8rem', borderRadius: 8,
-                                                            border: `1.5px solid ${editData.location === 'TBD' ? 'rgba(74,173,168,0.4)' : 'rgba(0,0,0,0.1)'}`,
-                                                            background: editData.location === 'TBD' ? 'rgba(74,173,168,0.1)' : 'white',
-                                                            color: editData.location === 'TBD' ? 'var(--teal)' : '#9aabbb',
-                                                            fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap',
-                                                        }}
-                                                    >📍 TBD</button>
+                                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.72rem', fontWeight: 700, color: editData.location === 'TBD' ? 'var(--teal)' : '#9aabbb', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
+                                                        TBD
+                                                        <input type="checkbox" checked={editData.location === 'TBD'} onChange={e => {
+                                                            if (e.target.checked) {
+                                                                setEditData(p => ({ ...p, location: 'TBD' }))
+                                                            } else {
+                                                                setEditData(p => ({ ...p, location: '' }))
+                                                            }
+                                                        }} style={{ accentColor: 'var(--teal)' }} />
+                                                    </label>
                                                 </div>
                                             </div>
                                             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
@@ -1603,7 +1607,12 @@ function DashboardContent() {
                             <div>
                                 {/* Add Vendor Form */}
                                 <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
-                                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.8rem' }}>➕ Add Vendor</div>
+                                    <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.3rem' }}>➕ Add Vendor</div>
+                                    {/* Hotspot nudge */}
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.5rem', padding: '0.35rem 0.6rem', background: 'rgba(247,201,72,0.08)', border: '1px solid rgba(247,201,72,0.2)', borderRadius: 8 }}>
+                                        <span style={{ fontSize: '0.85rem' }}>💡</span>
+                                        <span style={{ fontSize: '0.7rem', fontWeight: 600, color: '#9a7c1a' }}>Check categories your event needs — uncheck ones you don&apos;t</span>
+                                    </div>
                                     {/* Category Toggles */}
                                     <div style={{ display: 'flex', gap: '0.4rem', flexWrap: 'wrap', marginBottom: '0.8rem' }}>
                                         {ALL_VENDOR_CATS.map(cat => (
@@ -1654,6 +1663,10 @@ function DashboardContent() {
                                         <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.82rem' }}>No vendors added yet. Add from your shortlist or manually above!</p>
                                     </div>
                                 )}
+                                {/* Browse More Vendors — above shortlisted and matched */}
+                                <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
+                                    <button onClick={() => router.push('/vendors')} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 10, padding: '0.6rem 1.5rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', color: 'var(--navy)' }}>Browse More Vendors →</button>
+                                </div>
                                 {/* Saved / Shortlisted Vendors */}
                                 {Object.keys(savedVendors).length > 0 && (
                                     <div>
@@ -1721,9 +1734,6 @@ function DashboardContent() {
                                         </div>
                                     )
                                 })()}
-                                <div style={{ textAlign: 'center', marginTop: '0.5rem' }}>
-                                    <button onClick={() => router.push('/vendors')} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 10, padding: '0.6rem 1.5rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', color: 'var(--navy)' }}>Browse More Vendors →</button>
-                                </div>
                             </div>
                             {/* Right Pane — Cost Summary */}
                             <div>
