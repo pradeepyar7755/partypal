@@ -58,6 +58,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const [loadingInvite, setLoadingInvite] = useState(false)
     const [planData, setPlanData] = useState<{ eventType?: string; theme?: string; date?: string; location?: string; eventId?: string; time?: string; hostName?: string; hostContact?: string }>(propPlanData || {})
     const [copied, setCopied] = useState(false)
+    const [joinCode, setJoinCode] = useState<string>('')
     const [search, setSearch] = useState('')
     const [filter, setFilter] = useState<string>('all')
     const [expandedGuest, setExpandedGuest] = useState<string | null>(null)
@@ -238,6 +239,8 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
             fetch(`/api/events/${eventId}?include=rsvps`)
                 .then(r => r.json())
                 .then(data => {
+                    // Capture joinCode from event data
+                    if (data.joinCode && !joinCode) setJoinCode(data.joinCode)
                     if (!data.rsvps || data.rsvps.length === 0) return
                     setGuests(prev => {
                         let updated = [...prev]
@@ -291,7 +294,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
         fetchRsvps()
         const interval = setInterval(fetchRsvps, 30000) // Poll every 30s
         return () => clearInterval(interval)
-    }, [eventId, isDemo, storageKey])
+    }, [eventId, isDemo, storageKey, joinCode])
 
     const totalHeadcount = guests.reduce((sum, g) => sum + 1 + g.additionalGuests.length, 0)
     const goingHeadcount = guests.filter(g => g.status === 'going').reduce((sum, g) => sum + 1 + g.additionalGuests.length, 0)
@@ -350,15 +353,30 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const removeAdditionalExisting = (guestId: string, addId: string) => { setGuests(prev => prev.map(g => g.id === guestId ? { ...g, additionalGuests: g.additionalGuests.filter(ag => ag.id !== addId) } : g)) }
     const updateGuestDietary = (guestId: string, dietary: string) => { setGuests(prev => prev.map(g => g.id === guestId ? { ...g, dietary } : g)) }
 
-    const generateInvite = async () => {
+    const generateInvite = async (retryCount = 0) => {
         setLoadingInvite(true)
         try {
-            const res = await fetch('/api/guests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'generate_invite', eventDetails: { ...planData, inviteTheme, hostName: 'Your Host' }, temperature: inviteTemp, ...getContextPayload() }) })
+            const res = await fetch('/api/guests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'generate_invite', eventDetails: { ...planData, inviteTheme, hostName: editableHostName || 'Your Host' }, temperature: inviteTemp, ...getContextPayload() }) })
             const data = await res.json()
+            if (!res.ok || data.error) {
+                // Retry once on transient server errors
+                if (retryCount < 1 && res.status >= 500) {
+                    setLoadingInvite(false)
+                    return generateInvite(retryCount + 1)
+                }
+                showToast(data.error || `Server error (${res.status}). Please try again.`, 'error')
+                setLoadingInvite(false)
+                return
+            }
+            if (!data.subject && !data.message) {
+                showToast('Received an empty invite. Please try again.', 'error')
+                setLoadingInvite(false)
+                return
+            }
             setInvite(data); setIsEditingInvite(false)
             showToast('Invite generated!', 'success')
             learn({ type: 'invite_style_chosen', style: inviteTheme })
-        } catch { showToast('Failed to generate invite', 'error') }
+        } catch { showToast('Network error — check your connection and try again.', 'error') }
         setLoadingInvite(false)
     }
 
@@ -368,41 +386,52 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
         try {
             const res = await fetch('/api/guests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'refine_invite', currentSubject: invite.subject, currentMessage: invite.message, instruction: refineInput, ...getContextPayload() }) })
             const data = await res.json()
+            if (!res.ok || data.error) {
+                showToast(data.error || `Failed to refine invite (${res.status}). Please try again.`, 'error')
+                setIsRefining(false)
+                return
+            }
             if (data.subject) { setInvite(prev => prev ? { ...prev, subject: data.subject, message: data.message, smsVersion: data.smsVersion || prev?.smsVersion } : prev); setRefineInput(''); setIsEditingInvite(false); showToast('Invite refined!', 'success'); learn({ type: 'invite_refined', refinementText: refineInput.trim() }) }
-        } catch { showToast('Failed to refine invite', 'error') }
+        } catch { showToast('Network error — check your connection and try again.', 'error') }
         setIsRefining(false)
     }
 
-    const getRSVPLink = (versionId?: string) => {
+    const getRSVPLink = () => {
         const origin = typeof window !== 'undefined' ? window.location.origin : 'https://partypal.social'
+        if (joinCode) return `${origin}/join/${joinCode}`
+        // Fallback to old format if no joinCode yet
         const eid = planData.eventId || eventId || ''
-        return versionId ? `${origin}/rsvp?e=${eid}&v=${versionId}` : `${origin}/rsvp?e=${eid}`
+        return `${origin}/rsvp?e=${eid}`
     }
 
     const copyRSVPLink = async () => {
         const eid = planData.eventId || eventId || ''
-        if (invite && eid) {
-            // Snapshot current invite as a frozen version (including images)
-            const vId = Date.now().toString(36) + Math.random().toString(36).slice(2, 6)
+        // Ensure the invite is published and joinCode exists
+        if (eid && !joinCode) {
             try {
-                await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: eid, inviteVersion: { id: vId, subject: invite.subject, message: invite.message, smsVersion: invite.smsVersion, customImage: invite.customImage || '', coverPhoto: invite.coverPhoto || '' } }) })
+                const res = await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: eid }) })
+                const data = await res.json()
+                if (data.joinCode) setJoinCode(data.joinCode)
+                const origin = typeof window !== 'undefined' ? window.location.origin : 'https://partypal.social'
+                const link = data.joinCode ? `${origin}/join/${data.joinCode}` : getRSVPLink()
+                navigator.clipboard.writeText(link)
+                setCopied(true); setTimeout(() => setCopied(false), 2000)
+                showToast('RSVP link copied!', 'success')
+                return
             } catch { /* best effort */ }
-            const link = getRSVPLink(vId)
-            navigator.clipboard.writeText(link)
-            setCopied(true); setTimeout(() => setCopied(false), 2000)
-            showToast('RSVP link copied!', 'success')
-        } else {
-            navigator.clipboard.writeText(getRSVPLink())
-            setCopied(true); setTimeout(() => setCopied(false), 2000)
-            showToast('RSVP link copied!', 'success')
         }
+        navigator.clipboard.writeText(getRSVPLink())
+        setCopied(true); setTimeout(() => setCopied(false), 2000)
+        showToast('RSVP link copied!', 'success')
     }
 
     const publishInvite = async () => {
         if (!invite || !planData.eventId) return
         const invitePayload = { ...invite, customImage: invite.customImage || null, coverPhoto: invite.coverPhoto || null }
         try {
-            await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: invitePayload, rsvpBy: rsvpByDate || null }) })
+            const res = await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: invitePayload, rsvpBy: rsvpByDate || null, hostName: editableHostName || null, timezone: editableTimezone || null }) })
+            const data = await res.json()
+            if (data.joinCode) setJoinCode(data.joinCode)
             setIsPublished(true)
             setLastPublishedInvite(JSON.stringify({ s: invite.subject, m: invite.message, sm: invite.smsVersion, ci: invite.customImage, cp: invite.coverPhoto }))
             showToast('Invite published! Live RSVP page updated.', 'success')
@@ -412,7 +441,8 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     }
 
     const shareWhatsApp = () => {
-        const text = invite ? `${invite.subject}\n\n${invite.message}\n\nRSVP here: ${getRSVPLink()}` : `You're invited! RSVP here: ${getRSVPLink()}`
+        const link = getRSVPLink()
+        const text = invite ? `${invite.subject}\n\n${invite.message}\n\nRSVP here: ${link}` : `You're invited! RSVP here: ${link}`
         window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank')
     }
 
@@ -447,23 +477,12 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                         </div>
                     ))}
                 </div>
-                {/* Adults & Kids row */}
-                <div className={styles.statsRow} style={{ marginTop: '-0.3rem', marginBottom: '0.4rem' }}>
-                    <div className={styles.statCard} style={{ flex: '1 1 auto' }}>
-                        <div className={styles.statNum} style={{ color: 'var(--navy)' }}>{adultsCount}</div>
-                        <div className={styles.statLabel}>🧑 Adults</div>
-                    </div>
-                    <div className={styles.statCard} style={{ flex: '1 1 auto' }}>
-                        <div className={styles.statNum} style={{ color: '#c4880a' }}>{kidsCount}</div>
-                        <div className={styles.statLabel}>👶 Kids</div>
-                    </div>
-                </div>
 
                 {/* Invite card or generate prompt */}
                 {!invite && (
                     <div className="card" style={{ padding: '0.8rem 1.2rem', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                         <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)' }}>✉️ Invitation</h3>
-                        <button className={styles.actionBtn} onClick={generateInvite} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
+                        <button className={styles.actionBtn} onClick={() => generateInvite()} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
                         <button className={styles.secondaryBtn} onClick={() => setShowPreview(true)} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>👁️ Preview</button>
                         {hasUnpublishedChanges
                             ? <button onClick={publishInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', background: 'rgba(74,173,168,0.12)', border: '1.5px solid rgba(74,173,168,0.4)', borderRadius: 6, fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>📤 Publish</button>
@@ -479,7 +498,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                 ✉️ Invitation
                             </h3>
                             <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
-                                <button className={styles.actionBtn} onClick={generateInvite} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
+                                <button className={styles.actionBtn} onClick={() => generateInvite()} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
                                 <button className={styles.secondaryBtn} onClick={() => setShowPreview(true)} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>👁️ Preview</button>
                                 {hasUnpublishedChanges
                                     ? <button onClick={publishInvite} style={{ fontSize: '0.65rem', padding: '0.2rem 0.5rem', background: 'rgba(74,173,168,0.12)', border: '1.5px solid rgba(74,173,168,0.4)', borderRadius: 6, fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>📤 Publish</button>
@@ -512,12 +531,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                     <div className={styles.inviteSubject}>{invite.subject}</div>
                                     <p className={styles.inviteMessage}>{invite.message}</p>
                                 </>
-                            )}
-                            {invite.smsVersion && (
-                                <div className={styles.smsBox}>
-                                    <div style={{ fontSize: '0.68rem', fontWeight: 800, color: 'var(--teal)', marginBottom: '0.2rem' }}>SMS VERSION</div>
-                                    <p style={{ fontSize: '0.78rem', color: 'var(--navy)', fontWeight: 600, margin: 0 }}>{invite.smsVersion}</p>
-                                </div>
                             )}
                             {/* Upload image previews & remove buttons */}
                             {(invite.customImage || invite.coverPhoto) && (
@@ -835,6 +848,16 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                 <div>
                                     <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.5rem', color: '#3D8C6E' }}>{goingHeadcount}</div>
                                     <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' }}>Confirmed</div>
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', justifyContent: 'center', gap: '1.2rem', marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid var(--border)' }}>
+                                <div>
+                                    <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.5rem', color: 'var(--navy)' }}>{adultsCount}</div>
+                                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' }}>🧑 Adults</div>
+                                </div>
+                                <div>
+                                    <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.5rem', color: '#c4880a' }}>{kidsCount}</div>
+                                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' }}>👶 Kids</div>
                                 </div>
                             </div>
                         </div>

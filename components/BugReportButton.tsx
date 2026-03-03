@@ -1,5 +1,6 @@
 'use client'
 import { useState } from 'react'
+import { usePathname } from 'next/navigation'
 import { useAuth } from '@/components/AuthContext'
 import styles from './BugReportButton.module.css'
 
@@ -14,6 +15,10 @@ const CATEGORIES = [
 ]
 
 export default function BugReportButton() {
+    const pathname = usePathname()
+    // Hide on standalone invite pages
+    if (pathname?.startsWith('/join')) return null
+
     const [open, setOpen] = useState(false)
     const [form, setForm] = useState({ category: '', description: '' })
     const [submitting, setSubmitting] = useState(false)

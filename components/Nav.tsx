@@ -11,6 +11,9 @@ export default function Nav() {
   const pathname = usePathname()
   const { user, loading, logout } = useAuth()
 
+  // Hide nav on standalone invite pages
+  if (pathname?.startsWith('/join')) return null
+
   useEffect(() => {
     setMobileOpen(false)
     setShowDropdown(false)
@@ -49,7 +52,7 @@ export default function Nav() {
 
   return (
     <nav>
-      <Link href="/" className="nav-logo">🎊 Party<span>Pal</span></Link>
+      <Link href="/" className="nav-logo"><img src="/logo.png" alt="PartyPal" className="nav-logo-img" /> Party<span>Pal</span></Link>
       <button className={`hamburger ${mobileOpen ? 'open' : ''}`} onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle menu">
         <span /><span /><span />
       </button>

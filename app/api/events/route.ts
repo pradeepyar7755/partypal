@@ -33,6 +33,16 @@ export async function GET(req: NextRequest) {
     }
 }
 
+// Generate a random 6-char alphanumeric join code
+function generateJoinCode(): string {
+    const chars = 'abcdefghjkmnpqrstuvwxyz23456789' // no ambiguous chars (0/O, 1/l, i)
+    let code = ''
+    for (let i = 0; i < 6; i++) {
+        code += chars[Math.floor(Math.random() * chars.length)]
+    }
+    return code
+}
+
 // POST: Save/update an event
 export async function POST(req: NextRequest) {
     try {
@@ -46,9 +56,15 @@ export async function POST(req: NextRequest) {
         const db = getDb()
         const eventRef = db.collection('events').doc(eventId)
 
+        // Check if event already has a joinCode
+        const existingDoc = await eventRef.get()
+        const existingData = existingDoc.exists ? existingDoc.data() : null
+        const joinCode = existingData?.joinCode || generateJoinCode()
+
         // Build update data, only include fields that are present
         const updateData: Record<string, unknown> = {
             eventId,
+            joinCode,
             updatedAt: new Date().toISOString(),
         }
         // Scope event to user if uid provided
@@ -63,6 +79,8 @@ export async function POST(req: NextRequest) {
         if (body.plan !== undefined) updateData.plan = body.plan
         if (body.invite !== undefined) updateData.invite = body.invite
         if (body.rsvpBy !== undefined) updateData.rsvpBy = body.rsvpBy
+        if (body.hostName !== undefined) updateData.hostName = body.hostName
+        if (body.timezone !== undefined) updateData.timezone = body.timezone
         if (body.inviteVersion) {
             // Store versioned invite: inviteVersions.{versionId} = { subject, message, smsVersion, customImage, coverPhoto, createdAt }
             updateData[`inviteVersions.${body.inviteVersion.id}`] = {
@@ -80,7 +98,7 @@ export async function POST(req: NextRequest) {
 
         await eventRef.set(updateData, { merge: true })
 
-        return NextResponse.json({ success: true, eventId })
+        return NextResponse.json({ success: true, eventId, joinCode })
     } catch (error: unknown) {
         const msg = error instanceof Error ? error.message : String(error)
         console.error('Event save error:', msg)
