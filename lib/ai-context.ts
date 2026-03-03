@@ -125,17 +125,7 @@ export function buildContextPrompt(ctx: Partial<CrossPortalContext>, surface: st
         sections.push(`AESTHETIC: ${ctx.moodboard.vibe} | Colors: ${ctx.moodboard.palette.join(', ')} | Music: ${ctx.moodboard.musicGenre}`)
     }
 
-    // User preferences (learned behavior)
-    if (ctx.preferences && ctx.preferences.interactionCount > 0) {
-        const prefs: string[] = []
-        if (ctx.preferences.tonePreference !== 'unknown') prefs.push(`prefers ${ctx.preferences.tonePreference} tone`)
-        if (ctx.preferences.budgetTendency !== 'unknown') prefs.push(`${ctx.preferences.budgetTendency} spender`)
-        if (ctx.preferences.planningStyle !== 'unknown') prefs.push(`${ctx.preferences.planningStyle} planner`)
-        if (ctx.preferences.refinementPatterns.length > 0) prefs.push(`patterns: ${ctx.preferences.refinementPatterns.slice(0, 3).join('; ')}`)
-        if (prefs.length > 0) {
-            sections.push(`USER PROFILE: ${prefs.join(' | ')} | ${ctx.preferences.interactionCount} total interactions`)
-        }
-    }
+    // (User profile / behavioral preference sections removed to avoid creepy personalization)
 
     // Cross-feature signals
     if (ctx.signals && ctx.signals.length > 0) {

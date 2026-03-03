@@ -30,21 +30,20 @@ export async function POST(req: NextRequest) {
 Event: ${eventDetails?.eventType || 'Birthday Party'}
 Theme: ${eventDetails?.theme || 'Celebration'}
 Invitation Style: ${eventDetails?.inviteTheme || 'Modern & Fun'}
-Host: ${eventDetails?.hostName || 'Your Host'}
 
-IMPORTANT: Do NOT include the event date, time, or venue/location in the message body — those details are already displayed separately on the RSVP card. Focus purely on the excitement, vibe, and what to expect.
+IMPORTANT: Do NOT include the event date, time, venue/location, or the host's name in the message body — those details are already displayed separately on the RSVP card. Focus purely on the excitement, vibe, and what to expect.
 
 CROSS-PORTAL INTELLIGENCE:
-- If user preferences indicate a tone preference (formal/casual/playful), match it
 - If a moodboard vibe is provided, let the language mirror that aesthetic
 - If guest context shows children attending, make the tone family-friendly
 - Reference the theme naturally in the invitation text
+- STAY OBJECTIVE: Avoid using the host's name or personal profile details in the message body.
 
 Return ONLY valid JSON:
 {
   "subject": "Email subject line",
-  "message": "Full invitation message (2-3 paragraphs, warm and exciting, matching the invitation style. Do NOT mention date, time, or location.)",
-  "smsVersion": "Short 160-char SMS version (no date/location either)"
+  "message": "Full invitation message (2-3 paragraphs, warm and exciting, matching the invitation style. Do NOT mention date, time, host name, or location.)",
+  "smsVersion": "Short 160-char SMS version (no host/date/location either)"
 }`
     } else if (action === 'refine_invite') {
       prompt = `${contextBlock}You are refining a party invitation based on user feedback.
