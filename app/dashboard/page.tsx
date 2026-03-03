@@ -249,6 +249,7 @@ function DashboardContent() {
     const [guestSearch, setGuestSearch] = useState('')
     const [guestFilter, setGuestFilter] = useState<'all' | 'invited' | 'confirmed' | 'declined'>('all')
     const [expandedMatchedVendor, setExpandedMatchedVendor] = useState<number | null>(null)
+    const [selectedMatchedVendor, setSelectedMatchedVendor] = useState<{ emoji: string; name: string; cat: string; match: number; stars: number; price: string } | null>(null)
     const [showAddGuest, setShowAddGuest] = useState(false)
     const [showBulkImport, setShowBulkImport] = useState(false)
     const [guestAlertDismissed, setGuestAlertDismissed] = useState(false)
@@ -1717,10 +1718,6 @@ function DashboardContent() {
                                         <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.82rem' }}>No vendors added yet. Add from your shortlist or manually above!</p>
                                     </div>
                                 )}
-                                {/* Browse More Vendors — above shortlisted and matched */}
-                                <div style={{ textAlign: 'center', marginBottom: '1rem' }}>
-                                    <button onClick={() => router.push('/vendors')} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 10, padding: '0.6rem 1.5rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', color: 'var(--navy)' }}>Browse More Vendors →</button>
-                                </div>
                                 {/* Saved / Shortlisted Vendors */}
                                 {Object.keys(savedVendors).length > 0 && (
                                     <div>
@@ -1785,7 +1782,7 @@ function DashboardContent() {
                                                                         <div style={{ color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 800 }}>{mv.price}</div>
                                                                     </div>
                                                                     <div style={{ display: 'flex', gap: '0.4rem' }}>
-                                                                        <button onClick={(e) => { e.stopPropagation(); router.push(`/vendors?cat=${mv.cat.split(' ')[0].toLowerCase()}`) }} style={{ flex: 1, padding: '0.4rem 0', background: 'var(--border)', color: 'var(--navy)', border: 'none', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>View Details</button>
+                                                                        <button onClick={(e) => { e.stopPropagation(); setSelectedMatchedVendor(mv) }} style={{ flex: 1, padding: '0.4rem 0', background: 'var(--border)', color: 'var(--navy)', border: 'none', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>View Details</button>
                                                                         <button onClick={(e) => {
                                                                             e.stopPropagation()
                                                                             const cat = enabledCats.find(c => mv.cat.toLowerCase().includes(c.toLowerCase())) || 'Misc'
@@ -1810,6 +1807,10 @@ function DashboardContent() {
                                         </div>
                                     )
                                 })()}
+                            </div>
+                            {/* Browse More Vendors */}
+                            <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem', marginTop: '1rem' }}>
+                                <button onClick={() => router.push('/vendors')} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid rgba(0,0,0,0.1)', borderRadius: 10, padding: '0.6rem 1.5rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', color: 'var(--navy)' }}>Browse More Vendors →</button>
                             </div>
                             {/* Right Pane — Cost Summary */}
                             <div>
