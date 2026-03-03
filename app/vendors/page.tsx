@@ -230,10 +230,10 @@ function VendorsContent() {
       // Also persist full vendor details for dashboard use
       const vendor = vendors.find(v => v.id === vendorId)
       if (vendor) {
-        const savedData = userGetJSON<Record<string, { name: string; category: string; price: string; emoji: string }>>('partypal_shortlist_data', {})
+        const savedData = userGetJSON<Record<string, { name: string; category: string; price: string; emoji: string; websiteUri?: string; googleMapsUri?: string }>>('partypal_shortlist_data', {})
         const savedFull = userGetJSON<Record<string, Vendor>>('partypal_shortlist_full', {})
         if (updated.includes(vendorId)) {
-          savedData[vendorId] = { name: vendor.name, category: vendor.category, price: vendor.price, emoji: vendor.emoji }
+          savedData[vendorId] = { name: vendor.name, category: vendor.category, price: vendor.price, emoji: vendor.emoji, websiteUri: vendor.websiteUri, googleMapsUri: vendor.googleMapsUri }
           savedFull[vendorId] = vendor
         } else {
           delete savedData[vendorId]
@@ -249,7 +249,7 @@ function VendorsContent() {
       }
       // Sync shortlist to cloud
       if (user && !user.isAnonymous) {
-        const savedData = userGetJSON<Record<string, { name: string; category: string; price: string; emoji: string }>>('partypal_shortlist_data', {})
+        const savedData = userGetJSON<Record<string, { name: string; category: string; price: string; emoji: string; websiteUri?: string; googleMapsUri?: string }>>('partypal_shortlist_data', {})
         const savedFull = userGetJSON<Record<string, Vendor>>('partypal_shortlist_full', {})
         fetch('/api/user-data', {
           method: 'POST',
