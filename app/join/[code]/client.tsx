@@ -22,6 +22,7 @@ interface EventData {
     invite?: { subject?: string; message?: string; customImage?: string; coverPhoto?: string }
     customImage?: string
     coverPhoto?: string
+    giftRegistry?: { name: string; url: string }[]
 }
 
 export default function JoinRSVPClient({ eventData }: { eventData: EventData }) {
@@ -176,6 +177,61 @@ export default function JoinRSVPClient({ eventData }: { eventData: EventData }) 
                         {inviteMessage.split('\n').map((line: string, i: number) => (
                             <p key={i} style={{ fontSize: '0.85rem', color: '#4a5568', lineHeight: 1.65, fontWeight: 500, margin: line.trim() ? '0 0 0.5rem 0' : '0 0 0.3rem 0' }}>{line || '\u00A0'}</p>
                         ))}
+                    </div>
+                )}
+
+                {/* Gift Registry */}
+                {eventData.giftRegistry && eventData.giftRegistry.length > 0 && (
+                    <div style={{
+                        padding: '1rem 1.5rem',
+                        background: 'linear-gradient(135deg, rgba(123,94,167,0.06) 0%, rgba(123,94,167,0.02) 100%)',
+                        borderBottom: '1px solid rgba(0,0,0,0.05)',
+                    }}>
+                        <div style={{
+                            fontSize: '0.8rem',
+                            fontWeight: 800,
+                            color: '#7B5EA7',
+                            marginBottom: '0.6rem',
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.4rem',
+                        }}>
+                            🎁 Gift Registry
+                        </div>
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.4rem' }}>
+                            {eventData.giftRegistry.map((reg, idx) => (
+                                <a
+                                    key={idx}
+                                    href={reg.url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    style={{
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '0.6rem',
+                                        padding: '0.65rem 0.8rem',
+                                        background: '#fff',
+                                        borderRadius: 12,
+                                        border: '1.5px solid rgba(123,94,167,0.15)',
+                                        textDecoration: 'none',
+                                        transition: 'all 0.15s',
+                                        cursor: 'pointer',
+                                    }}
+                                >
+                                    <div style={{
+                                        width: 32, height: 32, borderRadius: '50%',
+                                        background: 'linear-gradient(135deg, #7B5EA7, #9b7dc5)',
+                                        display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                        color: '#fff', fontSize: '0.85rem', flexShrink: 0,
+                                    }}>🎁</div>
+                                    <div style={{ flex: 1 }}>
+                                        <div style={{ fontSize: '0.82rem', fontWeight: 800, color: '#1a2535' }}>{reg.name}</div>
+                                        <div style={{ fontSize: '0.68rem', fontWeight: 600, color: '#7B5EA7' }}>View Registry →</div>
+                                    </div>
+                                    <div style={{ fontSize: '1rem', color: '#9aabbb' }}>↗</div>
+                                </a>
+                            ))}
+                        </div>
                     </div>
                 )}
 

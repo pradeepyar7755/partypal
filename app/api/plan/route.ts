@@ -128,6 +128,58 @@ Make ALL content specific to the actual event details provided. Adjust budget pe
     const text = result.response.text()
     const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const plan = JSON.parse(cleaned)
+
+    // ── Post-generation checklist reconciliation ──
+    // Validates that each checklist item's category matches a timeline milestone category.
+    // Mismatched items are reassigned using keyword heuristics.
+    if (plan.checklist && plan.timeline) {
+      const timelineCategories = new Set<string>(plan.timeline.map((t: { category: string }) => t.category?.toLowerCase()?.trim()).filter(Boolean))
+      const KEYWORD_TO_CATEGORY: Record<string, string[]> = {
+        budget: ['budget', 'cost', 'expense', 'money', 'price', 'spend', 'financial'],
+        venue: ['venue', 'book', 'space', 'location', 'room', 'hall', 'reserve'],
+        vendor: ['vendor', 'photographer', 'dj', 'band', 'hire', 'lock in', 'big three'],
+        food: ['food', 'cater', 'menu', 'cake', 'baker', 'drink', 'cocktail', 'bar', 'snack'],
+        decor: ['decor', 'decoration', 'flower', 'balloon', 'banner', 'table', 'centerpiece'],
+        guests: ['invite', 'invitation', 'rsvp', 'guest', 'send', 'mail'],
+        music: ['music', 'playlist', 'dj', 'sound', 'speaker'],
+        planning: ['plan', 'checklist', 'confirm', 'final', 'prep', 'walkthrough'],
+        photos: ['photo', 'video', 'camera', 'picture', 'photographer'],
+        logistics: ['transport', 'parking', 'setup', 'cleanup', 'delivery'],
+      }
+
+      for (const item of plan.checklist) {
+        const cat = item.category?.toLowerCase()?.trim()
+        // If the category already matches a timeline category, keep it
+        if (cat && timelineCategories.has(cat)) continue
+
+        // Otherwise, use keyword matching to find the best timeline category
+        const itemText = `${item.item} ${item.category || ''}`.toLowerCase()
+        let bestMatch = ''
+        let bestScore = 0
+
+        for (const [keyword, terms] of Object.entries(KEYWORD_TO_CATEGORY)) {
+          const score = terms.filter(t => itemText.includes(t)).length
+          if (score > bestScore) { bestScore = score; bestMatch = keyword }
+        }
+
+        // Find the closest matching timeline category for this keyword group
+        if (bestMatch && bestScore > 0) {
+          // Try exact match first, then partial match
+          const matchedTimeline = Array.from(timelineCategories).find(tc => tc === bestMatch)
+            || Array.from(timelineCategories).find(tc => tc.includes(bestMatch) || bestMatch.includes(tc))
+          if (matchedTimeline) {
+            item.category = matchedTimeline
+          }
+        }
+
+        // Fallback: if still no match, assign to the first timeline category
+        if (!timelineCategories.has(item.category?.toLowerCase()?.trim())) {
+          const firstCat = Array.from(timelineCategories)[0]
+          if (firstCat) item.category = firstCat
+        }
+      }
+    }
+
     // Track API usage (fire-and-forget)
     logApiCall('plan', 'gemini', identifier)
     // For refinements, the response only contains { timeline: [...] }

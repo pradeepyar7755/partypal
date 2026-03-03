@@ -71,11 +71,11 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
         return ''
     })
     const [editableHostName, setEditableHostName] = useState(() => {
-        if (propPlanData?.hostName) return propPlanData.hostName
-        if (typeof window === 'undefined') return ''
+        // Priority: per-event stored hostName > prop hostName > empty
+        if (typeof window === 'undefined') return propPlanData?.hostName || ''
         const stored = userGet('partyplan')
-        if (stored) { try { return JSON.parse(stored).hostName || '' } catch { return '' } }
-        return ''
+        if (stored) { try { const savedName = JSON.parse(stored).hostName; if (savedName) return savedName } catch { /* */ } }
+        return propPlanData?.hostName || ''
     })
     const [editableHostContact, setEditableHostContact] = useState(propPlanData?.hostContact || '')
     const [editableEventTime, setEditableEventTime] = useState(() => {
@@ -104,6 +104,13 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
     const [showPreview, setShowPreview] = useState(false)
     const [isPublished, setIsPublished] = useState(false)
     const [lastPublishedInvite, setLastPublishedInvite] = useState<string>('')
+    const registryKey = eventId ? `partypal_registry_${eventId}` : 'partypal_registry'
+    const [giftRegistry, setGiftRegistry] = useState<{ name: string; url: string }[]>(() => {
+        if (typeof window === 'undefined') return []
+        return userGetJSON(registryKey, [])
+    })
+    const [showRegistryForm, setShowRegistryForm] = useState(false)
+    const [registryForm, setRegistryForm] = useState({ name: '', url: '' })
     const themeChangeRef = React.useRef(false)
     const customInviteRef = React.useRef<HTMLInputElement>(null)
     const coverPhotoRef = React.useRef<HTMLInputElement>(null)
@@ -191,6 +198,14 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
         const stored = userGet('partyplan')
         if (stored) { try { const d = JSON.parse(stored); if (d.timezone !== editableTimezone) { d.timezone = editableTimezone; userSetJSON('partyplan', d) } } catch { /* */ } }
     }, [editableTimezone])
+
+    // Sync gift registry to localStorage / Firestore
+    useEffect(() => {
+        userSetJSON(registryKey, giftRegistry)
+        if (planData.eventId && giftRegistry.length >= 0) {
+            fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, giftRegistry }) }).catch(() => { })
+        }
+    }, [giftRegistry, registryKey, planData.eventId])
 
     // Detect if invite has changed since last publish
     const inviteFingerprint = invite ? JSON.stringify({ s: invite.subject, m: invite.message, sm: invite.smsVersion, ci: invite.customImage, cp: invite.coverPhoto }) : ''
@@ -429,7 +444,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
         if (!invite || !planData.eventId) return
         const invitePayload = { ...invite, customImage: invite.customImage || null, coverPhoto: invite.coverPhoto || null }
         try {
-            const res = await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: invitePayload, rsvpBy: rsvpByDate || null, hostName: editableHostName || null, timezone: editableTimezone || null }) })
+            const res = await fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: planData.eventId, invite: invitePayload, rsvpBy: rsvpByDate || null, hostName: editableHostName || null, timezone: editableTimezone || null, giftRegistry: giftRegistry.length > 0 ? giftRegistry : null }) })
             const data = await res.json()
             if (data.joinCode) setJoinCode(data.joinCode)
             setIsPublished(true)
@@ -632,7 +647,34 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                     <input ref={coverPhotoRef} type="file" accept="image/*" onChange={handleCoverPhotoUpload} style={{ display: 'none' }} />
                     <button onClick={() => customInviteRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>🖼️ Invite</button>
                     <button onClick={() => coverPhotoRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>📸 Cover</button>
+                    <button onClick={() => setShowRegistryForm(!showRegistryForm)} style={{ background: giftRegistry.length > 0 ? 'rgba(123,94,167,0.08)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${giftRegistry.length > 0 ? 'rgba(123,94,167,0.3)' : 'var(--border)'}`, borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: giftRegistry.length > 0 ? '#7B5EA7' : 'var(--navy)', cursor: 'pointer' }}>🎁 Registry{giftRegistry.length > 0 ? ` (${giftRegistry.length})` : ''}</button>
                 </div>
+                {/* Gift Registry Section */}
+                {showRegistryForm && (
+                    <div style={{ padding: '0.6rem 1.2rem', background: '#fff', borderTop: '1px solid var(--border)', marginBottom: '0.5rem', borderRadius: '0 0 12px 12px' }}>
+                        <div style={{ fontSize: '0.75rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>🎁 Gift Registry Links <span style={{ fontSize: '0.62rem', fontWeight: 600, color: '#9aabbb' }}>— shown on your RSVP page</span></div>
+                        {giftRegistry.map((reg, idx) => (
+                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.3rem', padding: '0.3rem 0.5rem', background: 'rgba(123,94,167,0.05)', borderRadius: 8, border: '1px solid rgba(123,94,167,0.12)' }}>
+                                <span style={{ fontSize: '0.72rem', fontWeight: 800, color: '#7B5EA7', minWidth: 60 }}>{reg.name}</span>
+                                <a href={reg.url} target="_blank" rel="noopener noreferrer" style={{ fontSize: '0.68rem', color: 'var(--teal)', fontWeight: 600, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', flex: 1, textDecoration: 'underline' }}>{reg.url}</a>
+                                <button onClick={() => setGiftRegistry(prev => prev.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E8896A', fontWeight: 800, fontSize: '0.7rem', padding: '0.1rem 0.3rem' }}>✕</button>
+                            </div>
+                        ))}
+                        <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', marginTop: '0.3rem' }}>
+                            <select value={registryForm.name} onChange={e => setRegistryForm(prev => ({ ...prev, name: e.target.value }))} className={styles.addInput} style={{ margin: 0, padding: '0.2rem 0.3rem', fontSize: '0.68rem', fontWeight: 700, width: 100 }}>
+                                <option value="">Platform...</option>
+                                <option>Amazon</option>
+                                <option>Target</option>
+                                <option>Zola</option>
+                                <option>Crate & Barrel</option>
+                                <option>Etsy</option>
+                                <option>Custom</option>
+                            </select>
+                            <input value={registryForm.url} onChange={e => setRegistryForm(prev => ({ ...prev, url: e.target.value }))} placeholder="https://registry-link.com/..." className={styles.addInput} style={{ margin: 0, padding: '0.2rem 0.35rem', fontSize: '0.68rem', flex: 1 }} />
+                            <button disabled={!registryForm.name || !registryForm.url} onClick={() => { if (registryForm.name && registryForm.url) { setGiftRegistry(prev => [...prev, { name: registryForm.name, url: registryForm.url.startsWith('http') ? registryForm.url : `https://${registryForm.url}` }]); setRegistryForm({ name: '', url: '' }); showToast('Registry link added!', 'success') } }} style={{ background: 'var(--teal)', color: '#fff', border: 'none', borderRadius: 6, padding: '0.2rem 0.5rem', fontSize: '0.68rem', fontWeight: 800, cursor: !registryForm.name || !registryForm.url ? 'not-allowed' : 'pointer', opacity: !registryForm.name || !registryForm.url ? 0.5 : 1, whiteSpace: 'nowrap' }}>+ Add</button>
+                        </div>
+                    </div>
+                )}
 
                 <div className={styles.mainLayout}>
                     <div>
@@ -932,6 +974,17 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                     </div>
                                     <div style={{ background: 'var(--teal)', color: '#fff', borderRadius: 10, padding: '0.5rem', textAlign: 'center' as const, fontSize: '0.78rem', fontWeight: 800, opacity: 0.6 }}>Send My RSVP 🎊</div>
                                 </div>
+                                {giftRegistry.length > 0 && (
+                                    <div style={{ padding: '0.8rem 1.2rem', borderTop: '1px solid rgba(0,0,0,0.05)', background: 'rgba(123,94,167,0.04)' }}>
+                                        <div style={{ fontSize: '0.72rem', fontWeight: 800, color: '#7B5EA7', marginBottom: '0.4rem', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>🎁 Gift Registry</div>
+                                        {giftRegistry.map((reg, idx) => (
+                                            <div key={idx} style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', marginBottom: '0.25rem', padding: '0.3rem 0.5rem', background: '#fff', borderRadius: 8, border: '1px solid rgba(123,94,167,0.12)' }}>
+                                                <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#7B5EA7' }}>{reg.name}</span>
+                                                <span style={{ fontSize: '0.62rem', color: 'var(--teal)', fontWeight: 600 }}>→ View</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
                                 <div style={{ textAlign: 'center' as const, padding: '0.5rem', fontSize: '0.65rem', color: '#ccc', fontWeight: 600 }}>Powered by <img src="/logo.png" alt="" style={{ height: 12, borderRadius: 2, verticalAlign: 'middle' }} /> PartyPal</div>
                             </div>
                         </div>
