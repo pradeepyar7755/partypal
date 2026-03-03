@@ -248,6 +248,7 @@ function DashboardContent() {
     const [moveMenuIdx, setMoveMenuIdx] = useState<number | null>(null)
     const [guestSearch, setGuestSearch] = useState('')
     const [guestFilter, setGuestFilter] = useState<'all' | 'invited' | 'confirmed' | 'declined'>('all')
+    const [expandedMatchedVendor, setExpandedMatchedVendor] = useState<number | null>(null)
     const [showAddGuest, setShowAddGuest] = useState(false)
     const [showBulkImport, setShowBulkImport] = useState(false)
     const [guestAlertDismissed, setGuestAlertDismissed] = useState(false)
@@ -1096,7 +1097,8 @@ function DashboardContent() {
     }, [data.location, data.eventId, isDemo])
 
     const venueVendor = eventVendors.find(v => v.category === 'Venue')
-    const vendorsBookedPct = enabledCats.length > 0 ? Math.round((eventVendors.filter(v => enabledCats.includes(v.category)).length / enabledCats.length) * 100) : 0
+    const nonVenueCats = enabledCats.filter(c => c !== 'Venue')
+    const vendorsBookedPct = nonVenueCats.length > 0 ? Math.round((eventVendors.filter(v => nonVenueCats.includes(v.category) && v.category !== 'Venue').length / nonVenueCats.length) * 100) : 0
     const venuePct = venueVendor?.confirmed ? 100 : (venueVendor ? 50 : 0)
 
     const progressItems = [
@@ -1688,6 +1690,7 @@ function DashboardContent() {
                                     </div>
                                 </div>
                                 {/* Vendor List */}
+                                <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.6rem' }}>🏪 Your Selected Vendors</div>
                                 {eventVendors.length > 0 ? (
                                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(260px, 1fr))', gap: '1rem', marginBottom: '1rem' }}>
                                         {eventVendors.map((v, i) => (
@@ -1741,23 +1744,15 @@ function DashboardContent() {
                                 )}
                                 {/* Matched Vendors */}
                                 {!isDemo && (() => {
-                                    const MATCHED_VENDORS = [
-                                        { emoji: '🏠', name: 'Local Venue', cat: 'Venue', price: '$400-800', matchBase: 85 },
-                                        { emoji: '🍽️', name: 'Top Chef Catering', cat: 'Catering', price: '$300-600', matchBase: 82 },
-                                        { emoji: '📸', name: 'SnapPro Photography', cat: 'Photography', price: '$250-500', matchBase: 88 },
-                                        { emoji: '🎵', name: 'DJ SoundWave', cat: 'DJ / Music', price: '$200-400', matchBase: 80 },
-                                        { emoji: '🎂', name: 'Sweet Bliss Bakery', cat: 'Cake', price: '$80-200', matchBase: 90 },
-                                        { emoji: '🌸', name: 'Bloom Floral Co', cat: 'Decor', price: '$150-350', matchBase: 78 },
-                                        { emoji: '🎪', name: 'FunTimes Entertainment', cat: 'Entertainment', price: '$200-500', matchBase: 75 },
-                                    ]
                                     // Adjust match scores based on user's event
                                     const guestCount = parseInt(data.guests) || 50
                                     const hasBudget = !!data.budget
                                     const hasLocation = !!data.location && data.location !== 'TBD'
-                                    const matched = MATCHED_VENDORS
+                                    const eventTypeVendors = getVendorsForEvent(data.eventType)
+                                    const matched = eventTypeVendors
                                         .filter(mv => !eventVendors.some(v => v.category.toLowerCase().includes(mv.cat.toLowerCase().split(' ')[0])))
                                         .map(mv => {
-                                            let score = mv.matchBase
+                                            let score = mv.match
                                             if (hasBudget) score += 3
                                             if (hasLocation) score += 4
                                             if (guestCount > 30) score += 2
@@ -1771,16 +1766,46 @@ function DashboardContent() {
                                         <div style={{ marginTop: '1rem' }}>
                                             <div style={{ fontSize: '0.82rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.6rem' }}>🎯 Matched Vendors</div>
                                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: '0.6rem', marginBottom: '1rem' }}>
-                                                {matched.map((mv, mi) => (
-                                                    <div key={mi} onClick={() => router.push(`/vendors?cat=${mv.cat.split(' ')[0].toLowerCase()}`)} style={{ background: 'white', border: '1.5px solid var(--border)', borderRadius: 12, padding: '0.8rem 1rem', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                                        <span style={{ fontSize: '1.3rem' }}>{mv.emoji}</span>
-                                                        <div style={{ flex: 1, minWidth: 0 }}>
-                                                            <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--navy)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mv.name}</div>
-                                                            <div style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 600 }}>{mv.cat} • {mv.price}</div>
+                                                {matched.map((mv, mi) => {
+                                                    const isExpanded = expandedMatchedVendor === mi
+                                                    return (
+                                                        <div key={mi} onClick={() => setExpandedMatchedVendor(isExpanded ? null : mi)} style={{ background: 'white', border: isExpanded ? '1.5px solid var(--teal)' : '1.5px solid var(--border)', borderRadius: 12, padding: '0.8rem 1rem', cursor: 'pointer', transition: 'all 0.15s', display: 'flex', flexDirection: 'column', gap: '0.6rem', boxShadow: isExpanded ? '0 4px 12px rgba(74,173,168,0.1)' : 'none' }}>
+                                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                                                                <span style={{ fontSize: '1.3rem' }}>{mv.emoji}</span>
+                                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                                    <div style={{ fontWeight: 800, fontSize: '0.82rem', color: 'var(--navy)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{mv.name}</div>
+                                                                    <div style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 600 }}>{mv.cat}</div>
+                                                                </div>
+                                                                <span style={{ background: 'rgba(74,173,168,0.1)', color: 'var(--teal)', padding: '0.15rem 0.45rem', borderRadius: 12, fontSize: '0.62rem', fontWeight: 800, whiteSpace: 'nowrap' }}>{mv.match}%</span>
+                                                            </div>
+                                                            {isExpanded && (
+                                                                <div style={{ borderTop: '1px solid var(--border)', paddingTop: '0.6rem', marginTop: '0.2rem', animation: 'fadeIn 0.2s ease-out' }}>
+                                                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '0.6rem' }}>
+                                                                        <div style={{ color: '#F7C948', fontSize: '0.75rem', letterSpacing: 1 }}>{'★'.repeat(Math.floor(mv.stars))}</div>
+                                                                        <div style={{ color: 'var(--teal)', fontSize: '0.72rem', fontWeight: 800 }}>{mv.price}</div>
+                                                                    </div>
+                                                                    <div style={{ display: 'flex', gap: '0.4rem' }}>
+                                                                        <button onClick={(e) => { e.stopPropagation(); router.push(`/vendors?cat=${mv.cat.split(' ')[0].toLowerCase()}`) }} style={{ flex: 1, padding: '0.4rem 0', background: 'var(--border)', color: 'var(--navy)', border: 'none', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>View Details</button>
+                                                                        <button onClick={(e) => {
+                                                                            e.stopPropagation()
+                                                                            const cat = enabledCats.find(c => mv.cat.toLowerCase().includes(c.toLowerCase())) || 'Misc'
+                                                                            const priceMatch = mv.price.match(/\$(\d+,?\d*)/)
+                                                                            const numPrice = priceMatch ? parseInt(priceMatch[1].replace(',', '')) : undefined
+                                                                            const updated = [...eventVendors, { name: mv.name, category: cat, notes: `Matched vendor • ${mv.price}`, confirmed: false, costEstimate: numPrice }]
+                                                                            setEventVendors(updated)
+                                                                            if (data.eventId) {
+                                                                                userSetJSON(`partypal_vendors_${data.eventId}`, updated)
+                                                                                fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, vendors: updated }) }).catch(() => { })
+                                                                            }
+                                                                            showToast(`${mv.name} added!`, 'success')
+                                                                            setExpandedMatchedVendor(null)
+                                                                        }} style={{ flex: 2, padding: '0.4rem 0', background: 'var(--teal)', color: 'white', border: 'none', borderRadius: 6, fontSize: '0.65rem', fontWeight: 800, cursor: 'pointer' }}>+ Add to My Vendors</button>
+                                                                    </div>
+                                                                </div>
+                                                            )}
                                                         </div>
-                                                        <span style={{ background: 'rgba(74,173,168,0.1)', color: 'var(--teal)', padding: '0.15rem 0.45rem', borderRadius: 12, fontSize: '0.62rem', fontWeight: 800, whiteSpace: 'nowrap' }}>{mv.match}%</span>
-                                                    </div>
-                                                ))}
+                                                    )
+                                                })}
                                             </div>
                                         </div>
                                     )
