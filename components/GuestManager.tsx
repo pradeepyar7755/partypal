@@ -1077,7 +1077,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                         ))}
                                     </div>
                                 )}
-                                <div style={{ textAlign: 'center' as const, padding: '0.5rem', fontSize: '0.65rem', color: '#ccc', fontWeight: 600 }}>Powered by <img src="/logo.png" alt="" style={{ height: 12, width: 'auto', borderRadius: 2, verticalAlign: 'middle' }} /> PartyPal</div>
+                                <div style={{ textAlign: 'center' as const, padding: '0.5rem', fontSize: '0.65rem', color: '#ccc', fontWeight: 600 }}>Powered by <img src="/logo.png" alt="" style={{ height: 12, borderRadius: 2, verticalAlign: 'middle' }} /> PartyPal</div>
                             </div>
                         </div>
                     </div>

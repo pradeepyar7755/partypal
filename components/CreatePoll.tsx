@@ -169,7 +169,7 @@ export default function CreatePoll({ eventId, creatorName, eventContext, onCreat
                                     background: 'linear-gradient(135deg, rgba(247,201,72,0.15), rgba(74,173,168,0.1))',
                                     border: '1px solid rgba(247,201,72,0.3)',
                                     fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', marginBottom: '0.4rem',
-                                }}><img src="/logo.png" alt="" style={{ height: 14, width: 'auto', borderRadius: 3, verticalAlign: 'middle' }} /> PartyPal Poll</div>
+                                }}><img src="/logo.png" alt="" style={{ height: 14, borderRadius: 3, verticalAlign: 'middle' }} /> PartyPal Poll</div>
 
                                 {/* Event context banner */}
                                 {eventBanner && (
@@ -219,7 +219,7 @@ export default function CreatePoll({ eventId, creatorName, eventContext, onCreat
                             </div>
 
                             <div style={{ padding: '0.6rem 1.2rem', borderTop: '1px solid var(--border)', background: 'white', textAlign: 'center' }}>
-                                <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}><img src="/logo.png" alt="" style={{ height: 10, width: 'auto', borderRadius: 2, verticalAlign: 'middle' }} /> Powered by PartyPal</span>
+                                <span style={{ fontSize: '0.68rem', color: '#9aabbb', fontWeight: 700 }}><img src="/logo.png" alt="" style={{ height: 10, borderRadius: 2, verticalAlign: 'middle' }} /> Powered by PartyPal</span>
                             </div>
                         </div>
 
