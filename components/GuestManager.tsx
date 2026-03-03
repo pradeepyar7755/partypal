@@ -535,7 +535,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                             : (
                                 <>
                                     <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
-                                    {publishedInvite && <button className={styles.secondaryBtn} onClick={revertToPublished} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', borderColor: 'rgba(244,180,26,0.4)', color: '#c4880a' }}>Revert to Published</button>}
                                 </>
                             )
                         }
@@ -561,7 +560,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                     : (
                                         <>
                                             <button className={styles.secondaryBtn} onClick={copyRSVPLink} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{copied ? '✓ Copied!' : '🔗 Copy'}</button>
-                                            {publishedInvite && <button className={styles.secondaryBtn} onClick={revertToPublished} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem', borderColor: 'rgba(244,180,26,0.4)', color: '#c4880a' }}>Revert to Published</button>}
                                         </>
                                     )
                                 }
