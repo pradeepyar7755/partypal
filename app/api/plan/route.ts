@@ -64,7 +64,10 @@ IMPORTANT TIMELINE RULES:
 CROSS-PORTAL INTELLIGENCE RULES:
 - If guest dietary data is provided, reflect that in food/catering budget allocation and checklist items
 - If vendors are already shortlisted, reference them by name in relevant timeline tasks
-- Focus strictly on event logistics and avoid using personal profile details or host names in the plan.
+- If the user has a moodboard vibe, align tip language and decor suggestions to match
+- If budget is mostly spent, focus tips on cost-saving and DIY options
+- If user preferences indicate a planning style, match the detail level (minimal = fewer items, detailed = comprehensive)
+- IMPORTANT: Do NOT include any personal names (host name, user name) in the generated plan content.
 
 BUDGET ESTIMATION RULES (when budget is NOT provided):
 - You MUST estimate a realistic, CONSERVATIVE total budget based on: event type, guest count, location, and theme
