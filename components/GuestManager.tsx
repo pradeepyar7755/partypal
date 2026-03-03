@@ -4,7 +4,6 @@ import { userGet, userSetJSON, userGetJSON } from '@/lib/userStorage'
 import { showToast } from '@/components/Toast'
 import styles from './GuestManager.module.css'
 import { useAIContext } from '@/lib/useAIContext'
-import LocationSearch from '@/components/LocationSearch'
 
 interface AdditionalGuest {
     id: string; name: string; dietary: string; relationship: string; isChild?: boolean
@@ -22,7 +21,8 @@ const STATUS_COLORS: Record<string, string> = { going: '#3D8C6E', maybe: '#c4880
 const STATUS_BG: Record<string, string> = { going: 'rgba(61,140,110,0.1)', maybe: 'rgba(247,201,72,0.15)', declined: 'rgba(232,137,106,0.1)', pending: 'rgba(150,150,170,0.1)' }
 const getUserTZ = () => { try { return Intl.DateTimeFormat().resolvedOptions().timeZone.replace(/.*\//, '').replace(/_/g, ' ') } catch { return '' } }
 const getTZAbbr = () => { try { const d = new Date(); const parts = d.toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' '); return parts[parts.length - 1] } catch { return '' } }
-const formatTime12h = (t: string, showTZ = false) => { if (!t) return ''; const [h, m] = t.split(':').map(Number); const ampm = h >= 12 ? 'PM' : 'AM'; const h12 = h % 12 || 12; const tz = showTZ ? ` ${getTZAbbr()}` : ''; return `${h12}:${m.toString().padStart(2, '0')} ${ampm}${tz}` }
+const TZ_OPTIONS = ['EST', 'CST', 'MST', 'PST', 'AKST', 'HST', 'EDT', 'CDT', 'MDT', 'PDT', 'AKDT', 'UTC', 'GMT', 'IST', 'CET', 'JST', 'AEST']
+const formatTime12h = (t: string, tz?: string) => { if (!t) return ''; const [h, m] = t.split(':').map(Number); const ampm = h >= 12 ? 'PM' : 'AM'; const h12 = h % 12 || 12; const tzStr = tz ? ` ${tz}` : ''; return `${h12}:${m.toString().padStart(2, '0')} ${ampm}${tzStr}` }
 
 const DEFAULT_GUESTS: Guest[] = [
     { id: '1', name: 'Sarah Anderson', email: 'sarah@email.com', status: 'going', dietary: 'None', additionalGuests: [{ id: 'a1', name: 'Mike Anderson', dietary: 'None', relationship: 'Spouse' }], avatar: 'SA', color: '#E8896A' },
@@ -83,6 +83,12 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
         const stored = userGet('partyplan')
         if (stored) { try { return JSON.parse(stored).time || '12:00' } catch { return '12:00' } }
         return '12:00'
+    })
+    const [editableTimezone, setEditableTimezone] = useState(() => {
+        if (typeof window === 'undefined') return ''
+        const stored = userGet('partyplan')
+        if (stored) { try { return JSON.parse(stored).timezone || getTZAbbr() } catch { return getTZAbbr() } }
+        return getTZAbbr()
     })
     const [refineInput, setRefineInput] = useState('')
     const bookmarkKey = eventId ? `partypal_bookmarks_${eventId}` : 'partypal_bookmarks'
@@ -177,6 +183,13 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
             }
         }
     }, [editableHostName, editableHostContact, editableEventTime])
+
+    // Sync timezone to localStorage
+    useEffect(() => {
+        if (typeof window === 'undefined' || !editableTimezone) return
+        const stored = userGet('partyplan')
+        if (stored) { try { const d = JSON.parse(stored); if (d.timezone !== editableTimezone) { d.timezone = editableTimezone; userSetJSON('partyplan', d) } } catch { /* */ } }
+    }, [editableTimezone])
 
     // Detect if invite has changed since last publish
     const inviteFingerprint = invite ? JSON.stringify({ s: invite.subject, m: invite.message, sm: invite.smsVersion, ci: invite.customImage, cp: invite.coverPhoto }) : ''
@@ -572,8 +585,8 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                 <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.5rem 1.2rem', marginBottom: '1rem', background: '#fff', borderRadius: '0 0 12px 12px', borderTop: '1px solid var(--border)', flexWrap: 'wrap' }}>
                     {/* Event Date & Time — date from plan, time editable */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', marginRight: '0.2rem', borderRight: '1px solid var(--border)', paddingRight: '0.6rem' }}>
-                        {planData?.date && <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--navy)' }}>📅 {new Date(planData.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
-                        <span style={{ fontSize: '0.62rem', color: '#9aabbb', fontWeight: 800 }}>⏰</span>
+                        {planData?.date && <span style={{ fontSize: '0.65rem', fontWeight: 700, color: 'var(--navy)' }}>🗓️ {new Date(planData.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
+                        <span style={{ fontSize: '0.58rem', fontWeight: 700, color: '#9aabbb' }}>⏰</span>
                         <input
                             type="time"
                             value={editableEventTime}
@@ -581,7 +594,15 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                             className={styles.addInput}
                             style={{ margin: 0, padding: '0.1rem 0.25rem', fontSize: '0.65rem', fontWeight: 700, width: 90, color: 'var(--teal)' }}
                         />
-                        <span style={{ fontSize: '0.58rem', fontWeight: 700, color: '#9aabbb' }}>{getTZAbbr()}</span>
+                        <select
+                            value={editableTimezone}
+                            onChange={e => setEditableTimezone(e.target.value)}
+                            className={styles.addInput}
+                            style={{ margin: 0, padding: '0.1rem 0.15rem', fontSize: '0.58rem', fontWeight: 700, width: 55, color: '#9aabbb', appearance: 'auto' }}
+                        >
+                            <option value="">TZ</option>
+                            {TZ_OPTIONS.map(tz => <option key={tz} value={tz}>{tz}</option>)}
+                        </select>
                     </div>
                     {/* Host Name — editable, text label like RSVP by */}
                     <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb' }}>Host Name</span>
@@ -598,21 +619,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                     <input ref={coverPhotoRef} type="file" accept="image/*" onChange={handleCoverPhotoUpload} style={{ display: 'none' }} />
                     <button onClick={() => customInviteRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>🖼️ Invite</button>
                     <button onClick={() => coverPhotoRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>📸 Cover</button>
-                    {/* Location selector */}
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flex: '1 1 200px', minWidth: 160 }}>
-                        <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', whiteSpace: 'nowrap' }}>📍 Venue</span>
-                        <div style={{ flex: 1, position: 'relative' }}>
-                            <LocationSearch
-                                value={planData?.location || ''}
-                                onChange={(loc) => {
-                                    setPlanData(prev => ({ ...prev, location: loc }))
-                                    const stored = userGet('partyplan')
-                                    if (stored) { try { const d = JSON.parse(stored); d.location = loc; userSetJSON('partyplan', d); if (d.eventId) fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: d.eventId, location: loc }) }).catch(() => { }) } catch { /* */ } }
-                                }}
-                                placeholder="Search venue or TBD"
-                            />
-                        </div>
-                    </div>
                 </div>
 
                 <div className={styles.mainLayout}>
@@ -867,7 +873,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo }
                                     <div style={{ position: 'relative', zIndex: 1 }}>
                                         <div style={{ fontSize: '2rem', marginBottom: '0.3rem' }}>{planData.eventType?.split(' ')[0] || '🎉'}</div>
                                         <h2 style={{ fontFamily: "'Fredoka One',cursive", color: '#fff', margin: '0 0 0.5rem', fontSize: '1.1rem' }}>{planData.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</h2>
-                                        {planData.date && <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.8rem', margin: '0 0 0.2rem', fontWeight: 600 }}>📅 {new Date(planData.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}{editableEventTime ? ` (${formatTime12h(editableEventTime, true)})` : ''}</p>}
+                                        {planData.date && <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.8rem', margin: '0 0 0.2rem', fontWeight: 600 }}>🗓️ {new Date(planData.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}{editableEventTime ? ` (${formatTime12h(editableEventTime, editableTimezone || undefined)})` : ''}</p>}
                                         <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.8rem', margin: 0, fontWeight: 600 }}>📍 {planData.location || 'Location TBD'}</p>
                                         {rsvpByDate && <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '0.75rem', margin: '0.3rem 0 0', fontWeight: 600 }}>⏰ RSVP by {new Date(rsvpByDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</p>}
                                         {editableHostName && <p style={{ color: 'rgba(255,255,255,0.65)', fontSize: '0.72rem', margin: '0.2rem 0 0', fontWeight: 600 }}>Host: {editableHostName}</p>}

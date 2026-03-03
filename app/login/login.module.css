@@ -243,3 +243,53 @@
     font-weight: 700;
     text-align: center;
 }
+
+.forgotLink {
+    display: block;
+    width: 100%;
+    text-align: center;
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.4);
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    padding: 0.8rem 0 0;
+    transition: color 0.2s;
+}
+
+.forgotLink:hover {
+    color: #F7C948;
+}
+
+.resetSection {
+    margin-top: 1.2rem;
+    padding-top: 1.2rem;
+    border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.resetTitle {
+    text-align: center;
+    font-family: 'Fredoka One', cursive;
+    font-size: 1rem;
+    color: #F7C948;
+    margin-bottom: 0.8rem;
+}
+
+.resetForm {
+    display: flex;
+    flex-direction: column;
+    gap: 0.7rem;
+}
+
+.resetSuccess {
+    background: rgba(74, 173, 168, 0.1);
+    border: 1px solid rgba(74, 173, 168, 0.3);
+    border-radius: 10px;
+    padding: 0.6rem 0.8rem;
+    color: #4AADA8;
+    font-size: 0.78rem;
+    font-weight: 700;
+    text-align: center;
+    margin-top: 0.7rem;
+}

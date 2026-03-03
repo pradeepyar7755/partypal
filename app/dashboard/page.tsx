@@ -1446,7 +1446,7 @@ function DashboardContent() {
                                             <div style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', fontSize: '0.95rem', marginRight: '0.5rem' }}>
                                                 {data.eventType}
                                             </div>
-                                            {data.date && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>📅 {new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>}
+                                            {data.date && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>🗓️ {new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>}
                                             <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>👥 {data.guests} guests</div>
                                             <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>📍 {shortLocation(data.location)}</div>
                                             {data.theme && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>🎨 {data.theme}</div>}
@@ -1491,14 +1491,6 @@ function DashboardContent() {
                                                     <input type="number" value={editData.guests} onChange={e => setEditData(p => ({ ...p, guests: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
                                                 </div>
                                                 <div>
-                                                    <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Location</label>
-                                                    <LocationSearch
-                                                        value={editData.location}
-                                                        onChange={(loc) => setEditData(p => ({ ...p, location: loc }))}
-                                                        placeholder="Search location..."
-                                                    />
-                                                </div>
-                                                <div>
                                                     <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Theme</label>
                                                     <input value={editData.theme} onChange={e => setEditData(p => ({ ...p, theme: e.target.value }))} style={{ width: '100%', padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
                                                 </div>
@@ -1508,6 +1500,30 @@ function DashboardContent() {
                                                         <option value="">Select...</option>
                                                         <option>Under $500</option><option>$500 – $1,500</option><option>$1,500 – $5,000</option><option>$5,000 – $10,000</option><option>$10,000+</option>
                                                     </select>
+                                                </div>
+                                            </div>
+                                            {/* Location — full width at the end for easy search */}
+                                            <div style={{ marginBottom: '0.6rem' }}>
+                                                <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 4, display: 'block' }}>📍 Location</label>
+                                                <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'flex-start' }}>
+                                                    <div style={{ flex: 1 }}>
+                                                        <LocationSearch
+                                                            value={editData.location}
+                                                            onChange={(loc) => setEditData(p => ({ ...p, location: loc }))}
+                                                            placeholder="Search a city, venue, or address..."
+                                                        />
+                                                    </div>
+                                                    <button
+                                                        type="button"
+                                                        onClick={() => setEditData(p => ({ ...p, location: 'TBD' }))}
+                                                        style={{
+                                                            padding: '0.45rem 0.8rem', borderRadius: 8,
+                                                            border: `1.5px solid ${editData.location === 'TBD' ? 'rgba(74,173,168,0.4)' : 'rgba(0,0,0,0.1)'}`,
+                                                            background: editData.location === 'TBD' ? 'rgba(74,173,168,0.1)' : 'white',
+                                                            color: editData.location === 'TBD' ? 'var(--teal)' : '#9aabbb',
+                                                            fontSize: '0.75rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap',
+                                                        }}
+                                                    >📍 TBD</button>
                                                 </div>
                                             </div>
                                             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>

@@ -8,7 +8,7 @@ function LoginContent() {
     const router = useRouter()
     const searchParams = useSearchParams()
     const redirectUrl = searchParams.get('redirect') || '/'
-    const { user, loading: authLoading, signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail } = useAuth()
+    const { user, loading: authLoading, signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail, resetPassword } = useAuth()
 
     // Redirect to home if already logged in (handles Google redirect return)
     useEffect(() => {
@@ -22,6 +22,28 @@ function LoginContent() {
     const [password, setPassword] = useState('')
     const [error, setError] = useState('')
     const [loading, setLoading] = useState(false)
+    const [showForgot, setShowForgot] = useState(false)
+    const [forgotEmail, setForgotEmail] = useState('')
+    const [forgotMsg, setForgotMsg] = useState('')
+    const [forgotLoading, setForgotLoading] = useState(false)
+
+    const handleForgotPassword = async (e: React.FormEvent) => {
+        e.preventDefault()
+        if (!forgotEmail) { setForgotMsg('Please enter your email'); return }
+        setForgotLoading(true)
+        setForgotMsg('')
+        try {
+            await resetPassword(forgotEmail)
+            setForgotMsg('✅ Reset link sent! Check your inbox.')
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : ''
+            if (msg.includes('user-not-found')) setForgotMsg('No account found with this email.')
+            else if (msg.includes('invalid-email')) setForgotMsg('Please enter a valid email address.')
+            else setForgotMsg('Something went wrong. Please try again.')
+        } finally {
+            setForgotLoading(false)
+        }
+    }
 
     const handleSocial = async (fn: () => Promise<void>, provider: string) => {
         setError('')
@@ -110,6 +132,39 @@ function LoginContent() {
                         {loading ? '⏳ Please wait...' : mode === 'signup' ? '🚀 Create Account' : '🔓 Log In'}
                     </button>
                 </form>
+
+                {mode === 'login' && !showForgot && (
+                    <button className={styles.forgotLink} onClick={() => { setShowForgot(true); setForgotEmail(email); setForgotMsg('') }}>
+                        Forgot your password?
+                    </button>
+                )}
+
+                {showForgot && (
+                    <div className={styles.resetSection}>
+                        <div className={styles.resetTitle}>Reset Password</div>
+                        <form className={styles.resetForm} onSubmit={handleForgotPassword}>
+                            <input
+                                className={styles.emailInput}
+                                type="email"
+                                placeholder="Enter your email"
+                                value={forgotEmail}
+                                onChange={e => setForgotEmail(e.target.value)}
+                                autoComplete="email"
+                            />
+                            <button className={styles.submitBtn} type="submit" disabled={forgotLoading} style={{ background: 'linear-gradient(135deg, #F7C948, #E8896A)' }}>
+                                {forgotLoading ? '⏳ Sending...' : '📧 Send Reset Link'}
+                            </button>
+                        </form>
+                        {forgotMsg && (
+                            <div className={forgotMsg.includes('✅') ? styles.resetSuccess : styles.error}>
+                                {forgotMsg}
+                            </div>
+                        )}
+                        <button className={styles.forgotLink} onClick={() => { setShowForgot(false); setForgotMsg('') }}>
+                            ← Back to login
+                        </button>
+                    </div>
+                )}
             </div>
         </main>
     )

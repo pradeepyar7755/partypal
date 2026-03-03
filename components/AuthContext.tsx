@@ -10,6 +10,11 @@ import {
     createUserWithEmailAndPassword,
     signOut,
     updateProfile,
+    sendPasswordResetEmail,
+    updatePassword,
+    reauthenticateWithCredential,
+    EmailAuthProvider,
+    sendEmailVerification,
 } from 'firebase/auth'
 import { auth } from '@/lib/firebase-client'
 import { setStorageUid } from '@/lib/userStorage'
@@ -23,6 +28,9 @@ interface AuthContextType {
     signInWithEmail: (email: string, password: string) => Promise<void>
     signUpWithEmail: (email: string, password: string, name: string) => Promise<void>
     logout: () => Promise<void>
+    resetPassword: (email: string) => Promise<void>
+    changePassword: (currentPassword: string, newPassword: string) => Promise<void>
+    sendVerificationEmail: () => Promise<void>
 }
 
 const AuthContext = createContext<AuthContextType>({
@@ -33,6 +41,9 @@ const AuthContext = createContext<AuthContextType>({
     signInWithEmail: async () => { },
     signUpWithEmail: async () => { },
     logout: async () => { },
+    resetPassword: async () => { },
+    changePassword: async () => { },
+    sendVerificationEmail: async () => { },
 })
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -67,7 +78,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signInWithGoogle = async () => {
         const provider = new GoogleAuthProvider()
         const result = await signInWithPopup(auth, provider)
-        // Track: is this a new user (sign up) or returning (login)?
         if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
             trackSignUp('google')
         } else {
@@ -95,6 +105,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signUpWithEmail = async (email: string, password: string, name: string) => {
         const cred = await createUserWithEmailAndPassword(auth, email, password)
         await updateProfile(cred.user, { displayName: name })
+        // Auto-send email verification
+        await sendEmailVerification(cred.user).catch(() => { })
         trackSignUp('email')
     }
 
@@ -102,8 +114,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await signOut(auth)
     }
 
+    const resetPassword = async (email: string) => {
+        await sendPasswordResetEmail(auth, email)
+    }
+
+    const changePassword = async (currentPassword: string, newPassword: string) => {
+        const currentUser = auth.currentUser
+        if (!currentUser || !currentUser.email) throw new Error('No user signed in')
+        const credential = EmailAuthProvider.credential(currentUser.email, currentPassword)
+        await reauthenticateWithCredential(currentUser, credential)
+        await updatePassword(currentUser, newPassword)
+    }
+
+    const sendVerificationEmailFn = async () => {
+        const currentUser = auth.currentUser
+        if (!currentUser) throw new Error('No user signed in')
+        await sendEmailVerification(currentUser)
+    }
+
     return (
-        <AuthContext.Provider value={{ user, loading, signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail, logout }}>
+        <AuthContext.Provider value={{
+            user, loading,
+            signInWithGoogle, signInWithApple, signInWithEmail, signUpWithEmail,
+            logout, resetPassword, changePassword,
+            sendVerificationEmail: sendVerificationEmailFn,
+        }}>
             {children}
         </AuthContext.Provider>
     )

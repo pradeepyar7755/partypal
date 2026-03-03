@@ -3,7 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { useAuth } from '@/components/AuthContext'
-import { updateProfile } from 'firebase/auth'
+import { updateProfile, reload } from 'firebase/auth'
 import styles from './settings.module.css'
 
 const AI_MEMORY_KEY = 'partypal_ai_memory'
@@ -33,7 +33,7 @@ const DEFAULT_PREFS: UserPrefs = {
 
 export default function SettingsPage() {
     const router = useRouter()
-    const { user, loading: authLoading, logout } = useAuth()
+    const { user, loading: authLoading, logout, changePassword, sendVerificationEmail } = useAuth()
 
     // Profile fields
     const [displayName, setDisplayName] = useState('')
@@ -51,6 +51,20 @@ export default function SettingsPage() {
     const [deleteReason, setDeleteReason] = useState('not_specified')
     const [deleting, setDeleting] = useState(false)
     const [deleteError, setDeleteError] = useState('')
+
+    // Change password
+    const [currentPw, setCurrentPw] = useState('')
+    const [newPw, setNewPw] = useState('')
+    const [confirmPw, setConfirmPw] = useState('')
+    const [pwLoading, setPwLoading] = useState(false)
+    const [pwMsg, setPwMsg] = useState('')
+
+    // Email verification
+    const [verifyLoading, setVerifyLoading] = useState(false)
+    const [verifySent, setVerifySent] = useState(false)
+
+    const isEmailUser = user?.providerData?.some(p => p.providerId === 'password')
+    const emailVerified = user?.emailVerified ?? true
 
     // Load profile data
     useEffect(() => {
@@ -216,6 +230,47 @@ export default function SettingsPage() {
         setPrefs(p => ({ ...p, [key]: value }))
     }
 
+    // Change password handler
+    const handleChangePassword = async () => {
+        setPwMsg('')
+        if (!currentPw || !newPw || !confirmPw) { setPwMsg('Please fill in all fields'); return }
+        if (newPw.length < 6) { setPwMsg('New password must be at least 6 characters'); return }
+        if (newPw !== confirmPw) { setPwMsg('New passwords do not match'); return }
+        if (newPw === currentPw) { setPwMsg('New password must be different from current'); return }
+        setPwLoading(true)
+        try {
+            await changePassword(currentPw, newPw)
+            setPwMsg('✅ Password changed successfully!')
+            setCurrentPw(''); setNewPw(''); setConfirmPw('')
+        } catch (err: unknown) {
+            const msg = err instanceof Error ? err.message : ''
+            if (msg.includes('wrong-password') || msg.includes('invalid-credential')) setPwMsg('Current password is incorrect.')
+            else if (msg.includes('weak-password')) setPwMsg('Password is too weak. Use at least 6 characters.')
+            else setPwMsg('Failed to change password. Please try again.')
+        } finally {
+            setPwLoading(false)
+        }
+    }
+
+    // Send verification email handler
+    const handleSendVerification = async () => {
+        setVerifyLoading(true)
+        try {
+            await sendVerificationEmail()
+            setVerifySent(true)
+        } catch { /* noop */ }
+        setVerifyLoading(false)
+    }
+
+    // Refresh verification status
+    const refreshVerification = async () => {
+        if (user) {
+            await reload(user).catch(() => { })
+            // Force re-render by reading updated user
+            window.location.reload()
+        }
+    }
+
     // Auth guard
     if (authLoading) {
         return (
@@ -242,6 +297,33 @@ export default function SettingsPage() {
                     <h1>⚙️ Settings</h1>
                     <p>Manage your profile, preferences, and account</p>
                 </div>
+
+                {/* Email Verification Banner */}
+                {!isGuest && isEmailUser && !emailVerified && (
+                    <div className={styles.verifyBanner}>
+                        <div className={styles.verifyBannerContent}>
+                            <span className={styles.verifyBannerIcon}>📧</span>
+                            <div>
+                                <div className={styles.verifyBannerTitle}>Your email is not verified</div>
+                                <div className={styles.verifyBannerHint}>
+                                    {verifySent
+                                        ? 'Verification email sent! Check your inbox and spam folder.'
+                                        : 'Please verify your email to secure your account.'}
+                                </div>
+                            </div>
+                        </div>
+                        <div className={styles.verifyBannerActions}>
+                            {!verifySent && (
+                                <button className={styles.verifyBtn} onClick={handleSendVerification} disabled={verifyLoading}>
+                                    {verifyLoading ? '⏳' : '📨'} {verifyLoading ? 'Sending...' : 'Send Verification Email'}
+                                </button>
+                            )}
+                            <button className={styles.verifyRefreshBtn} onClick={refreshVerification}>
+                                🔄 I've verified, refresh
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* Global success/error message */}
                 {saveMsg && (
@@ -324,6 +406,67 @@ export default function SettingsPage() {
                         </div>
                     )}
                 </div>
+
+                {/* ═══ SECURITY (Email users only) ═══ */}
+                {!isGuest && isEmailUser && (
+                    <div className={styles.section}>
+                        <div className={styles.sectionTitle}>
+                            <span className={styles.sectionEmoji}>🔐</span> Security
+                        </div>
+
+                        <div className={styles.securityForm}>
+                            <div className={styles.field}>
+                                <label className={styles.fieldLabel}>Current Password</label>
+                                <input
+                                    type="password"
+                                    className={styles.fieldInput}
+                                    value={currentPw}
+                                    onChange={e => setCurrentPw(e.target.value)}
+                                    placeholder="Enter current password"
+                                    autoComplete="current-password"
+                                />
+                            </div>
+                            <div className={styles.fieldRow}>
+                                <div className={styles.fieldCol}>
+                                    <label className={styles.fieldLabel}>New Password</label>
+                                    <input
+                                        type="password"
+                                        className={styles.fieldInput}
+                                        value={newPw}
+                                        onChange={e => setNewPw(e.target.value)}
+                                        placeholder="Min 6 characters"
+                                        autoComplete="new-password"
+                                    />
+                                </div>
+                                <div className={styles.fieldCol}>
+                                    <label className={styles.fieldLabel}>Confirm New Password</label>
+                                    <input
+                                        type="password"
+                                        className={styles.fieldInput}
+                                        value={confirmPw}
+                                        onChange={e => setConfirmPw(e.target.value)}
+                                        placeholder="Re-enter new password"
+                                        autoComplete="new-password"
+                                    />
+                                </div>
+                            </div>
+
+                            {pwMsg && (
+                                <div className={pwMsg.includes('✅') ? styles.successMsg : styles.pwError}>
+                                    {pwMsg}
+                                </div>
+                            )}
+
+                            <button
+                                className={styles.changePwBtn}
+                                onClick={handleChangePassword}
+                                disabled={pwLoading || !currentPw || !newPw || !confirmPw}
+                            >
+                                {pwLoading ? '⏳ Changing...' : '🔑 Change Password'}
+                            </button>
+                        </div>
+                    </div>
+                )}
 
                 {/* ═══ PARTY PLANNING DEFAULTS ═══ */}
                 <div className={styles.section}>

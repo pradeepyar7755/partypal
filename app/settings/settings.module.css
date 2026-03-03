@@ -462,3 +462,137 @@
         gap: 0;
     }
 }
+
+/* Email Verification Banner */
+.verifyBanner {
+    background: linear-gradient(135deg, rgba(247, 201, 72, 0.08), rgba(232, 137, 106, 0.08));
+    border: 1.5px solid rgba(247, 201, 72, 0.25);
+    border-radius: 16px;
+    padding: 1.2rem 1.5rem;
+    margin-bottom: 1.2rem;
+}
+
+.verifyBannerContent {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.8rem;
+    margin-bottom: 0.8rem;
+}
+
+.verifyBannerIcon {
+    font-size: 1.5rem;
+    flex-shrink: 0;
+}
+
+.verifyBannerTitle {
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.95rem;
+    color: var(--navy);
+    margin-bottom: 0.15rem;
+}
+
+.verifyBannerHint {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #9aabbb;
+}
+
+.verifyBannerActions {
+    display: flex;
+    gap: 0.6rem;
+    flex-wrap: wrap;
+}
+
+.verifyBtn {
+    padding: 0.55rem 1.2rem;
+    border-radius: 10px;
+    border: none;
+    background: linear-gradient(135deg, #F7C948, #E8896A);
+    color: white;
+    font-weight: 800;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.verifyBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(247, 201, 72, 0.3);
+}
+
+.verifyBtn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none;
+}
+
+.verifyRefreshBtn {
+    padding: 0.55rem 1.2rem;
+    border-radius: 10px;
+    border: 2px solid var(--border);
+    background: white;
+    color: var(--navy);
+    font-weight: 700;
+    font-size: 0.8rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+}
+
+.verifyRefreshBtn:hover {
+    border-color: var(--teal);
+    color: var(--teal);
+}
+
+/* Security Section */
+.securityForm {
+    padding: 0 1.5rem 1.2rem;
+}
+
+.securityForm .field {
+    padding: 0 0 1rem;
+}
+
+.securityForm .fieldRow {
+    padding: 0 0 0.5rem;
+}
+
+.changePwBtn {
+    width: 100%;
+    padding: 0.7rem;
+    border-radius: 12px;
+    border: none;
+    background: linear-gradient(135deg, var(--teal), var(--green));
+    color: white;
+    font-family: 'Fredoka One', cursive;
+    font-size: 0.88rem;
+    font-weight: 800;
+    cursor: pointer;
+    transition: all 0.2s;
+    margin-top: 0.3rem;
+}
+
+.changePwBtn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(74, 173, 168, 0.3);
+}
+
+.changePwBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+}
+
+.pwError {
+    padding: 0.5rem 0.8rem;
+    border-radius: 10px;
+    background: rgba(232, 137, 106, 0.08);
+    border: 1px solid rgba(232, 137, 106, 0.2);
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: #E8896A;
+    text-align: center;
+    margin-bottom: 0.3rem;
+}

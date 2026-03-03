@@ -207,9 +207,6 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
                         background: getBadgeColors(selected.type).bg, color: getBadgeColors(selected.type).color,
                         padding: '0.15rem 0.4rem', borderRadius: 50, textTransform: 'uppercase', flexShrink: 0
                     }}>{selected.type}</span>
-                    <span style={{ fontSize: '0.6rem', color: '#b0bfcc', fontWeight: 600, flexShrink: 0 }}>
-                        {selected.lat.toFixed(4)}, {selected.lng.toFixed(4)}
-                    </span>
                 </div>
             )}
 
