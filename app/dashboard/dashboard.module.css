@@ -593,6 +593,87 @@
     font-size: 0.9rem;
 }
 
+/* ══ TIMELINE QUICK ACTIONS ══ */
+.tlQuickAction {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+    padding: 0.45rem 0.85rem;
+    border-radius: 10px;
+    border: 1.5px solid rgba(74, 173, 168, 0.3);
+    background: rgba(74, 173, 168, 0.06);
+    cursor: pointer;
+    transition: all 0.25s ease;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    color: var(--teal);
+    width: fit-content;
+}
+
+.tlQuickAction:hover {
+    border-color: var(--teal);
+    background: rgba(74, 173, 168, 0.12);
+    transform: translateX(3px);
+    box-shadow: 0 2px 12px rgba(74, 173, 168, 0.15);
+}
+
+.tlQuickActionOverdue {
+    border-color: rgba(232, 137, 106, 0.5);
+    background: rgba(232, 137, 106, 0.08);
+    color: #d16040;
+    animation: qaGlow 2s ease-in-out infinite;
+}
+
+.tlQuickActionOverdue:hover {
+    border-color: var(--coral);
+    background: rgba(232, 137, 106, 0.15);
+    box-shadow: 0 2px 16px rgba(232, 137, 106, 0.25);
+}
+
+.tlQuickActionDueSoon {
+    border-color: rgba(247, 201, 72, 0.5);
+    background: rgba(247, 201, 72, 0.08);
+    color: #b89620;
+}
+
+.tlQuickActionDueSoon:hover {
+    border-color: var(--yellow);
+    background: rgba(247, 201, 72, 0.15);
+    box-shadow: 0 2px 12px rgba(247, 201, 72, 0.2);
+}
+
+@keyframes qaGlow {
+    0%, 100% { box-shadow: 0 0 0 0 rgba(232, 137, 106, 0); }
+    50% { box-shadow: 0 0 8px 2px rgba(232, 137, 106, 0.25); }
+}
+
+/* ══ TIMELINE NUDGES ══ */
+.tlNudge {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.4rem;
+    margin-top: 0.5rem;
+    padding: 0.4rem 0.75rem;
+    border-radius: 8px;
+    font-size: 0.72rem;
+    font-weight: 700;
+    line-height: 1.45;
+}
+
+.tlNudgeOverdue {
+    background: rgba(232, 137, 106, 0.08);
+    border: 1px solid rgba(232, 137, 106, 0.2);
+    color: #c45a3a;
+}
+
+.tlNudgeDueSoon {
+    background: rgba(247, 201, 72, 0.08);
+    border: 1px solid rgba(247, 201, 72, 0.2);
+    color: #9a7e18;
+}
+
 /* ══ EMPTY STATE ══ */
 .emptyState {
     text-align: center;

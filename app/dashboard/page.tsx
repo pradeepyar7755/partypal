@@ -14,7 +14,7 @@ interface ChecklistItem { item: string; category: string; done: boolean; due?: s
 interface TimelineItem { weeks: string; task: string; category: string; priority: string; emoji?: string; completedAt?: string; assignedTo?: string }
 interface BudgetItem { category: string; amount: number; percentage: number; color: string }
 interface EventGuest { name: string; email: string; status: 'invited' | 'confirmed' | 'declined' }
-interface EventVendor { name: string; category: string; notes: string; confirmed: boolean; costEstimate?: number }
+interface EventVendor { name: string; category: string; notes: string; confirmed: boolean; costEstimate?: number; budgetCategory?: string }
 interface SavedVendor { name: string; category: string; price: string; emoji: string }
 
 interface PlanData {
@@ -99,6 +99,45 @@ function getVendorsForEvent(eventType: string) {
     return VENDOR_SUGGESTIONS.default
 }
 
+// Quick action definitions mapped by keyword groups
+const QUICK_ACTION_RULES: { keywords: string[]; emoji: string; label: string; action: 'url' | 'tab' | 'expand'; target: string }[] = [
+    { keywords: ['venue', 'book', 'location', 'space', 'room'], emoji: '🏛️', label: 'Browse Venues', action: 'url', target: '/vendors?cat=venue' },
+    { keywords: ['invite', 'invitation', 'rsvp', 'guest', 'send'], emoji: '💌', label: 'Manage Guest List', action: 'tab', target: 'guests' },
+    { keywords: ['vendor', 'photographer', 'dj', 'music', 'band', 'big three', 'lock in'], emoji: '🤝', label: 'Browse Vendors', action: 'url', target: '/vendors' },
+    { keywords: ['decor', 'cake', 'order', 'flower', 'baker', 'balloon', 'banner'], emoji: '🎀', label: 'Shop Decor & Bakers', action: 'url', target: '/vendors?cat=decor' },
+    { keywords: ['food', 'drink', 'cater', 'menu', 'cocktail', 'snack', 'bar'], emoji: '🍽️', label: 'Find Caterers', action: 'url', target: '/vendors?cat=food' },
+    { keywords: ['photo', 'video', 'camera', 'picture'], emoji: '📸', label: 'Find Photographers', action: 'url', target: '/vendors?cat=photos' },
+    { keywords: ['poll', 'vote', 'decide'], emoji: '🗳️', label: 'Create a Poll', action: 'tab', target: 'polls' },
+    { keywords: ['budget', 'cost', 'expense'], emoji: '💰', label: 'Review Budget', action: 'url', target: '/budget' },
+    { keywords: ['confirm', 'final', 'check', 'prep', 'day before', 'walkthrough'], emoji: '✅', label: 'Review Checklist', action: 'expand', target: '' },
+]
+
+// Nudge messages for non-actionable milestones
+const NUDGE_MESSAGES: { keywords: string[]; message: string }[] = [
+    { keywords: ['confirm', 'final', 'check', 'prep'], message: 'Review your vendor confirmations — don\'t leave this to the last minute!' },
+    { keywords: ['day before', 'walkthrough', 'run-of-show'], message: 'Prep your run-of-show doc and confirm vendor arrival times!' },
+    { keywords: ['event day', 'big day'], message: 'Enjoy every moment! You\'ve planned this perfectly 🎉' },
+]
+
+function getQuickActionForMilestone(t: TimelineItem): { emoji: string; label: string; action: 'url' | 'tab' | 'expand'; target: string } | null {
+    const text = `${t.task} ${t.category}`.toLowerCase()
+    let bestAction: typeof QUICK_ACTION_RULES[0] | null = null
+    let bestScore = 0
+    for (const rule of QUICK_ACTION_RULES) {
+        const score = rule.keywords.filter(kw => text.includes(kw)).length
+        if (score > bestScore) { bestScore = score; bestAction = rule }
+    }
+    return bestAction && bestScore > 0 ? { emoji: bestAction.emoji, label: bestAction.label, action: bestAction.action, target: bestAction.target } : null
+}
+
+function getNudgeForMilestone(t: TimelineItem): string | null {
+    const text = `${t.task} ${t.category}`.toLowerCase()
+    for (const nudge of NUDGE_MESSAGES) {
+        if (nudge.keywords.some(kw => text.includes(kw))) return nudge.message
+    }
+    return null
+}
+
 const DEFAULT_PLAN: PlanData = {
     eventId: 'demo',
     eventType: "Maya's 30th Birthday 🎂",
@@ -164,7 +203,7 @@ function DashboardContent() {
     const [eventVendors, setEventVendors] = useState<EventVendor[]>([])
     const [savedVendors, setSavedVendors] = useState<Record<string, SavedVendor>>({})
     const [guestForm, setGuestForm] = useState({ name: '', email: '' })
-    const [vendorForm, setVendorForm] = useState({ name: '', category: '', notes: '', costEstimate: '' })
+    const [vendorForm, setVendorForm] = useState({ name: '', category: '', notes: '', costEstimate: '', budgetCategory: '' })
     const ALL_VENDOR_CATS = ['Venue', 'Decor', 'Baker', 'Food', 'Photos', 'Music', 'Drinks', 'Entertain']
     const [enabledCats, setEnabledCats] = useState<string[]>(ALL_VENDOR_CATS)
     const [newCheckItem, setNewCheckItem] = useState('')
@@ -188,6 +227,7 @@ function DashboardContent() {
     const [deletedTasks, setDeletedTasks] = useState<ChecklistItem[]>([])
     const [showDeletedTasks, setShowDeletedTasks] = useState(false)
     const [showCollabModal, setShowCollabModal] = useState(false)
+    const [showSignupPrompt, setShowSignupPrompt] = useState(false)
     const [collaborators, setCollaborators] = useState<{ email: string; name: string; role: string }[]>([])
     const [collabForm, setCollabForm] = useState({ email: '', name: '', role: 'Viewer' })
     const [assignMenuTask, setAssignMenuTask] = useState<number | null>(null)
@@ -1098,13 +1138,13 @@ function DashboardContent() {
     const addVendor = () => {
         if (!vendorForm.name.trim() || !vendorForm.category.trim()) return
         const cost = vendorForm.costEstimate ? parseFloat(vendorForm.costEstimate) : undefined
-        const updated = [...eventVendors, { name: vendorForm.name.trim(), category: vendorForm.category.trim(), notes: vendorForm.notes.trim(), confirmed: false, costEstimate: cost && !isNaN(cost) ? cost : undefined }]
+        const updated = [...eventVendors, { name: vendorForm.name.trim(), category: vendorForm.category.trim(), notes: vendorForm.notes.trim(), confirmed: false, costEstimate: cost && !isNaN(cost) ? cost : undefined, budgetCategory: vendorForm.budgetCategory || undefined }]
         setEventVendors(updated)
         if (data.eventId) {
             userSetJSON(`partypal_vendors_${data.eventId}`, updated)
             fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, vendors: updated }) }).catch(() => { })
         }
-        setVendorForm({ name: '', category: '', notes: '', costEstimate: '' })
+        setVendorForm({ name: '', category: '', notes: '', costEstimate: '', budgetCategory: '' })
         showToast('Vendor added', 'success')
     }
     const updateVendorCost = (idx: number, cost: string) => {
@@ -1560,6 +1600,12 @@ function DashboardContent() {
                                             <option value="">Category...</option>
                                             {enabledCats.map(c => <option key={c}>{c}</option>)}
                                         </select>
+                                        {data.plan?.budget?.breakdown?.length > 0 && (
+                                            <select value={vendorForm.budgetCategory} onChange={e => setVendorForm(p => ({ ...p, budgetCategory: e.target.value }))} style={{ padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none', color: vendorForm.budgetCategory ? 'var(--navy)' : '#9aabbb' }}>
+                                                <option value="">Budget category...</option>
+                                                {data.plan.budget.breakdown.map((b, bi) => <option key={bi} value={b.category}>{b.category}</option>)}
+                                            </select>
+                                        )}
                                         <input placeholder="Cost estimate $" value={vendorForm.costEstimate} onChange={e => setVendorForm(p => ({ ...p, costEstimate: e.target.value.replace(/[^0-9.]/g, '') }))} style={{ width: 110, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
                                         <input placeholder="Notes (optional)" value={vendorForm.notes} onChange={e => setVendorForm(p => ({ ...p, notes: e.target.value }))} style={{ flex: 1, minWidth: 100, padding: '0.5rem 0.8rem', borderRadius: 8, border: '1.5px solid rgba(0,0,0,0.1)', fontSize: '0.82rem', fontWeight: 600, outline: 'none' }} />
                                         <button onClick={addVendor} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 8, padding: '0.5rem 1.2rem', fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer' }}>Add</button>
@@ -1707,6 +1753,7 @@ function DashboardContent() {
                                             const budgetKey = b.category.toLowerCase()
                                             const matchTerms = BUDGET_TO_VENDOR[budgetKey] || [budgetKey.split(' ')[0], budgetKey]
                                             const actual = eventVendors.filter(v => {
+                                                if (v.budgetCategory) return v.budgetCategory.toLowerCase() === budgetKey
                                                 const vc = v.category.toLowerCase()
                                                 return matchTerms.some(term => vc.includes(term) || term.includes(vc.split(' ')[0]))
                                             }).reduce((s, v) => s + (v.costEstimate || 0), 0)
@@ -1734,7 +1781,7 @@ function DashboardContent() {
             {/* ══ GUESTS TAB ══ */}
             {selectedTab === 'guests' && (
                 <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1rem 0.75rem' }}>
-                    <GuestManager eventId={data.eventId} planData={{ eventType: data.eventType, theme: data.theme, date: data.date, location: data.location, eventId: data.eventId }} isDemo={isDemo} />
+                    <GuestManager eventId={data.eventId} planData={{ eventType: data.eventType, theme: data.theme, date: data.date, location: data.location, eventId: data.eventId, time: data.time, hostName: user?.displayName || undefined, hostContact: user?.email || undefined }} isDemo={isDemo} />
                 </div>
             )}
 
@@ -1881,7 +1928,7 @@ function DashboardContent() {
                                                 ⏳ Event Countdown
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                                <button onClick={() => setShowCollabModal(true)} style={{ background: collaborators.length > 0 ? 'rgba(74,173,168,0.08)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${collaborators.length > 0 ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`, borderRadius: 8, padding: '0.2rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: collaborators.length > 0 ? 'var(--teal)' : 'var(--navy)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>👥 Add Collaborators{collaborators.length > 0 && <span style={{ background: 'var(--teal)', color: '#fff', fontSize: '0.58rem', fontWeight: 900, borderRadius: '50%', width: 16, height: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{collaborators.length}</span>}</button>
+                                                <button onClick={() => isGuest ? setShowSignupPrompt(true) : setShowCollabModal(true)} style={{ background: collaborators.length > 0 ? 'rgba(74,173,168,0.08)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${collaborators.length > 0 ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`, borderRadius: 8, padding: '0.2rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: collaborators.length > 0 ? 'var(--teal)' : 'var(--navy)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>👥 Add Collaborators{collaborators.length > 0 && <span style={{ background: 'var(--teal)', color: '#fff', fontSize: '0.58rem', fontWeight: 900, borderRadius: '50%', width: 16, height: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{collaborators.length}</span>}</button>
                                                 <div style={{ fontSize: '0.78rem', fontWeight: 800, color: daysLeft !== null && daysLeft <= 7 ? '#E8896A' : 'var(--teal)' }}>
                                                     {daysLeft !== null ? (daysLeft === 0 ? '🎉 Today!' : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`) : 'No date set'}
                                                 </div>
@@ -2057,6 +2104,70 @@ function DashboardContent() {
                                                                         )
                                                                     }
                                                                     return <div className={styles.tlDesc}>{t.category}</div>
+                                                                })()}
+                                                                {/* ── Inline Quick Action or Nudge ── */}
+                                                                {!t.completedAt && (() => {
+                                                                    const qa = getQuickActionForMilestone(t)
+                                                                    // Parse date from weeks label for urgency
+                                                                    const dateMatch = t.weeks.match(/^([A-Z][a-z]{2})\s(\d{1,2})/)
+                                                                    let isOverdue = false
+                                                                    let isDueSoon = false
+                                                                    let daysUntil = Infinity
+                                                                    if (dateMatch) {
+                                                                        const targetDate = new Date(`${dateMatch[1]} ${dateMatch[2]}, ${new Date().getFullYear()}`)
+                                                                        const now = new Date()
+                                                                        const diffMs = targetDate.getTime() - now.getTime()
+                                                                        daysUntil = Math.ceil(diffMs / (1000 * 60 * 60 * 24))
+                                                                        isOverdue = daysUntil < 0
+                                                                        isDueSoon = daysUntil >= 0 && daysUntil <= 7
+                                                                    }
+                                                                    if (qa && qa.action !== 'expand') {
+                                                                        return (
+                                                                            <button
+                                                                                className={`${styles.tlQuickAction} ${isOverdue ? styles.tlQuickActionOverdue : isDueSoon ? styles.tlQuickActionDueSoon : ''}`}
+                                                                                onClick={() => {
+                                                                                    if (qa.action === 'url') {
+                                                                                        const url = qa.target.includes('?') ? `${qa.target}&location=${encodeURIComponent(data.location || '')}` : `${qa.target}?location=${encodeURIComponent(data.location || '')}`
+                                                                                        router.push(url)
+                                                                                    } else if (qa.action === 'tab') {
+                                                                                        setSelectedTab(qa.target as 'plan' | 'theme' | 'vendors' | 'guests' | 'polls')
+                                                                                        if (qa.target === 'polls') setShowPollCreator(true)
+                                                                                    }
+                                                                                }}
+                                                                            >
+                                                                                <span>{qa.emoji}</span>
+                                                                                <span>{qa.label}</span>
+                                                                                <span style={{ marginLeft: 'auto', fontSize: '0.75rem' }}>→</span>
+                                                                            </button>
+                                                                        )
+                                                                    }
+                                                                    // For non-actionable items, show nudge if due/overdue
+                                                                    if (isOverdue || isDueSoon) {
+                                                                        const nudgeMsg = getNudgeForMilestone(t)
+                                                                        const genericMsg = isOverdue
+                                                                            ? `This was due ${dateMatch ? `${dateMatch[1]} ${dateMatch[2]}` : 'recently'} — close it out!`
+                                                                            : `Due in ${daysUntil} day${daysUntil === 1 ? '' : 's'} — stay on track!`
+                                                                        return (
+                                                                            <div className={`${styles.tlNudge} ${isOverdue ? styles.tlNudgeOverdue : styles.tlNudgeDueSoon}`}>
+                                                                                <span>{isOverdue ? '⏰' : '📅'}</span>
+                                                                                <span>{nudgeMsg || genericMsg}</span>
+                                                                            </div>
+                                                                        )
+                                                                    }
+                                                                    // For expand-type actions (Review Checklist), expand tasks
+                                                                    if (qa && qa.action === 'expand' && tasksCollapsed) {
+                                                                        return (
+                                                                            <button
+                                                                                className={styles.tlQuickAction}
+                                                                                onClick={() => { setTasksCollapsed(false); setShowChecklistHint(false) }}
+                                                                            >
+                                                                                <span>{qa.emoji}</span>
+                                                                                <span>{qa.label}</span>
+                                                                                <span style={{ marginLeft: 'auto', fontSize: '0.75rem' }}>→</span>
+                                                                            </button>
+                                                                        )
+                                                                    }
+                                                                    return null
                                                                 })()}
                                                                 {/* Inline checklist tasks */}
                                                                 {!tasksCollapsed && taskMapping[i]?.length > 0 && (
@@ -2395,7 +2506,7 @@ function DashboardContent() {
                                                 )}
                                                 <div className={styles.budgetPct}>{b.percentage}%</div>
                                                 {editBudgetMode && (
-                                                    <button onClick={(e) => { e.stopPropagation(); const updated = { ...data, plan: { ...data.plan, budget: { ...data.plan.budget, breakdown: data.plan.budget.breakdown.filter((_, idx) => idx !== i) } } }; setData(updated); if (isDemo) { userSetJSON('partypal_demo', updated) } else { userSetJSON('partyplan', updated); if (updated.eventId) { const ue = allEvents.map(ev => ev.eventId === updated.eventId ? updated : ev); setAllEvents(ue); userSetJSON('partypal_events', ue) } }; showToast(`Removed ${b.category}`, 'info') }} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.65rem', padding: '0 0.2rem', marginLeft: '0.2rem' }} title="Remove">✕</button>
+                                                    <button onClick={(e) => { e.stopPropagation(); const removedCat = b.category; const updated = { ...data, plan: { ...data.plan, budget: { ...data.plan.budget, breakdown: data.plan.budget.breakdown.filter((_, idx) => idx !== i) } } }; setData(updated); if (isDemo) { userSetJSON('partypal_demo', updated) } else { userSetJSON('partyplan', updated); if (updated.eventId) { const ue = allEvents.map(ev => ev.eventId === updated.eventId ? updated : ev); setAllEvents(ue); userSetJSON('partypal_events', ue) } }; const cleanedVendors = eventVendors.map(v => v.budgetCategory === removedCat ? { ...v, budgetCategory: undefined } : v); if (cleanedVendors.some((v, vi) => v !== eventVendors[vi])) { setEventVendors(cleanedVendors); if (data.eventId) { userSetJSON(`partypal_vendors_${data.eventId}`, cleanedVendors); fetch('/api/events', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ eventId: data.eventId, vendors: cleanedVendors }) }).catch(() => { }) } }; showToast(`Removed ${removedCat}`, 'info') }} style={{ background: 'none', border: 'none', color: '#ccc', cursor: 'pointer', fontSize: '0.65rem', padding: '0 0.2rem', marginLeft: '0.2rem' }} title="Remove">✕</button>
                                                 )}
                                             </div>
                                         ))}
@@ -2492,6 +2603,37 @@ function DashboardContent() {
                         if (data.eventId) fetchPolls(data.eventId)
                     }}
                 />
+            )}
+            {/* Sign Up Prompt Modal */}
+            {showSignupPrompt && (
+                <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 1000, backdropFilter: 'blur(4px)' }} onClick={() => setShowSignupPrompt(false)}>
+                    <div className="card" style={{ padding: '2.5rem', width: '100%', maxWidth: 420, textAlign: 'center' }} onClick={e => e.stopPropagation()}>
+                        <div style={{ fontSize: '3rem', marginBottom: '0.8rem' }}>👥</div>
+                        <h2 style={{ fontFamily: "'Fredoka One',cursive", color: 'var(--navy)', marginBottom: '0.5rem', fontSize: '1.3rem' }}>Collaborate with Friends</h2>
+                        <p style={{ fontSize: '0.88rem', color: '#6b7c93', fontWeight: 600, lineHeight: 1.5, marginBottom: '1.5rem' }}>
+                            Invite friends and family to help plan your event! Assign tasks, share updates, and coordinate together — all for free.
+                        </p>
+                        <a href="/login?redirect=/dashboard" style={{
+                            display: 'inline-block', padding: '0.7rem 2rem', borderRadius: 50,
+                            background: 'linear-gradient(135deg, var(--teal), #3D8C6E)',
+                            color: 'white', fontWeight: 800, fontSize: '0.92rem',
+                            textDecoration: 'none', fontFamily: "'Fredoka One', cursive",
+                            transition: 'transform 0.15s',
+                            boxShadow: '0 4px 15px rgba(74,173,168,0.3)',
+                        }}
+                            onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.05)')}
+                            onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+                        >
+                            🔗 Sign Up Free
+                        </a>
+                        <div style={{ marginTop: '0.8rem' }}>
+                            <button onClick={() => setShowSignupPrompt(false)} style={{
+                                background: 'none', border: 'none', cursor: 'pointer',
+                                color: '#9aabbb', fontSize: '0.82rem', fontWeight: 700,
+                            }}>Maybe Later</button>
+                        </div>
+                    </div>
+                </div>
             )}
             {/* Collaborator Modal */}
             {showCollabModal && (

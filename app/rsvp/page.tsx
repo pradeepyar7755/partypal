@@ -10,10 +10,12 @@ interface AdditionalGuest {
 
 const DIETARY_OPTIONS = ['None', 'Vegetarian', 'Vegan', 'Gluten-Free', 'Nut Allergy', 'Kosher', 'Halal', 'Dairy-Free', 'Shellfish Allergy']
 const RELATIONSHIP_OPTIONS = ['Partner', 'Spouse', 'Child', 'Family', 'Friend', 'Other']
+const getTZAbbr = () => { try { const d = new Date(); const parts = d.toLocaleTimeString('en-US', { timeZoneName: 'short' }).split(' '); return parts[parts.length - 1] } catch { return '' } }
+const formatTime12h = (t: string, showTZ = false) => { if (!t) return ''; const [h, m] = t.split(':').map(Number); const ampm = h >= 12 ? 'PM' : 'AM'; const h12 = h % 12 || 12; const tz = showTZ ? ` ${getTZAbbr()}` : ''; return `${h12}:${m.toString().padStart(2, '0')} ${ampm}${tz}` }
 
 function RSVPContent() {
     const params = useSearchParams()
-    const [eventData, setEventData] = useState<{ eventType?: string; date?: string; time?: string; location?: string; theme?: string; eventId?: string; inviteSubject?: string; inviteMessage?: string; rsvpBy?: string; customImage?: string; coverPhoto?: string }>({})
+    const [eventData, setEventData] = useState<{ eventType?: string; date?: string; time?: string; location?: string; theme?: string; eventId?: string; inviteSubject?: string; inviteMessage?: string; rsvpBy?: string; customImage?: string; coverPhoto?: string; hostName?: string }>({})
     const [name, setName] = useState('')
     const [email, setEmail] = useState('')
     const [response, setResponse] = useState<'going' | 'maybe' | 'declined' | ''>('')
@@ -60,6 +62,7 @@ function RSVPContent() {
                             rsvpBy: data.rsvpBy,
                             customImage: invCustomImage,
                             coverPhoto: invCoverPhoto,
+                            hostName: data.hostName,
                         })
                         return
                     }
@@ -78,6 +81,7 @@ function RSVPContent() {
                 time: p.time,
                 location: location || p.location,
                 theme: theme || p.theme,
+                hostName: p.hostName,
             })
         } else {
             setEventData({
@@ -148,7 +152,7 @@ function RSVPContent() {
                         <h1 className={styles.rsvpEventName} style={eventData.coverPhoto ? { color: '#fff', textShadow: '0 2px 8px rgba(0,0,0,0.4)' } : undefined}>{eventName}</h1>
                         {eventData.date && (
                             <p className={styles.rsvpDetails} style={eventData.coverPhoto ? { color: 'rgba(255,255,255,0.9)' } : { marginBottom: '0.2rem' }}>
-                                📅 {new Date(eventData.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                                📅 {new Date(eventData.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}{eventData.time ? ` (${formatTime12h(eventData.time, true)})` : ''}
                             </p>
                         )}
                         <p className={styles.rsvpDetails} style={eventData.coverPhoto ? { color: 'rgba(255,255,255,0.9)' } : undefined}>
@@ -157,6 +161,11 @@ function RSVPContent() {
                         {eventData.rsvpBy && (
                             <p className={styles.rsvpDetails} style={eventData.coverPhoto ? { color: 'rgba(255,255,255,0.85)', marginTop: '0.2rem' } : { marginTop: '0.2rem' }}>
                                 ⏰ RSVP by {new Date(eventData.rsvpBy + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                            </p>
+                        )}
+                        {eventData.hostName && (
+                            <p className={styles.rsvpDetails} style={eventData.coverPhoto ? { color: 'rgba(255,255,255,0.75)', marginTop: '0.15rem', fontSize: '0.78rem' } : { marginTop: '0.15rem', fontSize: '0.78rem' }}>
+                                Host: {eventData.hostName}
                             </p>
                         )}
                     </div>
