@@ -7,6 +7,7 @@
 import { initializeApp, getApps, cert } from 'firebase-admin/app'
 import { getAuth } from 'firebase-admin/auth'
 import { getFirestore } from 'firebase-admin/firestore'
+import { SITE_EMAILS } from '../lib/constants'
 
 // Initialize Firebase Admin
 if (!getApps().length) {
@@ -25,7 +26,7 @@ const db = getFirestore()
 // ── Test Accounts ─────────────────────────────────────
 const TEST_ACCOUNTS = [
     {
-        email: 'admin@partypal.social',
+        email: SITE_EMAILS.admin,
         password: 'PartyPal2026!',
         displayName: 'Pradeep (Admin)',
         role: 'admin',
@@ -118,7 +119,7 @@ async function seedAccounts() {
     console.log('\n📋 LOGIN CREDENTIALS:\n')
     console.log('┌─────────────────────────────────────────────────────────────────┐')
     console.log('│  ADMIN ACCOUNT                                                  │')
-    console.log('│  Email:    admin@partypal.social                                │')
+    console.log(`│  Email:    ${SITE_EMAILS.admin.padEnd(52)} │`)
     console.log('│  Password: PartyPal2026!                                        │')
     console.log('│  Role:     Admin (full access)                                  │')
     console.log('├─────────────────────────────────────────────────────────────────┤')

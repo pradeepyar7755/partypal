@@ -3,6 +3,7 @@ import { getDb } from '@/lib/firebase'
 import { verifyAdmin } from '@/lib/admin-auth'
 
 // GET: Fetch all registered users with session analytics (ADMIN ONLY)
+export const dynamic = 'force-dynamic'
 export async function GET(req: NextRequest) {
     try {
         const admin = await verifyAdmin(req.headers.get('authorization'))

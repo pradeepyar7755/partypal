@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/firebase'
+import { sendEmail } from '@/lib/email'
+import { SITE_EMAILS } from '@/lib/constants'
 
 // POST: Submit a new bug report
 export async function POST(req: NextRequest) {
@@ -28,6 +30,30 @@ export async function POST(req: NextRequest) {
         }
 
         await docRef.set(bugReport)
+
+        // Send an email notification to the feedback inbox
+        try {
+            await sendEmail({
+                type: 'feedback', // Use the feedback sender alias
+                to: SITE_EMAILS.feedback, // Send TO the feedback inbox
+                subject: `[${category.toUpperCase()}] New Feedback from ${name || email || 'Anonymous'}`,
+                replyTo: email || undefined,
+                html: `
+                    <h2>New Feedback Submitted</h2>
+                    <p><strong>Category:</strong> ${category}</p>
+                    <p><strong>Name:</strong> ${name || 'N/A'}</p>
+                    <p><strong>Email:</strong> ${email || 'N/A'}</p>
+                    <p><strong>Page:</strong> ${page}</p>
+                    <p><strong>User Agent:</strong> ${userAgent}</p>
+                    <hr />
+                    <p><strong>Description:</strong></p>
+                    <p style="white-space: pre-wrap;">${description}</p>
+                `,
+            })
+        } catch (emailErr) {
+            console.error('Failed to send feedback email notification:', emailErr)
+            // We don't fail the request if just the email fails
+        }
 
         return NextResponse.json({ success: true, id: docRef.id })
     } catch (error: unknown) {

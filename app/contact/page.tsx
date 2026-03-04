@@ -2,6 +2,7 @@
 import { useState, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import styles from './contact.module.css'
+import { SITE_EMAILS } from '@/lib/constants'
 
 const FAQS = [
     {
@@ -53,7 +54,7 @@ function ContactPageInner() {
     const [submitting, setSubmitting] = useState(false)
     const [submitError, setSubmitError] = useState('')
 
-    const supportEmail = 'support@partypal.social'
+    const supportEmail = SITE_EMAILS.support
 
     const handleCopy = () => {
         navigator.clipboard.writeText(supportEmail)

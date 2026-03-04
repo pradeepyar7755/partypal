@@ -1,5 +1,5 @@
-'use client'
 import { useState } from 'react'
+import { SITE_EMAILS } from '@/lib/constants'
 
 interface AdditionalGuest {
     id: string; name: string; dietary: string; relationship: string; isChild: boolean
@@ -38,7 +38,7 @@ function generateICS(event: { name: string; date?: string; time?: string; timezo
         `DTSTART:${dtStart}`,
         `DTEND:${dtEnd}`,
         `DTSTAMP:${stamp}`,
-        `UID:${Date.now()}@partypal.social`,
+        `UID:${Date.now()}@${SITE_EMAILS.systemDomain}`,
         `SUMMARY:${esc(event.name)}`,
         event.location ? `LOCATION:${esc(event.location)}` : '',
         event.description ? `DESCRIPTION:${esc(event.description)}` : '',

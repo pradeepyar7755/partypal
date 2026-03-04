@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server'
 import { getDb } from '@/lib/firebase'
+import { SITE_EMAILS } from '@/lib/constants'
 
 // Lazy-load firebase-admin/auth
 async function getAdminAuth() {
@@ -9,7 +10,7 @@ async function getAdminAuth() {
 
 const TEST_ACCOUNTS = [
     {
-        email: 'admin@partypal.social',
+        email: SITE_EMAILS.admin,
         password: 'PartyPal2026!',
         displayName: 'Pradeep (Admin)',
         role: 'admin',
@@ -93,7 +94,7 @@ export async function POST() {
             success: true,
             accounts: results,
             credentials: {
-                admin: { email: 'admin@partypal.social', password: 'PartyPal2026!' },
+                admin: { email: SITE_EMAILS.admin, password: 'PartyPal2026!' },
                 guests: TEST_ACCOUNTS.filter(a => a.role === 'guest').map(a => ({
                     email: a.email, password: a.password, name: a.displayName,
                 })),

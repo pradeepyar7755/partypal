@@ -12,6 +12,7 @@ import {
     marketingEmail,
     accountDeletionEmail,
 } from '@/lib/email-templates'
+import { SITE_EMAILS } from '@/lib/constants'
 
 // ═══════════════════════════════════════════════════════
 //  /api/email — Unified Email API
@@ -46,7 +47,7 @@ export async function POST(req: NextRequest) {
                         eventLocation,
                         eventTheme,
                         inviteMessage,
-                        rsvpLink: rsvpBaseLink || 'https://partypal.social',
+                        rsvpLink: rsvpBaseLink || `https://${SITE_EMAILS.systemDomain}`,
                         coverPhoto,
                     }),
                 })
@@ -78,7 +79,7 @@ export async function POST(req: NextRequest) {
                         eventLocation,
                         response,
                         additionalGuests,
-                        rsvpLink: rsvpLink || 'https://partypal.social',
+                        rsvpLink: rsvpLink || `https://${SITE_EMAILS.systemDomain}`,
                     }),
                 })
 
@@ -104,7 +105,7 @@ export async function POST(req: NextRequest) {
                         dietary,
                         totalGoing: totalGoing || 0,
                         totalGuests: totalGuests || 0,
-                        dashboardLink: dashboardLink || 'https://partypal.social/dashboard',
+                        dashboardLink: dashboardLink || `https://${SITE_EMAILS.systemDomain}/dashboard`,
                     }),
                 })
 
@@ -134,7 +135,7 @@ export async function POST(req: NextRequest) {
                         eventLocation,
                         eventTheme,
                         daysUntil,
-                        rsvpLink: rsvpBaseLink || 'https://partypal.social',
+                        rsvpLink: rsvpBaseLink || `https://${SITE_EMAILS.systemDomain}`,
                     }),
                 })
 
@@ -157,7 +158,7 @@ export async function POST(req: NextRequest) {
                     subject: '🎈 Welcome to Party Pal! Let\'s plan something amazing',
                     html: welcomeEmail({
                         userName: userName || 'Party Planner',
-                        dashboardLink: 'https://partypal.social/dashboard',
+                        dashboardLink: `https://${SITE_EMAILS.systemDomain}/dashboard`,
                     }),
                 })
 
@@ -209,7 +210,7 @@ export async function POST(req: NextRequest) {
                         hostName: hostName || 'Your Friend',
                         eventName,
                         role: role || 'Viewer',
-                        acceptLink: acceptLink || 'https://partypal.social/collaborate',
+                        acceptLink: acceptLink || `https://${SITE_EMAILS.systemDomain}/collaborate`,
                     }),
                 })
 
@@ -233,7 +234,7 @@ export async function POST(req: NextRequest) {
                         ticketSubject: ticketSubject || 'Support Request',
                         ticketId,
                     }),
-                    replyTo: 'support@partypal.social',
+                    replyTo: SITE_EMAILS.support,
                 })
 
                 return NextResponse.json({ success: result.success, ticketId, message: 'Support confirmation sent' })
@@ -255,7 +256,7 @@ export async function POST(req: NextRequest) {
                         headline: headline || 'What\'s New',
                         bodyText: bodyText || '',
                         ctaText: ctaText || 'Check it Out',
-                        ctaLink: ctaLink || 'https://partypal.social',
+                        ctaLink: ctaLink || `https://${SITE_EMAILS.systemDomain}`,
                         features,
                     }),
                 })

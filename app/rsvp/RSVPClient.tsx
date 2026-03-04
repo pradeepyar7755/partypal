@@ -3,6 +3,7 @@ import { userGet, userGetJSON, userSetJSON } from '@/lib/userStorage'
 import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import styles from './rsvp.module.css'
+import { SITE_EMAILS } from '@/lib/constants'
 
 interface AdditionalGuest {
     id: string; name: string; dietary: string; relationship: string; isChild: boolean
@@ -31,7 +32,7 @@ function generateICS(event: { name: string; date?: string; time?: string; timezo
     const lines = [
         'BEGIN:VCALENDAR', 'VERSION:2.0', 'PRODID:-//PartyPal//RSVP//EN', 'CALSCALE:GREGORIAN', 'METHOD:PUBLISH',
         'BEGIN:VEVENT', `DTSTART:${dtStart}`, `DTEND:${dtEnd}`, `DTSTAMP:${stamp}`,
-        `UID:${Date.now()}@partypal.social`, `SUMMARY:${esc(event.name)}`,
+        `UID:${Date.now()}@${SITE_EMAILS.systemDomain}`, `SUMMARY:${esc(event.name)}`,
         event.location ? `LOCATION:${esc(event.location)}` : '',
         event.description ? `DESCRIPTION:${esc(event.description)}` : '',
         'STATUS:CONFIRMED', 'END:VEVENT', 'END:VCALENDAR',

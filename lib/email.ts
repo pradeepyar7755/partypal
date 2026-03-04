@@ -1,4 +1,5 @@
 import { Resend } from 'resend'
+import { SITE_EMAILS } from '@/lib/constants'
 
 // ═══════════════════════════════════════════════════════
 //  PartyPal Email Configuration
@@ -27,7 +28,13 @@ export const SENDERS = {
     /** System/transactional emails */
     noreply: `Party Pal <noreply@${DOMAIN}>`,
     /** Marketing, newsletters, feature updates */
-    marketing: `Party Pal <hello@${DOMAIN}>`,
+    marketing: `Party Pal <${SITE_EMAILS.marketing}>`,
+    /** Sales and enterprise inquiries */
+    sales: `Party Pal Sales <${SITE_EMAILS.sales}>`,
+    /** User feedback and bug reports */
+    feedback: `Party Pal Feedback <${SITE_EMAILS.feedback}>`,
+    /** Job applications and careers */
+    jobs: `Party Pal Careers <${SITE_EMAILS.jobs}>`,
 } as const
 
 // Fallback sender when domain isn't verified yet

@@ -1,7 +1,8 @@
 import { getAuth } from 'firebase-admin/auth'
+import { SITE_EMAILS } from '@/lib/constants'
 
 // Admin email whitelist — only these accounts can access /admin
-const ADMIN_EMAILS = ['admin@partypal.social']
+const ADMIN_EMAILS = [SITE_EMAILS.admin]
 
 /**
  * Verify that a request comes from an authenticated admin user.

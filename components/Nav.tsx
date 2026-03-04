@@ -3,6 +3,7 @@ import { useState, useEffect, useRef } from 'react'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/components/AuthContext'
+import { SITE_EMAILS } from '@/lib/constants'
 
 export default function Nav() {
   const [mobileOpen, setMobileOpen] = useState(false)
@@ -30,7 +31,7 @@ export default function Nav() {
   }, [])
 
   // Admin email whitelist — must match lib/admin-auth.ts
-  const isAdmin = user?.email === 'admin@partypal.social'
+  const isAdmin = user?.email === SITE_EMAILS.admin
 
   const links = [
     ...(isAdmin ? [{ href: '/admin', label: 'Analytics' }, { href: '/docs', label: 'Docs' }] : []),

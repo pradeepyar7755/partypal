@@ -1,6 +1,7 @@
 'use client'
 import Link from 'next/link'
 import styles from './privacy.module.css'
+import { SITE_EMAILS } from '@/lib/constants'
 
 export default function PrivacyPolicy() {
     return (
@@ -367,7 +368,7 @@ export default function PrivacyPolicy() {
                     <p>If you have any questions about this Privacy Policy or your data, please contact us:</p>
 
                     <div className={styles.contactCard}>
-                        <p>📧 <strong>Email:</strong> <a href="mailto:privacy@partypal.social">privacy@partypal.social</a></p>
+                        <p>📧 <strong>Email:</strong> <a href={`mailto:${SITE_EMAILS.privacy}`}>{SITE_EMAILS.privacy}</a></p>
                         <p>🌐 <strong>Website:</strong> <Link href="/contact">Contact Us Page</Link></p>
                     </div>
                 </section>

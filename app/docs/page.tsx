@@ -4,9 +4,10 @@ import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthContext'
 import { marked } from 'marked'
 import styles from './docs.module.css'
+import { SITE_EMAILS } from '@/lib/constants'
 
 // Admin email whitelist — must match lib/admin-auth.ts
-const ADMIN_EMAILS = ['admin@partypal.social']
+const ADMIN_EMAILS = [SITE_EMAILS.admin]
 
 const TAB_EMOJIS: Record<string, string> = {
     '0-product-specs': '📋',

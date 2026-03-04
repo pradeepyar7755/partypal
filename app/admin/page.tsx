@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthContext'
 import styles from './admin.module.css'
+import { SITE_EMAILS } from '@/lib/constants'
 
 // ═══════════════════════════════════════════════════════
 //  PartyPal Admin Analytics Dashboard
@@ -11,7 +12,7 @@ import styles from './admin.module.css'
 // ═══════════════════════════════════════════════════════
 
 // Admin email whitelist
-const ADMIN_EMAILS = ['admin@partypal.social']
+const ADMIN_EMAILS = [SITE_EMAILS.admin]
 
 interface DashboardData {
     period: string
