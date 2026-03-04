@@ -427,7 +427,6 @@ function RSVPContent() {
                                     <div key={ag.id} className={styles.successPartyItem}>
                                         <span className={styles.successPartyDot} style={{ background: 'var(--yellow)' }} />
                                         {ag.name}
-                                        <span className={styles.successRelationship}>{ag.relationship}</span>
                                         {ag.dietary !== 'None' && <span className={styles.successDietary}>{ag.dietary}</span>}
                                     </div>
                                 ))}
