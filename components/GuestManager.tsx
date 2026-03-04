@@ -307,9 +307,21 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                             )
                             const rsvpStatus = rsvp.response === 'going' ? 'going' : rsvp.response === 'maybe' ? 'maybe' : rsvp.response === 'declined' ? 'declined' : 'pending'
                             if (existingIdx >= 0) {
-                                // Update status if changed
-                                if (updated[existingIdx].status !== rsvpStatus) {
-                                    updated[existingIdx] = { ...updated[existingIdx], status: rsvpStatus as Guest['status'], dietary: rsvp.dietary || updated[existingIdx].dietary }
+                                // Always merge dietary + additional guests from RSVP
+                                const newDietary = rsvp.dietary || updated[existingIdx].dietary
+                                const newAdditional = (rsvp.additionalGuests || []).length > 0
+                                    ? (rsvp.additionalGuests as { name: string; dietary?: string; relationship?: string; isChild?: boolean }[]).map((ag, i) => ({
+                                        id: `rsvp_${rsvp.id}_${i}`,
+                                        name: ag.name,
+                                        dietary: ag.dietary || 'None',
+                                        relationship: ag.relationship || 'Friend',
+                                        isChild: ag.isChild || false,
+                                    }))
+                                    : updated[existingIdx].additionalGuests
+                                if (updated[existingIdx].status !== rsvpStatus
+                                    || updated[existingIdx].dietary !== newDietary
+                                    || JSON.stringify(updated[existingIdx].additionalGuests) !== JSON.stringify(newAdditional)) {
+                                    updated[existingIdx] = { ...updated[existingIdx], status: rsvpStatus as Guest['status'], dietary: newDietary, additionalGuests: newAdditional }
                                     changed = true
                                 }
                             } else {
@@ -525,7 +537,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
     }
 
     const dietaryCounts: Record<string, number> = {}
-    guests.forEach(g => {
+    guests.filter(g => g.status === 'going' || g.status === 'maybe').forEach(g => {
         dietaryCounts[g.dietary] = (dietaryCounts[g.dietary] || 0) + 1
         g.additionalGuests.forEach(ag => { dietaryCounts[ag.dietary] = (dietaryCounts[ag.dietary] || 0) + 1 })
     })
