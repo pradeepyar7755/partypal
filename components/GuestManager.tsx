@@ -363,8 +363,9 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
 
     const totalHeadcount = guests.reduce((sum, g) => sum + 1 + g.additionalGuests.length, 0)
     const goingHeadcount = guests.filter(g => g.status === 'going').reduce((sum, g) => sum + 1 + g.additionalGuests.length, 0)
-    const kidsCount = guests.reduce((sum, g) => sum + g.additionalGuests.filter(ag => ag.isChild || ag.relationship === 'Child').length, 0)
-    const adultsCount = totalHeadcount - kidsCount
+    const confirmedGuests = guests.filter(g => g.status === 'going')
+    const kidsCount = confirmedGuests.reduce((sum, g) => sum + g.additionalGuests.filter(ag => ag.isChild || ag.relationship === 'Child').length, 0)
+    const adultsCount = goingHeadcount - kidsCount
 
     const stats = {
         total: guests.length, headcount: totalHeadcount,
@@ -1012,14 +1013,17 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                     <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' }}>Confirmed</div>
                                 </div>
                             </div>
-                            <div style={{ display: 'flex', justifyContent: 'center', gap: '1.2rem', marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid var(--border)' }}>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.5rem', color: 'var(--navy)' }}>{adultsCount}</div>
-                                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' }}>🧑 Adults</div>
-                                </div>
-                                <div style={{ textAlign: 'center' }}>
-                                    <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.5rem', color: '#c4880a' }}>{kidsCount}</div>
-                                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' }}>👶 Kids</div>
+                            <div style={{ marginTop: '0.6rem', paddingTop: '0.6rem', borderTop: '1px solid var(--border)' }}>
+                                <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#3D8C6E', textTransform: 'uppercase', textAlign: 'center', marginBottom: '0.4rem' }}>✓ Confirmed</div>
+                                <div style={{ display: 'flex', justifyContent: 'center', gap: '1.2rem' }}>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.5rem', color: 'var(--navy)' }}>{adultsCount}</div>
+                                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' }}>🧑 Adults</div>
+                                    </div>
+                                    <div style={{ textAlign: 'center' }}>
+                                        <div style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.5rem', color: '#c4880a' }}>{kidsCount}</div>
+                                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' }}>👶 Kids</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
