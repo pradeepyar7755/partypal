@@ -11,7 +11,7 @@ const CATEGORY_MAP: Record<string, { query: string; types?: string[]; relevantTy
   'Food': { query: 'best catering restaurant food service party catering', relevantTypes: ['restaurant', 'meal_delivery', 'meal_takeaway', 'food_court'] },
   'Photos': { query: 'best event photographer portrait photography studio', relevantTypes: ['photographer', 'photo_studio', 'photography_studio', 'portrait_studio'] },
   'Music': { query: 'best DJ service party DJ live music entertainment', relevantTypes: ['night_club', 'performing_arts_theater', 'music_store', 'recording_studio', 'karaoke', 'concert_hall'] },
-  'Drinks': { query: 'best cocktail bar sports bar lounge taproom', relevantTypes: ['bar', 'night_club', 'pub', 'wine_bar', 'cocktail_bar', 'lounge', 'brewery', 'winery'] },
+  'Drinks': { query: 'mobile bartender event bartending service party mixologist mobile bar', relevantTypes: ['mobile_caterer', 'caterer', 'bar', 'event_planner', 'restaurant', 'food_service'] },
   'Entertain': { query: 'party entertainment kids entertainment magician face painting', relevantTypes: ['amusement_center', 'amusement_park', 'bowling_alley', 'arcade', 'trampoline_park', 'escape_room', 'laser_tag', 'miniature_golf'] },
 }
 
