@@ -158,11 +158,69 @@ flowchart TD
 | `users` | Per user | Profile, settings, AI memory |
 | `analytics` | Per batch | Event array, timestamp |
 | `rate_limits` | Per user/day | Call counts, last reset |
+| `bugs` | Per report | Category, description, page, status, reporter info, timestamp |
 | `api_logs` | Per call | Endpoint, service, timestamp, userId |
 
 ---
 
-## 4. Responsive Design Breakpoints
+## 4. Admin Dashboard Flow
+
+### 3.1 Access Control
+- Admin navigates to `/admin`
+- Firebase Auth checks if user email is in `ADMIN_EMAILS` whitelist (sourced from `SITE_EMAILS.admin`)
+- Non-admin users see "Access Denied" with redirect to home/login
+- All admin API calls include `Authorization: Bearer <idToken>` header
+
+### 3.2 Dashboard Sections
+
+**Executive Summary:**
+- KPI cards: Page Views, Sessions, Registered Users, Sign Ups, Plans Generated, Vendor Searches, RSVPs, Errors
+- Gemini AI Calls and Places API Calls with cost estimates (from `/api/admin/usage`)
+- Configurable time period: 7, 14, 30, or 90 days
+
+**User Drill-Down:**
+- Collapsible section, fetched on-demand from `/api/admin/users`
+- Searchable by name/email, sortable by Last Active, Most Sessions, Most Page Views, Name, Newest
+- Per-user expandable detail: sign-up method, total time on site, join date, top pages visited, 30-day activity heatmap (GitHub-style), recent activity feed (last 10 events)
+- User badges: ADMIN (gold), TEST (gray)
+
+**Bug Report Management:**
+- Fetched from `/api/bugs` on load
+- Status workflow: 🔴 New → 🟡 Reviewed → 🟢 Fixed
+- Status updates via `PATCH /api/bugs` with bug ID and new status
+- Table columns: Status, Category (bug/feature/experience/tab/suggestion), Description, Page, Reporter, When, Action
+
+**Health & Alerts:**
+- Dynamic alert generation based on current data:
+  - Churn spike: any deletions in period → warning/caution based on churn rate
+  - Error rate: >1% of total events → caution alert
+  - API cost: >$10/month estimated → warning; >$25 → caution
+  - Low engagement: <2 sessions per registered user → warning
+  - All clear: green "all systems healthy" when no alerts triggered
+
+**Growth Accounting:**
+- Net Growth (sign-ups minus deletions), Retention Rate, Events/Session, Plans/User, Error Rate, Activation Rate (Sign Up → Plan conversion)
+
+**User Lifecycle & Churn:**
+- Period deletions, churn rate, avg tenure before deletion, avg events before deletion
+- Deletion reason breakdown with labeled categories (Not useful, Privacy, Another tool, Too complicated, Just testing, Other, Not specified)
+- 14-day deletion timeline chart
+- Churned user profiles table: name, email, tenure, events, sessions, reason, deletion time
+
+### 3.3 Data Sources
+
+| Admin Section | API Endpoint | Auth |
+|---|---|---|
+| KPIs, Traffic, Funnel, Events, Errors, Activity, Churn | `GET /api/analytics?q=dashboard&days=N` | Bearer token |
+| AI Usage, Rate Limits, API Metrics | `GET /api/admin/usage` | Bearer token |
+| Poll Analytics | `GET /api/polls?stats=true` | None |
+| Bug Reports | `GET /api/bugs` | None |
+| Bug Status Update | `PATCH /api/bugs` | None |
+| User Drill-Down | `GET /api/admin/users` | Bearer token |
+
+---
+
+## 5. Responsive Design Breakpoints
 
 | Viewport | Layout |
 |---|---|
@@ -172,7 +230,7 @@ flowchart TD
 
 ---
 
-## 5. Error States & Edge Cases
+## 6. Error States & Edge Cases
 
 | Scenario | Handling |
 |---|---|

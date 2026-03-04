@@ -1,6 +1,6 @@
 # PartyPal — Product Specification
 
-> **Version:** 1.0 | **Last Updated:** March 2, 2026  
+> **Version:** 1.0 | **Last Updated:** March 2, 2026
 > **Live URL:** [partypal.social](https://partypal.social) | **Platforms:** Web, iOS, Android
 
 ---
@@ -80,7 +80,7 @@ PartyPal is an **AI-powered party planning platform** that transforms event plan
 
 ### 2.7 AI Memory & Learning
 - Tracks user planning style (minimal / detailed / collaborative)
-- Learns budget tendency (frugal / moderate / lavish)  
+- Learns budget tendency (frugal / moderate / lavish)
 - Detects tone preference (casual / formal / playful / elegant)
 - Records favorite vendor categories, past event types, refinement patterns
 - Syncs preferences to cloud (Firestore) for cross-device continuity
@@ -94,10 +94,37 @@ PartyPal is an **AI-powered party planning platform** that transforms event plan
 | Guest Mode | Anonymous Firebase Auth |
 
 ### 2.9 Analytics & Admin
-- **Client-side tracking:** Page views, sessions, feature usage, conversions, errors
-- **Batched flush:** Events queued and sent in batches of 10 or every 30s
-- **Admin dashboard** (`/admin`): KPIs, conversion funnel, user management, event stats, API metrics
-- **Admin access:** Whitelisted email (`admin@partypal.social`)
+
+**Client-Side Tracking:**
+- Page views, sessions, feature usage, conversions, errors
+- Batched flush: events queued and sent in batches of 10 or every 30s
+- Global `window.onerror` and unhandled promise rejection handlers
+- `beforeunload` + `visibilitychange` flush
+
+**Admin Dashboard** (`/admin`) — 14-section executive analytics dashboard:
+
+| Section | Features |
+|---|---|
+| **Executive Summary KPIs** | Page views, sessions, registered users, sign-ups, plans generated, vendor searches, RSVPs, errors, Gemini AI calls, Places API calls with cost estimates |
+| **API Usage Trend** | Stacked bar chart (Gemini vs Places) for last 7 days, daily/weekly/monthly cost tracking |
+| **Registered Users Drill-Down** | Searchable/sortable user table with sessions, pages, avg time, events, days active; expandable per-user detail with sign-up method, total time on site, top pages, 30-day activity heatmap, recent activity feed |
+| **Traffic & Growth** | Daily page views bar chart with configurable period (7/14/30/90 days) |
+| **Conversion Funnel** | Visual funnel (Page Views → Sign Ups → Plans → Vendors → RSVPs) with conversion rate cards and target benchmarks |
+| **Usage Patterns** | Top pages horizontal bar chart, daily sign-ups chart |
+| **Event Insights** | Event type donut chart, total events, avg guests, unique locations/themes, popular themes pills |
+| **Errors & Bugs** | Recent error list with message, page, source, timestamp, user ID |
+| **User Bug Reports** | Collapsible table with status management (New → Reviewed → Fixed), category, description, page, reporter, timestamp |
+| **Health & Alerts** | Dynamic alert cards for churn spikes, error rates, API cost warnings, low engagement; green "all healthy" when no issues |
+| **Growth Accounting** | Net growth, retention rate, events/session, plans/user, error rate, activation rate |
+| **User Lifecycle & Churn** | Deleted users count, churn rate, avg tenure, avg events before deletion; deletion reason breakdown chart, deletion timeline, churned user profiles table |
+| **AI Usage & Rate Limits** | Today's AI calls, current tier, budget used %, active users; 7-day usage chart, scaling thresholds table, top API consumers |
+| **API Usage Metrics** | Per-endpoint breakdown (Plan, Moodboard, Guest AI, Vendor Search, Location), cost estimates per endpoint, 7-day stacked service trend |
+| **Polls & Engagement** | Total polls, votes, unique voters, active polls, multi-select rate; poll categories, voter engagement distribution, top polls leaderboard, event types using polls, poll creation timeline |
+
+**Admin Access:**
+- Whitelisted email (`admin@partypal.social`) via `SITE_EMAILS.admin`
+- Firebase ID token authentication for admin API calls (`Authorization: Bearer <token>`)
+- Configurable time period selector (7/14/30/90 days)
 
 ### 2.10 Email System
 9 professional HTML email templates:
@@ -156,7 +183,7 @@ PartyPal is an **AI-powered party planning platform** that transforms event plan
 
 ---
 
-## 5. API Endpoints (23 total)
+## 5. API Endpoints (25 total)
 
 | Endpoint | Method | Purpose |
 |---|---|---|
@@ -165,6 +192,7 @@ PartyPal is an **AI-powered party planning platform** that transforms event plan
 | `/api/moodboard` | POST | Generate AI moodboard (Gemini) |
 | `/api/guests` | POST | Generate AI invites (Gemini) |
 | `/api/polls` | POST | Create/vote on polls (Firestore) |
+| `/api/polls?stats=true` | GET | Poll analytics stats for admin dashboard |
 | `/api/events` | GET/POST | CRUD events (Firestore) |
 | `/api/events/[id]` | GET/DELETE | Get/delete specific event |
 | `/api/events/shared` | GET | Get shared/collaborated events |
@@ -175,11 +203,13 @@ PartyPal is an **AI-powered party planning platform** that transforms event plan
 | `/api/location` | POST | Google Places Autocomplete |
 | `/api/geolocation` | POST | Reverse geocoding |
 | `/api/analytics` | POST | Receive analytics events |
+| `/api/analytics?q=dashboard` | GET | Admin dashboard analytics data (auth required) |
 | `/api/user-data` | GET/POST | User profile & AI memory sync |
 | `/api/account/delete` | DELETE | Account deletion |
-| `/api/admin/users` | GET | List users (admin) |
+| `/api/bugs` | GET/PATCH | Bug reports — list all or update status (admin) |
+| `/api/admin/users` | GET | List users with detailed metrics (admin, auth required) |
 | `/api/admin/events` | GET | List events (admin) |
-| `/api/admin/usage` | GET | API usage stats (admin) |
+| `/api/admin/usage` | GET | API usage stats, rate limits, cost tracking (admin, auth required) |
 | `/api/admin/cleanup` | POST | Data cleanup (admin) |
 | `/api/admin/migrate-events` | POST | Event migration (admin) |
 | `/api/seed-accounts` | POST | Seed test accounts |

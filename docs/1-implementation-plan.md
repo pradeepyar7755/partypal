@@ -82,9 +82,22 @@ A vertically-integrated AI planning platform that generates complete party plans
 1. Set up Firebase project (Auth, Firestore, Admin SDK)
 2. Build 9 professional HTML email templates
 3. Implement Resend email integration
-4. Create admin dashboard with KPIs, funnel analysis, user management
-5. Add privacy policy, settings page, contact form
-6. Implement account deletion with cascade cleanup
+4. Create admin dashboard with 14-section executive analytics:
+   - Executive KPIs, API usage trends with cost tracking
+   - User drill-down with per-user metrics, activity heatmaps, and recent events
+   - Traffic & growth charts, conversion funnel with target benchmarks
+   - Event insights with type distribution donut chart
+   - Error tracking and bug report management (New → Reviewed → Fixed workflow)
+   - Health & alerts engine with dynamic alert generation
+   - Growth accounting (net growth, retention, activation rates)
+   - User lifecycle & churn analysis with deletion reasons and timeline
+   - AI usage monitoring with rate limit tiers and top consumers
+   - Per-endpoint API metrics with cost estimates
+   - Poll analytics with categories, engagement distribution, leaderboard
+   - Live activity feed
+5. Build `/api/bugs` endpoint for user bug report management
+6. Add privacy policy, settings page, contact form
+7. Implement account deletion with cascade cleanup
 
 ### Phase 7: Mobile & Distribution
 1. Set up Capacitor for iOS and Android
@@ -143,7 +156,7 @@ partypal/
 │   ├── guests/page.tsx           # Standalone guest page
 │   ├── rsvp/page.tsx             # Public RSVP (355 lines)
 │   ├── collaborate/page.tsx      # Collaboration accept (155 lines)
-│   ├── admin/page.tsx            # Admin dashboard (1,494 lines)
+│   ├── admin/page.tsx            # Admin dashboard (1,881 lines)
 │   ├── settings/page.tsx         # User settings
 │   ├── login/page.tsx            # Auth page
 │   ├── contact/page.tsx          # Contact form
@@ -159,7 +172,8 @@ partypal/
 │       ├── collaborate/          # Collaboration invite/accept
 │       ├── email/route.ts        # Resend: send emails
 │       ├── notify/route.ts       # Bulk guest notifications
-│       ├── analytics/route.ts    # Analytics event ingestion
+│       ├── bugs/route.ts        # Bug reports: list + status management
+│       ├── analytics/route.ts   # Analytics event ingestion + admin dashboard data
 │       ├── location/route.ts     # Google Places Autocomplete
 │       ├── geolocation/route.ts  # Reverse geocoding
 │       ├── user-data/route.ts    # User profile & AI memory

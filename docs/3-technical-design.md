@@ -294,12 +294,88 @@ flowchart TD
 ```
 
 **Tracked Events:**
-`page_view`, `page_exit`, `sign_up`, `login`, `plan_generated`, `plan_refined`, `vendor_search`, `vendor_shortlisted`, `invite_sent`, `rsvp_submitted`, `event_created`, `notification_sent`, `feature_used`, `error`
+`page_view`, `page_exit`, `sign_up`, `login`, `plan_generated`, `plan_refined`, `vendor_search`, `vendor_shortlisted`, `invite_sent`, `rsvp_submitted`, `notification_sent`, `feature_used`, `error`
 
 **Error Tracking:**
 - Global `window.onerror` handler
 - Unhandled promise rejection handler
 - `beforeunload` + `visibilitychange` flush
+
+### 6.1 Admin Dashboard Architecture
+
+The admin dashboard (`/admin`, 1,881 lines) is a comprehensive 14-section analytics console:
+
+```mermaid
+flowchart TB
+    subgraph DataSources ["Data Sources"]
+        Analytics["GET /api/analytics?q=dashboard"]
+        Usage["GET /api/admin/usage"]
+        Users["GET /api/admin/users"]
+        Polls["GET /api/polls?stats=true"]
+        Bugs["GET /api/bugs"]
+    end
+
+    subgraph Auth ["Auth Layer"]
+        Token[Firebase ID Token]
+        Whitelist["ADMIN_EMAILS whitelist"]
+    end
+
+    subgraph Dashboard ["Admin Dashboard Sections"]
+        KPIs[Executive Summary KPIs]
+        APITrend[API Usage Trend]
+        UserDrill[User Drill-Down]
+        Traffic[Traffic & Growth]
+        Funnel[Conversion Funnel]
+        Patterns[Usage Patterns]
+        Events[Event Insights]
+        Errors[Errors & Bugs]
+        BugReports[User Bug Reports]
+        Health[Health & Alerts]
+        Growth[Growth Accounting]
+        Churn[User Lifecycle & Churn]
+        RateLimits[AI Usage & Rate Limits]
+        PollAnalytics[Polls & Engagement]
+    end
+
+    Token --> Analytics & Usage & Users
+    Analytics --> KPIs & Traffic & Funnel & Patterns & Events & Errors & Health & Growth & Churn
+    Usage --> KPIs & APITrend & RateLimits
+    Users --> UserDrill
+    Polls --> PollAnalytics
+    Bugs --> BugReports
+```
+
+**Admin Authentication Pattern:**
+```typescript
+// Admin APIs use Firebase ID token auth
+const token = await user.getIdToken()
+const res = await fetch('/api/admin/users', {
+    headers: { Authorization: `Bearer ${token}` }
+})
+```
+
+**Health & Alerts Engine:**
+The dashboard dynamically generates alert cards by analyzing cross-section data:
+- Churn spike detection (any deletions at early stage)
+- Error rate threshold (>1% of total events)
+- API cost monitoring (>$10/mo warning, >$25/mo caution)
+- Engagement checks (<2 sessions per registered user)
+- All-clear positive signal when no issues detected
+
+**Bug Report Workflow:**
+```
+User submits bug → POST /api/bugs → Firestore bugs collection
+Admin views reports → GET /api/bugs → Table with status management
+Admin updates status → PATCH /api/bugs → New → Reviewed → Fixed
+```
+
+**Sub-Components:**
+| Component | Purpose |
+|---|---|
+| `KPICard` | Reusable metric card with icon, value, optional color and subtitle |
+| `FunnelStep` | Funnel visualization bar with label, value, percentage, and rate |
+| `RateCard` | Conversion rate display with progress bar and target benchmark |
+| `MetricBox` | Compact metric display with emoji, value, and label |
 
 ---
 
@@ -309,12 +385,13 @@ flowchart TD
 |---|---|
 | **API Keys** | Server-side only (`process.env`), never exposed to client |
 | **Auth** | Firebase Auth tokens, server-side verification via Admin SDK |
-| **Admin** | Email whitelist in `admin-auth.ts` and `Nav.tsx` |
+| **Admin** | Email whitelist (`SITE_EMAILS.admin` in `constants.ts`) checked in admin page and `Nav.tsx`; admin API endpoints require Firebase ID token in `Authorization: Bearer` header |
 | **Rate Limiting** | IP + UID based, Firestore-backed daily counters |
 | **Input Validation** | Required field checks on all API routes |
 | **CORS** | Default Next.js CORS (same-origin API routes) |
 | **Data Privacy** | Account deletion cascades through events, analytics, user data |
 | **Env Variables** | `.env.local` in `.gitignore`, Vercel env vars for production |
+| **Bug Reports** | User-submitted bugs stored in Firestore, status managed by admin |
 
 ---
 
