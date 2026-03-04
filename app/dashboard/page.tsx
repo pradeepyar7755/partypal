@@ -356,7 +356,6 @@ function DashboardContent() {
         if (!eventDate) return timeline
         const ev = new Date(eventDate + 'T12:00:00')
         if (isNaN(ev.getTime())) return timeline
-        const evLabel = ev.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
 
         // Ensure an "Event Day" item exists
         const hasEventDay = timeline.some(t => /event\s*day/i.test(t.weeks) || /event\s*day/i.test(t.task))
@@ -367,36 +366,77 @@ function DashboardContent() {
             priority: 'high',
         }]
 
+        const now = new Date()
+
+        // Parse a milestone's "weeks" label into a target Date for sorting
+        const parseTargetDate = (weeks: string, task: string): Date | null => {
+            const w = weeks.trim()
+            const combined = `${weeks} ${task}`
+
+            // Event Day — always the event date
+            if (/event\s*day/i.test(w) || /event\s*day/i.test(task)) return new Date(ev)
+
+            // Today
+            if (/^today$/i.test(w)) return new Date(now)
+
+            // Tomorrow
+            if (/tomorrow/i.test(w)) { const d = new Date(now); d.setDate(d.getDate() + 1); return d }
+
+            // This week
+            if (/this\s*week/i.test(w)) { const d = new Date(now); d.setDate(d.getDate() + 3); return d }
+
+            // Night/day before
+            if (/(?:night|day)\s*(?:before|of\s*prep)/i.test(w)) { const d = new Date(ev); d.setDate(d.getDate() - 1); return d }
+
+            // Week of (the event) — start of event week
+            if (/week\s*of/i.test(w)) { const d = new Date(ev); d.setDate(d.getDate() - 4); return d }
+
+            // Range format: "Now — X Weeks/Days Out" — use the far end
+            const rangeWeeks = combined.match(/now\s*[—–-]\s*(\d+)\s*w(?:ee)?ks?\s*out/i)
+            if (rangeWeeks) { const d = new Date(ev); d.setDate(d.getDate() - parseInt(rangeWeeks[1]) * 7); return d }
+            const rangeDays = combined.match(/now\s*[—–-]\s*(\d+)\s*days?\s*out/i)
+            if (rangeDays) { const d = new Date(ev); d.setDate(d.getDate() - parseInt(rangeDays[1])); return d }
+
+            // "X months out/before"
+            const moMatch = w.match(/(\d+)\s*months?\s*(?:out|before)/i)
+            if (moMatch) { const d = new Date(ev); d.setDate(d.getDate() - parseInt(moMatch[1]) * 30); return d }
+
+            // "X weeks out/before"
+            const wOutMatch = w.match(/(\d+)\s*w(?:ee)?ks?\s*(?:out|before)/i)
+            if (wOutMatch) { const d = new Date(ev); d.setDate(d.getDate() - parseInt(wOutMatch[1]) * 7); return d }
+
+            // "X days out/before"
+            const dOutMatch = w.match(/(\d+)\s*days?\s*(?:out|before)/i)
+            if (dOutMatch) { const d = new Date(ev); d.setDate(d.getDate() - parseInt(dOutMatch[1])); return d }
+
+            // "Next X weeks"
+            const nextW = w.match(/next\s*(\d+)\s*w(?:ee)?ks?/i)
+            if (nextW) { const d = new Date(now); d.setDate(d.getDate() + parseInt(nextW[1]) * 7); return d }
+
+            // "Next X days"
+            const nextD = w.match(/next\s*(\d+)\s*days?/i)
+            if (nextD) { const d = new Date(now); d.setDate(d.getDate() + parseInt(nextD[1])); return d }
+
+            // "X week(s)/day(s)" without "out" or "before" — treat as before event
+            const bareW = w.match(/^(\d+)\s*w(?:ee)?ks?$/i)
+            if (bareW) { const d = new Date(ev); d.setDate(d.getDate() - parseInt(bareW[1]) * 7); return d }
+            const bareD = w.match(/^(\d+)\s*days?$/i)
+            if (bareD) { const d = new Date(ev); d.setDate(d.getDate() - parseInt(bareD[1])); return d }
+
+            // "ASAP" / "Immediately" / "Right away"
+            if (/asap|immediate|right\s*away/i.test(w)) return new Date(now)
+
+            return null
+        }
+
         // Compute dates and attach sortKey for chronological ordering
-        const withDates = items.map(t => {
+        const withDates = items.map((t, idx) => {
             let weeks = t.weeks
-            // Parse various time offset formats
-            const wMatch = weeks.match(/(\d+)\s*w(?:ee)?ks?\s*out/i)
-            const dOutMatch = weeks.match(/(\d+)\s*days?\s*out/i)
-            const dMatch = weeks.match(/day\s*(?:before|of\s*prep)/i)
-            const eventDayMatch = /event\s*day/i.test(weeks) || /event\s*day/i.test(t.task)
-            const thisWeekMatch = /this\s*week/i.test(weeks)
-            const tomorrowMatch = /tomorrow/i.test(weeks)
-            const todayMatch = /^today$/i.test(weeks.trim())
-            let targetDate: Date | null = null
-            if (eventDayMatch) {
-                targetDate = new Date(ev)
-            } else if (todayMatch) {
-                targetDate = new Date()
-            } else if (tomorrowMatch) {
-                targetDate = new Date(); targetDate.setDate(targetDate.getDate() + 1)
-            } else if (thisWeekMatch) {
-                targetDate = new Date(); targetDate.setDate(targetDate.getDate() + 3) // mid-week
-            } else if (dMatch) {
-                targetDate = new Date(ev); targetDate.setDate(targetDate.getDate() - 1)
-            } else if (dOutMatch) {
-                const days = parseInt(dOutMatch[1])
-                targetDate = new Date(ev); targetDate.setDate(targetDate.getDate() - days)
-            } else if (wMatch) {
-                const wks = parseInt(wMatch[1])
-                targetDate = new Date(ev); targetDate.setDate(targetDate.getDate() - wks * 7)
-            }
-            let sortKey = targetDate && !isNaN(targetDate.getTime()) ? targetDate.getTime() : Infinity
+            const targetDate = parseTargetDate(weeks, t.task)
+
+            // Use parsed date if available; fall back to original index to preserve AI order
+            let sortKey = targetDate && !isNaN(targetDate.getTime()) ? targetDate.getTime() : ev.getTime() - (items.length - idx)
+
             if (targetDate && !isNaN(targetDate.getTime())) {
                 const label = targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
                 // Strip existing date prefix if present
@@ -645,7 +685,16 @@ function DashboardContent() {
         fetch(`/api/events/shared?uid=${user.uid}&email=${encodeURIComponent(user.email || '')}`)
             .then(r => r.json())
             .then(d => {
-                setSharedEvents(d.events || [])
+                const shared = d.events || []
+                setSharedEvents(shared)
+                // Auto-select the first shared event if user is on the demo card
+                // and has no owned events (i.e. collaborator-only user)
+                if (shared.length > 0 && isDemo && allEvents.filter(e => e.eventId !== 'demo').length === 0) {
+                    const urlParams = new URLSearchParams(window.location.search)
+                    if (!urlParams.get('event')) {
+                        loadEvent(shared[0], false)
+                    }
+                }
             })
             .catch(() => { /* silent */ })
     }, [user])

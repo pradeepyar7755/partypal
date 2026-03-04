@@ -36,8 +36,9 @@ function CollaborateContent() {
             const data = await res.json()
             if (data.success || data.eventId) {
                 setAccepted(true)
-                // Redirect to dashboard after a moment
-                setTimeout(() => router.push('/dashboard'), 2000)
+                // Redirect to dashboard with event context so the correct card loads
+                const eid = data.eventId || invite?.eventId
+                setTimeout(() => router.push(eid ? `/dashboard?event=${eid}` : '/dashboard'), 2000)
             } else {
                 setError(data.error || 'Failed to accept')
             }
@@ -133,7 +134,7 @@ function CollaborateContent() {
                 {invite.status === 'accepted' ? (
                     <>
                         <p style={{ color: 'var(--teal)', fontWeight: 800, marginBottom: '1rem' }}>✅ Already accepted!</p>
-                        <button onClick={() => router.push('/dashboard')} style={{ width: '100%', padding: '0.8rem', borderRadius: 10, background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '0.95rem' }}>Go to Dashboard</button>
+                        <button onClick={() => router.push(invite.eventId ? `/dashboard?event=${invite.eventId}` : '/dashboard')} style={{ width: '100%', padding: '0.8rem', borderRadius: 10, background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '0.95rem' }}>Go to Dashboard</button>
                     </>
                 ) : (
                     <button disabled={accepting} onClick={handleAccept} style={{ width: '100%', padding: '0.8rem', borderRadius: 10, background: 'linear-gradient(135deg, var(--yellow), #E8896A)', color: 'var(--dark-navy)', border: 'none', fontWeight: 800, cursor: 'pointer', fontSize: '0.95rem', opacity: accepting ? 0.6 : 1 }}>

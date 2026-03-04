@@ -4,6 +4,8 @@ import {
     User,
     onAuthStateChanged,
     signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult,
     GoogleAuthProvider,
     OAuthProvider,
     signInWithEmailAndPassword,
@@ -46,11 +48,30 @@ const AuthContext = createContext<AuthContextType>({
     sendVerificationEmail: async () => { },
 })
 
+// Returns true when running inside a Capacitor native app (iOS/Android)
+function isNativeApp(): boolean {
+    return typeof window !== 'undefined' && !!(window as any).Capacitor?.isNativePlatform()
+}
+
 export function AuthProvider({ children }: { children: ReactNode }) {
     const [user, setUser] = useState<User | null>(null)
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
+        // Handle redirect result after native OAuth flow completes
+        if (isNativeApp()) {
+            getRedirectResult(auth).then((result) => {
+                if (result?.user) {
+                    const providerId = result.user.providerData?.[0]?.providerId || 'unknown'
+                    if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
+                        trackSignUp(providerId === 'google.com' ? 'google' : 'apple')
+                    } else {
+                        trackLogin(providerId === 'google.com' ? 'google' : 'apple')
+                    }
+                }
+            }).catch(() => { })
+        }
+
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setUser(user)
             setStorageUid(user?.uid || null)
@@ -77,11 +98,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signInWithGoogle = async () => {
         const provider = new GoogleAuthProvider()
-        const result = await signInWithPopup(auth, provider)
-        if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
-            trackSignUp('google')
+        if (isNativeApp()) {
+            // Popups are blocked in native WebViews — use redirect flow instead
+            await signInWithRedirect(auth, provider)
         } else {
-            trackLogin('google')
+            const result = await signInWithPopup(auth, provider)
+            if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
+                trackSignUp('google')
+            } else {
+                trackLogin('google')
+            }
         }
     }
 
@@ -89,11 +115,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const provider = new OAuthProvider('apple.com')
         provider.addScope('email')
         provider.addScope('name')
-        const result = await signInWithPopup(auth, provider)
-        if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
-            trackSignUp('apple')
+        if (isNativeApp()) {
+            // Popups are blocked in native WebViews — use redirect flow instead
+            await signInWithRedirect(auth, provider)
         } else {
-            trackLogin('apple')
+            const result = await signInWithPopup(auth, provider)
+            if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
+                trackSignUp('apple')
+            } else {
+                trackLogin('apple')
+            }
         }
     }
 

@@ -1,5 +1,6 @@
 'use client'
-import { useState } from 'react'
+import { useState, Suspense } from 'react'
+import { useSearchParams } from 'next/navigation'
 import styles from './contact.module.css'
 
 const FAQS = [
@@ -39,8 +40,12 @@ const CATEGORIES = [
     { value: 'other', label: '📝  Other' },
 ]
 
-export default function ContactPage() {
-    const [activeTab, setActiveTab] = useState<'faq' | 'email' | 'feedback'>('faq')
+function ContactPageInner() {
+    const searchParams = useSearchParams()
+    const tabParam = searchParams.get('tab') as 'faq' | 'email' | 'feedback' | null
+    const [activeTab, setActiveTab] = useState<'faq' | 'email' | 'feedback'>(
+        tabParam && ['faq', 'email', 'feedback'].includes(tabParam) ? tabParam : 'faq'
+    )
     const [openFaq, setOpenFaq] = useState<number | null>(null)
     const [copied, setCopied] = useState(false)
     const [feedbackForm, setFeedbackForm] = useState({ category: '', description: '', email: '', name: '' })
@@ -240,5 +245,13 @@ export default function ContactPage() {
                 </div>
             </div>
         </main>
+    )
+}
+
+export default function ContactPage() {
+    return (
+        <Suspense fallback={null}>
+            <ContactPageInner />
+        </Suspense>
     )
 }
