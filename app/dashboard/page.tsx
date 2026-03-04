@@ -2356,7 +2356,7 @@ function DashboardContent() {
                                                                                 return (
                                                                                     <button
                                                                                         className={`${styles.tlQuickAction} ${isOverdue ? styles.tlQuickActionOverdue : isDueSoon ? styles.tlQuickActionDueSoon : ''}`}
-                                                                                        onClick={() => { setTasksCollapsed(false); setShowChecklistHint(false) }}
+                                                                                        onClick={() => { setTasksCollapsed(false) }}
                                                                                     >
                                                                                         <span>{qa.emoji}</span>
                                                                                         <span>{qa.label}</span>
