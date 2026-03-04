@@ -185,10 +185,11 @@
   display: grid;
   grid-template-columns: 240px 1fr;
   gap: 2rem;
+  box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 /* ══ SIDEBAR FILTERS ══ */
-.sidebarFilters {}
 
 .filterSection {
   margin-bottom: 2rem;
@@ -713,6 +714,10 @@
   .featured .vendorCardImg {
     width: 100%;
   }
+
+  .searchBarInner {
+    flex-wrap: wrap;
+  }
 }
 
 @media (max-width: 600px) {
@@ -724,8 +729,8 @@
     grid-column: span 1;
   }
 
-  .searchBarInner {
-    flex-wrap: wrap;
+  .searchBarWrap {
+    padding: 1.5rem 1.2rem;
   }
 
   .header {

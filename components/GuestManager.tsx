@@ -730,18 +730,18 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                     {isEditingStrip ? (
                         <>
                             {/* Editable Fields */}
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', borderRight: '1px solid var(--border)', paddingRight: '0.6rem' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', borderRight: '1px solid var(--border)', paddingRight: '0.6rem', flexWrap: 'wrap' }}>
                                 <span style={{ fontSize: '0.58rem', fontWeight: 700, color: '#9aabbb' }}>⏰</span>
-                                <input type="time" value={draftDetails?.time || ''} onChange={e => setDraftDetails(prev => prev ? { ...prev, time: e.target.value } : prev)} className={styles.addInput} style={{ margin: 0, padding: '0.1rem 0.25rem', fontSize: '0.65rem', fontWeight: 700, width: 85, color: 'var(--teal)' }} />
-                                <select value={draftDetails?.timezone || ''} onChange={e => setDraftDetails(prev => prev ? { ...prev, timezone: e.target.value } : prev)} className={styles.addInput} style={{ margin: 0, padding: '0.1rem 0.15rem', fontSize: '0.58rem', fontWeight: 700, width: 55, color: '#9aabbb', appearance: 'auto' }}>
+                                <input type="time" value={draftDetails?.time || ''} onChange={e => setDraftDetails(prev => prev ? { ...prev, time: e.target.value } : prev)} className={styles.addInput} style={{ margin: 0, padding: '0.1rem 0.25rem', fontSize: '0.65rem', fontWeight: 700, minWidth: 85, color: 'var(--teal)' }} />
+                                <select value={draftDetails?.timezone || ''} onChange={e => setDraftDetails(prev => prev ? { ...prev, timezone: e.target.value } : prev)} className={styles.addInput} style={{ margin: 0, padding: '0.1rem 0.15rem', fontSize: '0.58rem', fontWeight: 700, minWidth: 55, color: '#9aabbb', appearance: 'auto' }}>
                                     <option value="">TZ</option>
                                     {TZ_OPTIONS.map(tz => <option key={tz} value={tz}>{tz}</option>)}
                                 </select>
                             </div>
                             <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb' }}>Host</span>
-                            <input value={draftDetails?.hostName || ''} onChange={e => setDraftDetails(prev => prev ? { ...prev, hostName: e.target.value } : prev)} className={styles.addInput} style={{ margin: 0, padding: '0.15rem 0.35rem', fontSize: '0.68rem', fontWeight: 700, width: 100 }} />
+                            <input value={draftDetails?.hostName || ''} onChange={e => setDraftDetails(prev => prev ? { ...prev, hostName: e.target.value } : prev)} className={styles.addInput} style={{ margin: 0, padding: '0.15rem 0.35rem', fontSize: '0.68rem', fontWeight: 700, flex: 1, minWidth: 100 }} />
                             <span style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb' }}>RSVP by</span>
-                            <input type="date" value={draftDetails?.rsvpBy || ''} onChange={e => setDraftDetails(prev => prev ? { ...prev, rsvpBy: e.target.value } : prev)} className={styles.addInput} style={{ margin: 0, padding: '0.15rem 0.35rem', fontSize: '0.68rem', width: 110 }} />
+                            <input type="date" value={draftDetails?.rsvpBy || ''} onChange={e => setDraftDetails(prev => prev ? { ...prev, rsvpBy: e.target.value } : prev)} className={styles.addInput} style={{ margin: 0, padding: '0.15rem 0.35rem', fontSize: '0.68rem', flex: 1, minWidth: 110 }} />
 
                             <button onClick={saveEventDetails} style={{ background: 'var(--teal)', border: 'none', borderRadius: 6, padding: '0.2rem 0.6rem', fontSize: '0.65rem', fontWeight: 800, color: '#fff', cursor: 'pointer' }}>✓ Save</button>
                             <button onClick={() => { setIsEditingStrip(false); setDraftDetails(null) }} style={{ background: 'none', border: '1px solid #ccc', borderRadius: 6, padding: '0.2rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', cursor: 'pointer' }}>✕ Cancel</button>
@@ -783,8 +783,8 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                 <button onClick={() => setGiftRegistry(prev => prev.filter((_, i) => i !== idx))} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#E8896A', fontWeight: 800, fontSize: '0.7rem', padding: '0.1rem 0.3rem' }}>✕</button>
                             </div>
                         ))}
-                        <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', marginTop: '0.3rem' }}>
-                            <select value={registryForm.name} onChange={e => setRegistryForm(prev => ({ ...prev, name: e.target.value }))} className={styles.addInput} style={{ margin: 0, padding: '0.2rem 0.3rem', fontSize: '0.68rem', fontWeight: 700, width: 100 }}>
+                        <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center', marginTop: '0.3rem', flexWrap: 'wrap' }}>
+                            <select value={registryForm.name} onChange={e => setRegistryForm(prev => ({ ...prev, name: e.target.value }))} className={styles.addInput} style={{ margin: 0, padding: '0.2rem 0.3rem', fontSize: '0.68rem', fontWeight: 700, minWidth: 100 }}>
                                 <option value="">Platform...</option>
                                 <option>Amazon</option>
                                 <option>Target</option>
@@ -793,7 +793,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                 <option>Etsy</option>
                                 <option>Custom</option>
                             </select>
-                            <input value={registryForm.url} onChange={e => setRegistryForm(prev => ({ ...prev, url: e.target.value }))} placeholder="https://registry-link.com/..." className={styles.addInput} style={{ margin: 0, padding: '0.2rem 0.35rem', fontSize: '0.68rem', flex: 1 }} />
+                            <input value={registryForm.url} onChange={e => setRegistryForm(prev => ({ ...prev, url: e.target.value }))} placeholder="https://registry-link.com/..." className={styles.addInput} style={{ margin: 0, padding: '0.2rem 0.35rem', fontSize: '0.68rem', flex: 1, minWidth: 160 }} />
                             <button disabled={!registryForm.name || !registryForm.url} onClick={() => { if (registryForm.name && registryForm.url) { setGiftRegistry(prev => [...prev, { name: registryForm.name, url: registryForm.url.startsWith('http') ? registryForm.url : `https://${registryForm.url}` }]); setRegistryForm({ name: '', url: '' }); showToast('Registry link added!', 'success') } }} style={{ background: 'var(--teal)', color: '#fff', border: 'none', borderRadius: 6, padding: '0.2rem 0.5rem', fontSize: '0.68rem', fontWeight: 800, cursor: !registryForm.name || !registryForm.url ? 'not-allowed' : 'pointer', opacity: !registryForm.name || !registryForm.url ? 0.5 : 1, whiteSpace: 'nowrap' }}>+ Add</button>
                         </div>
                     </div>

@@ -514,10 +514,15 @@ function DashboardContent() {
         const urlTab = urlParams.get('tab') as 'plan' | 'theme' | 'vendors' | 'guests' | 'polls' | null
 
         // If URL specifies an event, load that event
-        if (urlEventId && storedEvents.length > 0) {
+        if (urlEventId) {
             const targetEvent = storedEvents.find(ev => ev.eventId === urlEventId)
             if (targetEvent) {
                 loadEvent(targetEvent, false, urlTab || 'plan')
+                return
+            } else {
+                // Event not found locally (might be a shared event loading from cloud)
+                // Load a stub so the URL param isn't overwritten by the demo card
+                loadEvent({ ...DEFAULT_PLAN, eventId: urlEventId }, false, urlTab || 'plan')
                 return
             }
         }
@@ -535,6 +540,11 @@ function DashboardContent() {
         const targetEvent = storedEvents.find(ev => ev.eventId === urlEventParam)
         if (targetEvent) {
             loadEvent(targetEvent, false, (urlTabParam as 'plan' | 'theme' | 'vendors' | 'guests' | 'polls') || 'plan')
+        } else {
+            // Stub for shared events loading from cloud
+            if (data.eventId !== urlEventParam) {
+                loadEvent({ ...DEFAULT_PLAN, eventId: urlEventParam }, false, (urlTabParam as 'plan' | 'theme' | 'vendors' | 'guests' | 'polls') || 'plan')
+            }
         }
     }, [urlEventParam, urlTabParam])
 
@@ -629,13 +639,23 @@ function DashboardContent() {
                         setEventGuests(cloudGuests)
                     }
                 } else {
-                    // Active event was deleted from server — clean up orphaned local data
-                    userRemove('partyplan')
-                    userRemove(`partypal_guests_${activePlan.eventId}`)
-                    userRemove(`partypal_vendors_${activePlan.eventId}`)
-                    userRemove(`partypal_collabs_${activePlan.eventId}`)
-                    userRemove(`partypal_polls_${activePlan.eventId}`)
-                    loadEvent(DEFAULT_PLAN, true)
+                    // Active event was deleted from server (or is a shared event handled separately)
+                    // If it was just a stub from URL parm, don't clean up yet (shared fetch handles it)
+                    if (activePlan.eventType !== DEFAULT_PLAN.eventType) {
+                        userRemove('partyplan')
+                        userRemove(`partypal_guests_${activePlan.eventId}`)
+                        userRemove(`partypal_vendors_${activePlan.eventId}`)
+                        userRemove(`partypal_collabs_${activePlan.eventId}`)
+                        userRemove(`partypal_polls_${activePlan.eventId}`)
+                        loadEvent(DEFAULT_PLAN, true)
+                    }
+                }
+            } else if (data.eventId && data.eventId !== 'demo' && data.eventType === DEFAULT_PLAN.eventType) {
+                // We're currently looking at a stub created from a URL parameter.
+                // If it showed up in serverEvents, load it fully.
+                const serverVersion = serverEvents.find(e => e.eventId === data.eventId)
+                if (serverVersion) {
+                    loadEvent(serverVersion, false, undefined, true)
                 }
             }
         } catch { /* silent */ }
@@ -687,11 +707,20 @@ function DashboardContent() {
             .then(d => {
                 const shared = d.events || []
                 setSharedEvents(shared)
+
+                // If the user's current data.eventId matches one of these shared events, load it
+                // (This resolves the stub created on initial load from the URL parameter)
+                const targetShared = shared.find((e: any) => e.eventId === data.eventId)
+                if (targetShared && data.eventType === DEFAULT_PLAN.eventType) {
+                    loadEvent(targetShared, false)
+                    return
+                }
+
                 // Auto-select the first shared event if user is on the demo card
                 // and has no owned events (i.e. collaborator-only user)
                 if (shared.length > 0 && isDemo && allEvents.filter(e => e.eventId !== 'demo').length === 0) {
                     const urlParams = new URLSearchParams(window.location.search)
-                    if (!urlParams.get('event')) {
+                    if (!urlParams.get('event') || urlParams.get('event') === 'demo') {
                         loadEvent(shared[0], false)
                     }
                 }
@@ -1667,10 +1696,9 @@ function DashboardContent() {
                                     <button
                                         key={key}
                                         onClick={() => setSelectedTab(key)}
+                                        className={`${styles.tabBtn} ${selectedTab === key ? styles.tabBtnActive : ''}`}
                                         style={{
-                                            flex: '1 1 0', textAlign: 'center' as const, padding: '0.6rem 0.4rem', border: 'none', borderBottom: selectedTab === key ? '2.5px solid var(--teal)' : '2.5px solid transparent', whiteSpace: 'nowrap' as const,
-                                            background: 'transparent', color: selectedTab === key ? 'var(--navy)' : '#9aabbb',
-                                            fontWeight: 800, fontSize: '0.82rem', cursor: 'pointer', transition: 'all 0.2s', borderRadius: '8px 8px 0 0', minWidth: 0,
+                                            borderBottom: selectedTab === key ? '2.5px solid var(--teal)' : '2.5px solid transparent',
                                         }}
                                     >
                                         {label}
@@ -1721,7 +1749,7 @@ function DashboardContent() {
                             </div>
                         </div>
                     ) : (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1fr) 320px', gap: '1.5rem' }}>
+                        <div className={styles.vendorsTabGrid}>
                             <div>
                                 {/* Add Vendor Form */}
                                 <div className="card" style={{ padding: '1.2rem', marginBottom: '1rem' }}>
@@ -2159,9 +2187,9 @@ function DashboardContent() {
                                             })()}
                                             <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', marginLeft: 'auto' }}>{checkDone}/{checkTotal} ({checkPct}%)</span>
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', width: '100%' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', width: '100%', flexWrap: 'wrap' }}>
                                             <span className={`${styles.sourceBadge} ${styles.claudeBadge}`} style={{ fontSize: '0.58rem', padding: '0.08rem 0.35rem' }}>AI Generated</span>
-                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flex: 1 }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', flex: 1, minWidth: 150 }}>
                                                 <input value={refineTimelineInput} onChange={e => setRefineTimelineInput(e.target.value)} onKeyDown={e => { if (e.key === 'Enter') refineTimeline() }} placeholder="Refine with AI..." style={{ flex: 1, padding: '0.22rem 0.5rem', borderRadius: 6, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.68rem', fontWeight: 600, outline: 'none', color: 'var(--navy)' }} />
                                                 <button onClick={refineTimeline} disabled={isRefiningTimeline || !refineTimelineInput.trim()} style={{ background: 'linear-gradient(135deg, var(--teal), #3D8C6E)', color: '#fff', border: 'none', borderRadius: 6, padding: '0.22rem 0.45rem', fontSize: '0.62rem', fontWeight: 800, cursor: 'pointer', whiteSpace: 'nowrap', opacity: isRefiningTimeline || !refineTimelineInput.trim() ? 0.5 : 1 }}>{isRefiningTimeline ? '...' : '✨'}</button>
                                             </div>
