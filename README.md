@@ -1,6 +1,6 @@
 # 🎉 PartyPal — AI-Powered Party Planning
 
-Live at: **partypal.social**  
+Live at: **partypal.social**
 Built with: Next.js 14 · Claude AI · Vercel
 
 ---
@@ -65,7 +65,7 @@ app/
 ├── guests/page.tsx       # Guest management + invite generator
 └── api/
     ├── plan/route.ts     # Claude: full party plan
-    ├── vendors/route.ts  # Claude: vendor recommendations  
+    ├── vendors/route.ts  # Claude: vendor recommendations
     ├── moodboard/route.ts# Claude: theme & mood board
     └── guests/route.ts   # Claude: invite generator
 ```
@@ -90,6 +90,30 @@ app/
 | Anthropic API | Pay-as-you-go | ~$5–20 |
 | Namecheap domain | partypal.social | ~$1/mo |
 | **Total** | | **~$6–21/mo** |
+
+---
+
+## 📚 Documentation
+
+Detailed project documentation lives in the [`docs/`](docs/) folder:
+
+| Document | Description |
+|---|---|
+| [Product Specs](docs/0-product-specs.md) | Full feature set, pages, routes, and 25 API endpoints |
+| [Implementation Plan](docs/1-implementation-plan.md) | Build phases, tech choices, and architecture decisions |
+| [Functional Design](docs/2-functional-design.md) | User journeys, feature flows, data model, and admin dashboard |
+| [Technical Design](docs/3-technical-design.md) | System architecture, AI context engine, analytics, and security |
+| [Agentic Workflow](docs/4-agentic-workflow.md) | How AI agents were used to build PartyPal |
+| [Claude Skill](docs/5-claude-skill.md) | Reusable skill for building AI planning apps |
+| [Resource Usage](docs/6-resource-usage.md) | API costs, rate limits, and monthly projections |
+| [Subscription Model](docs/7-subscription-model.md) | Monetization analysis with profit margin scenarios |
+
+### Admin Dashboard
+
+The admin dashboard (`/admin`) is a 14-section executive analytics console documented across:
+- **[Product Specs § 2.9](docs/0-product-specs.md#29-analytics--admin)** — Feature overview and all dashboard sections
+- **[Functional Design § 4](docs/2-functional-design.md#4-admin-dashboard-flow)** — Access control, section details, data sources
+- **[Technical Design § 6.1](docs/3-technical-design.md#61-admin-dashboard-architecture)** — Architecture diagram, auth patterns, sub-components
 
 ---
 
