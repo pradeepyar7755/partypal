@@ -1486,28 +1486,32 @@ function DashboardContent() {
                                 const isPast = evDate ? evDate < new Date() : false
                                 const isShared = (ev as any)._shared
                                 const palette = [
-                                    { bg: 'linear-gradient(135deg, rgba(74,173,168,0.18), rgba(61,140,110,0.12))', border: 'rgba(74,173,168,0.5)' },
-                                    { bg: 'linear-gradient(135deg, rgba(232,137,106,0.18), rgba(200,100,70,0.12))', border: 'rgba(232,137,106,0.5)' },
-                                    { bg: 'linear-gradient(135deg, rgba(123,94,167,0.18), rgba(100,70,150,0.12))', border: 'rgba(123,94,167,0.5)' },
-                                    { bg: 'linear-gradient(135deg, rgba(247,201,72,0.20), rgba(220,170,40,0.12))', border: 'rgba(247,201,72,0.5)' },
-                                    { bg: 'linear-gradient(135deg, rgba(66,133,244,0.18), rgba(40,100,200,0.12))', border: 'rgba(66,133,244,0.5)' },
+                                    { bg: 'linear-gradient(135deg, rgba(74,173,168,0.18), rgba(61,140,110,0.12))', border: 'rgba(74,173,168,0.5)', stripe: 'rgba(74,173,168,0.7)' },
+                                    { bg: 'linear-gradient(135deg, rgba(232,137,106,0.18), rgba(200,100,70,0.12))', border: 'rgba(232,137,106,0.5)', stripe: 'rgba(232,137,106,0.7)' },
+                                    { bg: 'linear-gradient(135deg, rgba(123,94,167,0.18), rgba(100,70,150,0.12))', border: 'rgba(123,94,167,0.5)', stripe: 'rgba(123,94,167,0.7)' },
+                                    { bg: 'linear-gradient(135deg, rgba(247,201,72,0.20), rgba(220,170,40,0.12))', border: 'rgba(247,201,72,0.5)', stripe: 'rgba(247,201,72,0.7)' },
+                                    { bg: 'linear-gradient(135deg, rgba(66,133,244,0.18), rgba(40,100,200,0.12))', border: 'rgba(66,133,244,0.5)', stripe: 'rgba(66,133,244,0.7)' },
                                 ]
                                 const color = palette[idx % palette.length]
                                 return (
                                     <div
                                         key={ev.eventId}
                                         onClick={() => loadEvent(ev, false)}
+                                        className={isActive ? styles.eventCardShimmer : undefined}
                                         style={{
-                                            minWidth: 150, padding: '0.8rem 1rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const,
+                                            minWidth: 150, padding: '0.8rem 1rem', borderRadius: 14, cursor: 'pointer', transition: 'all 0.2s', position: 'relative' as const, overflow: 'hidden' as const,
                                             background: isActive ? color.bg : isPast ? 'rgba(0,0,0,0.04)' : 'linear-gradient(135deg, rgba(0,0,0,0.03), rgba(0,0,0,0.06))',
-                                            border: isActive ? `2px solid ${color.border}` : '1.5px solid rgba(0,0,0,0.1)',
+                                            borderTop: isActive ? `4px solid ${color.stripe}` : isPast ? '3px solid rgba(155,155,155,0.2)' : `3px solid ${color.stripe.replace('0.7', '0.25')}`,
+                                            borderLeft: isActive ? `2px solid ${color.border}` : '1.5px solid rgba(0,0,0,0.1)',
+                                            borderRight: isActive ? `2px solid ${color.border}` : '1.5px solid rgba(0,0,0,0.1)',
+                                            borderBottom: isActive ? `2px solid ${color.border}` : '1.5px solid rgba(0,0,0,0.1)',
                                             boxShadow: isActive ? `0 4px 16px ${color.border.replace('0.5', '0.2')}` : '0 1px 4px rgba(0,0,0,0.04)',
                                             opacity: isPast && !isActive ? 0.65 : 1,
                                         }}
                                     >
                                         {isPast && <div style={{ position: 'absolute', top: 6, left: 6, background: 'rgba(155,155,155,0.15)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.55rem', fontWeight: 900, color: '#888', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Past Event</div>}
                                         {isShared && <div style={{ position: 'absolute', top: 6, right: 28, background: 'rgba(123,94,167,0.15)', borderRadius: 4, padding: '0.1rem 0.4rem', fontSize: '0.55rem', fontWeight: 900, color: '#7B5EA7', letterSpacing: '0.06em', textTransform: 'uppercase' as const }}>Shared</div>}
-                                        <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem' }}>{ev.eventType?.split(' ')[0] || '🎉'}</div>
+                                        <div style={{ fontSize: '1.5rem', marginBottom: '0.3rem', filter: isActive ? `drop-shadow(0 0 6px ${color.border}) drop-shadow(0 0 12px ${color.border.replace('0.5', '0.2')})` : `drop-shadow(0 0 4px ${color.border.replace('0.5', '0.15')})`, transition: 'filter 0.3s ease' }}>{ev.eventType?.split(' ')[0] || '🎉'}</div>
                                         <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.8rem', color: 'var(--navy)', marginBottom: '0.2rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 140 }}>{ev.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}</div>
                                         <div style={{ fontSize: '0.7rem', color: '#6b7c93', fontWeight: 700 }}>
                                             {ev.date ? new Date(ev.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'No date'} · {ev.guests || '?'} guests
@@ -1534,6 +1538,7 @@ function DashboardContent() {
                                             style={{ position: 'absolute', top: 6, right: 6, background: 'rgba(123,94,167,0.1)', border: '1px solid rgba(123,94,167,0.3)', borderRadius: 6, width: 22, height: 22, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer', fontSize: '0.6rem', color: '#7B5EA7', padding: 0, lineHeight: 1 }}
                                             title="Leave shared event"
                                         >⇥</button>}
+                                        {isActive && <span className={styles.eventCardSparkle}>✨</span>}
                                     </div>
                                 )
                             })}
