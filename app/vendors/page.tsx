@@ -93,6 +93,28 @@ function VendorsContent() {
       if (match) setActivecat(match)
     }
 
+    // Also fetch shared events so collaborators can add vendors to them
+    if (user && !user.isAnonymous) {
+      fetch(`/api/events/shared?uid=${user.uid}&email=${encodeURIComponent(user.email || '')}`)
+        .then(r => r.json())
+        .then(d => {
+          const shared = (d.events || [])
+            .filter((e: any) => {
+              if (!e.eventId || e.eventId === 'demo') return false
+              const eDate = e.date ? new Date(e.date + 'T12:00:00') : null
+              return !eDate || eDate >= now
+            })
+            .map((e: any) => ({ eventId: e.eventId, eventType: (e.eventType || 'Event') + ' (Shared)' }))
+          if (shared.length > 0) {
+            setActiveEvents(prev => {
+              const existingIds = new Set(prev.map(e => e.eventId))
+              return [...prev, ...shared.filter((e: any) => !existingIds.has(e.eventId))]
+            })
+          }
+        })
+        .catch(() => {})
+    }
+
     // Pull shortlist from cloud if logged in
     if (user && !user.isAnonymous) {
       fetch(`/api/user-data?uid=${user.uid}`)

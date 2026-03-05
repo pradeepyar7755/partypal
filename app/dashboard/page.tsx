@@ -716,12 +716,23 @@ function DashboardContent() {
                     return
                 }
 
-                // Auto-select the first shared event if user is on the demo card
-                // and has no owned events (i.e. collaborator-only user)
-                if (shared.length > 0 && isDemo && allEvents.filter(e => e.eventId !== 'demo').length === 0) {
+                // Auto-select best event if user is on the demo card
+                if (isDemo) {
                     const urlParams = new URLSearchParams(window.location.search)
                     if (!urlParams.get('event') || urlParams.get('event') === 'demo') {
-                        loadEvent(shared[0], false)
+                        const ownEvents = allEvents.filter(e => e.eventId !== 'demo')
+                        if (ownEvents.length > 0) {
+                            // Prefer latest own event (upcoming first by date)
+                            const sorted = [...ownEvents].sort((a, b) => {
+                                const aD = a.date ? new Date(a.date + 'T12:00:00').getTime() : 0
+                                const bD = b.date ? new Date(b.date + 'T12:00:00').getTime() : 0
+                                return bD - aD
+                            })
+                            loadEvent(sorted[0], false)
+                        } else if (shared.length > 0) {
+                            // Collaborator-only: load first shared event
+                            loadEvent(shared[0], false)
+                        }
                     }
                 }
             })
