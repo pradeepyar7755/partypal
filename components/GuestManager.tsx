@@ -1,5 +1,5 @@
 'use client'
-import React, { useState, useEffect } from 'react'
+import React, { useState, useEffect, useRef } from 'react'
 import { userGet, userSetJSON, userGetJSON } from '@/lib/userStorage'
 import { showToast } from '@/components/Toast'
 import styles from './GuestManager.module.css'
@@ -124,6 +124,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
     const themeChangeRef = React.useRef(false)
     const customInviteRef = React.useRef<HTMLInputElement>(null)
     const coverPhotoRef = React.useRef<HTMLInputElement>(null)
+    const deletedRsvpIds = useRef<Set<string>>(new Set())
     // Cross-portal AI context
     const { getContextPayload, learn } = useAIContext(planData as Parameters<typeof useAIContext>[0], guests as unknown as Parameters<typeof useAIContext>[1])
 
@@ -298,6 +299,8 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                         let updated = [...prev]
                         let changed = false
                         for (const rsvp of data.rsvps) {
+                            // Skip RSVPs that were deleted locally
+                            if (deletedRsvpIds.current.has(rsvp.id)) continue
                             const rName = (rsvp.name || '').trim().toLowerCase()
                             const rEmail = (rsvp.email || '').trim().toLowerCase()
                             // Find matching guest
@@ -412,9 +415,43 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
         showToast(`${newGuests.length} guests imported!`, 'success')
     }
 
-    const updateStatus = (id: string, status: Guest['status']) => { setGuests(prev => prev.map(g => g.id === id ? { ...g, status } : g)); showToast('RSVP updated', 'info') }
+    // Sync an RSVP guest's edits back to Firestore
+    const syncRsvpToCloud = (guestId: string, updatedGuests: Guest[]) => {
+        if (!eventId || !guestId.startsWith('rsvp_')) return
+        const rsvpId = guestId.replace('rsvp_', '')
+        const guest = updatedGuests.find(g => g.id === guestId)
+        if (!guest) return
+        const statusMap: Record<string, string> = { going: 'going', maybe: 'maybe', declined: 'declined', pending: 'pending' }
+        fetch(`/api/events/${eventId}/rsvp`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                rsvpId,
+                response: statusMap[guest.status] || guest.status,
+                dietary: guest.dietary,
+                additionalGuests: guest.additionalGuests,
+                totalPartySize: 1 + guest.additionalGuests.length,
+                kidCount: guest.additionalGuests.filter(ag => ag.isChild).length,
+            }),
+        }).catch(() => {})
+    }
+
+    const updateStatus = (id: string, status: Guest['status']) => {
+        setGuests(prev => {
+            const updated = prev.map(g => g.id === id ? { ...g, status } : g)
+            syncRsvpToCloud(id, updated)
+            return updated
+        })
+        showToast('RSVP updated', 'info')
+    }
     const removeGuest = async (id: string) => {
         const g = guests.find(x => x.id === id);
+
+        // Track deleted RSVP IDs so polling doesn't re-add them
+        if (id.startsWith('rsvp_') && eventId) {
+            const rsvpId = id.replace('rsvp_', '')
+            deletedRsvpIds.current.add(rsvpId)
+        }
 
         // Remove from local state immediately for fast feedback
         setGuests(prev => prev.filter(x => x.id !== id));
@@ -431,9 +468,27 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
         }
     }
     const addAdditionalToExisting = (guestId: string) => { setGuests(prev => prev.map(g => g.id === guestId ? { ...g, additionalGuests: [...g.additionalGuests, { id: Date.now().toString(), name: '', dietary: 'None', relationship: 'Partner' }] } : g)) }
-    const updateAdditionalExisting = (guestId: string, addId: string, field: string, value: string) => { setGuests(prev => prev.map(g => g.id === guestId ? { ...g, additionalGuests: g.additionalGuests.map(ag => ag.id === addId ? { ...ag, [field]: value } : ag) } : g)) }
-    const removeAdditionalExisting = (guestId: string, addId: string) => { setGuests(prev => prev.map(g => g.id === guestId ? { ...g, additionalGuests: g.additionalGuests.filter(ag => ag.id !== addId) } : g)) }
-    const updateGuestDietary = (guestId: string, dietary: string) => { setGuests(prev => prev.map(g => g.id === guestId ? { ...g, dietary } : g)) }
+    const updateAdditionalExisting = (guestId: string, addId: string, field: string, value: string | boolean) => {
+        setGuests(prev => {
+            const updated = prev.map(g => g.id === guestId ? { ...g, additionalGuests: g.additionalGuests.map(ag => ag.id === addId ? { ...ag, [field]: value } : ag) } : g)
+            syncRsvpToCloud(guestId, updated)
+            return updated
+        })
+    }
+    const removeAdditionalExisting = (guestId: string, addId: string) => {
+        setGuests(prev => {
+            const updated = prev.map(g => g.id === guestId ? { ...g, additionalGuests: g.additionalGuests.filter(ag => ag.id !== addId) } : g)
+            syncRsvpToCloud(guestId, updated)
+            return updated
+        })
+    }
+    const updateGuestDietary = (guestId: string, dietary: string) => {
+        setGuests(prev => {
+            const updated = prev.map(g => g.id === guestId ? { ...g, dietary } : g)
+            syncRsvpToCloud(guestId, updated)
+            return updated
+        })
+    }
 
     const generateInvite = async (retryCount = 0) => {
         setLoadingInvite(true)
@@ -979,9 +1034,19 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                                 {g.additionalGuests.map(ag => (
                                                     <div key={ag.id} className={styles.additionalRow}>
                                                         <input placeholder="Name" value={ag.name} onChange={e => updateAdditionalExisting(g.id, ag.id, 'name', e.target.value)} className={styles.addInputSmall} />
-                                                        <select value={ag.relationship} onChange={e => updateAdditionalExisting(g.id, ag.id, 'relationship', e.target.value)} className={styles.addInputSmall}>
-                                                            {RELATIONSHIP_OPTIONS.map(r => <option key={r}>{r}</option>)}
-                                                        </select>
+                                                        <button
+                                                            onClick={() => updateAdditionalExisting(g.id, ag.id, 'isChild', !ag.isChild)}
+                                                            style={{
+                                                                padding: '0.3rem 0.7rem', borderRadius: 16,
+                                                                border: `1.5px solid ${ag.isChild ? 'rgba(247,201,72,0.5)' : 'rgba(61,140,110,0.3)'}`,
+                                                                background: ag.isChild ? 'rgba(247,201,72,0.12)' : 'rgba(61,140,110,0.08)',
+                                                                color: ag.isChild ? '#c4880a' : '#3D8C6E',
+                                                                fontSize: '0.72rem', fontWeight: 800, cursor: 'pointer', transition: 'all 0.15s',
+                                                                whiteSpace: 'nowrap', flexShrink: 0,
+                                                            }}
+                                                        >
+                                                            {ag.isChild ? '👶 Kid' : '🧑 Adult'}
+                                                        </button>
                                                         <select value={ag.dietary} onChange={e => updateAdditionalExisting(g.id, ag.id, 'dietary', e.target.value)} className={styles.addInputSmall}>
                                                             {DIETARY_OPTIONS.map(d => <option key={d}>{d}</option>)}
                                                         </select>

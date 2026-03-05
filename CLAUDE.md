@@ -22,6 +22,8 @@ PartyPal is an AI-powered party planning app. Users create events, get AI-genera
 | Native | Capacitor | ^8.x |
 | Hosting | Vercel (Git-based deploys) | — |
 | Images | Sharp (server-side) | ^0.34.5 |
+| Markdown | marked (docs viewer) | ^17.0.3 |
+| IDs | uuid | ^9.0.0 |
 
 ## Commands
 
@@ -49,13 +51,17 @@ app/                         # Next.js App Router (pages + API routes)
 ├── guests/                  # Guest management
 ├── vendors/                 # Vendor marketplace
 ├── budget/                  # Budget tracking
-├── rsvp/                    # RSVP page
-├── join/[code]/             # Dynamic RSVP invite link
+├── rsvp/                    # RSVP page (RSVPClient.tsx client component)
+├── results/                 # Party plan results display
+├── join/[code]/             # Dynamic RSVP invite link (layout.tsx + client.tsx)
 ├── poll/[id]/               # Dynamic poll page
 ├── login/                   # Login page
 ├── settings/                # User settings
 ├── admin/                   # Admin dashboard
 ├── collaborate/             # Collaboration page
+├── contact/                 # Contact / FAQ page
+├── docs/                    # Admin documentation viewer (uses marked)
+├── privacy/                 # Privacy policy page
 ├── api/                     # API routes (serverless functions)
 │   ├── events/              # Event CRUD + RSVP + shared events
 │   ├── vendors/             # Vendor search (Google Places)
@@ -65,8 +71,19 @@ app/                         # Next.js App Router (pages + API routes)
 │   ├── email/               # Email sending
 │   ├── polls/               # Poll management
 │   ├── auth/                # Apple auth webhook
-│   ├── admin/               # Admin endpoints
-│   └── ...
+│   ├── admin/               # Admin endpoints (cleanup, migrate-events, usage, users)
+│   ├── account/delete/      # Account deletion
+│   ├── analytics/           # Analytics tracking
+│   ├── bugs/                # Bug report submission
+│   ├── docs/                # Documentation API (serves docs from Firestore)
+│   ├── geolocation/         # Geolocation service
+│   ├── join/[code]/         # RSVP join endpoint
+│   ├── location/            # Location search/details
+│   ├── moodboard/           # Moodboard generation (Gemini AI)
+│   ├── notify/              # Notification service
+│   ├── og/                  # Open Graph image generation
+│   ├── seed-accounts/       # Development seed data
+│   └── user-data/           # User data export/sync
 components/                  # Shared React components
 ├── AuthContext.tsx           # Firebase auth context + useAuth hook
 ├── AnalyticsProvider.tsx     # Analytics wrapper
