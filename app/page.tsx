@@ -8,14 +8,14 @@ import { useAuth } from '@/components/AuthContext'
 import { trackPlanGenerated, trackError, trackFeatureUsed } from '@/lib/analytics'
 
 const CATEGORIES = [
-  { name: 'Venue', emoji: '🏛️', count: '124 options nearby', color: 'yellow', cat: 'venue' },
-  { name: 'Decor', emoji: '🎀', count: '89 vendors', color: 'coral', cat: 'decor' },
-  { name: 'Baker', emoji: '🎂', count: '57 bakers', color: 'yellow', cat: 'baker' },
-  { name: 'Food', emoji: '🍽️', count: '210 caterers', color: 'green', cat: 'food' },
-  { name: 'Photos', emoji: '📷', count: '73 photographers', color: 'slate', cat: 'photos' },
-  { name: 'Music', emoji: '🎵', count: '44 DJs & bands', color: 'teal', cat: 'music' },
-  { name: 'Drinks', emoji: '🥂', count: '38 bar services', color: 'dark', cat: 'drinks' },
-  { name: 'Entertain', emoji: '🤹', count: '62 entertainers', color: 'yellow', cat: 'entertain' },
+  { name: 'Venue', emoji: '🏛️', count: 'Event spaces, banquet halls', color: 'yellow', cat: 'venue' },
+  { name: 'Decor', emoji: '🎀', count: 'Florists, decor vendors, artists', color: 'coral', cat: 'decor' },
+  { name: 'Baker', emoji: '🎂', count: 'Cakes, cupcakes, dessert bars', color: 'yellow', cat: 'baker' },
+  { name: 'Food', emoji: '🍽️', count: 'Caterers, food trucks, chefs', color: 'green', cat: 'food' },
+  { name: 'Photos', emoji: '📷', count: 'Photographers, videographers', color: 'slate', cat: 'photos' },
+  { name: 'Music', emoji: '🎵', count: 'DJs, live bands, musicians', color: 'teal', cat: 'music' },
+  { name: 'Drinks', emoji: '🥂', count: 'Bartenders, mobile bars', color: 'dark', cat: 'drinks' },
+  { name: 'Entertain', emoji: '🤹', count: 'Performers, MCs, activities', color: 'yellow', cat: 'entertain' },
   { name: 'Guests', emoji: '💌', count: 'Invite & RSVP tools', color: 'sand', cat: 'guests' },
 ]
 
