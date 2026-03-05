@@ -8,7 +8,6 @@ import { recordInteraction } from '@/lib/ai-memory'
 import { showToast } from '@/components/Toast'
 import { trackVendorSearch, trackVendorShortlisted } from '@/lib/analytics'
 import { useAuth } from '@/components/AuthContext'
-import AdUnit from '@/components/AdUnit'
 
 const CATS = ['Venue', 'Decor', 'Baker', 'Food', 'Photos', 'Music', 'Drinks', 'Entertain']
 const CAT_EMOJIS: Record<string, string> = {
@@ -473,12 +472,7 @@ function VendorsContent() {
           ) : (
             <div className={styles.vendorGrid}>
               {paginatedVendors.map((v, idx) => (
-                <>{idx > 0 && idx % 5 === 0 && (
-                  <div key={`ad-${idx}`} className={styles.inFeedAd}>
-                    <AdUnit slot={`infeed-${idx}`} format="horizontal" label="Sponsored Listing" />
-                  </div>
-                )}
-                  <div key={v.id} className={`${styles.vendorCard} ${v.featured ? `${styles.featured} ${styles.featuredRow}` : ''}`} onClick={() => setSelectedVendor(v)}>
+                <div key={v.id} className={`${styles.vendorCard} ${v.featured ? `${styles.featured} ${styles.featuredRow}` : ''}`} onClick={() => setSelectedVendor(v)}>
                     {/* Image Area */}
                     <div className={styles.vendorCardImg} style={v.photoUrl ? { background: '#1A2535', padding: 0 } : { background: GRADIENTS[v.category] || 'linear-gradient(135deg, #2D4059, #1A2535)' }}>
                       {v.photoUrl ? (
@@ -553,7 +547,6 @@ function VendorsContent() {
                       </div>
                     </div>
                   </div>
-                </>
               ))}
             </div>
           )}
@@ -677,10 +670,6 @@ function VendorsContent() {
                 </button>
               </div>
 
-              {/* ── Modal Ad ── */}
-              <div className={styles.modalAd}>
-                <AdUnit slot="modal-1" format="horizontal" label="Party Deals" />
-              </div>
             </div>
           </div>
         </div>
