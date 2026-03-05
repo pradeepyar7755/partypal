@@ -716,22 +716,22 @@ function DashboardContent() {
                     return
                 }
 
-                // Auto-select best event if user is on the demo card
-                if (isDemo) {
-                    const urlParams = new URLSearchParams(window.location.search)
-                    if (!urlParams.get('event') || urlParams.get('event') === 'demo') {
-                        const ownEvents = allEvents.filter(e => e.eventId !== 'demo')
-                        if (ownEvents.length > 0) {
-                            // Prefer latest own event (upcoming first by date)
-                            const sorted = [...ownEvents].sort((a, b) => {
-                                const aD = a.date ? new Date(a.date + 'T12:00:00').getTime() : 0
-                                const bD = b.date ? new Date(b.date + 'T12:00:00').getTime() : 0
-                                return bD - aD
-                            })
-                            loadEvent(sorted[0], false)
-                        } else if (shared.length > 0) {
-                            // Collaborator-only: load first shared event
-                            loadEvent(shared[0], false)
+                // Auto-select the latest event (own or shared) so user lands on what's top of mind
+                // Skip if user explicitly navigated to a specific event via URL
+                const urlParams = new URLSearchParams(window.location.search)
+                if (!urlParams.get('event') || urlParams.get('event') === 'demo') {
+                    const ownEvents = allEvents.filter(e => e.eventId !== 'demo')
+                    const allCandidates = [...ownEvents, ...shared]
+                    if (allCandidates.length > 0) {
+                        // Sort by date descending (most recent/upcoming first)
+                        const sorted = [...allCandidates].sort((a: any, b: any) => {
+                            const aD = a.date ? new Date(a.date + 'T12:00:00').getTime() : 0
+                            const bD = b.date ? new Date(b.date + 'T12:00:00').getTime() : 0
+                            return bD - aD
+                        })
+                        const best = sorted[0]
+                        if (best.eventId !== data.eventId) {
+                            loadEvent(best, false)
                         }
                     }
                 }
