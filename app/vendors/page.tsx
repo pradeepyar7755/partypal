@@ -511,7 +511,7 @@ function VendorsContent() {
 
         {/* ── Vendor Cards ── */}
         <div>
-          <div className={styles.resultsCount}>Showing <span>{startItem}–{endItem} of {filtered.length}</span> vendors within {distanceFilter === '<5' ? '5' : distanceFilter === '<10' ? '10' : '25'} mi of {usedGeoLocation ? '📍 Current Location' : displayLocation || location}{totalPages > 1 && <span style={{ marginLeft: '0.5rem', color: '#9aabbb' }}>• Page {safePage} of {totalPages}</span>}</div>
+          <div className={styles.resultsCount}>Showing <span>top {filtered.length}</span> vendors within {distanceFilter === '<5' ? '5' : distanceFilter === '<10' ? '10' : '25'} mi of {usedGeoLocation ? '📍 Current Location' : displayLocation || location}{totalPages > 1 && <span style={{ marginLeft: '0.5rem', color: '#9aabbb' }}>• Page {safePage} of {totalPages}</span>}</div>
 
           {loading ? (
             <div className={styles.loading}>
