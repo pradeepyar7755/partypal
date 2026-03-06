@@ -11,6 +11,7 @@ import { useAIContext } from '@/lib/useAIContext'
 import CreatePoll from '@/components/CreatePoll'
 import AdUnit from '@/components/AdUnit'
 import { trackEventDeleted } from '@/lib/analytics'
+import ThemeTab from '@/components/ThemeTab'
 
 interface ChecklistItem { item: string; category: string; done: boolean; due?: string; urgent?: boolean; completedAt?: string; assignedTo?: string }
 interface TimelineItem { weeks: string; task: string; category: string; priority: string; emoji?: string; completedAt?: string; assignedTo?: string }
@@ -1937,12 +1938,14 @@ function DashboardContent() {
             {
                 selectedTab === 'theme' && (
                     <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1rem 0.75rem' }}>
-                        <div className="card" style={{ padding: '3rem', textAlign: 'center' }}>
-                            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🎨</div>
-                            <h2 style={{ fontFamily: "'Fredoka One', cursive", color: 'var(--navy)', marginBottom: '0.5rem' }}>{data.theme ? `${data.theme} Theme` : 'Party Theme'}</h2>
-                            <p style={{ color: '#9aabbb', fontWeight: 600, fontSize: '0.9rem', marginBottom: '0.5rem' }}>This feature will be coming soon!</p>
-                            <p style={{ color: '#ccc', fontSize: '0.78rem', fontWeight: 600 }}>Mood boards, color palettes, and AI-curated decor inspiration — stay tuned ✨</p>
-                        </div>
+                        <ThemeTab
+                            eventId={data.eventId || ''}
+                            planData={data}
+                            eventGuests={eventGuests}
+                            isDemo={isDemo}
+                            getContextPayload={getContextPayload}
+                            learn={learn}
+                        />
                     </div>
                 )
             }

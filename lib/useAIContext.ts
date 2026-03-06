@@ -172,6 +172,26 @@ export function useAIContext(planData: PlanData | null, eventGuests: EventGuest[
 
     // Gather moodboard context
     const moodboardContext = useMemo(() => {
+        // First try to load enhanced moodboard from Theme tab
+        if (planData?.eventId) {
+            try {
+                const enhanced = userGet(`partypal_moodboard_${planData.eventId}`)
+                if (enhanced) {
+                    const parsed = JSON.parse(enhanced)
+                    if (parsed?.board) {
+                        const board = parsed.board
+                        return {
+                            palette: (board.palette || []).map((p: { hex: string }) => p.hex),
+                            vibe: board.vibe || '',
+                            decorStyle: (board.tiles || []).map((t: { title: string }) => t.title).join(', '),
+                            musicGenre: '',
+                        }
+                    }
+                }
+            } catch { /* ignore */ }
+        }
+
+        // Fall back to plan moodboard
         const mb = planData?.plan?.moodboard
         if (!mb) return null
         return {
@@ -180,7 +200,7 @@ export function useAIContext(planData: PlanData | null, eventGuests: EventGuest[
             decorStyle: (mb.decorIdeas || []).join(', '),
             musicGenre: mb.musicGenre || '',
         }
-    }, [planData?.plan?.moodboard])
+    }, [planData?.plan?.moodboard, planData?.eventId])
 
     // Load user preferences
     const userPreferences = useMemo(() => {

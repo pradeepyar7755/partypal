@@ -18,12 +18,32 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { theme, eventType, budget } = body
+    const { theme, eventType, budget, action, currentBoard, pinnedTiles, instruction } = body
 
     // Build cross-portal context
     const contextBlock = hasContext(body) ? `\n${assembleContext(body, 'mood board design')}\nUse this context to align the mood board with the user's full vision.\n\n` : ''
 
-    const prompt = `${contextBlock}You are PartyPal's mood board designer. Create a rich visual inspiration board.
+    let prompt: string
+
+    if (action === 'refine' && currentBoard && instruction) {
+      // Refinement mode: modify existing moodboard based on user feedback
+      prompt = `${contextBlock}You are refining a party mood board based on user feedback.
+
+Current mood board: ${JSON.stringify(currentBoard)}
+${pinnedTiles && pinnedTiles.length > 0 ? `Pinned tiles (user wants to KEEP these exactly as-is): ${JSON.stringify(pinnedTiles)}` : ''}
+
+User's request: "${instruction}"
+
+IMPORTANT:
+- Keep all pinned tiles unchanged in the tiles array — same emoji, title, description, and category.
+- Apply the user's requested changes to unpinned tiles and other board elements.
+- Maintain the same JSON structure as the current board.
+- Return 5 palette colors and 6 tiles total.
+
+Return ONLY valid JSON, no markdown — same structure as the current board.`
+    } else {
+      // Generation mode: create fresh moodboard
+      prompt = `${contextBlock}You are PartyPal's mood board designer. Create a rich visual inspiration board.
 
 Theme: ${theme || 'Modern Elegant'} | Event: ${eventType || 'Birthday Party'} | Budget: ${budget || 'Flexible'}
 
@@ -61,6 +81,7 @@ Return ONLY valid JSON, no markdown:
 }
 
 Make everything deeply specific to the theme and event type provided.`
+    }
 
     const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
     const result = await model.generateContent(prompt)
@@ -68,7 +89,7 @@ Make everything deeply specific to the theme and event type provided.`
     const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
     const board = JSON.parse(cleaned)
     // Track API usage (fire-and-forget)
-    logApiCall('moodboard', 'gemini', identifier)
+    logApiCall(action === 'refine' ? 'moodboard_refine' : 'moodboard', 'gemini', identifier)
     return NextResponse.json(board)
   } catch (error: unknown) {
     console.error('Moodboard error:', error)
