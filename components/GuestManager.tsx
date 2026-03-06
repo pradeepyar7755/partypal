@@ -390,6 +390,10 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
 
     const addGuest = () => {
         if (!newGuest.name || !newGuest.email) return
+        if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(newGuest.email)) {
+            showToast('Please enter a valid email address', 'error')
+            return
+        }
         const initials = newGuest.name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2)
         const validAdditional = newGuest.additionalGuests.filter(ag => ag.name.trim())
         setGuests(prev => [...prev, {
@@ -873,7 +877,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                 <h4 style={{ fontFamily: "'Fredoka One',cursive", marginBottom: '0.8rem', color: 'var(--navy)', fontSize: '0.95rem' }}>Add New Guest</h4>
                                 <div className={styles.addRow}>
                                     <input placeholder="Full Name *" value={newGuest.name} onChange={e => setNewGuest({ ...newGuest, name: e.target.value })} className={styles.addInput} />
-                                    <input placeholder="Email *" value={newGuest.email} onChange={e => setNewGuest({ ...newGuest, email: e.target.value })} className={styles.addInput} />
+                                    <input placeholder="Email *" type="email" value={newGuest.email} onChange={e => setNewGuest({ ...newGuest, email: e.target.value })} className={styles.addInput} />
                                 </div>
                                 <div className={styles.addRow}>
                                     <div>

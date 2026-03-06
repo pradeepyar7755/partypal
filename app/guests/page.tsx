@@ -75,6 +75,10 @@ export default function GuestsPage() {
   // Add a single contact
   const addContact = () => {
     if (!form.name.trim()) return
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      showToast('Please enter a valid email address', 'error')
+      return
+    }
     const newContact: Contact = {
       id: Date.now().toString(36),
       name: form.name.trim(),
@@ -93,6 +97,10 @@ export default function GuestsPage() {
   // Update contact (from edit)
   const updateContact = () => {
     if (!editingId || !form.name.trim()) return
+    if (form.email.trim() && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      showToast('Please enter a valid email address', 'error')
+      return
+    }
     const updated = contacts.map(c =>
       c.id === editingId ? { ...c, name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim(), circles: form.circles, avatar: getInitials(form.name) } : c
     )
