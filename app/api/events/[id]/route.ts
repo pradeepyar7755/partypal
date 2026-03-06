@@ -37,33 +37,27 @@ export async function POST(req: NextRequest, { params }: { params: { id: string 
         const db = getDb()
         const rsvpRef = db.collection('events').doc(params.id).collection('rsvps')
 
-        // Check if this person already RSVP'd (by email or name) and update instead of adding
-        let existingDoc = null
+        // Block duplicate email — each email can only RSVP once
         if (email) {
-            const byEmail = await rsvpRef.where('email', '==', email).limit(1).get()
-            if (!byEmail.empty) existingDoc = byEmail.docs[0]
-        }
-        if (!existingDoc) {
-            const byName = await rsvpRef.where('name', '==', name).limit(1).get()
-            if (!byName.empty) existingDoc = byName.docs[0]
+            const byEmail = await rsvpRef.where('email', '==', email.trim().toLowerCase()).limit(1).get()
+            if (!byEmail.empty) {
+                return NextResponse.json(
+                    { error: 'duplicate_email', message: 'This email has already been used to RSVP. To update your response, use the "Update RSVP" link in your confirmation email.' },
+                    { status: 409 }
+                )
+            }
         }
 
-        const rsvpData = {
+        await rsvpRef.add({
             name,
-            email: email || '',
+            email: email ? email.trim().toLowerCase() : '',
             response,
             dietary: dietary || 'None',
             additionalGuests: additionalGuests || [],
             totalPartySize: totalPartySize || 1,
             kidCount: kidCount || 0,
             timestamp: new Date().toISOString(),
-        }
-
-        if (existingDoc) {
-            await existingDoc.ref.update(rsvpData)
-        } else {
-            await rsvpRef.add(rsvpData)
-        }
+        })
 
         return NextResponse.json({ success: true })
     } catch (error: unknown) {

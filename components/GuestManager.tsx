@@ -4,6 +4,7 @@ import { userGet, userSetJSON, userGetJSON } from '@/lib/userStorage'
 import { showToast } from '@/components/Toast'
 import styles from './GuestManager.module.css'
 import { useAIContext } from '@/lib/useAIContext'
+import { useAuth } from '@/components/AuthContext'
 
 interface AdditionalGuest {
     id: string; name: string; dietary: string; relationship: string; isChild?: boolean
@@ -42,6 +43,7 @@ interface GuestManagerProps {
 }
 
 export default function GuestManager({ eventId, planData: propPlanData, isDemo, isGuest, onRequireSignup }: GuestManagerProps) {
+    const { user } = useAuth()
     const [guests, setGuests] = useState<Guest[]>(isDemo ? DEFAULT_GUESTS : [])
     const [showAdd, setShowAdd] = useState(false)
     const [showBulk, setShowBulk] = useState(false)
@@ -449,6 +451,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
             method: 'PUT',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
+                uid: user?.uid,
                 rsvpId,
                 response: statusMap[guest.status] || guest.status,
                 dietary: guest.dietary,
@@ -484,7 +487,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
         if (id.startsWith('rsvp_') && eventId) {
             const rsvpId = id.replace('rsvp_', '');
             try {
-                await fetch(`/api/events/${eventId}/rsvp?rsvpId=${rsvpId}`, { method: 'DELETE' });
+                await fetch(`/api/events/${eventId}/rsvp?rsvpId=${rsvpId}&uid=${user?.uid}`, { method: 'DELETE' });
             } catch (e) {
                 console.error('Failed to delete RSVP from cloud', e);
             }

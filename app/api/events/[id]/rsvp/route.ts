@@ -1,46 +1,30 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/firebase'
 
-// GET: Look up a guest's existing RSVP by email
-export async function GET(req: NextRequest, { params }: { params: { id: string } }) {
-    try {
-        const url = new URL(req.url)
-        const email = url.searchParams.get('email')?.trim().toLowerCase()
-        if (!email) {
-            return NextResponse.json({ error: 'Email is required' }, { status: 400 })
-        }
-
-        const db = getDb()
-        const snapshot = await db
-            .collection('events').doc(params.id)
-            .collection('rsvps')
-            .where('email', '==', email)
-            .limit(1)
-            .get()
-
-        if (snapshot.empty) {
-            return NextResponse.json({ found: false })
-        }
-
-        const doc = snapshot.docs[0]
-        return NextResponse.json({ found: true, rsvp: { id: doc.id, ...doc.data() } })
-    } catch (error: unknown) {
-        console.error('RSVP lookup error:', error)
-        return NextResponse.json({ error: 'Failed to look up RSVP' }, { status: 500 })
-    }
-}
-
 // PUT: Update an existing RSVP (host-side edits)
 export async function PUT(req: NextRequest, { params }: { params: { id: string } }) {
     try {
         const body = await req.json()
-        const { rsvpId, response, dietary, additionalGuests, totalPartySize, kidCount } = body
+        const { uid, rsvpId, response, dietary, additionalGuests, totalPartySize, kidCount } = body
 
+        if (!uid) {
+            return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+        }
         if (!rsvpId) {
             return NextResponse.json({ error: 'rsvpId is required' }, { status: 400 })
         }
 
         const db = getDb()
+
+        // Verify the caller owns this event
+        const eventDoc = await db.collection('events').doc(params.id).get()
+        if (!eventDoc.exists) {
+            return NextResponse.json({ error: 'Event not found' }, { status: 404 })
+        }
+        if (eventDoc.data()?.uid !== uid) {
+            return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+        }
+
         const docRef = db.collection('events').doc(params.id).collection('rsvps').doc(rsvpId)
         const doc = await docRef.get()
 
@@ -70,12 +54,26 @@ export async function DELETE(req: NextRequest, { params }: { params: { id: strin
     try {
         const url = new URL(req.url)
         const rsvpId = url.searchParams.get('rsvpId')
+        const uid = url.searchParams.get('uid')
 
+        if (!uid) {
+            return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
+        }
         if (!rsvpId) {
             return NextResponse.json({ error: 'rsvpId is required' }, { status: 400 })
         }
 
         const db = getDb()
+
+        // Verify the caller owns this event
+        const eventDoc = await db.collection('events').doc(params.id).get()
+        if (!eventDoc.exists) {
+            return NextResponse.json({ error: 'Event not found' }, { status: 404 })
+        }
+        if (eventDoc.data()?.uid !== uid) {
+            return NextResponse.json({ error: 'Not authorized' }, { status: 403 })
+        }
+
         await db
             .collection('events').doc(params.id)
             .collection('rsvps').doc(rsvpId)
