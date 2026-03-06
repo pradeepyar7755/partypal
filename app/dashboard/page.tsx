@@ -1429,42 +1429,46 @@ function DashboardContent() {
                     maxWidth: 1200, margin: '0 auto', padding: '0 0.75rem',
                 }}>
                     <div style={{
-                        display: 'flex', alignItems: 'center', gap: '0.8rem',
-                        padding: '0.9rem 1.2rem', borderRadius: 14,
+                        position: 'relative',
+                        padding: '0.85rem 1rem',
+                        borderRadius: 14,
                         background: 'linear-gradient(135deg, #FFF3CD, #FFE8CC)',
                         border: '1.5px solid #F0C040',
                         boxShadow: '0 2px 12px rgba(240,192,64,0.15)',
                         marginBottom: '0.5rem',
                     }}>
-                        <span style={{ fontSize: '1.4rem', flexShrink: 0 }}>⚠️</span>
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 800, fontSize: '0.88rem', color: '#8B5E00', marginBottom: '0.15rem', fontFamily: "'Nunito', sans-serif" }}>
+                        <button onClick={() => setGuestAlertDismissed(true)} style={{
+                            position: 'absolute', top: '0.5rem', right: '0.5rem',
+                            background: 'none', border: 'none', cursor: 'pointer',
+                            color: '#B8860B', fontSize: '1rem', padding: '0.2rem',
+                            lineHeight: 1, opacity: 0.5,
+                        }}>✕</button>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.35rem', paddingRight: '1.2rem' }}>
+                            <span style={{ fontSize: '1.1rem', flexShrink: 0 }}>⚠️</span>
+                            <div style={{ fontWeight: 800, fontSize: '0.84rem', color: '#8B5E00', fontFamily: "'Nunito', sans-serif" }}>
                                 Your events will expire when you clear browser data
                             </div>
-                            <div style={{ fontSize: '0.78rem', fontWeight: 600, color: '#6D4C00', lineHeight: 1.4, opacity: 0.85 }}>
-                                Sign up or log in <strong style={{ color: '#5A3D00' }}>for free</strong> to save your events, manage logistics, collaborate with friends, and unlock all member features.
-                            </div>
                         </div>
-                        <a href="/login?redirect=/dashboard" style={{
-                            padding: '0.55rem 1.2rem', borderRadius: 50,
-                            background: 'linear-gradient(135deg, #E8890A, #D47706)',
-                            color: 'white',
-                            fontWeight: 800, fontSize: '0.82rem', textDecoration: 'none',
-                            fontFamily: "'Fredoka One', cursive",
-                            whiteSpace: 'nowrap', flexShrink: 0,
-                            transition: 'transform 0.15s',
-                            boxShadow: '0 2px 8px rgba(212,119,6,0.3)',
-                        }}
-                            onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.05)')}
-                            onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
-                        >
-                            🔗 Sign Up Free
-                        </a>
-                        <button onClick={() => setGuestAlertDismissed(true)} style={{
-                            background: 'none', border: 'none', cursor: 'pointer',
-                            color: '#B8860B', fontSize: '1.1rem', padding: '0.2rem',
-                            lineHeight: 1, flexShrink: 0, opacity: 0.6,
-                        }}>✕</button>
+                        <div style={{ fontSize: '0.76rem', fontWeight: 600, color: '#6D4C00', lineHeight: 1.4, opacity: 0.85, marginBottom: '0.6rem', paddingLeft: '1.6rem' }}>
+                            Sign up <strong style={{ color: '#5A3D00' }}>for free</strong> to save your events, collaborate with friends, and unlock all features.
+                        </div>
+                        <div style={{ paddingLeft: '1.6rem' }}>
+                            <a href="/login?redirect=/dashboard" style={{
+                                display: 'inline-block',
+                                padding: '0.45rem 1.1rem', borderRadius: 50,
+                                background: 'linear-gradient(135deg, #E8890A, #D47706)',
+                                color: 'white',
+                                fontWeight: 800, fontSize: '0.78rem', textDecoration: 'none',
+                                fontFamily: "'Fredoka One', cursive",
+                                transition: 'transform 0.15s',
+                                boxShadow: '0 2px 8px rgba(212,119,6,0.3)',
+                            }}
+                                onMouseEnter={e => (e.currentTarget.style.transform = 'scale(1.05)')}
+                                onMouseLeave={e => (e.currentTarget.style.transform = 'scale(1)')}
+                            >
+                                Sign Up Free
+                            </a>
+                        </div>
                     </div>
                 </div>
             )}
