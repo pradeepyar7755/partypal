@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
                 }
 
                 // Run ALL Firestore queries in parallel (3s timeout each)
-                const [dailyData, recentErrors, recentActivity, , totalRegisteredUsers, churnData] = await Promise.all([
+                const [dailyData, recentErrors, recentActivity, , totalRegisteredUsers, churnData, eventDeletionData] = await Promise.all([
                     firestoreQuery(
                         async () => {
                             const snap = await db.collection('analytics_daily')
@@ -256,6 +256,53 @@ export async function GET(req: NextRequest) {
                             avgSessions: 0, recentDeletions: [] as { displayName: string; email: string; tenureDays: number; reason: string; deletedAt: string; eventsCreated: number; totalSessions: number }[],
                         }
                     ),
+                    // Event deletion analytics
+                    firestoreQuery(
+                        async () => {
+                            const snap = await db.collection('event_deletions')
+                                .orderBy('deletedAt', 'desc')
+                                .limit(200)
+                                .get()
+                            let deletedInPeriod = 0
+                            const deletionsByDay: Record<string, number> = {}
+                            const deletedEventTypes: Record<string, number> = {}
+                            const recentDeletions: { eventId: string; eventType: string; deletedAt: string; uid: string }[] = []
+
+                            snap.forEach(doc => {
+                                const d = doc.data()
+                                const deletedAt = (d.deletedAt as string) || ''
+                                const eventType = (d.eventType as string) || 'Unknown'
+                                deletedEventTypes[eventType] = (deletedEventTypes[eventType] || 0) + 1
+                                if (deletedAt >= startKey) {
+                                    deletedInPeriod++
+                                    const day = deletedAt.split('T')[0]
+                                    deletionsByDay[day] = (deletionsByDay[day] || 0) + 1
+                                }
+                                if (recentDeletions.length < 15) {
+                                    recentDeletions.push({
+                                        eventId: (d.eventId as string) || '',
+                                        eventType,
+                                        deletedAt,
+                                        uid: ((d.uid as string) || '').slice(0, 8),
+                                    })
+                                }
+                            })
+
+                            return {
+                                totalDeleted: snap.size,
+                                deletedInPeriod,
+                                deletionsByDay,
+                                deletedEventTypes,
+                                recentDeletions,
+                            }
+                        },
+                        {
+                            totalDeleted: 0, deletedInPeriod: 0,
+                            deletionsByDay: {} as Record<string, number>,
+                            deletedEventTypes: {} as Record<string, number>,
+                            recentDeletions: [] as { eventId: string; eventType: string; deletedAt: string; uid: string }[],
+                        }
+                    ),
                 ])
 
                 // Calculate totals from daily data
@@ -330,6 +377,7 @@ export async function GET(req: NextRequest) {
                     recentErrors,
                     recentActivity,
                     eventInsights,
+                    eventDeletions: eventDeletionData,
                     churn: {
                         ...churnData,
                         churnRate: totalRegisteredUsers > 0

@@ -10,6 +10,7 @@ import { useAuth } from '@/components/AuthContext'
 import { useAIContext } from '@/lib/useAIContext'
 import CreatePoll from '@/components/CreatePoll'
 import AdUnit from '@/components/AdUnit'
+import { trackEventDeleted } from '@/lib/analytics'
 
 interface ChecklistItem { item: string; category: string; done: boolean; due?: string; urgent?: boolean; completedAt?: string; assignedTo?: string }
 interface TimelineItem { weeks: string; task: string; category: string; priority: string; emoji?: string; completedAt?: string; assignedTo?: string }
@@ -276,6 +277,27 @@ function DashboardContent() {
     const [showBudgetTips, setShowBudgetTips] = useState(false)
     const progressRefs = useRef<HTMLDivElement[]>([])
     const deletedEventIdsRef = useRef<Set<string>>(new Set())
+    const pendingDeleteTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
+    // Hydrate deletedEventIdsRef from localStorage on first render
+    // so deleted events stay deleted across page refreshes
+    if (deletedEventIdsRef.current.size === 0 && typeof window !== 'undefined') {
+        const persisted: Record<string, number> = (() => {
+            try { const raw = localStorage.getItem('partypal_deleted_ids'); return raw ? JSON.parse(raw) : {} } catch { return {} }
+        })()
+        const now = Date.now()
+        const SEVEN_DAYS = 7 * 24 * 60 * 60 * 1000
+        // Load IDs less than 7 days old, clean up stale ones
+        let cleaned = false
+        for (const [id, ts] of Object.entries(persisted)) {
+            if (now - ts < SEVEN_DAYS) {
+                deletedEventIdsRef.current.add(id)
+            } else {
+                delete persisted[id]
+                cleaned = true
+            }
+        }
+        if (cleaned) localStorage.setItem('partypal_deleted_ids', JSON.stringify(persisted))
+    }
     // Cross-portal AI context
     const { getContextPayload, learn } = useAIContext(data, eventGuests)
     // Notification state
@@ -504,8 +526,9 @@ function DashboardContent() {
     }
 
     useEffect(() => {
-        // Load all events from localStorage
+        // Load all events from localStorage, filtering out any that were deleted
         const storedEvents: PlanData[] = userGetJSON('partypal_events', [])
+            .filter((ev: PlanData) => !ev.eventId || !deletedEventIdsRef.current.has(ev.eventId))
         // Ensure each event has an ID
         storedEvents.forEach(ev => {
             if (!ev.eventId) ev.eventId = Math.random().toString(36).substring(2, 10)
@@ -1244,6 +1267,16 @@ function DashboardContent() {
             return
         }
         setConfirmDeleteId(null)
+        // Track deletion for analytics
+        const deletedEvent = allEvents.find(ev => ev.eventId === eventId)
+        trackEventDeleted(eventId, deletedEvent?.eventType || 'Unknown')
+        // Snapshot data for undo
+        const previousEvents = [...allEvents]
+        const previousPlan = data.eventId === eventId ? { ...data } : null
+        const savedGuests = userGet(`partypal_guests_${eventId}`)
+        const savedCollabs = userGet(`partypal_collabs_${eventId}`)
+        const savedVendors = userGet(`partypal_vendors_${eventId}`)
+        const savedPolls = userGet(`partypal_polls_${eventId}`)
         // Remove from both own events and shared events
         const updated = allEvents.filter(ev => ev.eventId !== eventId)
         setAllEvents(updated)
@@ -1258,10 +1291,50 @@ function DashboardContent() {
             loadEvent(DEFAULT_PLAN, true)
             userRemove('partyplan')
         }
-        // Delete from Firestore
+        // Mark as deleted in memory + persist to localStorage
         deletedEventIdsRef.current.add(eventId)
-        fetch(`/api/events?eventId=${encodeURIComponent(eventId)}`, { method: 'DELETE' }).catch(() => { })
-        showToast('Event deleted', 'success')
+        const persistedDeleted: Record<string, number> = (() => {
+            try { const raw = localStorage.getItem('partypal_deleted_ids'); return raw ? JSON.parse(raw) : {} } catch { return {} }
+        })()
+        persistedDeleted[eventId] = Date.now()
+        localStorage.setItem('partypal_deleted_ids', JSON.stringify(persistedDeleted))
+        // Delay Firestore DELETE by 5 seconds to allow undo
+        const timer = setTimeout(() => {
+            pendingDeleteTimers.current.delete(eventId)
+            const doDelete = () => fetch(`/api/events?eventId=${encodeURIComponent(eventId)}&uid=${encodeURIComponent(user?.uid || '')}`, { method: 'DELETE' })
+            doDelete().catch(() => { setTimeout(() => doDelete().catch(() => {}), 3000) })
+        }, 5000)
+        pendingDeleteTimers.current.set(eventId, timer)
+        // Show undo toast
+        showToast('Event deleted', 'success', {
+            label: 'Undo',
+            onClick: () => {
+                // Cancel the pending Firestore delete
+                const pending = pendingDeleteTimers.current.get(eventId)
+                if (pending) { clearTimeout(pending); pendingDeleteTimers.current.delete(eventId) }
+                // Remove from deleted set + localStorage
+                deletedEventIdsRef.current.delete(eventId)
+                const pd: Record<string, number> = (() => {
+                    try { const raw = localStorage.getItem('partypal_deleted_ids'); return raw ? JSON.parse(raw) : {} } catch { return {} }
+                })()
+                delete pd[eventId]
+                localStorage.setItem('partypal_deleted_ids', JSON.stringify(pd))
+                // Restore events list
+                setAllEvents(previousEvents)
+                userSetJSON('partypal_events', previousEvents)
+                // Restore associated data
+                if (savedGuests) userSet(`partypal_guests_${eventId}`, savedGuests)
+                if (savedCollabs) userSet(`partypal_collabs_${eventId}`, savedCollabs)
+                if (savedVendors) userSet(`partypal_vendors_${eventId}`, savedVendors)
+                if (savedPolls) userSet(`partypal_polls_${eventId}`, savedPolls)
+                // Restore active plan if it was the one deleted
+                if (previousPlan) {
+                    userSetJSON('partyplan', previousPlan)
+                    loadEvent(previousPlan, false)
+                }
+                showToast('Event restored', 'info')
+            },
+        })
     }
 
     const resignFromEvent = async (eventId: string, e: React.MouseEvent) => {

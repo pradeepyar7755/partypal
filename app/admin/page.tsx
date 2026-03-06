@@ -45,6 +45,13 @@ interface DashboardData {
         locations: Record<string, number>
         themes: Record<string, number>
     }
+    eventDeletions: {
+        totalDeleted: number
+        deletedInPeriod: number
+        deletionsByDay: Record<string, number>
+        deletedEventTypes: Record<string, number>
+        recentDeletions: { eventId: string; eventType: string; deletedAt: string; uid: string }[]
+    }
     churn: {
         totalDeleted: number
         deletedInPeriod: number
@@ -847,6 +854,78 @@ export default function AdminDashboard() {
                                 )}
                             </div>
                         </div>
+
+                        {/* ══ EVENT DELETIONS ══ */}
+                        <div className={styles.sectionHeader}>
+                            <span className={styles.sectionEmoji}>🗑️</span>
+                            <span className={styles.sectionTitle}>Event Deletions</span>
+                            <span className={styles.sectionSub}>{data.eventDeletions.deletedInPeriod} deleted in period ({data.eventDeletions.totalDeleted} all-time)</span>
+                        </div>
+                        <div className={styles.twoCol}>
+                            <div className={styles.chartCard}>
+                                <div className={styles.chartTitle}>Deletions by Day</div>
+                                {Object.keys(data.eventDeletions.deletionsByDay).length > 0 ? (
+                                    <div className={styles.barChart}>
+                                        {Object.entries(data.eventDeletions.deletionsByDay)
+                                            .sort(([a], [b]) => a.localeCompare(b))
+                                            .slice(-14)
+                                            .map(([day, count]) => {
+                                                const maxCount = Math.max(...Object.values(data.eventDeletions.deletionsByDay))
+                                                return (
+                                                    <div key={day} className={styles.barCol}>
+                                                        <div
+                                                            className={styles.bar}
+                                                            style={{
+                                                                height: `${(count / Math.max(maxCount, 1)) * 100}%`,
+                                                                background: 'linear-gradient(180deg, #E8896A, rgba(232,137,106,0.3))',
+                                                            }}
+                                                        >
+                                                            <span className={styles.barTooltip}>{count} deleted</span>
+                                                        </div>
+                                                        <span className={styles.barLabel}>{day.slice(5)}</span>
+                                                    </div>
+                                                )
+                                            })}
+                                    </div>
+                                ) : (
+                                    <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', padding: '2rem', textAlign: 'center' }}>No deletions in period</div>
+                                )}
+                            </div>
+                            <div className={styles.chartCard}>
+                                <div className={styles.chartTitle}>Deleted Event Types</div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '0.5rem' }}>
+                                    <MetricBox label="Deleted (Period)" value={data.eventDeletions.deletedInPeriod} emoji="📉" />
+                                    <MetricBox label="Total All-Time" value={data.eventDeletions.totalDeleted} emoji="🗑️" />
+                                </div>
+                                {Object.keys(data.eventDeletions.deletedEventTypes).length > 0 && (
+                                    <div style={{ marginTop: '0.8rem' }}>
+                                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: '0.5rem' }}>
+                                            Top Deleted Event Types
+                                        </div>
+                                        <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem' }}>
+                                            {Object.entries(data.eventDeletions.deletedEventTypes).sort((a, b) => b[1] - a[1]).slice(0, 6).map(([type, count]) => (
+                                                <span key={type} className={styles.statPill}>{type} ({count})</span>
+                                            ))}
+                                        </div>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+                        {data.eventDeletions.recentDeletions.length > 0 && (
+                            <div className={styles.chartCard} style={{ marginTop: '0.5rem' }}>
+                                <div className={styles.chartTitle}>Recent Deletions</div>
+                                <div style={{ maxHeight: '200px', overflowY: 'auto' }}>
+                                    {data.eventDeletions.recentDeletions.map((del, i) => (
+                                        <div key={i} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '0.4rem 0.6rem', borderBottom: '1px solid rgba(255,255,255,0.05)', fontSize: '0.78rem' }}>
+                                            <span style={{ color: 'rgba(255,255,255,0.8)' }}>{del.eventType}</span>
+                                            <span style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.7rem' }}>
+                                                {del.uid && `${del.uid}... · `}{timeAgo(del.deletedAt)}
+                                            </span>
+                                        </div>
+                                    ))}
+                                </div>
+                            </div>
+                        )}
 
                         {/* ══ ERRORS & BUGS ══ */}
                         <div className={styles.sectionHeader}>

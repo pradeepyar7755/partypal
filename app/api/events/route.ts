@@ -111,13 +111,75 @@ export async function DELETE(req: NextRequest) {
     try {
         const url = new URL(req.url)
         const eventId = url.searchParams.get('eventId')
+        const uid = url.searchParams.get('uid')
 
         if (!eventId) {
             return NextResponse.json({ error: 'Missing eventId' }, { status: 400 })
         }
 
         const db = getDb()
-        await db.collection('events').doc(eventId).delete()
+        const eventRef = db.collection('events').doc(eventId)
+
+        // Fetch event for ownership check and analytics snapshot
+        const doc = await eventRef.get()
+        if (!doc.exists) {
+            return NextResponse.json({ success: true, eventId })
+        }
+
+        const d = doc.data()!
+
+        // Verify ownership: if uid is provided, it must match the event owner
+        if (uid && d.uid && d.uid !== uid) {
+            return NextResponse.json({ error: 'Not authorized to delete this event' }, { status: 403 })
+        }
+
+        // Snapshot event metadata for admin analytics
+        await db.collection('event_deletions').add({
+            eventId,
+            uid: d.uid || null,
+            eventType: d.eventType || null,
+            guests: d.guests || null,
+            location: d.location || null,
+            createdAt: d.createdAt || null,
+            deletedAt: new Date().toISOString(),
+        })
+
+        // Clean up RSVP subcollection
+        const rsvpSnap = await eventRef.collection('rsvps').limit(500).get()
+        if (!rsvpSnap.empty) {
+            const batch = db.batch()
+            rsvpSnap.docs.forEach(rsvpDoc => batch.delete(rsvpDoc.ref))
+            await batch.commit()
+        }
+
+        // Clean up collaborator references
+        const collaborators = (d.collaborators as { uid?: string; email?: string }[]) || []
+        for (const collab of collaborators) {
+            if (!collab.uid) continue
+            // Remove this event from the collaborator's shared events list
+            const sharedRef = db.collection('user_shared_events').doc(collab.uid)
+            const sharedDoc = await sharedRef.get()
+            if (sharedDoc.exists) {
+                const sharedData = sharedDoc.data()
+                const events = (sharedData?.events || []) as { eventId: string }[]
+                const filtered = events.filter(e => e.eventId !== eventId)
+                await sharedRef.set({ events: filtered }, { merge: true })
+            }
+        }
+
+        // Clean up collaborator invites referencing this event
+        const inviteSnap = await db.collection('collaborator_invites')
+            .where('eventId', '==', eventId)
+            .limit(50)
+            .get()
+        if (!inviteSnap.empty) {
+            const batch = db.batch()
+            inviteSnap.docs.forEach(inviteDoc => batch.delete(inviteDoc.ref))
+            await batch.commit()
+        }
+
+        // Delete the event document
+        await eventRef.delete()
 
         return NextResponse.json({ success: true, eventId })
     } catch (error: unknown) {

@@ -138,6 +138,10 @@ export function trackEventCreated(eventType: string, guests: number, budget: str
     track('event_created', { eventType, guests, budget })
 }
 
+export function trackEventDeleted(eventId: string, eventType: string) {
+    track('event_deleted', { eventId, eventType })
+}
+
 export function trackNotificationSent(guestCount: number) {
     track('notification_sent', { guestCount })
 }
