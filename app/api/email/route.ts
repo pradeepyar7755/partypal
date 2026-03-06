@@ -279,7 +279,7 @@ export async function POST(req: NextRequest) {
                 const validGuests = guests.filter((g: { email: string }) => g.email?.includes('@'))
 
                 const result = await sendBatchEmails({
-                    type: 'notifications',
+                    type: 'invites',
                     recipients: validGuests,
                     subjectFn: () => `💌 Message from ${hostName || 'your host'} — ${eventName}`,
                     htmlFn: (guestName: string) => hostMessageEmail({
@@ -294,6 +294,10 @@ export async function POST(req: NextRequest) {
                         coverPhoto,
                     }),
                 })
+
+                if (result.sent === 0) {
+                    return NextResponse.json({ error: 'Failed to send message', details: result.errors.join('; ') }, { status: 500 })
+                }
 
                 return NextResponse.json({
                     success: true,
