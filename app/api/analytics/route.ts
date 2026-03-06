@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
                 }
 
                 // Run ALL Firestore queries in parallel (3s timeout each)
-                const [dailyData, recentErrors, recentActivity, , totalRegisteredUsers, churnData, eventDeletionData] = await Promise.all([
+                const [dailyData, recentErrors, recentActivity, , totalRegisteredUsers, churnData, eventDeletionData, activityLogData] = await Promise.all([
                     firestoreQuery(
                         async () => {
                             const snap = await db.collection('analytics_daily')
@@ -303,6 +303,26 @@ export async function GET(req: NextRequest) {
                             recentDeletions: [] as { eventId: string; eventType: string; deletedAt: string; uid: string }[],
                         }
                     ),
+                    // Event activity log for admin
+                    firestoreQuery(
+                        async () => {
+                            const snap = await db.collection('event_activity_log')
+                                .orderBy('timestamp', 'desc')
+                                .limit(100)
+                                .get()
+                            return snap.docs.map(doc => {
+                                const d = doc.data()
+                                return {
+                                    eventId: (d.eventId as string) || '',
+                                    uid: ((d.uid as string) || '').slice(0, 8),
+                                    action: (d.action as string) || '',
+                                    changes: (d.changes as { field: string; from: string; to: string }[]) || [],
+                                    timestamp: (d.timestamp as string) || '',
+                                }
+                            })
+                        },
+                        [] as { eventId: string; uid: string; action: string; changes: { field: string; from: string; to: string }[]; timestamp: string }[]
+                    ),
                 ])
 
                 // Calculate totals from daily data
@@ -378,6 +398,7 @@ export async function GET(req: NextRequest) {
                     recentActivity,
                     eventInsights,
                     eventDeletions: eventDeletionData,
+                    activityLog: activityLogData,
                     churn: {
                         ...churnData,
                         churnRate: totalRegisteredUsers > 0

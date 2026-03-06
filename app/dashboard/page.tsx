@@ -20,7 +20,7 @@ interface EventVendor { name: string; category: string; notes: string; confirmed
 interface SavedVendor { name: string; category: string; price: string; emoji: string; websiteUri?: string; googleMapsUri?: string }
 
 interface PlanData {
-    eventId?: string; eventType: string; guests: string; location: string; theme: string; date: string; budget: string; time?: string; createdAt?: string; updatedAt?: string
+    eventId?: string; eventType: string; guests: string; location: string; theme: string; date: string; budget: string; time?: string; createdAt?: string; updatedAt?: string; trashedAt?: string
     plan: {
         summary: string
         timeline: TimelineItem[]
@@ -231,6 +231,8 @@ function DashboardContent() {
     const [dragIdx, setDragIdx] = useState<number | null>(null)
     const [allEvents, setAllEvents] = useState<PlanData[]>([])
     const [sharedEvents, setSharedEvents] = useState<PlanData[]>([])
+    const [trashedEvents, setTrashedEvents] = useState<PlanData[]>([])
+    const [showTrash, setShowTrash] = useState(false)
     const [checklist, setChecklist] = useState<ChecklistItem[]>([])
     const [isDemo, setIsDemo] = useState(false)
     const [isEditing, setIsEditing] = useState(false)
@@ -277,7 +279,6 @@ function DashboardContent() {
     const [showBudgetTips, setShowBudgetTips] = useState(false)
     const progressRefs = useRef<HTMLDivElement[]>([])
     const deletedEventIdsRef = useRef<Set<string>>(new Set())
-    const pendingDeleteTimers = useRef<Map<string, ReturnType<typeof setTimeout>>>(new Map())
     // Hydrate deletedEventIdsRef from localStorage on first render
     // so deleted events stay deleted across page refreshes
     if (deletedEventIdsRef.current.size === 0 && typeof window !== 'undefined') {
@@ -591,9 +592,11 @@ function DashboardContent() {
     const syncFromFirestore = useCallback(async (isInitial = false) => {
         if (!user?.uid) return
         try {
-            const res = await fetch(`/api/events?uid=${user.uid}`)
+            const res = await fetch(`/api/events?uid=${user.uid}&includeTrashed=true`)
             const d = await res.json()
             const serverEvents: PlanData[] = (d.events || []).filter((e: any) => !deletedEventIdsRef.current.has(e.eventId))
+            // Update trashed events list from server
+            if (d.trashedEvents) setTrashedEvents(d.trashedEvents as PlanData[])
             if (serverEvents.length === 0 && !isInitial) return
 
             setAllEvents(prev => {
@@ -1298,20 +1301,21 @@ function DashboardContent() {
         })()
         persistedDeleted[eventId] = Date.now()
         localStorage.setItem('partypal_deleted_ids', JSON.stringify(persistedDeleted))
-        // Delay Firestore DELETE by 5 seconds to allow undo
-        const timer = setTimeout(() => {
-            pendingDeleteTimers.current.delete(eventId)
-            const doDelete = () => fetch(`/api/events?eventId=${encodeURIComponent(eventId)}&uid=${encodeURIComponent(user?.uid || '')}`, { method: 'DELETE' })
-            doDelete().catch(() => { setTimeout(() => doDelete().catch(() => {}), 3000) })
-        }, 5000)
-        pendingDeleteTimers.current.set(eventId, timer)
-        // Show undo toast
-        showToast('Event deleted', 'success', {
+        // Soft-delete on Firestore (moves to trash, auto-purged after 30 days)
+        const doDelete = () => fetch(`/api/events?eventId=${encodeURIComponent(eventId)}&uid=${encodeURIComponent(user?.uid || '')}`, { method: 'DELETE' })
+        doDelete().catch(() => { setTimeout(() => doDelete().catch(() => {}), 3000) })
+        // Add to local trashed events for immediate UI feedback
+        if (deletedEvent) setTrashedEvents(prev => [{ ...deletedEvent, trashedAt: new Date().toISOString() }, ...prev])
+        // Show undo toast — calls PATCH restore on server
+        showToast('Event moved to trash', 'success', {
             label: 'Undo',
             onClick: () => {
-                // Cancel the pending Firestore delete
-                const pending = pendingDeleteTimers.current.get(eventId)
-                if (pending) { clearTimeout(pending); pendingDeleteTimers.current.delete(eventId) }
+                // Restore on server
+                fetch('/api/events', {
+                    method: 'PATCH',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ eventId, uid: user?.uid, action: 'restore' }),
+                }).catch(() => {})
                 // Remove from deleted set + localStorage
                 deletedEventIdsRef.current.delete(eventId)
                 const pd: Record<string, number> = (() => {
@@ -1322,6 +1326,8 @@ function DashboardContent() {
                 // Restore events list
                 setAllEvents(previousEvents)
                 userSetJSON('partypal_events', previousEvents)
+                // Remove from trashed
+                setTrashedEvents(prev => prev.filter(ev => ev.eventId !== eventId))
                 // Restore associated data
                 if (savedGuests) userSet(`partypal_guests_${eventId}`, savedGuests)
                 if (savedCollabs) userSet(`partypal_collabs_${eventId}`, savedCollabs)
@@ -1335,6 +1341,47 @@ function DashboardContent() {
                 showToast('Event restored', 'info')
             },
         })
+    }
+
+    const restoreEvent = (eventId: string) => {
+        fetch('/api/events', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ eventId, uid: user?.uid, action: 'restore' }),
+        }).then(() => {
+            // Move from trashed to active
+            const restored = trashedEvents.find(ev => ev.eventId === eventId)
+            setTrashedEvents(prev => prev.filter(ev => ev.eventId !== eventId))
+            if (restored) {
+                const clean = { ...restored } as any
+                delete clean.trashedAt
+                setAllEvents(prev => {
+                    const updated = [clean as PlanData, ...prev]
+                    userSetJSON('partypal_events', updated)
+                    return updated
+                })
+            }
+            // Remove from deleted set
+            deletedEventIdsRef.current.delete(eventId)
+            const pd: Record<string, number> = (() => {
+                try { const raw = localStorage.getItem('partypal_deleted_ids'); return raw ? JSON.parse(raw) : {} } catch { return {} }
+            })()
+            delete pd[eventId]
+            localStorage.setItem('partypal_deleted_ids', JSON.stringify(pd))
+            showToast('Event restored', 'success')
+        }).catch(() => showToast('Failed to restore', 'error'))
+    }
+
+    const permanentDeleteEvent = (eventId: string) => {
+        if (!confirm('Permanently delete this event? This cannot be undone.')) return
+        fetch('/api/events', {
+            method: 'PATCH',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ eventId, uid: user?.uid, action: 'permanent_delete' }),
+        }).then(() => {
+            setTrashedEvents(prev => prev.filter(ev => ev.eventId !== eventId))
+            showToast('Event permanently deleted', 'success')
+        }).catch(() => showToast('Failed to delete', 'error'))
     }
 
     const resignFromEvent = async (eventId: string, e: React.MouseEvent) => {
@@ -1685,6 +1732,54 @@ function DashboardContent() {
                                 <div style={{ fontSize: '0.7rem', color: '#9aabbb', fontWeight: 600 }}>Mar 15 · 50 guests</div>
                             </div>
                         </div>
+                        {/* Trash toggle */}
+                        {trashedEvents.length > 0 && (
+                            <div style={{ maxWidth: 1200, margin: '0.3rem auto 0', padding: '0 0.75rem' }}>
+                                <button
+                                    onClick={() => setShowTrash(prev => !prev)}
+                                    style={{
+                                        background: 'none', border: 'none', cursor: 'pointer',
+                                        fontSize: '0.72rem', color: '#9aabbb', fontWeight: 700,
+                                        display: 'flex', alignItems: 'center', gap: '0.3rem',
+                                    }}
+                                >
+                                    🗑️ Trash ({trashedEvents.length})
+                                    <span style={{ fontSize: '0.6rem' }}>{showTrash ? '▲' : '▼'}</span>
+                                </button>
+                                {showTrash && (
+                                    <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', padding: '0.4rem 0', scrollbarWidth: 'thin' }}>
+                                        {trashedEvents.map(ev => {
+                                            const trashedAt = ev.trashedAt ? new Date(ev.trashedAt) : new Date()
+                                            const daysLeft = Math.max(0, 30 - Math.floor((Date.now() - trashedAt.getTime()) / (24 * 60 * 60 * 1000)))
+                                            return (
+                                                <div key={ev.eventId} style={{
+                                                    minWidth: 150, padding: '0.7rem 0.9rem', borderRadius: 12, position: 'relative' as const,
+                                                    background: 'rgba(0,0,0,0.04)', border: '1.5px dashed rgba(155,155,155,0.3)', opacity: 0.7,
+                                                }}>
+                                                    <div style={{ position: 'absolute', top: 5, right: 5, background: 'rgba(232,137,106,0.12)', borderRadius: 4, padding: '0.08rem 0.35rem', fontSize: '0.5rem', fontWeight: 900, color: '#E8896A', letterSpacing: '0.04em' }}>
+                                                        {daysLeft}d left
+                                                    </div>
+                                                    <div style={{ fontSize: '1.2rem', marginBottom: '0.2rem', opacity: 0.5 }}>{ev.eventType?.split(' ')[0] || '🎉'}</div>
+                                                    <div style={{ fontFamily: "'Fredoka One', cursive", fontSize: '0.72rem', color: '#888', marginBottom: '0.3rem', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', maxWidth: 130 }}>
+                                                        {ev.eventType?.replace(/^[^\s]+\s/, '') || 'Party'}
+                                                    </div>
+                                                    <div style={{ display: 'flex', gap: '0.3rem' }}>
+                                                        <button
+                                                            onClick={() => restoreEvent(ev.eventId!)}
+                                                            style={{ flex: 1, background: 'rgba(61,140,110,0.12)', border: '1px solid rgba(61,140,110,0.3)', borderRadius: 6, padding: '0.2rem 0', cursor: 'pointer', fontSize: '0.6rem', color: '#3D8C6E', fontWeight: 800 }}
+                                                        >Restore</button>
+                                                        <button
+                                                            onClick={() => permanentDeleteEvent(ev.eventId!)}
+                                                            style={{ flex: 1, background: 'rgba(232,137,106,0.12)', border: '1px solid rgba(232,137,106,0.3)', borderRadius: 6, padding: '0.2rem 0', cursor: 'pointer', fontSize: '0.6rem', color: '#E8896A', fontWeight: 800 }}
+                                                        >Delete</button>
+                                                    </div>
+                                                </div>
+                                            )
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+                        )}
                     </div>
 
                     {/* ══ EVENT DETAILS STRIP ══ */}

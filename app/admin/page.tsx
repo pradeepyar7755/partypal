@@ -52,6 +52,13 @@ interface DashboardData {
         deletedEventTypes: Record<string, number>
         recentDeletions: { eventId: string; eventType: string; deletedAt: string; uid: string }[]
     }
+    activityLog: {
+        eventId: string
+        uid: string
+        action: string
+        changes: { field: string; from: string; to: string }[]
+        timestamp: string
+    }[]
     churn: {
         totalDeleted: number
         deletedInPeriod: number
@@ -1321,6 +1328,61 @@ export default function AdminDashboard() {
                                     </div>
                                 )}
                             </>
+                        )}
+
+                        {/* ══ EVENT ACTIVITY LOG ══ */}
+                        <div className={styles.sectionHeader}>
+                            <span className={styles.sectionEmoji}>📝</span>
+                            <span className={styles.sectionTitle}>Event Activity Log</span>
+                            <span className={styles.sectionSub}>{data.activityLog.length} recent changes</span>
+                        </div>
+                        {data.activityLog.length > 0 ? (
+                            <div className={styles.feedCard} style={{ maxHeight: 400, overflowY: 'auto' }}>
+                                {data.activityLog.map((entry, i) => {
+                                    const actionColors: Record<string, string> = {
+                                        created: '#3D8C6E', updated: '#4AADA8', trashed: '#E8896A',
+                                        restored: '#7B5EA7', permanently_deleted: '#c0392b',
+                                    }
+                                    const actionLabels: Record<string, string> = {
+                                        created: '✨ Created', updated: '✏️ Updated', trashed: '🗑️ Trashed',
+                                        restored: '♻️ Restored', permanently_deleted: '💀 Permanently Deleted',
+                                    }
+                                    return (
+                                        <div key={i} className={styles.feedItem}>
+                                            <div className={styles.feedDot} style={{ background: actionColors[entry.action] || '#555' }} />
+                                            <div className={styles.feedContent}>
+                                                <div className={styles.feedEvent}>
+                                                    {actionLabels[entry.action] || entry.action}
+                                                    <span style={{ color: 'rgba(255,255,255,0.3)', marginLeft: 6, fontSize: '0.75rem' }}>
+                                                        {entry.eventId.slice(0, 8)}...
+                                                    </span>
+                                                </div>
+                                                {entry.changes.length > 0 && (
+                                                    <div style={{ fontSize: '0.7rem', color: 'rgba(255,255,255,0.4)', marginTop: 2 }}>
+                                                        {entry.changes.map((c, j) => (
+                                                            <span key={j}>
+                                                                {j > 0 && ' · '}
+                                                                <span style={{ color: 'rgba(255,255,255,0.5)' }}>{c.field}</span>
+                                                                {c.from && c.to ? `: "${c.from}" → "${c.to}"` : c.to ? `: "${c.to}"` : ''}
+                                                            </span>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                <div className={styles.feedTime}>
+                                                    {timeAgo(entry.timestamp)}
+                                                    {entry.uid && ` · ${entry.uid}...`}
+                                                </div>
+                                            </div>
+                                        </div>
+                                    )
+                                })}
+                            </div>
+                        ) : (
+                            <div className={styles.feedCard}>
+                                <div style={{ color: 'rgba(255,255,255,0.3)', textAlign: 'center', padding: '1.5rem', fontSize: '0.85rem' }}>
+                                    No activity logged yet
+                                </div>
+                            </div>
                         )}
 
                         {/* ══ ACTIVITY FEED ══ */}
