@@ -38,6 +38,7 @@ export default function GuestsPage() {
   const [showNewCircle, setShowNewCircle] = useState(false)
   const [newCircleName, setNewCircleName] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [openCircleDropdown, setOpenCircleDropdown] = useState<string | null>(null)
   const [form, setForm] = useState({ name: '', email: '', phone: '', circles: [] as string[] })
   const [bulkText, setBulkText] = useState('')
   const [activeEvents, setActiveEvents] = useState<{ eventId: string; eventType: string }[]>([])
@@ -414,19 +415,31 @@ export default function GuestsPage() {
                   <div className={styles.contactActions}>
                     {/* Circle quick-add dropdown */}
                     <div className={styles.circleDropdown}>
-                      <button className={styles.circleAddBtn} title="Add to circle">🏷️</button>
-                      <div className={styles.circleDropdownContent}>
-                        {circles.map(c => (
-                          <label key={c} className={styles.circleDropdownItem}>
-                            <input
-                              type="checkbox"
-                              checked={contact.circles.includes(c)}
-                              onChange={() => toggleCircle(contact.id, c)}
-                            />
-                            {c}
-                          </label>
-                        ))}
-                      </div>
+                      <button
+                        className={`${styles.circleAddBtn} ${contact.circles.length > 0 ? styles.circleAddBtnHasCircles : ''}`}
+                        title="Assign circle"
+                        onClick={() => setOpenCircleDropdown(openCircleDropdown === contact.id ? null : contact.id)}
+                      >
+                        🏷️ {contact.circles.length > 0 ? contact.circles.length : '+'}
+                      </button>
+                      {openCircleDropdown === contact.id && (
+                        <>
+                          <div className={styles.circleDropdownBackdrop} onClick={() => setOpenCircleDropdown(null)} />
+                          <div className={styles.circleDropdownContent}>
+                            <div className={styles.circleDropdownHeader}>Assign Circles</div>
+                            {circles.map(c => (
+                              <label key={c} className={styles.circleDropdownItem}>
+                                <input
+                                  type="checkbox"
+                                  checked={contact.circles.includes(c)}
+                                  onChange={() => toggleCircle(contact.id, c)}
+                                />
+                                {c}
+                              </label>
+                            ))}
+                          </div>
+                        </>
+                      )}
                     </div>
                     <button className={styles.editBtn} onClick={() => startEdit(contact)} title="Edit">✏️</button>
                     <button className={styles.removeBtn} onClick={() => deleteContact(contact.id)} title="Remove">🗑️</button>

@@ -13,6 +13,7 @@ interface AdditionalGuest {
 interface Guest {
     id: string; name: string; email: string; status: 'going' | 'maybe' | 'declined' | 'pending'
     dietary: string; additionalGuests: AdditionalGuest[]; avatar: string; color: string
+    circles?: string[]
 }
 
 const DIETARY_OPTIONS = ['None', 'Vegetarian', 'Vegan', 'Gluten-Free', 'Nut Allergy', 'Kosher', 'Halal', 'Dairy-Free', 'Shellfish Allergy']
@@ -66,6 +67,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
     const [search, setSearch] = useState('')
     const [filter, setFilter] = useState<string>('all')
     const [expandedGuest, setExpandedGuest] = useState<string | null>(null)
+    const [openCircleDropdown, setOpenCircleDropdown] = useState<string | null>(null)
     const [inviteTheme, setInviteTheme] = useState(propPlanData?.theme || 'Modern & Fun')
     const [inviteTemp, setInviteTemp] = useState(0.7)
     const [rsvpByDate, setRsvpByDate] = useState(() => {
@@ -469,6 +471,14 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
             return updated
         })
         showToast('RSVP updated', 'info')
+    }
+    const toggleGuestCircle = (guestId: string, circle: string) => {
+        setGuests(prev => prev.map(g => {
+            if (g.id !== guestId) return g
+            const current = g.circles || []
+            const updated = current.includes(circle) ? current.filter(c => c !== circle) : [...current, circle]
+            return { ...g, circles: updated }
+        }))
     }
     const removeGuest = async (id: string) => {
         const g = guests.find(x => x.id === id);
@@ -1181,6 +1191,38 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                         </div>
                                         {g.dietary !== 'None' && <span className={styles.dietary}>{g.dietary}</span>}
                                         {g.additionalGuests.length > 0 && <span className={styles.partySize} title={g.additionalGuests.map(ag => ag.name || 'Guest').join(', ')}>👥 +{g.additionalGuests.length}</span>}
+                                        {!isGuest && (
+                                            <div className={styles.circleDropdown} onClick={e => e.stopPropagation()}>
+                                                <button
+                                                    className={`${styles.circleBtn} ${(g.circles?.length || 0) > 0 ? styles.circleBtnActive : ''}`}
+                                                    title="Assign circle"
+                                                    onClick={() => setOpenCircleDropdown(openCircleDropdown === g.id ? null : g.id)}
+                                                >
+                                                    🏷️ {(g.circles?.length || 0) > 0 ? g.circles!.length : '+'}
+                                                </button>
+                                                {openCircleDropdown === g.id && (
+                                                    <>
+                                                        <div className={styles.circleBackdrop} onClick={() => setOpenCircleDropdown(null)} />
+                                                        <div className={styles.circleMenu}>
+                                                            <div className={styles.circleMenuHeader}>Assign Circles</div>
+                                                            {savedCircles.map(c => (
+                                                                <label key={c} className={styles.circleMenuItem}>
+                                                                    <input
+                                                                        type="checkbox"
+                                                                        checked={g.circles?.includes(c) || false}
+                                                                        onChange={() => toggleGuestCircle(g.id, c)}
+                                                                    />
+                                                                    {c}
+                                                                </label>
+                                                            ))}
+                                                            {savedCircles.length === 0 && (
+                                                                <div className={styles.circleMenuEmpty}>No circles yet. <a href="/guests" style={{ color: 'var(--teal)', fontWeight: 800 }}>Create circles</a></div>
+                                                            )}
+                                                        </div>
+                                                    </>
+                                                )}
+                                            </div>
+                                        )}
                                         <select value={g.status} onChange={e => { e.stopPropagation(); updateStatus(g.id, e.target.value as Guest['status']) }} onClick={e => e.stopPropagation()} className={styles.statusSelect} style={{ background: STATUS_BG[g.status], color: STATUS_COLORS[g.status] }}>
                                             <option value="going">✓ Going</option>
                                             <option value="maybe">? Maybe</option>

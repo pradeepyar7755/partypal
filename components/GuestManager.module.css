@@ -740,3 +740,91 @@
     opacity: 0.5;
     cursor: not-allowed;
 }
+
+/* Circle assignment dropdown */
+.circleDropdown {
+    position: relative;
+}
+
+.circleBtn {
+    background: rgba(74, 173, 168, 0.08);
+    border: 1.5px solid rgba(74, 173, 168, 0.2);
+    cursor: pointer;
+    font-size: 0.72rem;
+    padding: 0.15rem 0.45rem;
+    border-radius: 50px;
+    transition: all 0.15s;
+    color: var(--teal);
+    font-weight: 800;
+    white-space: nowrap;
+}
+
+.circleBtn:hover {
+    background: rgba(74, 173, 168, 0.15);
+    border-color: rgba(74, 173, 168, 0.4);
+}
+
+.circleBtnActive {
+    background: rgba(74, 173, 168, 0.12);
+    border-color: rgba(74, 173, 168, 0.35);
+}
+
+.circleBackdrop {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    z-index: 9;
+}
+
+.circleMenu {
+    position: absolute;
+    right: 0;
+    top: calc(100% + 4px);
+    background: white;
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 0.4rem;
+    min-width: 180px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+    z-index: 10;
+    animation: fadeSlideIn 0.15s ease;
+}
+
+.circleMenuHeader {
+    font-size: 0.68rem;
+    font-weight: 900;
+    color: #9aabbb;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding: 0.3rem 0.5rem 0.2rem;
+}
+
+.circleMenuItem {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.35rem 0.5rem;
+    font-size: 0.8rem;
+    font-weight: 700;
+    color: var(--navy);
+    cursor: pointer;
+    border-radius: 6px;
+    white-space: nowrap;
+}
+
+.circleMenuItem:hover {
+    background: var(--light-bg);
+}
+
+.circleMenuItem input {
+    accent-color: var(--teal);
+}
+
+.circleMenuEmpty {
+    padding: 0.5rem;
+    font-size: 0.75rem;
+    color: #9aabbb;
+    font-weight: 600;
+}

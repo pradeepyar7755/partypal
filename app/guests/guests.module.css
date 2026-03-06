@@ -459,18 +459,26 @@
 }
 
 .circleAddBtn {
-  background: none;
-  border: none;
+  background: rgba(74, 173, 168, 0.08);
+  border: 1.5px solid rgba(74, 173, 168, 0.2);
   cursor: pointer;
-  font-size: 0.85rem;
-  padding: 0.3rem;
-  border-radius: 6px;
+  font-size: 0.75rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 50px;
   transition: all 0.15s;
-  opacity: 0.4;
+  color: var(--teal);
+  font-weight: 800;
+  white-space: nowrap;
 }
 
 .circleAddBtn:hover {
-  opacity: 1;
+  background: rgba(74, 173, 168, 0.15);
+  border-color: rgba(74, 173, 168, 0.4);
+}
+
+.circleAddBtnHasCircles {
+  background: rgba(74, 173, 168, 0.12);
+  border-color: rgba(74, 173, 168, 0.35);
 }
 
 /* Circle Dropdown */
@@ -478,22 +486,36 @@
   position: relative;
 }
 
+.circleDropdownBackdrop {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 9;
+}
+
 .circleDropdownContent {
-  display: none;
   position: absolute;
   right: 0;
-  top: 100%;
+  top: calc(100% + 4px);
   background: white;
   border: 1.5px solid var(--border);
   border-radius: 12px;
-  padding: 0.5rem;
-  min-width: 160px;
-  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+  padding: 0.4rem;
+  min-width: 180px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
   z-index: 10;
+  animation: fadeSlideIn 0.15s ease;
 }
 
-.circleDropdown:hover .circleDropdownContent {
-  display: block;
+.circleDropdownHeader {
+  font-size: 0.68rem;
+  font-weight: 900;
+  color: #9aabbb;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  padding: 0.3rem 0.5rem 0.2rem;
 }
 
 .circleDropdownItem {
