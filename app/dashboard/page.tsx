@@ -549,10 +549,18 @@ function DashboardContent() {
             parsed.eventId = Math.random().toString(36).substring(2, 10)
             userSetJSON('partyplan', parsed)
         }
-        // Check for URL query params: ?event=X&tab=Y
+        // Check for URL query params: ?event=X&tab=Y&demo=true
         const urlParams = new URLSearchParams(window.location.search)
         const urlEventId = urlParams.get('event')
         const urlTab = urlParams.get('tab') as 'plan' | 'theme' | 'vendors' | 'guests' | 'polls' | null
+        const urlDemo = urlParams.get('demo')
+
+        // If URL explicitly requests demo, load demo plan
+        if (urlDemo === 'true') {
+            const saved = userGetJSON('partypal_demo', null)
+            loadEvent(saved || DEFAULT_PLAN, true)
+            return
+        }
 
         // If URL specifies an event, load that event
         if (urlEventId) {

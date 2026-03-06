@@ -446,7 +446,7 @@ export default function Home() {
               onMouseEnter={() => setShowDemoHover(true)}
               onMouseLeave={() => setShowDemoHover(false)}
             >
-              <button onClick={() => router.push('/dashboard')} style={{
+              <button onClick={() => router.push('/dashboard?demo=true')} style={{
                 background: 'transparent', color: 'rgba(255,255,255,0.6)', padding: '0.5rem 1.2rem',
                 borderRadius: 50, border: '1px solid rgba(255,255,255,0.2)', fontWeight: 700, fontSize: '0.82rem', cursor: 'pointer',
                 transition: 'all 0.2s',
