@@ -733,6 +733,24 @@
     padding: 1.5rem 1.2rem;
   }
 
+  .searchBarInner {
+    flex-wrap: wrap;
+    gap: 0.6rem;
+  }
+
+  .searchInputWrap {
+    flex: 1 1 100% !important;
+    max-width: 100% !important;
+  }
+
+  .filterBtn,
+  .shortlistToggle,
+  .sortSelect {
+    flex: 1 1 auto;
+    font-size: 0.8rem;
+    padding: 0.65rem 0.8rem;
+  }
+
   .header {
     padding: 2rem 1.2rem 0;
   }
