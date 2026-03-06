@@ -343,9 +343,8 @@ function VendorsContent() {
         estMiles = cityInAddress ? 3 : stateInAddress ? 15 : 30
       }
       if (distanceFilter === '<5' && estMiles > 5) return false
-      if (distanceFilter === '5-10' && (estMiles < 5 || estMiles > 10)) return false
-      if (distanceFilter === '10-25' && (estMiles < 10 || estMiles > 25)) return false
-      if (distanceFilter === '25+' && estMiles < 25) return false
+      if (distanceFilter === '<10' && estMiles > 10) return false
+      if (distanceFilter === '<25' && estMiles > 25) return false
     }
     if (!search) return true
     return v.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -499,7 +498,7 @@ function VendorsContent() {
             <div className={styles.filterSection}>
               <h3>Distance</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                {[{ label: 'Any Distance', value: 'all' }, { label: '< 5 miles', value: '<5' }, { label: '5–10 miles', value: '5-10' }, { label: '10–25 miles', value: '10-25' }, { label: '25+ miles', value: '25+' }].map(d => (
+                {[{ label: 'Any Distance', value: 'all' }, { label: '< 5 miles', value: '<5' }, { label: '< 10 miles', value: '<10' }, { label: '< 25 miles', value: '<25' }].map(d => (
                   <label key={d.value} className={styles.filterCheck}>
                     <input type="radio" name="distance" checked={distanceFilter === d.value} onChange={() => setDistanceFilter(d.value)} />
                     <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--navy)' }}>{d.label}</span>
@@ -512,7 +511,7 @@ function VendorsContent() {
 
         {/* ── Vendor Cards ── */}
         <div>
-          <div className={styles.resultsCount}>Showing <span>{startItem}–{endItem} of {filtered.length}</span> vendors within 25 mi of {usedGeoLocation ? '📍 Current Location' : displayLocation || location}{totalPages > 1 && <span style={{ marginLeft: '0.5rem', color: '#9aabbb' }}>• Page {safePage} of {totalPages}</span>}</div>
+          <div className={styles.resultsCount}>Showing <span>{startItem}–{endItem} of {filtered.length}</span> vendors within {distanceFilter === '<5' ? '5' : distanceFilter === '<10' ? '10' : '25'} mi of {usedGeoLocation ? '📍 Current Location' : displayLocation || location}{totalPages > 1 && <span style={{ marginLeft: '0.5rem', color: '#9aabbb' }}>• Page {safePage} of {totalPages}</span>}</div>
 
           {loading ? (
             <div className={styles.loading}>
