@@ -17,7 +17,7 @@ export default function PrivacyPolicy() {
                     Here&apos;s exactly how we handle your information.
                 </p>
                 <p className={styles.effective}>
-                    Effective Date: February 28, 2026 · Last Updated: February 28, 2026
+                    Effective Date: February 28, 2026 · Last Updated: March 6, 2026
                 </p>
 
                 {/* Table of Contents */}
@@ -49,7 +49,7 @@ export default function PrivacyPolicy() {
                         <ul>
                             <li><strong>Email address</strong> — used for login and optional notifications</li>
                             <li><strong>Display name</strong> — shown to collaborators you invite</li>
-                            <li><strong>Authentication method</strong> — Google or email/password</li>
+                            <li><strong>Authentication method</strong> — Google, Apple, or email/password</li>
                         </ul>
                     </div>
 
@@ -335,7 +335,7 @@ export default function PrivacyPolicy() {
                     <div className={styles.thirdPartyGrid}>
                         <div className={styles.thirdPartyCard}>
                             <strong>Firebase (Google)</strong>
-                            <p>Authentication, database, and hosting. <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy →</a></p>
+                            <p>Authentication and database storage. <a href="https://firebase.google.com/support/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy →</a></p>
                         </div>
                         <div className={styles.thirdPartyCard}>
                             <strong>Google Gemini AI</strong>
@@ -350,8 +350,16 @@ export default function PrivacyPolicy() {
                             <p>Advertising service that displays relevant ads and may use cookies for ad personalization. <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer">Ad Policy →</a></p>
                         </div>
                         <div className={styles.thirdPartyCard}>
-                            <strong>Google Maps</strong>
-                            <p>Location search for venues. <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy →</a></p>
+                            <strong>Google Maps & Places API</strong>
+                            <p>Location search for venues and vendor discovery. Search queries and location data are sent to Google. <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Privacy Policy →</a></p>
+                        </div>
+                        <div className={styles.thirdPartyCard}>
+                            <strong>Resend</strong>
+                            <p>Email delivery service used for RSVP notifications, collaboration invites, and other transactional emails. Email addresses are shared with Resend to deliver messages. <a href="https://resend.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy →</a></p>
+                        </div>
+                        <div className={styles.thirdPartyCard}>
+                            <strong>Apple</strong>
+                            <p>Sign in with Apple authentication provider. If you choose Apple login, your identity is verified through Apple&apos;s servers. <a href="https://www.apple.com/legal/privacy/" target="_blank" rel="noopener noreferrer">Privacy Policy →</a></p>
                         </div>
                     </div>
                 </section>
