@@ -43,7 +43,7 @@ ${content}
 <table width="100%" cellpadding="0" cellspacing="0" style="max-width:560px;">
 <tr><td style="padding:20px 32px;text-align:center;">
     <p style="color:${BRAND.textLight};font-size:12px;margin:0 0 6px;font-weight:600;">
-        🎈 Sent via <strong style="color:${BRAND.yellow};">Party Pal</strong> — Your AI Party Planner
+        🎈 Sent via <strong style="color:${BRAND.yellow};">PartyPal</strong> — Your AI Party Planner
     </p>
     ${footerExtra || ''}
     <p style="color:${BRAND.textLight};font-size:11px;margin:8px 0 0;">
@@ -382,13 +382,13 @@ export function welcomeEmail(params: {
     const { userName, dashboardLink } = params
 
     return baseLayout(`
-${headerBlock('🎈', `Welcome to Party Pal!`, 'Your AI-powered party planning starts here')}
+${headerBlock('🎈', `Welcome to PartyPal!`, 'Your AI-powered party planning starts here')}
 ${bodyWrap(`
     <p style="color:${BRAND.textDark};font-size:16px;line-height:1.6;margin:0 0 16px;">
         Hi <strong>${userName}</strong> 👋
     </p>
     <p style="color:${BRAND.textMuted};font-size:14px;line-height:1.7;margin:0 0 20px;">
-        Welcome aboard! Party Pal is your AI-powered party planning assistant that helps you plan unforgettable events.
+        Welcome aboard! PartyPal is your AI-powered party planning assistant that helps you plan unforgettable events.
     </p>
     <!-- Feature Cards -->
     <div style="margin:0 0 20px;">
@@ -450,7 +450,7 @@ ${bodyWrap(`
         Planning your own event? 🎈
     </p>
     <div style="text-align:center;margin:8px 0;">
-        <a href="https://partypal.social" style="color:${BRAND.teal};font-weight:800;font-size:14px;text-decoration:underline;">Start planning with Party Pal →</a>
+        <a href="https://partypal.social" style="color:${BRAND.teal};font-weight:800;font-size:14px;text-decoration:underline;">Start planning with PartyPal →</a>
     </div>
 `)}`)
 }
@@ -539,7 +539,7 @@ export function marketingEmail(params: {
     const { userName, headline, bodyText, ctaText, ctaLink, features } = params
 
     return baseLayout(`
-${headerBlock('🎈', headline, 'New from Party Pal', `linear-gradient(135deg,${BRAND.teal},${BRAND.purple})`)}
+${headerBlock('🎈', headline, 'New from PartyPal', `linear-gradient(135deg,${BRAND.teal},${BRAND.purple})`)}
 ${bodyWrap(`
     <p style="color:${BRAND.textDark};font-size:16px;line-height:1.6;margin:0 0 16px;">
         Hi <strong>${userName}</strong>,
@@ -648,7 +648,7 @@ ${bodyWrap(`
         Hi <strong>${userName}</strong>,
     </p>
     <p style="color:${BRAND.textMuted};font-size:14px;line-height:1.7;margin:0 0 20px;">
-        We're truly sorry to see you go. Your Party Pal account has been permanently deleted as of <strong>${deletionDate}</strong>. We appreciate the time you spent with us${tenureDays > 0 ? ` — <strong>${tenureText}</strong> of planning great events together` : ''}.
+        We're truly sorry to see you go. Your PartyPal account has been permanently deleted as of <strong>${deletionDate}</strong>. We appreciate the time you spent with us${tenureDays > 0 ? ` — <strong>${tenureText}</strong> of planning great events together` : ''}.
     </p>
     <!-- What was deleted -->
     ${infoBox('🗑️ What Was Removed', [
@@ -669,11 +669,11 @@ ${bodyWrap(`
     </p>
     <div style="text-align:center;margin:24px 0 8px;">
         <a href="https://partypal.social" class="btn btn-primary" style="display:inline-block;padding:14px 40px;border-radius:12px;text-decoration:none;font-weight:800;font-size:14px;background:linear-gradient(135deg,${BRAND.teal},${BRAND.green});color:#fff;">
-            Rejoin Party Pal →
+            Rejoin PartyPal →
         </a>
     </div>
     <p style="text-align:center;color:${BRAND.textLight};font-size:12px;margin:16px 0 0;font-weight:600;">
-        Thank you for being part of the Party Pal community. We wish you all the best! 💛
+        Thank you for being part of the PartyPal community. We wish you all the best! 💛
     </p>
 `)}`,
         `<p style="color:${BRAND.textLight};font-size:11px;margin:4px 0 0;">This is a confirmation of your account deletion. No further emails will be sent.</p>`

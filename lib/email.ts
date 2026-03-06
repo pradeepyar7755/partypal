@@ -16,29 +16,29 @@ export const resend = RESEND_API_KEY ? new Resend(RESEND_API_KEY) : null
 // Each address serves a specific purpose for deliverability & trust
 export const SENDERS = {
     /** Party invitations & RSVP links */
-    invites: `Party Pal Invites <invites@${DOMAIN}>`,
+    invites: `PartyPal Invites <invites@${DOMAIN}>`,
     /** Event updates, changes, reminders */
-    notifications: `Party Pal <notifications@${DOMAIN}>`,
+    notifications: `PartyPal <notifications@${DOMAIN}>`,
     /** RSVP confirmations sent to guests */
-    rsvp: `Party Pal RSVP <rsvp@${DOMAIN}>`,
+    rsvp: `PartyPal RSVP <rsvp@${DOMAIN}>`,
     /** Welcome & onboarding emails */
-    welcome: `Party Pal <welcome@${DOMAIN}>`,
+    welcome: `PartyPal <welcome@${DOMAIN}>`,
     /** Help & support responses */
-    support: `Party Pal Support <support@${DOMAIN}>`,
+    support: `PartyPal Support <support@${DOMAIN}>`,
     /** System/transactional emails */
-    noreply: `Party Pal <noreply@${DOMAIN}>`,
+    noreply: `PartyPal <noreply@${DOMAIN}>`,
     /** Marketing, newsletters, feature updates */
-    marketing: `Party Pal <${SITE_EMAILS.marketing}>`,
+    marketing: `PartyPal <${SITE_EMAILS.marketing}>`,
     /** Sales and enterprise inquiries */
-    sales: `Party Pal Sales <${SITE_EMAILS.sales}>`,
+    sales: `PartyPal Sales <${SITE_EMAILS.sales}>`,
     /** User feedback and bug reports */
-    feedback: `Party Pal Feedback <${SITE_EMAILS.feedback}>`,
+    feedback: `PartyPal Feedback <${SITE_EMAILS.feedback}>`,
     /** Job applications and careers */
-    jobs: `Party Pal Careers <${SITE_EMAILS.jobs}>`,
+    jobs: `PartyPal Careers <${SITE_EMAILS.jobs}>`,
 } as const
 
 // Fallback sender when domain isn't verified yet
-const FALLBACK_SENDER = 'Party Pal <onboarding@resend.dev>'
+const FALLBACK_SENDER = 'PartyPal <onboarding@resend.dev>'
 
 // ── Email Types ───────────────────────────────────────
 export type EmailType = keyof typeof SENDERS

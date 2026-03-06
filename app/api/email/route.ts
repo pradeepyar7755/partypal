@@ -156,7 +156,7 @@ export async function POST(req: NextRequest) {
                 const result = await sendEmail({
                     type: 'welcome',
                     to: userEmail,
-                    subject: '🎈 Welcome to Party Pal! Let\'s plan something amazing',
+                    subject: '🎈 Welcome to PartyPal! Let\'s plan something amazing',
                     html: welcomeEmail({
                         userName: userName || 'Party Planner',
                         dashboardLink: `https://${SITE_EMAILS.systemDomain}/dashboard`,
@@ -250,7 +250,7 @@ export async function POST(req: NextRequest) {
                 const result = await sendBatchEmails({
                     type: 'marketing',
                     recipients,
-                    subjectFn: () => subject || '🎈 What\'s New at Party Pal',
+                    subjectFn: () => subject || '🎈 What\'s New at PartyPal',
                     htmlFn: (userName: string) => marketingEmail({
                         userName,
                         subject: subject || '',
@@ -319,7 +319,7 @@ export async function POST(req: NextRequest) {
                 const result = await sendEmail({
                     type: 'noreply',
                     to: userEmail,
-                    subject: '👋 Your Party Pal account has been deleted',
+                    subject: '👋 Your PartyPal account has been deleted',
                     html: accountDeletionEmail({
                         userName: userName || 'there',
                         deletionDate,

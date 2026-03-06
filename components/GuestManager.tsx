@@ -1356,7 +1356,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                 autoFocus
                             />
                             <p style={{ fontSize: '0.72rem', color: '#b0bfcc', fontWeight: 600, marginTop: '0.4rem' }}>
-                                This message will be sent as a styled email matching the Party Pal look and feel, including your event details.
+                                This message will be sent as a styled email matching the PartyPal look and feel, including your event details.
                             </p>
                         </div>
                         <div className={styles.modalFooter}>
