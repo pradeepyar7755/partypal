@@ -31,8 +31,8 @@ interface Vendor {
   id: string; name: string; category: string; location: string; rating: number
   reviews: number; price: string; priceLabel: string; matchScore: number
   description: string; tags: string[]; badge: string; emoji: string; featured: boolean
-  photoUrl?: string; photoUrl2?: string; googleMapsUri?: string; websiteUri?: string
-  isOpen?: boolean; source?: string
+  photoUrl?: string; googleMapsUri?: string; websiteUri?: string
+  isOpen?: boolean; source?: string; distance?: number | null
 }
 
 function VendorsContent() {
@@ -64,6 +64,9 @@ function VendorsContent() {
   const [addToEventVendor, setAddToEventVendor] = useState<string | null>(null)
   const [showEventPicker, setShowEventPicker] = useState(false)
   const [showSignupPrompt, setShowSignupPrompt] = useState(false)
+  const [hasMore, setHasMore] = useState(false)
+  const [apiPage, setApiPage] = useState(1)
+  const [loadingMore, setLoadingMore] = useState(false)
 
   const isGuest = !user || user.isAnonymous
 
@@ -221,9 +224,14 @@ function VendorsContent() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activecat, planData, locationReady, detectedLocation, cuisine])
 
-  const fetchVendors = async (cat: string) => {
-    setLoading(true)
-    setVendors([])
+  const fetchVendors = async (cat: string, page = 1, append = false) => {
+    if (page === 1) {
+      setLoading(true)
+      setVendors([])
+      setApiPage(1)
+    } else {
+      setLoadingMore(true)
+    }
     try {
       const res = await fetch('/api/vendors', {
         method: 'POST',
@@ -233,13 +241,32 @@ function VendorsContent() {
           location: (() => { const l = detectedLocation || params.get('location') || planData.location || ''; return l && l !== 'TBD' ? l : 'Atlanta, GA' })(),
           theme: planData.theme || '', budget: planData.budget || '', guests: planData.guests || '30',
           cuisine: cat === 'Food' && cuisine !== 'All' ? cuisine : undefined,
+          page,
         }),
       })
       const data = await res.json()
-      setVendors(data.vendors || [])
+      const newVendors = data.vendors || []
+      setHasMore(data.hasMore ?? false)
+      setApiPage(page)
+      if (append && page > 1) {
+        // Deduplicate by vendor ID
+        setVendors(prev => {
+          const existingIds = new Set(prev.map(v => v.id))
+          const unique = newVendors.filter((v: Vendor) => !existingIds.has(v.id))
+          return [...prev, ...unique]
+        })
+      } else {
+        setVendors(newVendors)
+      }
       trackVendorSearch(cat, detectedLocation || planData.location || 'unknown')
     } catch { /* keep current vendors */ }
     setLoading(false)
+    setLoadingMore(false)
+  }
+
+  const loadMoreVendors = () => {
+    if (loadingMore || !hasMore) return
+    fetchVendors(activecat, apiPage + 1, true)
   }
 
   const toggleShortlist = (vendorId: string, e: React.MouseEvent) => {
@@ -300,24 +327,25 @@ function VendorsContent() {
     // Price filter
     const priceVal = v.price === 'Free' ? 0 : v.price === '$$$$' ? 2000 : v.price === '$$$' ? 1000 : v.price === '$$' ? 500 : v.price === '$' ? 250 : 500
     if (priceVal > priceMax) return false
-    // Distance filter — estimate from address text vs search location
+    // Distance filter — use actual distance from API, fall back to heuristic
     if (distanceFilter !== 'all') {
-      const loc = (detectedLocation || planData.location || '').toLowerCase()
-      const vLoc = v.location.toLowerCase()
-      // Extract city name from search location (e.g., "Atlanta, GA" → "atlanta")
-      const locCity = loc.split(',')[0].trim()
-      // Check if the vendor's full address contains the search city name
-      const cityInAddress = locCity.length > 2 && vLoc.includes(locCity)
-      // Also check state match
-      const locParts = loc.split(',').map(p => p.trim())
-      const locState = locParts.length >= 2 ? locParts[locParts.length - 1].trim() : ''
-      const stateInAddress = locState.length >= 2 && vLoc.includes(locState.toLowerCase())
-      // Heuristic distance: same city = ~3mi, same state = ~15mi, different = ~30mi
-      const estMiles = cityInAddress ? 3 : stateInAddress ? 15 : 30
+      let estMiles: number
+      if (v.distance != null) {
+        estMiles = v.distance
+      } else {
+        const loc = (detectedLocation || planData.location || '').toLowerCase()
+        const vLoc = v.location.toLowerCase()
+        const locCity = loc.split(',')[0].trim()
+        const cityInAddress = locCity.length > 2 && vLoc.includes(locCity)
+        const locParts = loc.split(',').map(p => p.trim())
+        const locState = locParts.length >= 2 ? locParts[locParts.length - 1].trim() : ''
+        const stateInAddress = locState.length >= 2 && vLoc.includes(locState.toLowerCase())
+        estMiles = cityInAddress ? 3 : stateInAddress ? 15 : 30
+      }
       if (distanceFilter === '<5' && estMiles > 5) return false
-      if (distanceFilter === '5-10' && (estMiles <= 3)) return false  // same city is < 5mi, skip for 5-10
-      if (distanceFilter === '10-25' && cityInAddress) return false   // same city vendors are too close
-      if (distanceFilter === '25+' && (cityInAddress || stateInAddress)) return false
+      if (distanceFilter === '5-10' && (estMiles < 5 || estMiles > 10)) return false
+      if (distanceFilter === '10-25' && (estMiles < 10 || estMiles > 25)) return false
+      if (distanceFilter === '25+' && estMiles < 25) return false
     }
     if (!search) return true
     return v.name.toLowerCase().includes(search.toLowerCase()) ||
@@ -484,7 +512,7 @@ function VendorsContent() {
 
         {/* ── Vendor Cards ── */}
         <div>
-          <div className={styles.resultsCount}>Showing <span>{startItem}–{endItem} of {filtered.length}</span> vendors near {usedGeoLocation ? '📍 Current Location' : displayLocation || location}{totalPages > 1 && <span style={{ marginLeft: '0.5rem', color: '#9aabbb' }}>• Page {safePage} of {totalPages}</span>}</div>
+          <div className={styles.resultsCount}>Showing <span>{startItem}–{endItem} of {filtered.length}</span> vendors within 25 mi of {usedGeoLocation ? '📍 Current Location' : displayLocation || location}{totalPages > 1 && <span style={{ marginLeft: '0.5rem', color: '#9aabbb' }}>• Page {safePage} of {totalPages}</span>}</div>
 
           {loading ? (
             <div className={styles.loading}>
@@ -519,7 +547,7 @@ function VendorsContent() {
                     <div className={styles.vendorCardBody}>
                       <div className={styles.vendorCatTag}>{v.emoji} {v.category}</div>
                       <div className={styles.vendorName}>{v.name}</div>
-                      <div className={styles.vendorLocation}>📍 {v.location}</div>
+                      <div className={styles.vendorLocation}>📍 {v.location}{v.distance != null && <span className={styles.distanceTag}> · {v.distance < 1 ? '< 1' : v.distance.toFixed(1)} mi</span>}</div>
                       <div className={styles.vendorRating}>
                         <span className="stars">{'★'.repeat(Math.floor(v.rating))}{'☆'.repeat(5 - Math.floor(v.rating))}</span>
                         <span className={styles.ratingNum}>{v.rating}</span>
@@ -614,6 +642,29 @@ function VendorsContent() {
               </button>
             </div>
           )}
+
+          {/* ── Load More Vendors (fires API call on demand) ── */}
+          {hasMore && safePage >= totalPages && !loading && (
+            <div className={styles.loadMoreWrap}>
+              <button
+                className={styles.loadMoreBtn}
+                onClick={loadMoreVendors}
+                disabled={loadingMore}
+              >
+                {loadingMore ? (
+                  <>
+                    <span className="spinner" style={{ width: 16, height: 16, borderWidth: 2 }} />
+                    Loading more vendors…
+                  </>
+                ) : (
+                  <>🔍 Load More Vendors (within 25 mi)</>
+                )}
+              </button>
+              <p className={styles.loadMoreHint}>
+                Showing {vendors.length} vendors · Click to discover more nearby options
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
@@ -625,9 +676,6 @@ function VendorsContent() {
             {selectedVendor.photoUrl && (
               <div style={{ width: '100%', height: 200, borderRadius: '16px 16px 0 0', overflow: 'hidden', position: 'relative' }}>
                 <img src={selectedVendor.photoUrl} alt={selectedVendor.name} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-                {selectedVendor.photoUrl2 && (
-                  <img src={selectedVendor.photoUrl2} alt="" style={{ position: 'absolute', bottom: 8, right: 8, width: 80, height: 60, objectFit: 'cover', borderRadius: 8, border: '2px solid white', boxShadow: '0 2px 8px rgba(0,0,0,0.2)' }} />
-                )}
               </div>
             )}
             <div className={styles.modalHeader}>
@@ -637,7 +685,7 @@ function VendorsContent() {
               <div style={{ flex: 1 }}>
                 <div className={styles.vendorCatTag}>{selectedVendor.category}</div>
                 <h2 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '1.4rem', color: 'var(--navy)', marginBottom: '0.2rem' }}>{selectedVendor.name}</h2>
-                <div className={styles.vendorLocation}>📍 {selectedVendor.location}</div>
+                <div className={styles.vendorLocation}>📍 {selectedVendor.location}{selectedVendor.distance != null && <span className={styles.distanceTag}> · {selectedVendor.distance < 1 ? '< 1' : selectedVendor.distance.toFixed(1)} mi away</span>}</div>
                 <div className={styles.vendorRating} style={{ marginTop: '0.3rem', marginBottom: 0 }}>
                   <span className="stars">{'★'.repeat(Math.floor(selectedVendor.rating))}{'☆'.repeat(5 - Math.floor(selectedVendor.rating))}</span>
                   <span className={styles.ratingNum}>{selectedVendor.rating}</span>

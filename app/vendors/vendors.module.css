@@ -827,6 +827,57 @@
   font-size: 0.9rem;
 }
 
+/* ══ LOAD MORE ══ */
+.loadMoreWrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 2rem;
+  padding: 1.5rem 0;
+}
+
+.loadMoreBtn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.85rem 2rem;
+  border-radius: 50px;
+  border: 2px solid var(--teal);
+  background: rgba(74, 173, 168, 0.06);
+  font-family: 'Fredoka One', cursive;
+  font-size: 0.92rem;
+  color: var(--teal);
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.loadMoreBtn:hover:not(:disabled) {
+  background: var(--teal);
+  color: white;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(74, 173, 168, 0.3);
+}
+
+.loadMoreBtn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.loadMoreHint {
+  font-size: 0.75rem;
+  font-weight: 700;
+  color: #9aabbb;
+  margin: 0;
+}
+
+/* ══ DISTANCE TAG ══ */
+.distanceTag {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--teal);
+}
+
 @media (max-width: 600px) {
   .pagination {
     gap: 0.3rem;
@@ -841,6 +892,11 @@
     width: 32px;
     height: 32px;
     font-size: 0.78rem;
+  }
+
+  .loadMoreBtn {
+    padding: 0.7rem 1.5rem;
+    font-size: 0.82rem;
   }
 }
 

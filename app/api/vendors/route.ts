@@ -2,17 +2,18 @@ import { NextRequest, NextResponse } from 'next/server'
 import { checkRateLimit, logApiCall } from '@/lib/rate-limiter'
 
 const GOOGLE_MAPS_API_KEY = process.env.GOOGLE_MAPS_API_KEY || ''
+const MILES_25_IN_METERS = 40234 // 25 miles radius
 
-// Category → search query + relevant Google place types for post-search filtering
-const CATEGORY_MAP: Record<string, { query: string; types?: string[]; relevantTypes: string[] }> = {
-  'Venue': { query: 'best event venue banquet hall party venue', relevantTypes: ['event_venue', 'banquet_hall', 'wedding_venue', 'community_center', 'convention_center', 'meeting_room', 'cultural_center'] },
-  'Decor': { query: 'party decorator event decorations florist flower shop balloon artist floral arrangements', relevantTypes: ['florist', 'flower_shop', 'home_goods_store', 'furniture_store', 'interior_designer', 'art_studio', 'store', 'gift_shop', 'garden_center', 'shopping_mall', 'general_contractor', 'home_improvement_store', 'wholesaler'] },
-  'Baker': { query: 'best bakery custom cakes birthday cakes celebration cakes', types: ['bakery'], relevantTypes: ['bakery', 'cake_shop', 'dessert_shop', 'pastry_shop'] },
-  'Food': { query: 'best catering food truck private chef party catering food service', relevantTypes: ['restaurant', 'meal_delivery', 'meal_takeaway', 'food_court', 'food_truck'] },
-  'Photos': { query: 'best event photographer videographer portrait photography studio', relevantTypes: ['photographer', 'photo_studio', 'photography_studio', 'portrait_studio', 'video_production_studio'] },
-  'Music': { query: 'best DJ service party DJ live music entertainment', relevantTypes: ['night_club', 'performing_arts_theater', 'music_store', 'recording_studio', 'karaoke', 'concert_hall'] },
-  'Drinks': { query: 'mobile bartender event bartending service party mixologist mobile bar', relevantTypes: ['mobile_caterer', 'caterer', 'bar', 'event_planner', 'restaurant', 'food_service'] },
-  'Entertain': { query: 'party entertainment kids entertainment magician face painting', relevantTypes: ['amusement_center', 'amusement_park', 'bowling_alley', 'arcade', 'trampoline_park', 'escape_room', 'laser_tag', 'miniature_golf'] },
+// Category → search queries (primary + alternate for pagination) + relevant Google place types
+const CATEGORY_MAP: Record<string, { query: string; altQuery: string; types?: string[]; relevantTypes: string[] }> = {
+  'Venue': { query: 'best event venue banquet hall party venue', altQuery: 'wedding venue reception hall conference center event space', relevantTypes: ['event_venue', 'banquet_hall', 'wedding_venue', 'community_center', 'convention_center', 'meeting_room', 'cultural_center'] },
+  'Decor': { query: 'party decorator event decorations florist flower shop balloon artist floral arrangements', altQuery: 'event planner decorator floral design party supplies rental', relevantTypes: ['florist', 'flower_shop', 'home_goods_store', 'furniture_store', 'interior_designer', 'art_studio', 'store', 'gift_shop', 'garden_center', 'shopping_mall', 'general_contractor', 'home_improvement_store', 'wholesaler'] },
+  'Baker': { query: 'best bakery custom cakes birthday cakes celebration cakes', altQuery: 'cake shop pastry dessert cupcakes specialty bakery', types: ['bakery'], relevantTypes: ['bakery', 'cake_shop', 'dessert_shop', 'pastry_shop'] },
+  'Food': { query: 'best catering food truck private chef party catering food service', altQuery: 'event catering meal prep personal chef food delivery', relevantTypes: ['restaurant', 'meal_delivery', 'meal_takeaway', 'food_court', 'food_truck'] },
+  'Photos': { query: 'best event photographer videographer portrait photography studio', altQuery: 'wedding photographer photo booth video production', relevantTypes: ['photographer', 'photo_studio', 'photography_studio', 'portrait_studio', 'video_production_studio'] },
+  'Music': { query: 'best DJ service party DJ live music entertainment', altQuery: 'live band karaoke music entertainment performer', relevantTypes: ['night_club', 'performing_arts_theater', 'music_store', 'recording_studio', 'karaoke', 'concert_hall'] },
+  'Drinks': { query: 'mobile bartender event bartending service party mixologist mobile bar', altQuery: 'cocktail catering bar service beverage catering', relevantTypes: ['mobile_caterer', 'caterer', 'bar', 'event_planner', 'restaurant', 'food_service'] },
+  'Entertain': { query: 'party entertainment kids entertainment magician face painting', altQuery: 'fun center arcade bowling trampoline escape room activities', relevantTypes: ['amusement_center', 'amusement_park', 'bowling_alley', 'arcade', 'trampoline_park', 'escape_room', 'laser_tag', 'miniature_golf'] },
 }
 
 const CAT_EMOJIS: Record<string, string> = {
@@ -31,8 +32,11 @@ function mapPrice(priceLevel?: string): { price: string; priceLabel: string } {
   }
 }
 
-function getPhotoUrl(photoName: string, maxWidth = 400): string {
-  return `https://places.googleapis.com/v1/${photoName}/media?maxWidthPx=${maxWidth}&key=${GOOGLE_MAPS_API_KEY}`
+function getPhotoUrl(photoName: string): string {
+  // Proxy through our own API to enable server-side caching and avoid
+  // exposing the API key to the browser. Each unique photo is fetched
+  // from Google once, then served from memory cache for 1 hour.
+  return `/api/vendors/photo?ref=${encodeURIComponent(photoName)}&w=300`
 }
 
 function cleanTypes(types: string[]): string[] {
@@ -54,6 +58,30 @@ function getBadge(rating: number, reviews: number): string {
 const vendorCache = new Map<string, { data: unknown[]; ts: number }>()
 const CACHE_TTL = 5 * 60 * 1000
 
+// Geocode cache — avoid repeat geocoding of the same location
+const geocodeCache = new Map<string, { lat: number; lng: number; ts: number }>()
+
+async function geocodeLocation(location: string): Promise<{ lat: number; lng: number } | null> {
+  const cached = geocodeCache.get(location)
+  if (cached && Date.now() - cached.ts < CACHE_TTL) {
+    return { lat: cached.lat, lng: cached.lng }
+  }
+  try {
+    const res = await fetch(
+      `https://maps.googleapis.com/maps/api/geocode/json?address=${encodeURIComponent(location)}&key=${GOOGLE_MAPS_API_KEY}`
+    )
+    const data = await res.json()
+    if (data.results?.[0]?.geometry?.location) {
+      const { lat, lng } = data.results[0].geometry.location
+      geocodeCache.set(location, { lat, lng, ts: Date.now() })
+      return { lat, lng }
+    }
+  } catch (err) {
+    console.warn('Geocode failed for:', location, err)
+  }
+  return null
+}
+
 export async function POST(req: NextRequest) {
   try {
     const identifier = req.headers.get('x-forwarded-for')?.split(',')[0]?.trim() || req.headers.get('x-real-ip') || 'anonymous'
@@ -72,27 +100,34 @@ export async function POST(req: NextRequest) {
     }
 
     const body = await req.json()
-    const { category, location, cuisine } = body
+    const { category, location, cuisine, page = 1 } = body
+    const pageNum = Math.max(1, Math.min(page, 3)) // Max 3 pages (up to 60 results)
 
     if (!GOOGLE_MAPS_API_KEY) {
-      return NextResponse.json({ vendors: [], source: 'none' })
+      return NextResponse.json({ vendors: [], source: 'none', hasMore: false })
     }
 
     const cat = category === 'Mixed party vendors' ? 'All' : category
     const loc = location || 'Atlanta, GA'
 
+    // Geocode the location for radius-based search
+    const coords = await geocodeLocation(loc)
+
     // Check cache first — return instantly if fresh
-    const cacheKey = `${cat}:${loc}:${cuisine || 'all'}`
+    const cacheKey = `${cat}:${loc}:${cuisine || 'all'}:p${pageNum}`
     const cached = vendorCache.get(cacheKey)
     if (cached && Date.now() - cached.ts < CACHE_TTL) {
-      return NextResponse.json({ vendors: cached.data, source: 'cache' })
+      // Check if there could be more results
+      const nextCacheKey = `${cat}:${loc}:${cuisine || 'all'}:p${pageNum + 1}`
+      const hasMore = pageNum < 3 && !vendorCache.has(nextCacheKey) // Assume more unless we know otherwise
+      return NextResponse.json({ vendors: cached.data, source: 'cache', hasMore, page: pageNum })
     }
 
     // For "All Vendors", search multiple categories (3 per cat to limit cost)
     if (cat === 'All') {
       const categories = ['Venue', 'Decor', 'Baker', 'Food', 'Music', 'Drinks', 'Photos', 'Entertain']
       const allVendors = await Promise.all(
-        categories.map(c => searchPlaces(c, loc, 3))
+        categories.map(c => searchPlaces(c, loc, 3, undefined, coords))
       )
       const merged = allVendors.flat()
       for (let i = merged.length - 1; i > 0; i--) {
@@ -100,35 +135,62 @@ export async function POST(req: NextRequest) {
         [merged[i], merged[j]] = [merged[j], merged[i]]
       }
       vendorCache.set(cacheKey, { data: merged, ts: Date.now() })
-      return NextResponse.json({ vendors: merged, source: 'google' })
+      return NextResponse.json({ vendors: merged, source: 'google', hasMore: false, page: 1 })
     }
 
-    const vendors = await searchPlaces(cat, loc, 10, cuisine)
+    // Page 1: relevance-ranked, 20 results
+    // Page 2: distance-ranked, 20 results (different ordering = different results)
+    // Page 3: alternate query, 20 results (different keywords = different results)
+    const rankPref = pageNum === 2 ? 'DISTANCE' : 'RELEVANCE'
+    const useAltQuery = pageNum >= 3
+    const vendors = await searchPlaces(cat, loc, 20, cuisine, coords, rankPref, useAltQuery)
+
+    const hasMore = pageNum < 3 && vendors.length >= 10
+
     if (vendors.length > 0) {
       vendorCache.set(cacheKey, { data: vendors, ts: Date.now() })
     }
     // Track API usage (fire-and-forget)
     logApiCall('vendors', 'maps', identifier)
-    return NextResponse.json({ vendors, source: 'google' })
+    return NextResponse.json({ vendors, source: 'google', hasMore, page: pageNum })
   } catch (error) {
     console.error('Vendors error:', error)
-    return NextResponse.json({ vendors: [], error: 'Failed to load vendors' }, { status: 500 })
+    return NextResponse.json({ vendors: [], error: 'Failed to load vendors', hasMore: false }, { status: 500 })
   }
 }
 
-async function searchPlaces(category: string, location: string, maxResults: number, cuisine?: string) {
+async function searchPlaces(
+  category: string,
+  location: string,
+  maxResults: number,
+  cuisine?: string,
+  coords?: { lat: number; lng: number } | null,
+  rankPreference: string = 'RELEVANCE',
+  useAltQuery: boolean = false,
+) {
   const mapping = CATEGORY_MAP[category]
   if (!mapping) return []
 
+  const baseQuery = useAltQuery ? mapping.altQuery : mapping.query
   const textQuery = cuisine && cuisine !== 'All'
     ? `${cuisine} restaurant in ${location}`
-    : `${mapping.query} in ${location}`
+    : `${baseQuery} in ${location}`
 
   const body: Record<string, unknown> = {
     textQuery,
-    maxResultCount: Math.min(maxResults, 10),
+    maxResultCount: Math.min(maxResults, 20),
     languageCode: 'en',
-    rankPreference: 'RELEVANCE',
+    rankPreference,
+  }
+
+  // Add 25-mile radius location bias when we have coordinates
+  if (coords) {
+    body.locationBias = {
+      circle: {
+        center: { latitude: coords.lat, longitude: coords.lng },
+        radius: MILES_25_IN_METERS,
+      },
+    }
   }
 
   if (mapping.types?.length) {
@@ -140,6 +202,7 @@ async function searchPlaces(category: string, location: string, maxResults: numb
     'places.id',
     'places.displayName',
     'places.formattedAddress',
+    'places.location',
     'places.rating',
     'places.userRatingCount',
     'places.priceLevel',
@@ -214,6 +277,7 @@ async function searchPlaces(category: string, location: string, maxResults: numb
     const displayName = place.displayName as { text: string } | undefined
     const editorial = place.editorialSummary as { text: string } | undefined
     const photos = place.photos as Array<{ name: string; widthPx: number; heightPx: number }> | undefined
+    const placeLocation = place.location as { latitude: number; longitude: number } | undefined
     const rating = (place.rating as number) || 4.0
     const reviewCount = (place.userRatingCount as number) || 0
     const types = (place.types as string[]) || []
@@ -221,8 +285,13 @@ async function searchPlaces(category: string, location: string, maxResults: numb
 
     const matchScore = Math.min(98, Math.floor(75 + (rating * 3) + Math.min(reviewCount / 50, 5)))
     const photoUrl = photos?.[0]?.name ? getPhotoUrl(photos[0].name) : undefined
-    const photoUrl2 = photos?.[1]?.name ? getPhotoUrl(photos[1].name) : undefined
     const description = editorial?.text || `${cleanTypes(types).slice(0, 2).join(' · ')} in ${location}`
+
+    // Calculate actual distance if we have both coordinates
+    let distanceMiles: number | null = null
+    if (coords && placeLocation) {
+      distanceMiles = haversineDistance(coords.lat, coords.lng, placeLocation.latitude, placeLocation.longitude)
+    }
 
     return {
       id: (place.id as string) || `v-${idx}`,
@@ -239,12 +308,23 @@ async function searchPlaces(category: string, location: string, maxResults: numb
       matchScore,
       badge: getBadge(rating, reviewCount),
       isNew: reviewCount <= 20,
-      distance: null,
+      distance: distanceMiles,
       photoUrl,
-      photoUrl2,
       verified: reviewCount >= 50,
       googleMapsUri: place.googleMapsUri as string,
       websiteUri: place.websiteUri as string,
     }
   })
+}
+
+// Haversine formula — returns distance in miles between two lat/lng points
+function haversineDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
+  const R = 3958.8 // Earth radius in miles
+  const dLat = (lat2 - lat1) * Math.PI / 180
+  const dLng = (lng2 - lng1) * Math.PI / 180
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLng / 2) * Math.sin(dLng / 2)
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a))
 }
