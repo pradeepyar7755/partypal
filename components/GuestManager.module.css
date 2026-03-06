@@ -479,3 +479,264 @@
         padding-left: 1rem;
     }
 }
+
+/* ── Guest Selection ───────────────────────── */
+
+.selectCheckbox {
+    width: 18px;
+    height: 18px;
+    border-radius: 5px;
+    border: 2px solid var(--border);
+    background: white;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    flex-shrink: 0;
+    position: relative;
+    transition: all 0.15s;
+}
+
+.selectCheckbox:checked {
+    background: linear-gradient(135deg, var(--teal), #3D8C6E);
+    border-color: var(--teal);
+}
+
+.selectCheckbox:checked::after {
+    content: '✓';
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    color: white;
+    font-size: 0.7rem;
+    font-weight: 800;
+}
+
+.selectionBar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: linear-gradient(135deg, var(--navy), #2D4059);
+    border-radius: 14px;
+    padding: 0.6rem 1rem;
+    margin-bottom: 0.8rem;
+    animation: fadeSlideIn 0.25s ease;
+    flex-wrap: wrap;
+}
+
+.selectionCount {
+    font-size: 0.82rem;
+    font-weight: 800;
+    color: white;
+    white-space: nowrap;
+}
+
+.selectionBtn {
+    background: rgba(255, 255, 255, 0.15);
+    border: 1.5px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    padding: 0.35rem 0.8rem;
+    border-radius: 50px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.selectionBtn:hover {
+    background: rgba(255, 255, 255, 0.25);
+}
+
+.selectionBtnPrimary {
+    background: var(--yellow);
+    border: none;
+    color: var(--navy);
+    padding: 0.35rem 0.8rem;
+    border-radius: 50px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.78rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.selectionBtnPrimary:hover {
+    background: #e6b93e;
+    transform: translateY(-1px);
+}
+
+.selectionBtnCancel {
+    background: none;
+    border: none;
+    color: rgba(255, 255, 255, 0.5);
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.78rem;
+    cursor: pointer;
+    margin-left: auto;
+}
+
+.selectionBtnCancel:hover {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* ── Custom Message Modal ──────────────────── */
+
+.modalOverlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(6px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1rem;
+}
+
+.modalContent {
+    background: white;
+    border-radius: 20px;
+    width: 480px;
+    max-width: 95vw;
+    max-height: 85vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+    animation: fadeSlideIn 0.25s ease;
+}
+
+.modalHeader {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1.2rem 1.5rem;
+    border-bottom: 1.5px solid var(--border);
+}
+
+.modalTitle {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1rem;
+    color: var(--navy);
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+}
+
+.modalClose {
+    background: var(--light-bg);
+    border: none;
+    border-radius: 8px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: #9aabbb;
+    font-size: 0.9rem;
+    font-weight: 800;
+    transition: all 0.15s;
+}
+
+.modalClose:hover {
+    background: var(--border);
+    color: var(--navy);
+}
+
+.modalBody {
+    padding: 1.5rem;
+}
+
+.modalRecipients {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.3rem;
+    margin-bottom: 1rem;
+}
+
+.recipientChip {
+    background: rgba(74, 173, 168, 0.1);
+    border: 1px solid rgba(74, 173, 168, 0.2);
+    color: var(--teal);
+    padding: 0.2rem 0.6rem;
+    border-radius: 50px;
+    font-size: 0.72rem;
+    font-weight: 700;
+}
+
+.modalTextarea {
+    width: 100%;
+    min-height: 140px;
+    background: var(--light-bg);
+    border: 1.5px solid var(--border);
+    border-radius: 12px;
+    padding: 0.8rem 1rem;
+    font-family: 'Nunito', sans-serif;
+    font-size: 0.88rem;
+    font-weight: 600;
+    color: var(--navy);
+    outline: none;
+    resize: vertical;
+    line-height: 1.6;
+}
+
+.modalTextarea:focus {
+    border-color: var(--teal);
+}
+
+.modalTextarea::placeholder {
+    color: #b0bfcc;
+}
+
+.modalFooter {
+    display: flex;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 0.6rem;
+    padding: 1rem 1.5rem;
+    border-top: 1.5px solid var(--border);
+}
+
+.modalCancelBtn {
+    background: none;
+    border: 1.5px solid var(--border);
+    color: #9aabbb;
+    padding: 0.5rem 1.2rem;
+    border-radius: 50px;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modalCancelBtn:hover {
+    border-color: #9aabbb;
+    color: var(--navy);
+}
+
+.modalSendBtn {
+    background: linear-gradient(135deg, var(--teal), #3D8C6E);
+    color: white;
+    border: none;
+    border-radius: 50px;
+    padding: 0.5rem 1.5rem;
+    font-family: 'Nunito', sans-serif;
+    font-weight: 800;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.modalSendBtn:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(74, 173, 168, 0.3);
+}
+
+.modalSendBtn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}

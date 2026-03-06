@@ -107,6 +107,13 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
     const [isEditingStrip, setIsEditingStrip] = useState(false)
     const [draftDetails, setDraftDetails] = useState<{ hostName: string; rsvpBy: string; time: string; timezone: string } | null>(null)
     const [showPreview, setShowPreview] = useState(false)
+    // Guest selection & email state
+    const [selectionMode, setSelectionMode] = useState(false)
+    const [selectedGuestIds, setSelectedGuestIds] = useState<Set<string>>(new Set())
+    const [showCustomMessageModal, setShowCustomMessageModal] = useState(false)
+    const [customMessage, setCustomMessage] = useState('')
+    const [sendingEmail, setSendingEmail] = useState(false)
+    const [emailAction, setEmailAction] = useState<'rsvp' | 'custom' | null>(null)
     const [isPublished, setIsPublished] = useState(false)
     const publishedInviteKey = eventId ? `partypal_published_${eventId}` : 'partypal_published'
     const [publishedInvite, setPublishedInvite] = useState<{ subject?: string; message?: string; smsVersion?: string; customImage?: string; coverPhoto?: string } | null>(() => {
@@ -494,6 +501,106 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
         })
     }
 
+    // ── Guest Selection & Email ──────────────────────
+    const toggleGuestSelection = (guestId: string) => {
+        setSelectedGuestIds(prev => {
+            const next = new Set(prev)
+            if (next.has(guestId)) next.delete(guestId)
+            else next.add(guestId)
+            return next
+        })
+    }
+
+    const selectAllFiltered = () => {
+        const filtered = guests.filter(g => {
+            if (filter !== 'all' && g.status !== filter) return false
+            if (search && !g.name.toLowerCase().includes(search.toLowerCase()) && !g.email.toLowerCase().includes(search.toLowerCase())) return false
+            return g.email?.includes('@')
+        })
+        setSelectedGuestIds(new Set(filtered.map(g => g.id)))
+    }
+
+    const clearSelection = () => {
+        setSelectedGuestIds(new Set())
+        setSelectionMode(false)
+        setEmailAction(null)
+    }
+
+    const selectedGuestsWithEmail = guests.filter(g => selectedGuestIds.has(g.id) && g.email?.includes('@'))
+
+    const handleSendRsvpEmail = async () => {
+        if (selectedGuestsWithEmail.length === 0) return
+        setSendingEmail(true)
+        try {
+            const rsvpBaseLink = joinCode ? `https://partypal.social/join/${joinCode}` : undefined
+            const res = await fetch('/api/email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'send_invitations',
+                    guests: selectedGuestsWithEmail.map(g => ({ name: g.name, email: g.email })),
+                    hostName: editableHostName || planData.hostName || 'Your Host',
+                    eventName: planData.eventType || 'Party',
+                    eventDate: planData.date ? new Date(planData.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : '',
+                    eventTime: editableEventTime ? formatTime12h(editableEventTime, editableTimezone || undefined) : undefined,
+                    eventLocation: planData.location || '',
+                    eventTheme: planData.theme || undefined,
+                    inviteMessage: invite?.message || undefined,
+                    rsvpBaseLink,
+                    coverPhoto: invite?.coverPhoto || undefined,
+                }),
+            })
+            const data = await res.json()
+            if (data.success) {
+                showToast(`RSVP invites sent to ${data.sent} guest${data.sent !== 1 ? 's' : ''}!`, 'success')
+                clearSelection()
+            } else {
+                showToast(data.error || 'Failed to send emails', 'error')
+            }
+        } catch {
+            showToast('Failed to send emails', 'error')
+        } finally {
+            setSendingEmail(false)
+        }
+    }
+
+    const handleSendCustomMessage = async () => {
+        if (selectedGuestsWithEmail.length === 0 || !customMessage.trim()) return
+        setSendingEmail(true)
+        try {
+            const rsvpBaseLink = joinCode ? `https://partypal.social/join/${joinCode}` : undefined
+            const res = await fetch('/api/email', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    action: 'custom_message',
+                    guests: selectedGuestsWithEmail.map(g => ({ name: g.name, email: g.email })),
+                    hostName: editableHostName || planData.hostName || 'Your Host',
+                    eventName: planData.eventType || 'Party',
+                    message: customMessage,
+                    eventDate: planData.date ? new Date(planData.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }) : undefined,
+                    eventTime: editableEventTime ? formatTime12h(editableEventTime, editableTimezone || undefined) : undefined,
+                    eventLocation: planData.location || undefined,
+                    rsvpBaseLink,
+                    coverPhoto: invite?.coverPhoto || undefined,
+                }),
+            })
+            const data = await res.json()
+            if (data.success) {
+                showToast(`Message sent to ${data.sent} guest${data.sent !== 1 ? 's' : ''}!`, 'success')
+                setShowCustomMessageModal(false)
+                setCustomMessage('')
+                clearSelection()
+            } else {
+                showToast(data.error || 'Failed to send message', 'error')
+            }
+        } catch {
+            showToast('Failed to send message', 'error')
+        } finally {
+            setSendingEmail(false)
+        }
+    }
+
     const generateInvite = async (retryCount = 0) => {
         setLoadingInvite(true)
         try {
@@ -866,7 +973,34 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                             <button className={styles.actionBtn} onClick={() => { setShowAdd(!showAdd); setShowBulk(false); setShowCircles(false) }}>+ Add Guest</button>
                             <button className={styles.secondaryBtn} onClick={() => { setShowBulk(!showBulk); setShowAdd(false); setShowCircles(false) }}>📋 Bulk Import</button>
                             <button className={styles.secondaryBtn} onClick={() => { setShowCircles(!showCircles); setShowAdd(false); setShowBulk(false); setSelectedContactIds(new Set()); setSelectedCircleFilter(null) }}>👥 From Circles</button>
+                            {!isGuest && guests.length > 0 && (
+                                <button className={styles.secondaryBtn} onClick={() => { setSelectionMode(!selectionMode); setSelectedGuestIds(new Set()); setEmailAction(null) }}>
+                                    {selectionMode ? '✕ Cancel' : '✉️ Email Guests'}
+                                </button>
+                            )}
                         </div>
+
+                        {/* Selection toolbar */}
+                        {selectionMode && (
+                            <div className={styles.selectionBar}>
+                                <span className={styles.selectionCount}>
+                                    {selectedGuestIds.size === 0 ? 'Select guests to email' : `${selectedGuestIds.size} guest${selectedGuestIds.size !== 1 ? 's' : ''} selected`}
+                                </span>
+                                <button className={styles.selectionBtn} onClick={selectAllFiltered}>Select All</button>
+                                {selectedGuestIds.size > 0 && (
+                                    <>
+                                        <button className={styles.selectionBtn} onClick={() => setSelectedGuestIds(new Set())}>Deselect All</button>
+                                        <button className={styles.selectionBtnPrimary} onClick={() => { setEmailAction('rsvp'); handleSendRsvpEmail() }} disabled={sendingEmail}>
+                                            {sendingEmail && emailAction === 'rsvp' ? '⏳ Sending...' : '📨 Send RSVP'}
+                                        </button>
+                                        <button className={styles.selectionBtnPrimary} onClick={() => { setEmailAction('custom'); setShowCustomMessageModal(true) }}>
+                                            💌 Custom Message
+                                        </button>
+                                    </>
+                                )}
+                                <button className={styles.selectionBtnCancel} onClick={clearSelection}>✕</button>
+                            </div>
+                        )}
 
                         {/* Search */}
                         <input className={styles.searchInput} placeholder="🔍 Search guests..." value={search} onChange={e => setSearch(e.target.value)} />
@@ -1005,6 +1139,15 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                             ) : filteredGuests.map(g => (
                                 <div key={g.id} className={styles.guestEntry}>
                                     <div className={styles.guestRow} onClick={() => setExpandedGuest(expandedGuest === g.id ? null : g.id)} style={{ cursor: 'pointer' }}>
+                                        {selectionMode && (
+                                            <input
+                                                type="checkbox"
+                                                className={styles.selectCheckbox}
+                                                checked={selectedGuestIds.has(g.id)}
+                                                onChange={e => { e.stopPropagation(); toggleGuestSelection(g.id) }}
+                                                onClick={e => e.stopPropagation()}
+                                            />
+                                        )}
                                         <div className={styles.guestAvatar} style={{ background: g.color }}>{g.avatar}</div>
                                         <div className={styles.guestInfo}>
                                             <div className={styles.guestName}>{g.name}</div>
@@ -1180,6 +1323,51 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                 )}
                                 <div style={{ textAlign: 'center' as const, padding: '0.5rem', fontSize: '0.65rem', color: '#ccc', fontWeight: 600 }}>Powered by <img src="/logo.png" alt="" style={{ height: 12, borderRadius: 2, verticalAlign: 'middle' }} /> PartyPal</div>
                             </div>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Custom Message Modal */}
+            {showCustomMessageModal && (
+                <div className={styles.modalOverlay} onClick={() => { setShowCustomMessageModal(false); setCustomMessage('') }}>
+                    <div className={styles.modalContent} onClick={e => e.stopPropagation()}>
+                        <div className={styles.modalHeader}>
+                            <span className={styles.modalTitle}>💌 Send Custom Message</span>
+                            <button className={styles.modalClose} onClick={() => { setShowCustomMessageModal(false); setCustomMessage('') }}>✕</button>
+                        </div>
+                        <div className={styles.modalBody}>
+                            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.4rem' }}>
+                                To ({selectedGuestsWithEmail.length} guest{selectedGuestsWithEmail.length !== 1 ? 's' : ''})
+                            </label>
+                            <div className={styles.modalRecipients}>
+                                {selectedGuestsWithEmail.map(g => (
+                                    <span key={g.id} className={styles.recipientChip}>{g.name}</span>
+                                ))}
+                            </div>
+                            <label style={{ display: 'block', fontSize: '0.72rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase', letterSpacing: '0.5px', marginBottom: '0.4rem' }}>
+                                Your Message
+                            </label>
+                            <textarea
+                                className={styles.modalTextarea}
+                                placeholder="Type your message to guests here..."
+                                value={customMessage}
+                                onChange={e => setCustomMessage(e.target.value)}
+                                autoFocus
+                            />
+                            <p style={{ fontSize: '0.72rem', color: '#b0bfcc', fontWeight: 600, marginTop: '0.4rem' }}>
+                                This message will be sent as a styled email matching the Party Pal look and feel, including your event details.
+                            </p>
+                        </div>
+                        <div className={styles.modalFooter}>
+                            <button className={styles.modalCancelBtn} onClick={() => { setShowCustomMessageModal(false); setCustomMessage('') }}>Cancel</button>
+                            <button
+                                className={styles.modalSendBtn}
+                                disabled={!customMessage.trim() || sendingEmail}
+                                onClick={handleSendCustomMessage}
+                            >
+                                {sendingEmail ? '⏳ Sending...' : `Send to ${selectedGuestsWithEmail.length} Guest${selectedGuestsWithEmail.length !== 1 ? 's' : ''}`}
+                            </button>
                         </div>
                     </div>
                 </div>

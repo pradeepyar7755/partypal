@@ -10,6 +10,7 @@ import {
     collaboratorInviteEmail,
     supportConfirmationEmail,
     marketingEmail,
+    hostMessageEmail,
     accountDeletionEmail,
 } from '@/lib/email-templates'
 import { SITE_EMAILS } from '@/lib/constants'
@@ -268,7 +269,40 @@ export async function POST(req: NextRequest) {
                 })
             }
 
-            // ── 10. Account Deletion Confirmation ──
+            // ── 10. Host Custom Message ──────────
+            case 'custom_message': {
+                const { guests, hostName, eventName, message, eventDate, eventTime, eventLocation, rsvpBaseLink, coverPhoto } = body
+
+                if (!guests?.length) return NextResponse.json({ error: 'No guests' }, { status: 400 })
+                if (!message?.trim()) return NextResponse.json({ error: 'No message' }, { status: 400 })
+
+                const validGuests = guests.filter((g: { email: string }) => g.email?.includes('@'))
+
+                const result = await sendBatchEmails({
+                    type: 'notifications',
+                    recipients: validGuests,
+                    subjectFn: () => `💌 Message from ${hostName || 'your host'} — ${eventName}`,
+                    htmlFn: (guestName: string) => hostMessageEmail({
+                        guestName,
+                        hostName: hostName || 'Your Host',
+                        eventName,
+                        message,
+                        eventDate,
+                        eventTime,
+                        eventLocation,
+                        rsvpLink: rsvpBaseLink || undefined,
+                        coverPhoto,
+                    }),
+                })
+
+                return NextResponse.json({
+                    success: true,
+                    ...result,
+                    message: `Message sent to ${result.sent} guest${result.sent !== 1 ? 's' : ''}`,
+                })
+            }
+
+            // ── 11. Account Deletion Confirmation ──
             case 'account_deletion': {
                 const { userName, userEmail, eventsDeleted, tenureDays } = body
 

@@ -570,6 +570,63 @@ ${bodyWrap(`
 //  11. ACCOUNT DELETION CONFIRMATION EMAIL
 //  Sent after a user deletes their account
 // ═══════════════════════════════════════════════════════
+export function hostMessageEmail(params: {
+    guestName: string
+    hostName: string
+    eventName: string
+    message: string
+    eventDate?: string
+    eventTime?: string
+    eventLocation?: string
+    rsvpLink?: string
+    coverPhoto?: string
+}): string {
+    const { guestName, hostName, eventName, message, eventDate, eventTime, eventLocation, rsvpLink, coverPhoto } = params
+
+    const headerBg = coverPhoto
+        ? `background:url('${coverPhoto}') center/cover;position:relative;`
+        : `background:linear-gradient(135deg,${BRAND.navy},${BRAND.darkNavy});`
+
+    const headerContent = `
+<tr><td style="${headerBg}padding:36px 32px;text-align:center;">
+    ${coverPhoto ? `<div style="position:absolute;inset:0;background:rgba(26,37,53,0.65);border-radius:20px 20px 0 0;"></div>` : ''}
+    <div style="position:relative;z-index:1;">
+        <div style="font-size:32px;margin-bottom:6px;">💌</div>
+        <h1 style="color:#fff;font-size:22px;font-weight:800;margin:0 0 4px;">${eventName}</h1>
+        <p style="color:rgba(255,255,255,0.7);font-size:14px;margin:0;font-weight:600;">Message from ${hostName}</p>
+    </div>
+</td></tr>`
+
+    const eventDetails = eventDate || eventLocation ? infoBox('📌 Event Details', [
+        ...(eventDate ? [`📅 ${eventDate}${eventTime ? ` at ${eventTime}` : ''}`] : []),
+        ...(eventLocation ? [`📍 ${eventLocation}`] : []),
+    ]) : ''
+
+    return baseLayout(`
+${headerContent}
+${bodyWrap(`
+    <p style="color:${BRAND.textDark};font-size:16px;line-height:1.6;margin:0 0 16px;">
+        Hi <strong>${guestName}</strong> 👋
+    </p>
+    <p style="color:${BRAND.textMuted};font-size:14px;line-height:1.7;margin:0 0 20px;">
+        <strong>${hostName}</strong> sent you a message about <strong>${eventName}</strong>:
+    </p>
+    <div style="background:${BRAND.lightBg};border-left:4px solid ${BRAND.yellow};border-radius:0 12px 12px 0;padding:16px 20px;margin:0 0 20px;">
+        <p style="color:${BRAND.textDark};font-size:14px;line-height:1.7;margin:0;">${message.replace(/\n/g, '<br>')}</p>
+    </div>
+    ${eventDetails}
+    ${rsvpLink ? `
+    <div style="text-align:center;margin:24px 0 8px;">
+        <a href="${rsvpLink}" class="btn btn-primary" style="display:inline-block;padding:14px 36px;border-radius:12px;text-decoration:none;font-weight:800;font-size:14px;background:linear-gradient(135deg,${BRAND.teal},${BRAND.green});color:#fff;">
+            View Event →
+        </a>
+    </div>` : ''}
+`)}`,
+        `<p style="color:${BRAND.textLight};font-size:11px;margin:4px 0 0;">You received this because you're on the guest list for ${eventName}.</p>`
+    )
+}
+
+
 export function accountDeletionEmail(params: {
     userName: string
     deletionDate: string
