@@ -16,6 +16,10 @@ interface Contact {
   color: string
 }
 
+interface EventGuest {
+  id: string; name: string; email: string; status: string
+}
+
 const AVATAR_COLORS = ['#4AADA8', '#E8896A', '#7B5EA7', '#F7C948', '#3D8C6E', '#c4880a', '#D35E8D', '#5B8AF5']
 const DEFAULT_CIRCLES = ['Family', 'Friends', 'Work', 'School', 'Neighbors']
 
@@ -40,12 +44,12 @@ export default function GuestsPage() {
   const [showEventPicker, setShowEventPicker] = useState(false)
   const router = useRouter()
 
-  // Load contacts and circles from localStorage
+  // Load contacts and circles from localStorage, then sync RSVP guests from all events
   useEffect(() => {
     const saved = userGetJSON<Contact[]>('partypal_contacts', [])
-    setContacts(saved)
     const savedCircles = userGetJSON<string[]>('partypal_circles', DEFAULT_CIRCLES)
     setCircles(savedCircles)
+
     // Load active events (non-past, non-demo)
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const events = userGetJSON<any[]>('partypal_events', [])
@@ -58,6 +62,50 @@ export default function GuestsPage() {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }).map((e: any) => ({ eventId: e.eventId, eventType: e.eventType || 'Event' }))
     setActiveEvents(active)
+
+    // Sync RSVP guests from all events into contacts (superset merge)
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const allEvents = events.filter((e: any) => e.eventId && e.eventId !== 'demo')
+    let merged = [...saved]
+    let changed = false
+
+    for (const ev of allEvents) {
+      const eventGuests = userGetJSON<EventGuest[]>(`partypal_eventguests_${ev.eventId}`, [])
+      for (const g of eventGuests) {
+        if (!g.name?.trim()) continue
+        const email = (g.email || '').trim().toLowerCase()
+        // Match by email (primary) or name (fallback if no email)
+        const existingIdx = email
+          ? merged.findIndex(c => c.email.toLowerCase() === email)
+          : merged.findIndex(c => c.name.toLowerCase() === g.name.trim().toLowerCase())
+
+        if (existingIdx >= 0) {
+          // Update email if contact was missing it
+          const existing = merged[existingIdx]
+          if (email && !existing.email) {
+            merged[existingIdx] = { ...existing, email: g.email.trim() }
+            changed = true
+          }
+        } else {
+          // New contact from event guest
+          merged.push({
+            id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+            name: g.name.trim(),
+            email: (g.email || '').trim(),
+            phone: '',
+            circles: [],
+            avatar: getInitials(g.name),
+            color: AVATAR_COLORS[merged.length % AVATAR_COLORS.length],
+          })
+          changed = true
+        }
+      }
+    }
+
+    if (changed) {
+      userSetJSON('partypal_contacts', merged)
+    }
+    setContacts(merged)
   }, [user])
 
   // Save contacts

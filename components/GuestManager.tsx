@@ -132,6 +132,18 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
     const customInviteRef = React.useRef<HTMLInputElement>(null)
     const coverPhotoRef = React.useRef<HTMLInputElement>(null)
     const deletedRsvpIds = useRef<Set<string>>(new Set())
+    // Import hint hotspot — show when guest list is empty and hint not dismissed
+    const [showImportHint, setShowImportHint] = useState(false)
+    useEffect(() => {
+        if (isDemo) return
+        const dismissed = userGetJSON<boolean>('partypal_import_hint_dismissed', false)
+        if (!dismissed && guests.length === 0) setShowImportHint(true)
+        else setShowImportHint(false)
+    }, [guests.length, isDemo])
+    const dismissImportHint = () => {
+        setShowImportHint(false)
+        userSetJSON('partypal_import_hint_dismissed', true)
+    }
     // Cross-portal AI context
     const { getContextPayload, learn } = useAIContext(planData as Parameters<typeof useAIContext>[0], guests as unknown as Parameters<typeof useAIContext>[1])
 
@@ -972,7 +984,18 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                         <div className={styles.actionsRow}>
                             <button className={styles.actionBtn} onClick={() => { setShowAdd(!showAdd); setShowBulk(false); setShowCircles(false) }}>+ Add Guest</button>
                             <button className={styles.secondaryBtn} onClick={() => { setShowBulk(!showBulk); setShowAdd(false); setShowCircles(false) }}>📋 Bulk Import</button>
-                            <button className={styles.secondaryBtn} onClick={() => { setShowCircles(!showCircles); setShowAdd(false); setShowBulk(false); setSelectedContactIds(new Set()); setSelectedCircleFilter(null) }}>👥 From Circles</button>
+                            <div style={{ position: 'relative', display: 'inline-flex' }}>
+                                <button className={styles.secondaryBtn} onClick={() => { setShowCircles(!showCircles); setShowAdd(false); setShowBulk(false); setSelectedContactIds(new Set()); setSelectedCircleFilter(null); dismissImportHint() }}>👥 From Circles</button>
+                                {showImportHint && (
+                                    <div style={{ position: 'absolute', top: '-2.2rem', left: '50%', transform: 'translateX(-50%)', background: 'var(--navy)', color: '#fff', fontSize: '0.6rem', fontWeight: 800, padding: '0.25rem 0.5rem', borderRadius: 6, whiteSpace: 'nowrap', zIndex: 50, boxShadow: '0 2px 8px rgba(0,0,0,0.2)', pointerEvents: 'none' }}>
+                                        Import from Guest Management 👥
+                                        <div style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '5px solid var(--navy)' }} />
+                                    </div>
+                                )}
+                                {showImportHint && (
+                                    <span style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: '50%', background: '#E8896A', animation: 'pulse 1.5s infinite', zIndex: 51 }} />
+                                )}
+                            </div>
                             {!isGuest && guests.length > 0 && (
                                 <button className={styles.secondaryBtn} onClick={() => { setSelectionMode(!selectionMode); setSelectedGuestIds(new Set()); setEmailAction(null) }}>
                                     {selectionMode ? '✕ Cancel' : '✉️ Email Guests'}
