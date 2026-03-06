@@ -84,7 +84,16 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
                 lat: r.lat,
                 lng: r.lng,
             }))
-            setPredictions(results)
+            // If query looks like a zip code, bump zip/city/region results above street addresses
+            const isZipQuery = /^\d{3,5}$/.test(input.trim())
+            const sorted = isZipQuery
+                ? [...results].sort((a, b) => {
+                    const aIsGeo = ['zip code', 'city', 'region', 'neighborhood'].includes(a.type) ? 0 : 1
+                    const bIsGeo = ['zip code', 'city', 'region', 'neighborhood'].includes(b.type) ? 0 : 1
+                    return aIsGeo - bIsGeo
+                })
+                : results
+            setPredictions(sorted)
             setIsOpen(results.length > 0)
         } catch (e) {
             console.error('Location search error:', e)
