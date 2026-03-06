@@ -9,6 +9,7 @@ import GuestManager from '@/components/GuestManager'
 import { useAuth } from '@/components/AuthContext'
 import { useAIContext } from '@/lib/useAIContext'
 import CreatePoll from '@/components/CreatePoll'
+import AdUnit from '@/components/AdUnit'
 
 interface ChecklistItem { item: string; category: string; done: boolean; due?: string; urgent?: boolean; completedAt?: string; assignedTo?: string }
 interface TimelineItem { weeks: string; task: string; category: string; priority: string; emoji?: string; completedAt?: string; assignedTo?: string }
@@ -513,7 +514,12 @@ function DashboardContent() {
 
         // Load the active plan
         const stored = userGet('partyplan')
-        const parsed: PlanData = stored ? JSON.parse(stored) : DEFAULT_PLAN
+        let parsed: PlanData
+        try {
+            parsed = stored ? JSON.parse(stored) : DEFAULT_PLAN
+        } catch {
+            parsed = DEFAULT_PLAN
+        }
         if (stored && !parsed.eventId) {
             parsed.eventId = Math.random().toString(36).substring(2, 10)
             userSetJSON('partyplan', parsed)
@@ -608,11 +614,13 @@ function DashboardContent() {
             })
 
             // Backfill uid for local events not yet on server (created without uid)
+            let hasBackfill = false
             if (isInitial) {
                 const localEvents = userGetJSON<PlanData[]>('partypal_events', [])
                 const serverIds = new Set(serverEvents.map(e => e.eventId))
                 for (const le of localEvents) {
                     if (le.eventId && le.eventId !== 'demo' && !serverIds.has(le.eventId)) {
+                        hasBackfill = true
                         // This event exists locally but not on server — re-push with uid
                         fetch('/api/events', {
                             method: 'POST',
@@ -648,9 +656,11 @@ function DashboardContent() {
                         userSetJSON(`partypal_guests_${activePlan.eventId}`, cloudGuests)
                         setEventGuests(cloudGuests)
                     }
-                } else {
+                } else if (!hasBackfill) {
                     // Active event was deleted from server (or is a shared event handled separately)
                     // If it was just a stub from URL parm, don't clean up yet (shared fetch handles it)
+                    // Skip cleanup when events are still being backfilled to avoid deleting
+                    // migrated anonymous data before it reaches Firestore
                     if (activePlan.eventType !== DEFAULT_PLAN.eventType) {
                         userRemove('partyplan')
                         userRemove(`partypal_guests_${activePlan.eventId}`)
@@ -1472,6 +1482,11 @@ function DashboardContent() {
                     </div>
                 </div>
             )}
+
+            {/* ══ AD UNIT ══ */}
+            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0.5rem 0.75rem' }}>
+                <AdUnit slot="dashboard-top" format="horizontal" />
+            </div>
 
             {/* ══ EVENT CARDS ══ */}
             {(() => {

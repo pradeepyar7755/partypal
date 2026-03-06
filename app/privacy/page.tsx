@@ -140,6 +140,8 @@ export default function PrivacyPolicy() {
                             <p>
                                 Neither your event data nor your behavioral preferences are shared with other users,
                                 sold to third parties, or used to build advertising profiles.
+                                Google AdSense displays ads independently based on its own data — PartyPal does not
+                                provide your personal information to advertisers.
                                 Admins can see <strong>aggregate analytics only</strong> (total events, page views) —
                                 never individual event details or personal context.
                             </p>
@@ -202,7 +204,17 @@ export default function PrivacyPolicy() {
                     <div className={styles.sectionIcon}>📈</div>
                     <h2 className={styles.sectionTitle}>Analytics & Cookies</h2>
 
-                    <p>We use a <strong>first-party analytics system</strong> — we do not use Google Analytics, Facebook Pixel, or any third-party tracking scripts.</p>
+                    <p>We use a <strong>first-party analytics system</strong> — we do not use Google Analytics, Facebook Pixel, or other third-party tracking scripts for analytics purposes.</p>
+
+                    <div className={styles.dataCard}>
+                        <h3>Advertising</h3>
+                        <ul>
+                            <li>We display ads through <strong>Google AdSense</strong> to support the free operation of PartyPal</li>
+                            <li>Google AdSense may use cookies to serve ads based on your browsing activity across websites</li>
+                            <li>You can opt out of personalized advertising at <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer">Google Ads Settings</a></li>
+                            <li>For more information, see <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer">How Google Uses Cookies in Advertising</a></li>
+                        </ul>
+                    </div>
 
                     <div className={styles.dataCard}>
                         <h3>What we track</h3>
@@ -215,19 +227,18 @@ export default function PrivacyPolicy() {
                     </div>
 
                     <div className={styles.dataCard}>
-                        <h3>What we DON&apos;T track</h3>
+                        <h3>What we DON&apos;T do</h3>
                         <ul>
-                            <li>❌ No third-party advertising cookies</li>
-                            <li>❌ No cross-site tracking</li>
+                            <li>❌ No cross-site tracking by PartyPal (Google AdSense operates independently under Google&apos;s own policies)</li>
                             <li>❌ No fingerprinting</li>
-                            <li>❌ No selling data to third parties</li>
-                            <li>❌ No sharing data with advertisers</li>
+                            <li>❌ No selling your personal data to third parties</li>
                         </ul>
                     </div>
 
                     <p className={styles.note}>
                         Firebase Auth uses token-based authentication stored in your browser (IndexedDB).
-                        We do not deploy tracking cookies of any kind.
+                        Google AdSense may set third-party cookies for ad personalization — you can manage
+                        these via your <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer">Google Ads Settings</a>.
                     </p>
                 </section>
 
@@ -333,6 +344,10 @@ export default function PrivacyPolicy() {
                         <div className={styles.thirdPartyCard}>
                             <strong>Vercel</strong>
                             <p>Website hosting and deployment. <a href="https://vercel.com/legal/privacy-policy" target="_blank" rel="noopener noreferrer">Privacy Policy →</a></p>
+                        </div>
+                        <div className={styles.thirdPartyCard}>
+                            <strong>Google AdSense</strong>
+                            <p>Advertising service that displays relevant ads and may use cookies for ad personalization. <a href="https://policies.google.com/technologies/ads" target="_blank" rel="noopener noreferrer">Ad Policy →</a></p>
                         </div>
                         <div className={styles.thirdPartyCard}>
                             <strong>Google Maps</strong>

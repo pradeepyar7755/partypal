@@ -57,25 +57,13 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <link rel="icon" href="/favicon.ico" sizes="any" />
         <link rel="icon" type="image/png" href="/logo.png" />
         <link rel="apple-touch-icon" href="/app-icon.png" />
-        {/* Google AdSense — Auto Ads enabled on all pages */}
+        {/* Google AdSense — Auto Ads (activated via AdSense dashboard) */}
         {process.env.NEXT_PUBLIC_ADSENSE_CLIENT && (
-          <>
-            <script
-              async
-              src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT}`}
-              crossOrigin="anonymous"
-            />
-            <script
-              dangerouslySetInnerHTML={{
-                __html: `
-                  (adsbygoogle = window.adsbygoogle || []).push({
-                    google_ad_client: "${process.env.NEXT_PUBLIC_ADSENSE_CLIENT}",
-                    enable_page_level_ads: true
-                  });
-                `,
-              }}
-            />
-          </>
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT}`}
+            crossOrigin="anonymous"
+          />
         )}
       </head>
       <body>

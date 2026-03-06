@@ -3,6 +3,7 @@ import { userGet } from '@/lib/userStorage'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from './results.module.css'
+import AdUnit from '@/components/AdUnit'
 
 interface ChecklistItem { item: string; category: string; done: boolean }
 interface TimelineItem { weeks: string; task: string; category: string; priority: string }
@@ -131,6 +132,7 @@ export default function Results() {
             </div>
 
             {/* Timeline */}
+            <AdUnit slot="results-mid" format="horizontal" style={{ marginBottom: '1.5rem' }} />
             <div className="card" style={{ marginBottom: '1.5rem' }}>
               <h3 className={styles.cardTitle}>📅 Planning Timeline</h3>
               {data.plan.timeline.map((t, i) => (
