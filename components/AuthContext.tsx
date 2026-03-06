@@ -20,6 +20,7 @@ import {
 } from 'firebase/auth'
 import { auth } from '@/lib/firebase-client'
 import { setStorageUid } from '@/lib/userStorage'
+import { migrateAnonymousData } from '@/lib/migrate-anon-data'
 import { trackSignUp, trackLogin } from '@/lib/analytics'
 
 interface AuthContextType {
@@ -76,8 +77,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             setUser(user)
             setStorageUid(user?.uid || null)
             setLoading(false)
-            // Sync user profile to Firestore (fire-and-forget)
+            // Migrate anonymous data to user-scoped keys (runs once per UID)
             if (user && !user.isAnonymous) {
+                migrateAnonymousData(user.uid)
+                // Sync user profile to Firestore (fire-and-forget)
                 fetch('/api/user-data', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },

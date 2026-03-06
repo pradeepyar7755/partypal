@@ -7,6 +7,7 @@
 import { useMemo, useCallback } from 'react'
 import { loadPreferences, recordInteraction, type InteractionSignal } from './ai-memory'
 import { parseBudget } from './ai-context'
+import { userGet } from './userStorage'
 import type { UserPreferences } from './ai-context'
 
 interface PlanData {
@@ -54,7 +55,7 @@ export function useAIContext(planData: PlanData | null, eventGuests: EventGuest[
         let allGuests = [...eventGuests]
         try {
             const storageKey = `partypal_eventguests_${planData.eventId}`
-            const stored = localStorage.getItem(storageKey)
+            const stored = userGet(storageKey)
             if (stored) {
                 const parsed = JSON.parse(stored) as EventGuest[]
                 if (Array.isArray(parsed)) {
@@ -98,7 +99,7 @@ export function useAIContext(planData: PlanData | null, eventGuests: EventGuest[
     // Gather vendor context
     const vendorContext = useMemo(() => {
         try {
-            const shortlistData = JSON.parse(localStorage.getItem('partypal_shortlist_data') || '{}')
+            const shortlistData = JSON.parse(userGet('partypal_shortlist_data') || '{}')
             const shortlisted = Object.values(shortlistData) as { name: string; category: string; price: string }[]
 
             const allCategories = ['Venue', 'Decor', 'Baker', 'Food', 'Photos', 'Music', 'Drinks', 'Entertain']
@@ -138,7 +139,7 @@ export function useAIContext(planData: PlanData | null, eventGuests: EventGuest[
 
         try {
             const checklistKey = planData.eventId ? `partypal_checklist_${planData.eventId}` : 'partypal_checklist'
-            const stored = localStorage.getItem(checklistKey)
+            const stored = userGet(checklistKey)
             if (stored) {
                 const items = JSON.parse(stored) as { item: string; done: boolean }[]
                 totalTasks = items.length

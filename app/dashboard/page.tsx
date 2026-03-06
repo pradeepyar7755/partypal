@@ -1157,7 +1157,7 @@ function DashboardContent() {
             const guestManagerGuests = (() => {
                 try {
                     const storageKey = updated.eventId ? `partypal_eventguests_${updated.eventId}` : 'partypal_eventguests'
-                    const stored = localStorage.getItem(storageKey)
+                    const stored = userGet(storageKey)
                     if (stored) {
                         const parsed = JSON.parse(stored)
                         return Array.isArray(parsed) ? parsed.filter((g: { email?: string }) => g.email && g.email.includes('@')) : []
@@ -3118,7 +3118,7 @@ function DashboardContent() {
                                                 {(() => {
                                                     const storageKey = data.eventId ? `partypal_eventguests_${data.eventId}` : 'partypal_eventguests'
                                                     try {
-                                                        const stored = localStorage.getItem(storageKey)
+                                                        const stored = userGet(storageKey)
                                                         const parsed = stored ? JSON.parse(stored) : []
                                                         const withEmails = Array.isArray(parsed) ? parsed.filter((g: { email?: string }) => g.email?.includes('@')) : []
                                                         const dashboardWithEmails = eventGuests.filter(g => g.email?.includes('@'))
@@ -3153,7 +3153,7 @@ function DashboardContent() {
                                                 try {
                                                     // Gather all guests with emails
                                                     const storageKey = data.eventId ? `partypal_eventguests_${data.eventId}` : 'partypal_eventguests'
-                                                    const stored = localStorage.getItem(storageKey)
+                                                    const stored = userGet(storageKey)
                                                     const guestManagerGuests = stored ? JSON.parse(stored) : []
                                                     const allGuests = [
                                                         ...(Array.isArray(guestManagerGuests) ? guestManagerGuests : []),
