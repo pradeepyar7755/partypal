@@ -461,8 +461,18 @@ function DashboardContent() {
         if (!plan.eventId) {
             plan.eventId = demo ? 'demo' : Math.random().toString(36).substring(2, 10)
         }
+        // Ensure plan structure is complete to prevent crashes from malformed AI responses
+        if (!plan.plan) {
+            plan.plan = { summary: '', timeline: [], checklist: [], budget: { total: '$0', breakdown: [] }, tips: [] }
+        } else {
+            if (!Array.isArray(plan.plan.timeline)) plan.plan.timeline = []
+            if (!Array.isArray(plan.plan.checklist)) plan.plan.checklist = []
+            if (!plan.plan.budget) plan.plan.budget = { total: '$0', breakdown: [] }
+            if (!Array.isArray(plan.plan.budget.breakdown)) plan.plan.budget.breakdown = []
+            if (!Array.isArray(plan.plan.tips)) plan.plan.tips = []
+        }
         // Compute timeline dates before setting data
-        const enrichedPlan = plan.date ? { ...plan, plan: { ...plan.plan, timeline: computeTimelineDates(plan.plan.timeline, plan.date) } } : plan
+        const enrichedPlan = plan.date && plan.plan.timeline.length > 0 ? { ...plan, plan: { ...plan.plan, timeline: computeTimelineDates(plan.plan.timeline, plan.date) } } : plan
         setData(enrichedPlan)
         setIsDemo(demo)
         if (!preserveTab) setSelectedTab(initialTab || 'plan')
@@ -753,7 +763,7 @@ function DashboardContent() {
     }, [data, selectedTab])
     // Map checklist items to timeline items by keyword matching
     const mapChecklistToTimeline = () => {
-        const timeline = data.plan.timeline
+        const timeline = data.plan?.timeline || []
         const assigned = new Set<number>()
         const mapping: Record<number, number[]> = {}
         timeline.forEach((_, ti) => { mapping[ti] = [] })
@@ -847,7 +857,7 @@ function DashboardContent() {
             saveChecklist(updated)
 
             // Auto-complete timeline milestone if all its tasks are done
-            const timeline = data.plan.timeline
+            const timeline = data.plan?.timeline || []
             const { mapping } = mapChecklistToTimeline()
             let timelineChanged = false
             const updatedTimeline = timeline.map((t, ti) => {
@@ -986,7 +996,7 @@ function DashboardContent() {
     }
 
     const assignTimeline = (timelineIdx: number, assigneeName: string | undefined) => {
-        const items = [...data.plan.timeline]
+        const items = [...(data.plan?.timeline || [])]
         items[timelineIdx] = { ...items[timelineIdx], assignedTo: assigneeName }
         const updated = { ...data, plan: { ...data.plan, timeline: items } }
         setData(updated)
@@ -1023,7 +1033,7 @@ function DashboardContent() {
 
     const startEditing = () => {
         setEditData({ eventType: data.eventType, date: data.date, guests: data.guests, location: data.location, theme: data.theme, budget: data.budget, time: data.time })
-        setEditTimeline(data.plan.timeline.map(t => ({ ...t })))
+        setEditTimeline((data.plan?.timeline || []).map(t => ({ ...t })))
         setIsEditing(true)
     }
 
@@ -1170,7 +1180,7 @@ function DashboardContent() {
 
     const cancelEdits = () => setIsEditing(false)
 
-    const allocatedAmount = data.plan.budget.breakdown.reduce((s, b) => s + b.amount, 0)
+    const allocatedAmount = (data.plan.budget?.breakdown || []).reduce((s: number, b: BudgetItem) => s + b.amount, 0)
     const totalBudget = (() => {
         const b = data.budget || '$2,000'
         const nums = b.match(/[\d,]+/g)?.map(n => parseInt(n.replace(/,/g, ''))) || [2000]
@@ -1359,15 +1369,24 @@ function DashboardContent() {
                 body: JSON.stringify({
                     eventType: data.eventType, date: data.date, guests: data.guests, location: data.location, theme: data.theme, budget: data.budget,
                     refinement: refineTimelineInput.trim(),
-                    existingTimeline: JSON.stringify(data.plan.timeline),
+                    existingTimeline: JSON.stringify(data.plan?.timeline || []),
                     ...getContextPayload(),
                 })
             })
             if (!res.ok) throw new Error('Failed')
             const result = await res.json()
             if (result.plan?.timeline) {
-                const updated = { ...data, plan: { ...data.plan, timeline: result.plan.timeline } }
+                const updatedPlan = { ...data.plan, timeline: result.plan.timeline }
+                // Merge checklist if returned by the AI refinement
+                if (Array.isArray(result.plan.checklist) && result.plan.checklist.length > 0) {
+                    updatedPlan.checklist = result.plan.checklist
+                }
+                const updated = { ...data, plan: updatedPlan }
                 setData(updated)
+                // Update checklist state if new checklist was provided
+                if (Array.isArray(result.plan.checklist) && result.plan.checklist.length > 0) {
+                    setChecklist(result.plan.checklist)
+                }
                 if (data.eventId) {
                     const events = userGetJSON<PlanData[]>('partypal_events', [])
                     const idx = events.findIndex(e => e.eventId === data.eventId)

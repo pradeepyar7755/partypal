@@ -207,6 +207,10 @@ export default function Home() {
       })
       const data = await res.json()
       if (data.error) throw new Error(data.error)
+      // Validate plan structure before storing
+      if (!data.plan || !Array.isArray(data.plan.timeline) || !Array.isArray(data.plan.checklist)) {
+        throw new Error('Invalid plan format received')
+      }
       data.eventId = Math.random().toString(36).substring(2, 10)
       data.createdAt = new Date().toISOString()
       data.updatedAt = new Date().toISOString()

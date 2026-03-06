@@ -28,26 +28,45 @@ export async function POST(req: NextRequest) {
 
     const isRefinement = refinement && existingTimeline
 
-    const prompt = isRefinement ? `You are PartyPal, an expert party planner AI. Refine the planning timeline below based on user feedback.
+    const prompt = isRefinement ? `You are PartyPal, an expert party planner AI. The user wants to refine their existing plan. Apply their request precisely.
 ${contextBlock}
 Event: ${eventType} | Date: ${date || 'TBD'} | Guests: ${guests} | Location: ${location} | Theme: ${theme || 'Open'} | Budget: ${budget || 'Flexible'}
 Today's date: ${new Date().toISOString().split('T')[0]}
 
-Current Timeline:
+UNDERSTANDING THE DATA MODEL:
+- "timeline" = high-level MILESTONES (3-5 max). These are deliverables like "Book venue & catering", "Send invitations". Keep descriptions SHORT (5-8 words).
+- "checklist" = specific TASKS that belong under milestones. These are actionable to-dos like "Call 3 venues for quotes", "Design invitation card".
+- Every milestone MUST have at least 1 matching checklist task (matched by category field).
+- Do NOT confuse milestones with tasks. If the user asks to "add tasks", add checklist items, NOT milestones.
+
+Current Milestones:
 ${existingTimeline}
 
-User's refinement request: "${refinement}"
+User's request: "${refinement}"
 
-CRITICAL: The refined timeline MUST always include milestones covering: venue (category: "venue"), guests (category: "guests"), and food (category: "food"). These are non-negotiable — never remove them during refinement.
+REFINEMENT RULES:
+- Apply the user's request LITERALLY. If they say "make it concise" or "fewer items", REDUCE the number of milestones. If they say "add tasks", add CHECKLIST items.
+- If the user asks about creative ideas (games, activities, entertainment, themes, decorations), focus your response on THAT topic — suggest specific, creative ideas rather than generic logistics.
+- Milestone task descriptions must be SHORT (5-8 words max). Never use filler like "Review tasks below" or "Complete this milestone" — every description must be a concrete action.
+- Keep existing milestones that don't conflict with the user's request. Only change what the user asked to change.
+- Milestones MUST always cover venue, guests, and food (these can be combined with other items in the same milestone).
+- Categories should be single-word lowercase tags: venue, vendor, food, decor, guests, music, planning, logistics, photos, entertainment, games
 
-Return ONLY valid JSON with the updated timeline applying the user's feedback. Keep items that don't need changing. The format must be:
+Return ONLY valid JSON, no markdown, no backticks:
 {
   "timeline": [
-    {"weeks":"time period","task":"description","category":"category","priority":"high|medium|low"}
+    {"weeks":"time period","task":"Short 5-8 word action","category":"category","priority":"high|medium|low"}
+  ],
+  "checklist": [
+    {"item":"Specific actionable task","category":"matching_milestone_category","done":false}
   ]
 }
 
-Return ONLY valid JSON, no markdown, no backticks.` : `You are PartyPal, an expert party planner AI. Generate a comprehensive party plan.
+CHECKLIST RULES:
+- Every milestone category MUST have at least 1 matching checklist item.
+- If the user's request is about a specific topic (e.g. games, decorations), add detailed checklist items for that topic.
+- Keep existing checklist items that are still relevant (match them by category to the milestones).
+- Each item should be SHORT and actionable (e.g. "Buy card games & trivia sets" not "Research and purchase various card games and trivia question sets for the party").` : `You are PartyPal, an expert party planner AI. Generate a comprehensive party plan.
 ${contextBlock}
 Event: ${eventType} | Date: ${date || 'TBD'} | Guests: ${guests} | Location: ${location} | Theme: ${theme || 'Open'} | Budget: ${budget || 'NOT PROVIDED — you must estimate'}
 Today's date: ${new Date().toISOString().split('T')[0]}
@@ -153,9 +172,24 @@ Make ALL content specific to the actual event details provided. Adjust budget pe
     // For refinements, the response only contains { timeline: [...] }
     // but the dashboard expects { plan: { timeline: [...] } }
     if (isRefinement) {
-      return NextResponse.json({ plan: { timeline: plan.timeline || plan }, eventType, guests, location, theme, date, budget })
+      const timeline = Array.isArray(plan.timeline) ? plan.timeline : Array.isArray(plan) ? plan : []
+      const checklist = Array.isArray(plan.checklist) ? plan.checklist : []
+      return NextResponse.json({ plan: { timeline, checklist }, eventType, guests, location, theme, date, budget })
     }
-    return NextResponse.json({ plan, eventType, guests, location, theme, date, budget })
+    // Validate required plan structure from Gemini response
+    const validatedPlan = {
+      summary: plan.summary || '',
+      timeline: Array.isArray(plan.timeline) ? plan.timeline : [],
+      checklist: Array.isArray(plan.checklist) ? plan.checklist : [],
+      budget: {
+        total: plan.budget?.total || budget || '$0',
+        budgetEstimated: plan.budget?.budgetEstimated ?? !budget,
+        breakdown: Array.isArray(plan.budget?.breakdown) ? plan.budget.breakdown : [],
+      },
+      tips: Array.isArray(plan.tips) ? plan.tips : [],
+      moodboard: plan.moodboard || undefined,
+    }
+    return NextResponse.json({ plan: validatedPlan, eventType, guests, location, theme, date, budget })
   } catch (error: unknown) {
     console.error('Plan error:', error)
     const msg = error instanceof Error ? error.message : 'Failed to generate plan'
