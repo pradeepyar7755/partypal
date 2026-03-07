@@ -115,7 +115,7 @@ export async function executeAgent(
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash-preview-05-20' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
 
         const result = await model.generateContent({
             contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\n---\n\nInput:\n${input}` }] }],
