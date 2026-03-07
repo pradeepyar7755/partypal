@@ -159,6 +159,7 @@ export default function PipelineDashboard() {
     const [expandedRun, setExpandedRun] = useState<string | null>(null)
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
     const [runningAgent, setRunningAgent] = useState<string | null>(null) // ticketId:agent currently running
+    const [latestDeploy, setLatestDeploy] = useState<{ url: string; state: string; createdAt: string; meta?: { githubCommitMessage?: string } } | null>(null)
 
     const isAdmin = user && ADMIN_EMAILS.includes(user.email || '')
 
@@ -399,6 +400,55 @@ export default function PipelineDashboard() {
                                         <span style={{ fontSize: '0.65rem', color: 'rgba(255,255,255,0.25)', fontWeight: 700 }}>
                                             G = Human Gate (requires your approval)
                                         </span>
+                                    </div>
+                                </div>
+
+                                {/* Sandbox / Deploy Links */}
+                                <div className={styles.sectionHeader}>
+                                    <span className={styles.sectionEmoji}>🚀</span>
+                                    <span className={styles.sectionTitle}>Sandbox & Deploy</span>
+                                </div>
+
+                                <div className={styles.card}>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem' }}>
+                                        <a href="https://partypal.social" target="_blank" rel="noopener noreferrer" style={{
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem',
+                                            padding: '1rem', background: 'rgba(61,140,110,0.08)', border: '1px solid rgba(61,140,110,0.2)',
+                                            borderRadius: 12, textDecoration: 'none', transition: 'all 0.2s',
+                                        }}>
+                                            <span style={{ fontSize: '1.5rem' }}>🌐</span>
+                                            <span style={{ fontWeight: 800, fontSize: '0.82rem', color: '#3D8C6E' }}>Production</span>
+                                            <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>partypal.social</span>
+                                        </a>
+                                        <a href="https://vercel.com/pradeepyar-8249s-projects/partypal" target="_blank" rel="noopener noreferrer" style={{
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem',
+                                            padding: '1rem', background: 'rgba(74,173,168,0.08)', border: '1px solid rgba(74,173,168,0.2)',
+                                            borderRadius: 12, textDecoration: 'none', transition: 'all 0.2s',
+                                        }}>
+                                            <span style={{ fontSize: '1.5rem' }}>▲</span>
+                                            <span style={{ fontWeight: 800, fontSize: '0.82rem', color: '#4AADA8' }}>Vercel Dashboard</span>
+                                            <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>Deployments, logs, env vars</span>
+                                        </a>
+                                    </div>
+                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '0.8rem', marginTop: '0.8rem' }}>
+                                        <a href="https://vercel.com/pradeepyar-8249s-projects/partypal/deployments" target="_blank" rel="noopener noreferrer" style={{
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem',
+                                            padding: '1rem', background: 'rgba(123,94,167,0.08)', border: '1px solid rgba(123,94,167,0.2)',
+                                            borderRadius: 12, textDecoration: 'none', transition: 'all 0.2s',
+                                        }}>
+                                            <span style={{ fontSize: '1.5rem' }}>📦</span>
+                                            <span style={{ fontWeight: 800, fontSize: '0.82rem', color: '#7B5EA7' }}>All Deployments</span>
+                                            <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>Preview URLs, build logs</span>
+                                        </a>
+                                        <a href="https://github.com/pradeepyar7755/partypal/actions" target="_blank" rel="noopener noreferrer" style={{
+                                            display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.4rem',
+                                            padding: '1rem', background: 'rgba(247,201,72,0.08)', border: '1px solid rgba(247,201,72,0.2)',
+                                            borderRadius: 12, textDecoration: 'none', transition: 'all 0.2s',
+                                        }}>
+                                            <span style={{ fontSize: '1.5rem' }}>⚙️</span>
+                                            <span style={{ fontWeight: 800, fontSize: '0.82rem', color: '#F7C948' }}>CI Pipeline</span>
+                                            <span style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.4)', fontWeight: 600 }}>GitHub Actions runs</span>
+                                        </a>
                                     </div>
                                 </div>
 
