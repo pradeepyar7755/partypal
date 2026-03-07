@@ -482,9 +482,13 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
         // Sync circle change back to contacts store so Guest Management page reflects it
         try {
             const guest = guests.find(g => g.id === guestId)
-            if (guest?.email) {
-                const contacts = userGetJSON<{ id: string; email: string; circles: string[] }[]>('partypal_contacts', [])
-                const contactIdx = contacts.findIndex(c => c.email === guest.email)
+            if (guest) {
+                const contacts = userGetJSON<{ id: string; name: string; email: string; circles: string[] }[]>('partypal_contacts', [])
+                // Match by email first, then by name as fallback
+                const contactIdx = contacts.findIndex(c =>
+                    (guest.email && c.email && c.email === guest.email) ||
+                    (!guest.email && c.name === guest.name)
+                )
                 if (contactIdx >= 0) {
                     const current = contacts[contactIdx].circles || []
                     contacts[contactIdx].circles = current.includes(circle) ? current.filter(c => c !== circle) : [...current, circle]
