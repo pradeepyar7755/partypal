@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { SITE_EMAILS } from '@/lib/constants'
+import { trackRSVP } from '@/lib/analytics'
 
 interface AdditionalGuest {
     id: string; name: string; dietary: string; relationship: string; isChild: boolean
@@ -159,6 +160,7 @@ export default function JoinRSVPClient({ eventData }: { eventData: EventData }) 
                 }),
             }).catch(() => { })
         }
+        trackRSVP(response, eventData.eventId || '')
         setSubmitted(true)
     }
 

@@ -4,6 +4,7 @@ import { useState, useEffect, Suspense } from 'react'
 import { useSearchParams } from 'next/navigation'
 import styles from './rsvp.module.css'
 import { SITE_EMAILS } from '@/lib/constants'
+import { trackRSVP } from '@/lib/analytics'
 
 interface AdditionalGuest {
     id: string; name: string; dietary: string; relationship: string; isChild: boolean
@@ -195,6 +196,7 @@ function RSVPContent() {
                 }),
             }).catch(() => { })
         }
+        trackRSVP(response, eventData.eventId || '')
         setSubmitted(true)
     }
 

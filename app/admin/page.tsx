@@ -23,8 +23,10 @@ interface DashboardData {
         totalRegisteredUsers: number
         totalSignUps: number
         totalPlansGenerated: number
+        totalPlansRefined: number
         totalVendorSearches: number
         totalRSVPs: number
+        actualRsvpCount: number
         totalErrors: number
         totalEvents: number
     }
@@ -150,7 +152,9 @@ export default function AdminDashboard() {
 
     // Bug reports state
     const [bugReports, setBugReports] = useState<{ id: string; category: string; description: string; page: string; status: string; createdAt: string; email: string; name: string; uid: string }[]>([])
-    const [showBugReports, setShowBugReports] = useState(false)
+    const [showBugReports, setShowBugReports] = useState(true)
+    const [bugFilter, setBugFilter] = useState<'open' | 'all'>('open')
+    const [expandedBugId, setExpandedBugId] = useState<string | null>(null)
 
     // User drill-down state
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -388,9 +392,11 @@ export default function AdminDashboard() {
                             <KPICard label="Registered Users" value={formatNumber(k!.totalRegisteredUsers)} icon="👤" />
                             <KPICard label="Sign Ups" value={formatNumber(k!.totalSignUps)} icon="🚀" />
                             <KPICard label="Plans Generated" value={formatNumber(k!.totalPlansGenerated)} icon="🤖" />
+                            <KPICard label="Refined with AI" value={formatNumber(k!.totalPlansRefined)} icon="✨" color="#C4A882" />
                             <KPICard label="Vendor Searches" value={formatNumber(k!.totalVendorSearches)} icon="🔍" />
                             <KPICard label="RSVPs" value={formatNumber(k!.totalRSVPs)} icon="✅" />
                             <KPICard label="Errors" value={formatNumber(k!.totalErrors)} icon="🐛" color={k!.totalErrors > 0 ? '#E8896A' : undefined} />
+                            <KPICard label="Open Bugs" value={bugReports.filter(b => b.status !== 'fixed').length} icon="📋" color={bugReports.filter(b => b.status === 'new').length > 0 ? '#E8896A' : bugReports.filter(b => b.status !== 'fixed').length > 0 ? '#F7C948' : '#3D8C6E'} subtitle={`${bugReports.filter(b => b.status === 'new').length} new`} />
                             {usageData && (
                                 <>
                                     <KPICard label="Gemini AI Calls" value={formatNumber(usageData.apiMetrics?.totals?.gemini || 0)} icon="🧠" color="#7B5EA7" subtitle={`Est. ${usageData.apiMetrics?.estMonthlyCost || '$0'}/mo`} />
@@ -862,6 +868,68 @@ export default function AdminDashboard() {
                             </div>
                         </div>
 
+                        {/* ══ THEMES & AI REFINEMENT ══ */}
+                        <div className={styles.sectionHeader}>
+                            <span className={styles.sectionEmoji}>✨</span>
+                            <span className={styles.sectionTitle}>Themes & AI Refinement</span>
+                            <span className={styles.sectionSub}>{k!.totalPlansRefined} refinements · {Object.keys(data.eventInsights.themes).length} themes</span>
+                        </div>
+                        <div className={styles.twoCol}>
+                            <div className={styles.chartCard}>
+                                <div className={styles.chartTitle}>Theme Popularity</div>
+                                {Object.keys(data.eventInsights.themes).length > 0 ? (
+                                    <div style={{ padding: '0.3rem 0' }}>
+                                        {(() => {
+                                            const themeEntries = Object.entries(data.eventInsights.themes).sort((a, b) => b[1] - a[1])
+                                            const maxThemeCount = Math.max(...themeEntries.map(([, c]) => c), 1)
+                                            return themeEntries.slice(0, 10).map(([theme, count], i) => (
+                                                <div key={theme} style={{ marginBottom: '0.5rem' }}>
+                                                    <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', fontWeight: 700, color: 'white', marginBottom: '0.2rem' }}>
+                                                        <span>🎨 {theme}</span>
+                                                        <span style={{ color: 'rgba(255,255,255,0.5)' }}>{count} event{count !== 1 ? 's' : ''}</span>
+                                                    </div>
+                                                    <div style={{ height: 8, borderRadius: 4, background: 'rgba(255,255,255,0.04)' }}>
+                                                        <div style={{
+                                                            height: '100%', borderRadius: 4,
+                                                            width: `${(count / maxThemeCount) * 100}%`,
+                                                            background: DONUT_COLORS[i % DONUT_COLORS.length],
+                                                            transition: 'width 0.6s ease',
+                                                        }} />
+                                                    </div>
+                                                </div>
+                                            ))
+                                        })()}
+                                    </div>
+                                ) : (
+                                    <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.85rem', padding: '2rem', textAlign: 'center' }}>No themes selected yet</div>
+                                )}
+                            </div>
+                            <div className={styles.chartCard}>
+                                <div className={styles.chartTitle}>AI Refinement Usage</div>
+                                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem', padding: '0.5rem' }}>
+                                    <MetricBox label="Plans Generated" value={k!.totalPlansGenerated} emoji="🤖" />
+                                    <MetricBox label="Plans Refined" value={k!.totalPlansRefined} emoji="✨" />
+                                    <MetricBox label="Refinement Rate" value={k!.totalPlansGenerated > 0 ? `${Math.round((k!.totalPlansRefined / k!.totalPlansGenerated) * 100)}%` : '0%'} emoji="📈" />
+                                    <MetricBox label="Avg Refinements" value={k!.totalPlansGenerated > 0 ? (k!.totalPlansRefined / k!.totalPlansGenerated).toFixed(1) : '0'} emoji="🔄" />
+                                </div>
+                                <div style={{ marginTop: '0.8rem', padding: '0.6rem', borderRadius: 10, background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)' }}>
+                                    <div style={{ fontSize: '0.65rem', fontWeight: 800, color: 'rgba(255,255,255,0.3)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: '0.4rem' }}>
+                                        Insight
+                                    </div>
+                                    <div style={{ fontSize: '0.78rem', fontWeight: 600, color: 'rgba(255,255,255,0.6)', lineHeight: 1.5 }}>
+                                        {k!.totalPlansRefined === 0
+                                            ? 'No users have used the "Refine with AI" feature yet. Consider prompting users to refine their plans.'
+                                            : k!.totalPlansGenerated > 0 && (k!.totalPlansRefined / k!.totalPlansGenerated) > 0.5
+                                                ? 'High refinement rate — users are actively iterating on their plans. The AI refinement feature is well-adopted.'
+                                                : k!.totalPlansGenerated > 0 && (k!.totalPlansRefined / k!.totalPlansGenerated) < 0.2
+                                                    ? 'Low refinement rate — most users accept the initial plan. Consider making the "Refine" option more prominent.'
+                                                    : 'Moderate refinement usage — some users are finding value in iterating on their plans.'
+                                        }
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                         {/* ══ EVENT DELETIONS ══ */}
                         <div className={styles.sectionHeader}>
                             <span className={styles.sectionEmoji}>🗑️</span>
@@ -938,8 +1006,8 @@ export default function AdminDashboard() {
                         <div className={styles.sectionHeader}>
                             <span className={styles.sectionEmoji}>🐛</span>
                             <span className={styles.sectionTitle}>Errors & Bugs</span>
-                            <span className={styles.sectionSub} style={{ color: k!.totalErrors > 0 ? '#E8896A' : undefined }}>
-                                {k!.totalErrors} errors in period
+                            <span className={styles.sectionSub} style={{ color: data.recentErrors.length > 0 ? '#E8896A' : undefined }}>
+                                {data.recentErrors.length > 0 ? `${data.recentErrors.length} recent errors` : k!.totalErrors > 0 ? `${k!.totalErrors} errors in period (resolved)` : 'No errors'}
                             </span>
                         </div>
                         {data.recentErrors.length > 0 ? (
@@ -957,8 +1025,10 @@ export default function AdminDashboard() {
                         ) : (
                             <div className={styles.chartCard} style={{ textAlign: 'center', padding: '2rem' }}>
                                 <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✅</div>
-                                <div style={{ color: '#3D8C6E', fontWeight: 800 }}>No errors detected! 🎉</div>
-                                <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', marginTop: '0.3rem' }}>Everything is running smoothly</div>
+                                <div style={{ color: '#3D8C6E', fontWeight: 800 }}>No recent errors detected!</div>
+                                <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', marginTop: '0.3rem' }}>
+                                    {k!.totalErrors > 0 ? `${k!.totalErrors} errors logged in aggregate data but no active error events found — they may have been cleaned up.` : 'Everything is running smoothly'}
+                                </div>
                             </div>
                         )}
 
@@ -967,7 +1037,7 @@ export default function AdminDashboard() {
                             <span className={styles.sectionEmoji}>📋</span>
                             <span className={styles.sectionTitle}>User Bug Reports</span>
                             <span className={styles.sectionSub} style={{ color: bugReports.filter(b => b.status === 'new').length > 0 ? '#E8896A' : undefined }}>
-                                {bugReports.filter(b => b.status === 'new').length} new · {bugReports.length} total
+                                {bugReports.filter(b => b.status === 'new').length} new · {bugReports.filter(b => b.status !== 'fixed').length} open · {bugReports.length} total
                             </span>
                             <button
                                 onClick={() => setShowBugReports(!showBugReports)}
@@ -992,6 +1062,33 @@ export default function AdminDashboard() {
                                     </div>
                                 ) : (
                                     <div style={{ overflowX: 'auto' }}>
+                                        {/* Filter toggle */}
+                                        <div style={{ padding: '0.6rem 0.8rem', borderBottom: '1px solid var(--border)', display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                            <button
+                                                onClick={() => setBugFilter('open')}
+                                                style={{
+                                                    padding: '0.3rem 0.8rem', borderRadius: 6, border: '1.5px solid',
+                                                    borderColor: bugFilter === 'open' ? '#E8896A' : 'var(--border)',
+                                                    background: bugFilter === 'open' ? 'rgba(232,137,106,0.1)' : 'white',
+                                                    color: bugFilter === 'open' ? '#E8896A' : 'var(--navy)',
+                                                    fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: "'Nunito', sans-serif",
+                                                }}
+                                            >
+                                                Open ({bugReports.filter(b => b.status !== 'fixed').length})
+                                            </button>
+                                            <button
+                                                onClick={() => setBugFilter('all')}
+                                                style={{
+                                                    padding: '0.3rem 0.8rem', borderRadius: 6, border: '1.5px solid',
+                                                    borderColor: bugFilter === 'all' ? '#4AADA8' : 'var(--border)',
+                                                    background: bugFilter === 'all' ? 'rgba(74,173,168,0.1)' : 'white',
+                                                    color: bugFilter === 'all' ? '#4AADA8' : 'var(--navy)',
+                                                    fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: "'Nunito', sans-serif",
+                                                }}
+                                            >
+                                                All ({bugReports.length})
+                                            </button>
+                                        </div>
                                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', fontFamily: "'Nunito', sans-serif" }}>
                                             <thead>
                                                 <tr style={{ borderBottom: '2px solid var(--border)', textTransform: 'uppercase', fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', letterSpacing: '0.5px' }}>
@@ -1005,7 +1102,9 @@ export default function AdminDashboard() {
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {bugReports.map(bug => (
+                                                {bugReports
+                                                    .filter(bug => bugFilter === 'all' ? true : bug.status !== 'fixed')
+                                                    .map(bug => (
                                                     <tr key={bug.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
                                                         <td style={{ padding: '0.7rem 0.8rem' }}>
                                                             <span style={{
@@ -1019,8 +1118,18 @@ export default function AdminDashboard() {
                                                         <td style={{ padding: '0.7rem 0.5rem', fontWeight: 700, color: 'var(--navy)' }}>
                                                             {bug.category === 'bug' ? '🐛' : bug.category === 'feature' ? '⚙️' : bug.category === 'experience' ? '✨' : bug.category === 'tab' ? '🗂️' : bug.category === 'suggestion' ? '💡' : '📝'} {bug.category}
                                                         </td>
-                                                        <td style={{ padding: '0.7rem 0.5rem', color: 'var(--navy)', fontWeight: 600, maxWidth: 250, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+                                                        <td
+                                                            style={{
+                                                                padding: '0.7rem 0.5rem', color: 'var(--navy)', fontWeight: 600, maxWidth: 300, cursor: 'pointer',
+                                                                ...(expandedBugId === bug.id ? {} : { overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' as const }),
+                                                            }}
+                                                            onClick={() => setExpandedBugId(expandedBugId === bug.id ? null : bug.id)}
+                                                            title={expandedBugId === bug.id ? 'Click to collapse' : 'Click to expand'}
+                                                        >
                                                             {bug.description}
+                                                            {bug.description.length > 50 && expandedBugId !== bug.id && (
+                                                                <span style={{ color: '#4AADA8', fontSize: '0.7rem', fontWeight: 800, marginLeft: '0.3rem' }}>more</span>
+                                                            )}
                                                         </td>
                                                         <td style={{ padding: '0.7rem 0.5rem', color: '#6b7f94', fontWeight: 600, fontSize: '0.75rem' }}>{bug.page}</td>
                                                         <td style={{ padding: '0.7rem 0.5rem', color: '#6b7f94', fontWeight: 600, fontSize: '0.75rem' }}>

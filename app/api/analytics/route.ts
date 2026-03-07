@@ -131,7 +131,7 @@ export async function GET(req: NextRequest) {
                 }
 
                 // Run ALL Firestore queries in parallel (3s timeout each)
-                const [dailyData, recentErrors, recentActivity, , totalRegisteredUsers, churnData, eventDeletionData, activityLogData] = await Promise.all([
+                const [dailyData, recentErrors, recentActivity, , totalRegisteredUsers, churnData, eventDeletionData, activityLogData, actualRsvpCount] = await Promise.all([
                     firestoreQuery(
                         async () => {
                             const snap = await db.collection('analytics_daily')
@@ -323,12 +323,28 @@ export async function GET(req: NextRequest) {
                         },
                         [] as { eventId: string; uid: string; action: string; changes: { field: string; from: string; to: string }[]; timestamp: string }[]
                     ),
+                    // Count actual RSVPs from Firestore subcollections
+                    firestoreQuery(
+                        async () => {
+                            const eventsSnap = await db.collection('events').select().get()
+                            let rsvpTotal = 0
+                            const rsvpPromises = eventsSnap.docs.map(async (doc) => {
+                                const rsvpSnap = await doc.ref.collection('rsvps').count().get()
+                                return rsvpSnap.data().count
+                            })
+                            const counts = await Promise.all(rsvpPromises)
+                            rsvpTotal = counts.reduce((sum, c) => sum + c, 0)
+                            return rsvpTotal
+                        },
+                        0
+                    ),
                 ])
 
                 // Calculate totals from daily data
                 let totalPageViews = 0, totalSignUps = 0, totalPlansGenerated = 0
                 let totalVendorSearches = 0, totalRSVPs = 0, totalErrors = 0
                 let totalSessions = 0, totalUsers = 0, totalEvents = 0
+                let totalPlansRefined = 0
 
                 const pageViewsByDay: { date: string; views: number }[] = []
                 const signUpsByDay: { date: string; count: number }[] = []
@@ -341,6 +357,7 @@ export async function GET(req: NextRequest) {
                     totalPlansGenerated += events.plan_generated || 0
                     totalVendorSearches += events.vendor_search || 0
                     totalRSVPs += events.rsvp_submitted || 0
+                    totalPlansRefined += events.plan_refined || 0
                     totalErrors += events.error || 0
                     totalSessions += (day.sessions as number) || 0
                     totalUsers += (day.users as number) || 0
@@ -369,11 +386,11 @@ export async function GET(req: NextRequest) {
                     }
                 }
 
-                // Conversion rates
+                // Conversion rates (capped at 100% — a single user can trigger multiple downstream events)
                 const conversionRates = {
-                    visitorToSignUp: totalPageViews > 0 ? ((totalSignUps / totalPageViews) * 100).toFixed(1) : '0',
-                    signUpToPlan: totalSignUps > 0 ? ((totalPlansGenerated / totalSignUps) * 100).toFixed(1) : '0',
-                    planToVendor: totalPlansGenerated > 0 ? ((totalVendorSearches / totalPlansGenerated) * 100).toFixed(1) : '0',
+                    visitorToSignUp: totalPageViews > 0 ? Math.min(100, (totalSignUps / totalPageViews) * 100).toFixed(1) : '0',
+                    signUpToPlan: totalSignUps > 0 ? Math.min(100, (totalPlansGenerated / totalSignUps) * 100).toFixed(1) : '0',
+                    planToVendor: totalPlansGenerated > 0 ? Math.min(100, (totalVendorSearches / totalPlansGenerated) * 100).toFixed(1) : '0',
                 }
 
                 return NextResponse.json({
@@ -385,8 +402,10 @@ export async function GET(req: NextRequest) {
                         totalRegisteredUsers,
                         totalSignUps,
                         totalPlansGenerated,
+                        totalPlansRefined,
                         totalVendorSearches,
-                        totalRSVPs,
+                        totalRSVPs: Math.max(totalRSVPs, actualRsvpCount),
+                        actualRsvpCount,
                         totalErrors,
                         totalEvents,
                     },
