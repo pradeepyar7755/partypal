@@ -226,6 +226,23 @@ export default function PipelineDashboard() {
         fetchData()
     }
 
+    const handleRunAgent = async (ticketId: string, agent: string) => {
+        const agentLabel = agent === 'triage' ? 'AI Triage' : agent === 'review' ? 'AI Code Review' : 'AI Shiproom'
+        if (!window.confirm(`Run ${agentLabel} on this ticket?\n\nThis will call Gemini 2.5 Flash to analyze the ticket.`)) return
+        const result = await apiPost({ action: 'execute_agent', agent, ticketId })
+        if (result.error) {
+            alert(`Agent failed: ${result.error}`)
+        } else {
+            const agentResult = result.result?.result as Record<string, unknown> | undefined
+            if (agentResult?.severity) {
+                alert(`${agentLabel} complete:\n\nSeverity: ${agentResult.severity}\nModule: ${agentResult.module}\nRoot Cause: ${String(agentResult.root_cause_hypothesis || '').slice(0, 100)}`)
+            } else {
+                alert(`${agentLabel} complete. Results saved to ticket.`)
+            }
+        }
+        fetchData()
+    }
+
     const handleToggleAgent = async (agentKey: string, field: 'enabled' | 'autoRun', value: boolean) => {
         const updated = { ...agentConfig }
         if (!updated.agents) (updated as AgentConfig).agents = {}
@@ -455,7 +472,7 @@ export default function PipelineDashboard() {
                                 ) : (
                                     <div className={styles.ticketList}>
                                         {tickets.slice(0, 5).map(ticket => (
-                                            <TicketRow key={ticket.id} ticket={ticket} onStatusChange={handleUpdateTicketStatus} onDelete={handleDeleteTicket} onCreateRun={handleCreateRun} />
+                                            <TicketRow key={ticket.id} ticket={ticket} onStatusChange={handleUpdateTicketStatus} onDelete={handleDeleteTicket} onCreateRun={handleCreateRun} onRunAgent={handleRunAgent} />
                                         ))}
                                     </div>
                                 )}
@@ -485,7 +502,7 @@ export default function PipelineDashboard() {
                                 ) : (
                                     <div className={styles.ticketList}>
                                         {tickets.map(ticket => (
-                                            <TicketRow key={ticket.id} ticket={ticket} onStatusChange={handleUpdateTicketStatus} onDelete={handleDeleteTicket} onCreateRun={handleCreateRun} />
+                                            <TicketRow key={ticket.id} ticket={ticket} onStatusChange={handleUpdateTicketStatus} onDelete={handleDeleteTicket} onCreateRun={handleCreateRun} onRunAgent={handleRunAgent} />
                                         ))}
                                     </div>
                                 )}
@@ -716,37 +733,72 @@ function KPICard({ icon, label, value, color, sub }: { icon: string; label: stri
     )
 }
 
-function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun }: { ticket: Ticket; onStatusChange: (id: string, status: string) => void; onDelete: (id: string) => void; onCreateRun: (id: string) => void }) {
+function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent }: { ticket: Ticket; onStatusChange: (id: string, status: string) => void; onDelete: (id: string) => void; onCreateRun: (id: string) => void; onRunAgent: (ticketId: string, agent: string) => void }) {
+    const hasTriageResult = !!ticket.agentResults?.triage
     return (
-        <div className={styles.ticketRow}>
-            <span className={`${styles.ticketType} ${ticket.type === 'bug' ? styles.ticketTypeBug : styles.ticketTypeFeature}`}>
-                {ticket.type === 'bug' ? '🐛 Bug' : '✨ Feature'}
-            </span>
-            <span className={styles.ticketTitle}>{ticket.title}</span>
-            <span className={`${styles.ticketPriority} ${styles[`priority${ticket.priority}` as keyof typeof styles] || ''}`}>
-                {ticket.priority}
-            </span>
-            <span className={`${styles.ticketStatus} ${
-                ticket.status === 'open' ? styles.statusOpen :
-                ticket.status === 'in_progress' ? styles.statusInProgress :
-                ticket.status === 'done' ? styles.statusDone :
-                ticket.status === 'shipped' ? styles.statusShipped :
-                ''
-            }`}>
-                {ticket.status}
-            </span>
-            <div style={{ display: 'flex', gap: '0.3rem' }}>
-                {ticket.status === 'open' && (
-                    <>
-                        <button className={styles.btnSmall} onClick={() => onStatusChange(ticket.id, 'in_progress')} title="Start working">▶</button>
-                        <button className={styles.btnSmall} onClick={() => onCreateRun(ticket.id)} title="Start pipeline run">🔄</button>
-                    </>
-                )}
-                {ticket.status === 'in_progress' && (
-                    <button className={styles.btnSmall} onClick={() => onStatusChange(ticket.id, 'done')} title="Mark done">✓</button>
-                )}
-                <button className={styles.btnSmall} onClick={() => onDelete(ticket.id)} title="Delete" style={{ color: '#E8896A' }}>✗</button>
+        <div>
+            <div className={styles.ticketRow}>
+                <span className={`${styles.ticketType} ${ticket.type === 'bug' ? styles.ticketTypeBug : styles.ticketTypeFeature}`}>
+                    {ticket.type === 'bug' ? '🐛 Bug' : '✨ Feature'}
+                </span>
+                <span className={styles.ticketTitle}>{ticket.title}</span>
+                <span className={`${styles.ticketPriority} ${styles[`priority${ticket.priority}` as keyof typeof styles] || ''}`}>
+                    {ticket.priority}
+                </span>
+                <span className={`${styles.ticketStatus} ${
+                    ticket.status === 'open' ? styles.statusOpen :
+                    ticket.status === 'in_progress' ? styles.statusInProgress :
+                    ticket.status === 'done' ? styles.statusDone :
+                    ticket.status === 'shipped' ? styles.statusShipped :
+                    ''
+                }`}>
+                    {ticket.status}
+                </span>
+                <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
+                    {ticket.status === 'open' && (
+                        <>
+                            <button className={styles.btnSmall} onClick={() => onRunAgent(ticket.id, 'triage')} title="AI Triage (Gemini)" style={{ color: '#4AADA8' }}>
+                                {hasTriageResult ? '🔍 Re-triage' : '🤖 AI Triage'}
+                            </button>
+                            <button className={styles.btnSmall} onClick={() => { onStatusChange(ticket.id, 'in_progress'); onCreateRun(ticket.id); }} title="Fix manually in Claude Code">
+                                🔧 Manual Fix
+                            </button>
+                        </>
+                    )}
+                    {ticket.status === 'in_progress' && (
+                        <>
+                            <button className={styles.btnSmall} onClick={() => onRunAgent(ticket.id, 'review')} title="AI Code Review (Gemini)" style={{ color: '#4AADA8' }}>🛡️ AI Review</button>
+                            <button className={styles.btnSmall} onClick={() => onStatusChange(ticket.id, 'done')} title="Mark done">✓ Done</button>
+                        </>
+                    )}
+                    <button className={styles.btnSmall} onClick={() => onDelete(ticket.id)} title="Delete" style={{ color: '#E8896A' }}>✗</button>
+                </div>
             </div>
+            {/* Show agent results inline if available */}
+            {hasTriageResult && (
+                <div className={styles.card} style={{ marginTop: '0.3rem', marginBottom: '0.5rem', marginLeft: '2rem', padding: '0.8rem' }}>
+                    <div className={styles.cardTitle}>AI Triage Result</div>
+                    {(() => {
+                        const raw = (ticket.agentResults.triage as { result?: Record<string, unknown> })?.result || ticket.agentResults.triage as Record<string, unknown>
+                        const r = {
+                            severity: raw.severity ? String(raw.severity) : '',
+                            module: raw.module ? String(raw.module) : '',
+                            root_cause: raw.root_cause_hypothesis ? String(raw.root_cause_hypothesis) : '',
+                            fix: raw.suggested_fix ? String(raw.suggested_fix) : '',
+                            effort: raw.effort_estimate ? String(raw.effort_estimate) : '',
+                        }
+                        return (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.3rem 0.8rem', fontSize: '0.75rem' }}>
+                                {r.severity && <><span style={{ fontWeight: 800, color: 'rgba(255,255,255,0.4)' }}>Severity</span><span style={{ color: 'white', fontWeight: 700 }}>{r.severity}</span></>}
+                                {r.module && <><span style={{ fontWeight: 800, color: 'rgba(255,255,255,0.4)' }}>Module</span><span style={{ color: 'white', fontWeight: 700 }}>{r.module}</span></>}
+                                {r.root_cause && <><span style={{ fontWeight: 800, color: 'rgba(255,255,255,0.4)' }}>Root Cause</span><span style={{ color: 'rgba(255,255,255,0.7)' }}>{r.root_cause}</span></>}
+                                {r.fix && <><span style={{ fontWeight: 800, color: 'rgba(255,255,255,0.4)' }}>Suggested Fix</span><span style={{ color: 'rgba(255,255,255,0.7)' }}>{r.fix}</span></>}
+                                {r.effort && <><span style={{ fontWeight: 800, color: 'rgba(255,255,255,0.4)' }}>Effort</span><span style={{ color: 'rgba(255,255,255,0.7)' }}>{r.effort}</span></>}
+                            </div>
+                        )
+                    })()}
+                </div>
+            )}
         </div>
     )
 }

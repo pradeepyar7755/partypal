@@ -7,6 +7,7 @@ import {
     notifyGateApprovalNeeded,
     notifyTestsFailed,
 } from '@/lib/pipeline-notify'
+import { executeAgent, AgentType } from '@/lib/pipeline-ai'
 
 // ── Stage definitions ──────────────────────────────────
 const VALID_STAGES = ['triage', 'dev', 'review', 'test', 'deploy', 'shiproom']
@@ -281,6 +282,56 @@ export async function POST(req: NextRequest) {
             }
 
             return NextResponse.json({ success: true })
+        }
+
+        // ── Execute Agent (AI) ───────────────────────
+        if (action === 'execute_agent') {
+            const { agent, ticketId, runId, input } = body
+            if (!agent) return NextResponse.json({ error: 'Missing agent type' }, { status: 400 })
+
+            const validAgents: AgentType[] = ['triage', 'review', 'shiproom']
+            if (!validAgents.includes(agent)) {
+                return NextResponse.json({ error: `Invalid agent: ${agent}. Must be: ${validAgents.join(', ')}` }, { status: 400 })
+            }
+
+            // Build input from ticket if not provided directly
+            let agentInput = input || ''
+            if (!agentInput && ticketId) {
+                const ticketDoc = await db.collection('pipeline_tickets').doc(ticketId).get()
+                if (ticketDoc.exists) {
+                    const t = ticketDoc.data()!
+                    agentInput = `Title: ${t.title}\nType: ${t.type}\nPriority: ${t.priority}\nDescription: ${t.description}\nCategory: ${t.sourceCategory || 'unknown'}\nPage: ${t.sourcePage || 'unknown'}`
+                }
+            }
+
+            if (!agentInput) return NextResponse.json({ error: 'No input provided and no ticket found' }, { status: 400 })
+
+            // Execute the agent
+            const result = await executeAgent(agent as AgentType, agentInput)
+
+            // Store result on ticket if ticketId provided
+            if (ticketId) {
+                await db.collection('pipeline_tickets').doc(ticketId).set({
+                    [`agentResults.${agent}`]: {
+                        ...result,
+                        executedAt: new Date().toISOString(),
+                        executedBy: admin.email,
+                    },
+                    updatedAt: new Date().toISOString(),
+                }, { merge: true })
+            }
+
+            // Store result on run stage if runId provided
+            if (runId) {
+                const stageKey = agent === 'triage' ? 'triage' : agent === 'review' ? 'review' : 'shiproom'
+                await db.collection('pipeline_runs').doc(runId).set({
+                    [`stages.${stageKey}.result`]: result,
+                    [`stages.${stageKey}.completedAt`]: new Date().toISOString(),
+                    updatedAt: new Date().toISOString(),
+                }, { merge: true })
+            }
+
+            return NextResponse.json({ success: true, result })
         }
 
         // ── Update Config ──────────────────────────
