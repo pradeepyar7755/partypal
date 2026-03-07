@@ -1200,27 +1200,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                                 >
                                                     🏷️ {(g.circles?.length || 0) > 0 ? g.circles!.length : '+'}
                                                 </button>
-                                                {openCircleDropdown === g.id && (
-                                                    <>
-                                                        <div className={styles.circleBackdrop} onClick={() => setOpenCircleDropdown(null)} />
-                                                        <div className={styles.circleMenu}>
-                                                            <div className={styles.circleMenuHeader}>Assign Circles</div>
-                                                            {savedCircles.map(c => (
-                                                                <label key={c} className={styles.circleMenuItem}>
-                                                                    <input
-                                                                        type="checkbox"
-                                                                        checked={g.circles?.includes(c) || false}
-                                                                        onChange={() => toggleGuestCircle(g.id, c)}
-                                                                    />
-                                                                    {c}
-                                                                </label>
-                                                            ))}
-                                                            {savedCircles.length === 0 && (
-                                                                <div className={styles.circleMenuEmpty}>No circles yet. <a href="/guests" style={{ color: 'var(--teal)', fontWeight: 800 }}>Create circles</a></div>
-                                                            )}
-                                                        </div>
-                                                    </>
-                                                )}
                                             </div>
                                         )}
                                         <select value={g.status} onChange={e => { e.stopPropagation(); updateStatus(g.id, e.target.value as Guest['status']) }} onClick={e => e.stopPropagation()} className={styles.statusSelect} style={{ background: STATUS_BG[g.status], color: STATUS_COLORS[g.status] }}>
@@ -1232,6 +1211,41 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                         <button className={styles.removeBtn} onClick={e => { e.stopPropagation(); removeGuest(g.id) }}>✕</button>
                                         <span className={styles.expandIcon}>{expandedGuest === g.id ? '▾' : '▸'}</span>
                                     </div>
+
+                                    {/* Inline circle assignment — shows below the row */}
+                                    {openCircleDropdown === g.id && (
+                                        <div onClick={e => e.stopPropagation()} style={{
+                                            display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap',
+                                            padding: '0.5rem 1rem 0.5rem 2.5rem',
+                                            background: 'rgba(74,173,168,0.04)',
+                                            borderTop: '1px dashed var(--border)',
+                                        }}>
+                                            <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase', letterSpacing: '0.5px', marginRight: '0.3rem' }}>Circles:</span>
+                                            {savedCircles.map(c => (
+                                                <label key={c} style={{
+                                                    display: 'flex', alignItems: 'center', gap: '0.3rem',
+                                                    padding: '0.2rem 0.5rem', borderRadius: 6,
+                                                    background: g.circles?.includes(c) ? 'rgba(74,173,168,0.12)' : 'transparent',
+                                                    border: `1px solid ${g.circles?.includes(c) ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`,
+                                                    fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
+                                                    color: g.circles?.includes(c) ? 'var(--teal)' : 'var(--navy)',
+                                                    transition: 'all 0.15s',
+                                                }}>
+                                                    <input type="checkbox" checked={g.circles?.includes(c) || false}
+                                                        onChange={() => toggleGuestCircle(g.id, c)}
+                                                        style={{ accentColor: 'var(--teal)' }} />
+                                                    {c}
+                                                </label>
+                                            ))}
+                                            {savedCircles.length === 0 && (
+                                                <span style={{ fontSize: '0.75rem', color: '#9aabbb', fontWeight: 600 }}>No circles yet. <a href="/guests" style={{ color: 'var(--teal)', fontWeight: 800 }}>Create circles</a></span>
+                                            )}
+                                            <button onClick={() => setOpenCircleDropdown(null)} style={{
+                                                marginLeft: 'auto', border: 'none', background: 'none',
+                                                color: '#9aabbb', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700,
+                                            }}>Done</button>
+                                        </div>
+                                    )}
 
                                     {expandedGuest === g.id && (
                                         <div className={styles.guestExpanded}>

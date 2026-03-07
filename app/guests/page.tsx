@@ -413,7 +413,7 @@ export default function GuestsPage() {
                     {contact.circles.length === 0 && <span className={styles.noCircle}>No circle</span>}
                   </div>
                   <div className={styles.contactActions}>
-                    {/* Circle quick-add dropdown */}
+                    {/* Circle quick-add button */}
                     <div className={styles.circleDropdown}>
                       <button
                         className={`${styles.circleAddBtn} ${contact.circles.length > 0 ? styles.circleAddBtnHasCircles : ''}`}
@@ -422,29 +422,45 @@ export default function GuestsPage() {
                       >
                         🏷️ {contact.circles.length > 0 ? contact.circles.length : '+'}
                       </button>
-                      {openCircleDropdown === contact.id && (
-                        <>
-                          <div className={styles.circleDropdownBackdrop} onClick={() => setOpenCircleDropdown(null)} />
-                          <div className={styles.circleDropdownContent}>
-                            <div className={styles.circleDropdownHeader}>Assign Circles</div>
-                            {circles.map(c => (
-                              <label key={c} className={styles.circleDropdownItem}>
-                                <input
-                                  type="checkbox"
-                                  checked={contact.circles.includes(c)}
-                                  onChange={() => toggleCircle(contact.id, c)}
-                                />
-                                {c}
-                              </label>
-                            ))}
-                          </div>
-                        </>
-                      )}
                     </div>
                     <button className={styles.editBtn} onClick={() => startEdit(contact)} title="Edit">✏️</button>
                     <button className={styles.removeBtn} onClick={() => deleteContact(contact.id)} title="Remove">🗑️</button>
                   </div>
                 </div>
+                {/* Inline circle assignment — shows below the contact row */}
+                {openCircleDropdown === contact.id && (
+                  <div style={{
+                    display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap',
+                    padding: '0.5rem 1rem 0.5rem 2.5rem',
+                    background: 'rgba(74,173,168,0.04)',
+                    borderTop: '1px dashed var(--border)',
+                  }}>
+                    <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase', letterSpacing: '0.5px', marginRight: '0.3rem' }}>Circles:</span>
+                    {circles.map(c => (
+                      <label key={c} style={{
+                        display: 'flex', alignItems: 'center', gap: '0.3rem',
+                        padding: '0.2rem 0.5rem', borderRadius: 6,
+                        background: contact.circles.includes(c) ? 'rgba(74,173,168,0.12)' : 'transparent',
+                        border: `1px solid ${contact.circles.includes(c) ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`,
+                        fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
+                        color: contact.circles.includes(c) ? 'var(--teal)' : 'var(--navy)',
+                        transition: 'all 0.15s',
+                      }}>
+                        <input type="checkbox" checked={contact.circles.includes(c)}
+                          onChange={() => toggleCircle(contact.id, c)}
+                          style={{ accentColor: 'var(--teal)' }} />
+                        {c}
+                      </label>
+                    ))}
+                    {circles.length === 0 && (
+                      <span style={{ fontSize: '0.75rem', color: '#9aabbb', fontWeight: 600 }}>No circles created yet</span>
+                    )}
+                    <button onClick={() => setOpenCircleDropdown(null)} style={{
+                      marginLeft: 'auto', border: 'none', background: 'none',
+                      color: '#9aabbb', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700,
+                    }}>Done</button>
+                  </div>
+                )}
               </div>
             ))
           )}

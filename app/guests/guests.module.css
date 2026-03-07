@@ -348,20 +348,11 @@
   background: white;
   border: 1.5px solid var(--border);
   border-radius: 16px;
-  overflow: visible;
-}
-
-.guestEntry:first-child {
-  border-radius: 16px 16px 0 0;
+  overflow: hidden;
 }
 
 .guestEntry {
   border-bottom: 1px solid var(--border);
-}
-
-.guestEntry:last-child {
-  border-bottom: none;
-  border-radius: 0 0 16px 16px;
 }
 
 .guestEntry:last-child {
