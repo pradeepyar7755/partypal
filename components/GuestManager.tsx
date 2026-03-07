@@ -298,10 +298,21 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
         }
     }, [eventId, storageKey, propPlanData])
 
-    // Load contacts & circles from localStorage
-    useEffect(() => {
+    // Load contacts & circles from localStorage, and reload on navigation/tab switch
+    const reloadContacts = () => {
         setCircleContacts(userGetJSON('partypal_contacts', []))
         setSavedCircles(userGetJSON('partypal_circles', ['Family', 'Friends', 'Work', 'School', 'Neighbors']))
+    }
+    useEffect(() => {
+        reloadContacts()
+        const onFocus = () => reloadContacts()
+        const onVisible = () => { if (document.visibilityState === 'visible') reloadContacts() }
+        window.addEventListener('focus', onFocus)
+        document.addEventListener('visibilitychange', onVisible)
+        return () => {
+            window.removeEventListener('focus', onFocus)
+            document.removeEventListener('visibilitychange', onVisible)
+        }
     }, [])
 
     useEffect(() => {
@@ -473,8 +484,9 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
         showToast('RSVP updated', 'info')
     }
     const getGuestCircles = (g: Guest): string[] => {
-        // Look up circles from contacts store (single source of truth)
-        const contact = circleContacts.find(c =>
+        // Always read fresh from localStorage (single source of truth)
+        const contacts = userGetJSON<{ name: string; email: string; circles: string[] }[]>('partypal_contacts', [])
+        const contact = contacts.find(c =>
             (g.email && c.email && c.email.toLowerCase() === g.email.toLowerCase()) ||
             (!g.email && c.name && c.name.toLowerCase() === g.name.toLowerCase())
         )
