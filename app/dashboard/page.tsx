@@ -271,6 +271,7 @@ function DashboardContent() {
     const [tasksCollapsed, setTasksCollapsed] = useState(true)
     const [showChecklistHint, setShowChecklistHint] = useState(true)
     const [deletedTasks, setDeletedTasks] = useState<ChecklistItem[]>([])
+    const [expandedDoneMilestones, setExpandedDoneMilestones] = useState<Set<number>>(new Set())
     const [showDeletedTasks, setShowDeletedTasks] = useState(false)
     const [showCollabModal, setShowCollabModal] = useState(false)
     const [showSignupPrompt, setShowSignupPrompt] = useState<'collaborate' | 'rsvp' | false>(false)
@@ -2729,7 +2730,7 @@ function DashboardContent() {
                                                                         const allTasksDone = tasks.length > 0 && tasksDone === tasks.length
                                                                         // Determine status
                                                                         if (t.completedAt || allTasksDone) {
-                                                                            return <span style={{ fontSize: '0.55rem', fontWeight: 800, color: '#3D8C6E', background: '#3D8C6E12', border: '1px solid #3D8C6E30', padding: '0.05rem 0.35rem', borderRadius: 8, whiteSpace: 'nowrap' }}>✓ Done{t.completedAt ? ` ${new Date(t.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''}</span>
+                                                                            return <span onClick={() => setExpandedDoneMilestones(prev => { const next = new Set(prev); if (next.has(i)) next.delete(i); else next.add(i); return next })} style={{ fontSize: '0.55rem', fontWeight: 800, color: '#3D8C6E', background: '#3D8C6E12', border: '1px solid #3D8C6E30', padding: '0.05rem 0.35rem', borderRadius: 8, whiteSpace: 'nowrap', cursor: 'pointer' }} title={expandedDoneMilestones.has(i) ? 'Collapse tasks' : 'Show tasks'}>✓ Done{t.completedAt ? ` ${new Date(t.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}` : ''} {expandedDoneMilestones.has(i) ? '▾' : '▸'}</span>
                                                                         }
                                                                         // Check if overdue by parsing date from weeks
                                                                         const dateMatch = t.weeks.match(/^([A-Z][a-z]{2})\s(\d{1,2})/)
@@ -2860,7 +2861,7 @@ function DashboardContent() {
                                                                     return null
                                                                 })()}
                                                                 {/* Inline checklist tasks */}
-                                                                {!tasksCollapsed && taskMapping[i]?.length > 0 && (
+                                                                {!tasksCollapsed && taskMapping[i]?.length > 0 && !(taskMapping[i].every(ci => checklist[ci]?.done) && !expandedDoneMilestones.has(i)) && (
                                                                     <div
                                                                         style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '0.4rem' }}
                                                                         data-drop-zone={`tasks-${i}`}
