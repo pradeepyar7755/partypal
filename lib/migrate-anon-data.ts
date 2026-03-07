@@ -31,11 +31,9 @@ function migrateJSONArray(uid: string, key: string, dedupField?: string): void {
 
     let merged: unknown[]
     if (dedupField) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const seen = new Set(existingData.map((item: any) => item[dedupField]))
         merged = [...existingData]
         for (const item of anonData) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const val = (item as any)[dedupField]
             if (val && !seen.has(val)) {
                 merged.push(item)
@@ -103,9 +101,7 @@ export function migrateAnonymousData(uid: string): void {
         const scopedEventsRaw = localStorage.getItem(`${uid}_partypal_events`)
         const scopedEvents = scopedEventsRaw ? safeParseArray(scopedEventsRaw) : []
         const allEventIds = new Set<string>()
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         for (const ev of [...anonEvents, ...scopedEvents]) {
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const id = (ev as any)?.eventId
             if (id && id !== 'demo') allEventIds.add(id)
         }

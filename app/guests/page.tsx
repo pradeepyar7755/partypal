@@ -52,20 +52,16 @@ export default function GuestsPage() {
     setCircles(savedCircles)
 
     // Load active events (non-past, non-demo)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const events = userGetJSON<any[]>('partypal_events', [])
     const now = new Date()
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const active = events.filter((e: any) => {
       if (!e.eventId || e.eventId === 'demo') return false
       const d = e.date ? new Date(e.date + 'T12:00:00') : null
       return !d || d >= now
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     }).map((e: any) => ({ eventId: e.eventId, eventType: e.eventType || 'Event' }))
     setActiveEvents(active)
 
     // Sync RSVP guests from all events into contacts (superset merge)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const allEvents = events.filter((e: any) => e.eventId && e.eventId !== 'demo')
     let merged = [...saved]
     let changed = false

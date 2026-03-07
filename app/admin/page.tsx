@@ -136,9 +136,7 @@ export default function AdminDashboard() {
     const [loading, setLoading] = useState(true)
     const [days, setDays] = useState(30)
     const [error, setError] = useState('')
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [usageData, setUsageData] = useState<any>(null)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [pollStats, setPollStats] = useState<{
         totalPolls: number; totalVotes: number; activePolls: number; eventsWithPolls: number
         uniqueVoters: number; avgOptions: string; avgVotesPerPoll: string
@@ -157,7 +155,6 @@ export default function AdminDashboard() {
     const [expandedBugId, setExpandedBugId] = useState<string | null>(null)
 
     // User drill-down state
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [userList, setUserList] = useState<any[]>([])
     const [usersLoading, setUsersLoading] = useState(false)
     const [userSearch, setUserSearch] = useState('')

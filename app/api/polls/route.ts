@@ -60,7 +60,6 @@ export async function GET(req: NextRequest) {
         // Admin stats mode
         if (stats === 'true') {
             const snap = await db.collection('polls').get()
-            // eslint-disable-next-line @typescript-eslint/no-explicit-any
             const allPolls = snap.docs.map(d => d.data()) as any[]
             const totalPolls = allPolls.length
             const totalVotes = allPolls.reduce((sum, p) => sum + (p.totalVotes || 0), 0)

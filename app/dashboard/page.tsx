@@ -309,7 +309,6 @@ function DashboardContent() {
     const [notifyResult, setNotifyResult] = useState<{ sent: number; total: number; message: string } | null>(null)
     // Poll state
     const [showPollCreator, setShowPollCreator] = useState(false)
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const [polls, setPolls] = useState<any[]>([])
     const [pollShareLink, setPollShareLink] = useState<string | null>(null)
     const [pollsLoading, setPollsLoading] = useState(false)

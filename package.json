@@ -54,6 +54,8 @@
     "@types/react-dom": "^18",
     "@types/uuid": "^9",
     "@vitest/coverage-v8": "^4.0.18",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "^14.2.5",
     "typescript": "^5",
     "vercel": "^50.28.0",
     "vitest": "^4.0.18"
