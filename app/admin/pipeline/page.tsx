@@ -922,7 +922,10 @@ function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent, 
                 <span className={`${styles.ticketType} ${ticket.type === 'bug' ? styles.ticketTypeBug : styles.ticketTypeFeature}`}>
                     {ticket.type === 'bug' ? '🐛 Bug' : '✨ Feature'}
                 </span>
-                <span className={styles.ticketTitle}>{ticket.title}</span>
+                <span className={styles.ticketTitle}>
+                    <span style={{ color: 'rgba(255,255,255,0.3)', fontWeight: 600, fontSize: '0.72rem', marginRight: '0.4rem' }}>#{ticket.id.slice(-5)}</span>
+                    {ticket.title}
+                </span>
                 <span className={`${styles.ticketPriority} ${styles[`priority${ticket.priority}` as keyof typeof styles] || ''}`}>
                     {ticket.priority}
                 </span>
