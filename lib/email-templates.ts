@@ -679,3 +679,107 @@ ${bodyWrap(`
         `<p style="color:${BRAND.textLight};font-size:11px;margin:4px 0 0;">This is a confirmation of your account deletion. No further emails will be sent.</p>`
     )
 }
+
+
+// ═══════════════════════════════════════════════════════
+//  PIPELINE NOTIFICATION EMAILS
+//  Sent to admin on pipeline events
+// ═══════════════════════════════════════════════════════
+
+export type PipelineEmailType =
+    | 'ticket_created'
+    | 'triage_complete'
+    | 'gate_needs_approval'
+    | 'dev_started'
+    | 'review_ready'
+    | 'tests_passed'
+    | 'tests_failed'
+    | 'deploy_ready'
+    | 'ship_decision'
+    | 'pipeline_blocked'
+    | 'security_alert'
+
+const PIPELINE_COLORS: Record<string, string> = {
+    ticket_created: BRAND.teal,
+    triage_complete: BRAND.green,
+    gate_needs_approval: BRAND.yellow,
+    dev_started: BRAND.purple,
+    review_ready: BRAND.yellow,
+    tests_passed: BRAND.green,
+    tests_failed: BRAND.coral,
+    deploy_ready: BRAND.teal,
+    ship_decision: BRAND.yellow,
+    pipeline_blocked: BRAND.coral,
+    security_alert: BRAND.coral,
+}
+
+const PIPELINE_EMOJIS: Record<string, string> = {
+    ticket_created: '🎫',
+    triage_complete: '🔍',
+    gate_needs_approval: '🚧',
+    dev_started: '⚡',
+    review_ready: '🛡️',
+    tests_passed: '✅',
+    tests_failed: '❌',
+    deploy_ready: '🚀',
+    ship_decision: '📋',
+    pipeline_blocked: '🚫',
+    security_alert: '🔴',
+}
+
+export function pipelineNotificationEmail(params: {
+    type: PipelineEmailType
+    title: string
+    subtitle?: string
+    details: string[]
+    actionUrl?: string
+    actionLabel?: string
+    urgency?: 'info' | 'warning' | 'critical'
+}): string {
+    const { type, title, subtitle, details, actionUrl, actionLabel, urgency } = params
+    const color = PIPELINE_COLORS[type] || BRAND.teal
+    const emoji = PIPELINE_EMOJIS[type] || '🔀'
+
+    const headerBg = urgency === 'critical'
+        ? `linear-gradient(135deg, #8B0000, ${BRAND.coral})`
+        : urgency === 'warning'
+        ? `linear-gradient(135deg, ${BRAND.darkNavy}, #5a4a00)`
+        : `linear-gradient(135deg, ${BRAND.navy}, ${BRAND.darkNavy})`
+
+    const actionButton = actionUrl ? `
+    <div style="text-align:center;margin:24px 0 8px;">
+        <a href="${actionUrl}" class="btn btn-primary" style="background:linear-gradient(135deg,${color},${BRAND.navy});padding:14px 32px;border-radius:12px;text-decoration:none;font-weight:800;font-size:15px;color:#fff !important;display:inline-block;">
+            ${actionLabel || 'View in Dashboard'}
+        </a>
+    </div>` : ''
+
+    const detailItems = details.map(d => {
+        // Support bold prefix via "Label: value" format
+        const colonIdx = d.indexOf(':')
+        if (colonIdx > 0 && colonIdx < 30) {
+            const label = d.slice(0, colonIdx)
+            const value = d.slice(colonIdx + 1).trim()
+            return `<tr>
+                <td style="padding:6px 0;font-size:13px;font-weight:800;color:${BRAND.textMuted};white-space:nowrap;vertical-align:top;padding-right:12px;">${label}</td>
+                <td style="padding:6px 0;font-size:14px;font-weight:600;color:${BRAND.textDark};">${value}</td>
+            </tr>`
+        }
+        return `<tr><td colspan="2" style="padding:6px 0;font-size:14px;font-weight:600;color:${BRAND.textDark};">${d}</td></tr>`
+    }).join('')
+
+    return baseLayout(`
+${headerBlock(emoji, title, subtitle, headerBg)}
+${bodyWrap(`
+    <div style="background:${color}0F;border:1.5px solid ${color}26;border-radius:14px;padding:18px 22px;margin:0 0 16px;">
+        <table cellpadding="0" cellspacing="0" style="width:100%;">
+            ${detailItems}
+        </table>
+    </div>
+    ${actionButton}
+    <p style="text-align:center;color:${BRAND.textLight};font-size:12px;margin:16px 0 0;font-weight:600;">
+        PartyPal Pipeline — Automated DevOps Notification
+    </p>
+`)}`,
+        `<p style="color:${BRAND.textLight};font-size:11px;margin:4px 0 0;">Pipeline notifications are sent to admin accounts only.</p>`
+    )
+}

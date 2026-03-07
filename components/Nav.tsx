@@ -34,7 +34,7 @@ export default function Nav() {
   const isAdmin = user?.email === SITE_EMAILS.admin
 
   const links = [
-    ...(isAdmin ? [{ href: '/admin', label: 'Analytics' }, { href: '/docs', label: 'Docs' }] : []),
+    ...(isAdmin ? [{ href: '/admin', label: 'Analytics' }, { href: '/admin/pipeline', label: 'Pipeline' }, { href: '/docs', label: 'Docs' }] : []),
     { href: '/', label: 'Home' },
     { href: '/dashboard', label: 'My Events' },
     { href: '/vendors', label: 'Vendors' },
@@ -63,12 +63,12 @@ export default function Nav() {
             <Link
               href={l.href}
               style={
-                l.href === '/admin' || l.href === '/docs'
+                l.href === '/admin' || l.href === '/admin/pipeline' || l.href === '/docs'
                   ? { color: pathname === l.href ? '#F7C948' : 'rgba(247,201,72,0.7)', fontWeight: 800 }
                   : pathname === l.href ? { color: 'white' } : {}
               }
             >
-              {l.href === '/admin' ? '📊 ' : l.href === '/docs' ? '📄 ' : ''}{l.label}
+              {l.href === '/admin' ? '📊 ' : l.href === '/admin/pipeline' ? '🔀 ' : l.href === '/docs' ? '📄 ' : ''}{l.label}
             </Link>
           </li>
         ))}

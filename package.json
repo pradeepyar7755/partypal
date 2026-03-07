@@ -7,6 +7,18 @@
     "build": "next build",
     "start": "next start",
     "lint": "next lint",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:golden": "vitest run tests/golden/",
+    "test:coverage": "vitest run --coverage",
+    "agent:triage": "./scripts/agent.sh triage",
+    "agent:prioritize": "./scripts/agent.sh prioritize",
+    "agent:dev": "./scripts/agent.sh dev",
+    "agent:review": "./scripts/agent.sh review",
+    "agent:test": "./scripts/agent.sh test",
+    "agent:sandbox": "./scripts/agent.sh sandbox",
+    "agent:shiproom": "./scripts/agent.sh shiproom",
+    "agent:pipeline": "./scripts/pipeline.sh",
     "cap:sync": "npx cap sync",
     "cap:ios": "npx cap open ios",
     "cap:android": "npx cap open android",
@@ -41,6 +53,9 @@
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/uuid": "^9",
-    "typescript": "^5"
+    "@vitest/coverage-v8": "^4.0.18",
+    "typescript": "^5",
+    "vercel": "^50.28.0",
+    "vitest": "^4.0.18"
   }
 }

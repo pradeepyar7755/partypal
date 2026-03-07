@@ -1,0 +1,853 @@
+.pipelinePage {
+    min-height: 100vh;
+    background: #0d1117;
+    color: #c9d1d9;
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+    padding-bottom: 4rem;
+}
+
+/* ── Header ───────────────────────────────────────── */
+
+.header {
+    position: sticky;
+    top: 0;
+    z-index: 100;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.8rem 1.5rem;
+    background: linear-gradient(135deg, rgba(13,17,23,0.97), rgba(22,27,34,0.97));
+    backdrop-filter: blur(20px);
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.headerLeft {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+}
+
+.logo {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.2rem;
+    color: white;
+    text-decoration: none;
+}
+
+.logo span {
+    color: #F7C948;
+}
+
+.badge {
+    padding: 0.2rem 0.6rem;
+    border-radius: 20px;
+    font-weight: 900;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.badgePipeline {
+    background: linear-gradient(135deg, #7B5EA7, #4AADA8);
+    color: white;
+}
+
+.headerRight {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+}
+
+.refreshBtn {
+    padding: 0.4rem 0.8rem;
+    border-radius: 8px;
+    border: 1.5px solid rgba(74,173,168,0.3);
+    background: rgba(74,173,168,0.1);
+    color: #4AADA8;
+    font-weight: 800;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.refreshBtn:hover {
+    background: rgba(74,173,168,0.2);
+    border-color: #4AADA8;
+}
+
+.backLink {
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+    font-weight: 700;
+    font-size: 0.78rem;
+    transition: color 0.2s;
+}
+
+.backLink:hover {
+    color: #F7C948;
+}
+
+/* ── Content ──────────────────────────────────────── */
+
+.content {
+    max-width: 1400px;
+    margin: 0 auto;
+    padding: 1.5rem 1.5rem 0;
+}
+
+/* ── Tabs ─────────────────────────────────────────── */
+
+.tabBar {
+    display: flex;
+    gap: 0.2rem;
+    border-bottom: 1px solid rgba(255,255,255,0.08);
+    margin-bottom: 1.5rem;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+}
+
+.tabBar::-webkit-scrollbar {
+    display: none;
+}
+
+.tabBtn {
+    flex: 1 1 0;
+    text-align: center;
+    padding: 0.7rem 0.5rem;
+    border: none;
+    background: transparent;
+    color: #586069;
+    font-weight: 800;
+    font-size: 0.82rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 8px 8px 0 0;
+    white-space: nowrap;
+    font-family: 'Nunito', sans-serif;
+}
+
+.tabBtn:hover {
+    color: #9aabbb;
+    background: rgba(255,255,255,0.03);
+}
+
+.tabBtnActive {
+    color: #c9d1d9;
+    border-bottom: 2.5px solid #4AADA8;
+}
+
+/* ── Section Headers ──────────────────────────────── */
+
+.sectionHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin: 2rem 0 1rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+}
+
+.sectionEmoji {
+    font-size: 1.2rem;
+}
+
+.sectionTitle {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.1rem;
+    color: white;
+}
+
+.sectionSub {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.3);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-left: auto;
+}
+
+/* ── KPI Grid ─────────────────────────────────────── */
+
+.kpiGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+}
+
+.kpiCard {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 1rem 1.2rem;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.kpiCard:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+}
+
+.kpiLabel {
+    font-size: 0.68rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 0.4rem;
+}
+
+.kpiValue {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.kpiSub {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.3);
+    margin-top: 0.2rem;
+}
+
+/* ── Pipeline Flow Visualization ─────────────────── */
+
+.pipelineFlow {
+    display: flex;
+    align-items: center;
+    gap: 0;
+    padding: 1.5rem 0;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+}
+
+.stageNode {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    min-width: 120px;
+    position: relative;
+}
+
+.stageIcon {
+    width: 52px;
+    height: 52px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.4rem;
+    border: 2px solid rgba(255,255,255,0.1);
+    transition: all 0.3s;
+    position: relative;
+}
+
+.stageIconPending {
+    background: rgba(255,255,255,0.03);
+    border-color: rgba(255,255,255,0.1);
+}
+
+.stageIconActive {
+    background: rgba(74,173,168,0.15);
+    border-color: #4AADA8;
+    box-shadow: 0 0 20px rgba(74,173,168,0.3);
+    animation: pulse 2s ease-in-out infinite;
+}
+
+.stageIconDone {
+    background: rgba(61,140,110,0.15);
+    border-color: #3D8C6E;
+}
+
+.stageIconFailed {
+    background: rgba(232,137,106,0.15);
+    border-color: #E8896A;
+}
+
+.stageIconGate {
+    background: rgba(247,201,72,0.1);
+    border-color: #F7C948;
+    border-style: dashed;
+}
+
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 0 10px rgba(74,173,168,0.2); }
+    50% { box-shadow: 0 0 25px rgba(74,173,168,0.5); }
+}
+
+.stageName {
+    font-size: 0.7rem;
+    font-weight: 800;
+    color: rgba(255,255,255,0.5);
+    margin-top: 0.5rem;
+    text-align: center;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.stageNameActive {
+    color: #4AADA8;
+}
+
+.stageConnector {
+    flex: 1;
+    height: 2px;
+    min-width: 30px;
+    background: rgba(255,255,255,0.08);
+    margin-top: -1.5rem;
+}
+
+.stageConnectorDone {
+    background: linear-gradient(90deg, #3D8C6E, #4AADA8);
+}
+
+.gateMarker {
+    position: absolute;
+    top: -8px;
+    right: -8px;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: #F7C948;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.55rem;
+    font-weight: 900;
+    color: #0d1117;
+    border: 2px solid #0d1117;
+}
+
+/* ── Cards ────────────────────────────────────────── */
+
+.card {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 1.2rem;
+    margin-bottom: 1rem;
+}
+
+.cardTitle {
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 0.8rem;
+}
+
+/* ── Ticket List ──────────────────────────────────── */
+
+.ticketList {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+.ticketRow {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto auto;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.8rem 1rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 10px;
+    transition: all 0.2s;
+    cursor: pointer;
+}
+
+.ticketRow:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.1);
+}
+
+.ticketType {
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    font-weight: 900;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.ticketTypeBug {
+    background: rgba(232,137,106,0.15);
+    color: #E8896A;
+}
+
+.ticketTypeFeature {
+    background: rgba(74,173,168,0.15);
+    color: #4AADA8;
+}
+
+.ticketTitle {
+    font-weight: 700;
+    font-size: 0.85rem;
+    color: #c9d1d9;
+}
+
+.ticketPriority {
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    font-weight: 900;
+}
+
+.priorityP0 { background: rgba(232,90,90,0.2); color: #E85A5A; }
+.priorityP1 { background: rgba(232,137,106,0.2); color: #E8896A; }
+.priorityP2 { background: rgba(247,201,72,0.2); color: #F7C948; }
+.priorityP3 { background: rgba(154,171,187,0.2); color: #9aabbb; }
+
+.ticketStatus {
+    padding: 0.15rem 0.5rem;
+    border-radius: 6px;
+    font-size: 0.65rem;
+    font-weight: 900;
+}
+
+.statusOpen { background: rgba(74,173,168,0.15); color: #4AADA8; }
+.statusInProgress { background: rgba(123,94,167,0.15); color: #7B5EA7; }
+.statusDone { background: rgba(61,140,110,0.15); color: #3D8C6E; }
+.statusShipped { background: rgba(61,140,110,0.2); color: #3D8C6E; }
+.statusFailed { background: rgba(232,137,106,0.15); color: #E8896A; }
+
+.ticketTime {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.3);
+    font-weight: 600;
+}
+
+/* ── Run History ──────────────────────────────────── */
+
+.runRow {
+    display: grid;
+    grid-template-columns: auto 1fr auto auto;
+    align-items: center;
+    gap: 0.8rem;
+    padding: 0.7rem 1rem;
+    background: rgba(255,255,255,0.02);
+    border: 1px solid rgba(255,255,255,0.04);
+    border-radius: 10px;
+    margin-bottom: 0.4rem;
+    transition: all 0.2s;
+}
+
+.runRow:hover {
+    background: rgba(255,255,255,0.04);
+}
+
+.runDot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.runDotSuccess { background: #3D8C6E; }
+.runDotFailed { background: #E8896A; }
+.runDotPending { background: #586069; }
+.runDotActive { background: #4AADA8; animation: pulse 2s infinite; }
+
+.runInfo {
+    display: flex;
+    flex-direction: column;
+    gap: 0.1rem;
+}
+
+.runTitle {
+    font-weight: 700;
+    font-size: 0.82rem;
+    color: #c9d1d9;
+}
+
+.runMeta {
+    font-size: 0.68rem;
+    color: rgba(255,255,255,0.3);
+    font-weight: 600;
+}
+
+.runStages {
+    display: flex;
+    gap: 3px;
+}
+
+.runStageDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 3px;
+}
+
+/* ── Agent Config ─────────────────────────────────── */
+
+.agentGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 0.8rem;
+}
+
+.agentCard {
+    background: rgba(255,255,255,0.03);
+    border: 1px solid rgba(255,255,255,0.06);
+    border-radius: 14px;
+    padding: 1rem;
+    transition: all 0.2s;
+}
+
+.agentCard:hover {
+    border-color: rgba(255,255,255,0.12);
+}
+
+.agentHeader {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+}
+
+.agentIcon {
+    font-size: 1.3rem;
+}
+
+.agentName {
+    font-weight: 800;
+    font-size: 0.88rem;
+    color: white;
+}
+
+.agentDesc {
+    font-size: 0.72rem;
+    color: rgba(255,255,255,0.4);
+    line-height: 1.4;
+    margin-bottom: 0.8rem;
+}
+
+.agentToggle {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0.4rem 0;
+    border-top: 1px solid rgba(255,255,255,0.04);
+}
+
+.toggleLabel {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.5);
+}
+
+.toggle {
+    width: 36px;
+    height: 20px;
+    border-radius: 10px;
+    border: none;
+    cursor: pointer;
+    position: relative;
+    transition: background 0.2s;
+}
+
+.toggleOn {
+    background: #4AADA8;
+}
+
+.toggleOff {
+    background: rgba(255,255,255,0.15);
+}
+
+.toggleDot {
+    position: absolute;
+    top: 3px;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    background: white;
+    transition: left 0.2s;
+}
+
+.toggleDotOn {
+    left: 19px;
+}
+
+.toggleDotOff {
+    left: 3px;
+}
+
+/* ── Golden Tests ─────────────────────────────────── */
+
+.testGrid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 0.5rem;
+}
+
+.testRow {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    padding: 0.5rem 0.8rem;
+    background: rgba(255,255,255,0.02);
+    border-radius: 8px;
+    border: 1px solid rgba(255,255,255,0.04);
+}
+
+.testDot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.testDotPass { background: #3D8C6E; }
+.testDotFail { background: #E8896A; }
+.testDotSkip { background: #586069; }
+
+.testName {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: rgba(255,255,255,0.7);
+}
+
+.testTime {
+    margin-left: auto;
+    font-size: 0.65rem;
+    color: rgba(255,255,255,0.25);
+    font-weight: 600;
+}
+
+/* ── Create Ticket Modal ─────────────────────────── */
+
+.modalOverlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0,0,0,0.7);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 200;
+}
+
+.modal {
+    background: #161b22;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 18px;
+    padding: 1.5rem;
+    width: 90%;
+    max-width: 500px;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+}
+
+.modalTitle {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.1rem;
+    color: white;
+    margin-bottom: 1rem;
+}
+
+.formGroup {
+    margin-bottom: 0.8rem;
+}
+
+.formLabel {
+    display: block;
+    font-size: 0.72rem;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: rgba(255,255,255,0.4);
+    margin-bottom: 0.3rem;
+}
+
+.formInput {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: 'Nunito', sans-serif;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.formInput:focus {
+    border-color: #4AADA8;
+}
+
+.formTextarea {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: 'Nunito', sans-serif;
+    outline: none;
+    resize: vertical;
+    min-height: 80px;
+    transition: border-color 0.2s;
+}
+
+.formTextarea:focus {
+    border-color: #4AADA8;
+}
+
+.formSelect {
+    width: 100%;
+    padding: 0.6rem 0.8rem;
+    background: rgba(255,255,255,0.05);
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    color: white;
+    font-size: 0.85rem;
+    font-weight: 600;
+    font-family: 'Nunito', sans-serif;
+    outline: none;
+    cursor: pointer;
+}
+
+.formActions {
+    display: flex;
+    gap: 0.6rem;
+    margin-top: 1rem;
+}
+
+.btnPrimary {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    border: none;
+    border-radius: 10px;
+    background: linear-gradient(135deg, #4AADA8, #3D8C6E);
+    color: white;
+    font-weight: 800;
+    font-size: 0.82rem;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.btnPrimary:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(74,173,168,0.3);
+}
+
+.btnSecondary {
+    flex: 1;
+    padding: 0.6rem 1rem;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    border-radius: 10px;
+    background: transparent;
+    color: rgba(255,255,255,0.6);
+    font-weight: 800;
+    font-size: 0.82rem;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    transition: all 0.2s;
+}
+
+.btnSecondary:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.2);
+}
+
+.btnSmall {
+    padding: 0.35rem 0.7rem;
+    border-radius: 8px;
+    border: 1.5px solid rgba(255,255,255,0.1);
+    background: transparent;
+    color: rgba(255,255,255,0.5);
+    font-weight: 800;
+    font-size: 0.7rem;
+    cursor: pointer;
+    font-family: 'Nunito', sans-serif;
+    transition: all 0.2s;
+}
+
+.btnSmall:hover {
+    background: rgba(255,255,255,0.05);
+    border-color: rgba(255,255,255,0.2);
+    color: white;
+}
+
+/* ── Two Column ───────────────────────────────────── */
+
+.twoCol {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+
+/* ── Loading & States ─────────────────────────────── */
+
+.loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 60vh;
+    gap: 1rem;
+}
+
+.loadingText {
+    color: rgba(255,255,255,0.4);
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.emptyState {
+    text-align: center;
+    padding: 3rem 1rem;
+    color: rgba(255,255,255,0.3);
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.accessDenied {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80vh;
+    text-align: center;
+    gap: 0.5rem;
+}
+
+.accessTitle {
+    font-family: 'Fredoka One', cursive;
+    font-size: 1.5rem;
+    color: white;
+}
+
+.accessSub {
+    color: rgba(255,255,255,0.4);
+    font-weight: 600;
+    font-size: 0.88rem;
+}
+
+/* ── Responsive ───────────────────────────────────── */
+
+@media (max-width: 900px) {
+    .twoCol { grid-template-columns: 1fr; }
+    .kpiGrid { grid-template-columns: repeat(2, 1fr); }
+    .agentGrid { grid-template-columns: 1fr; }
+    .pipelineFlow { padding: 1rem 0; }
+    .stageNode { min-width: 90px; }
+    .stageIcon { width: 44px; height: 44px; font-size: 1.1rem; }
+}
+
+@media (max-width: 600px) {
+    .content { padding: 1rem 0.75rem 0; }
+    .header { padding: 0.6rem 0.75rem; }
+    .ticketRow { grid-template-columns: auto 1fr auto; }
+    .ticketPriority, .ticketTime { display: none; }
+    .tabBtn { font-size: 0.72rem; padding: 0.6rem 0.3rem; }
+    .testGrid { grid-template-columns: 1fr; }
+}

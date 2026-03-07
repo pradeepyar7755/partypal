@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getDb } from '@/lib/firebase'
 import { sendEmail } from '@/lib/email'
 import { SITE_EMAILS } from '@/lib/constants'
+import { notifyUserBugEscalated } from '@/lib/pipeline-notify'
 
 // POST: Submit a new bug report
 export async function POST(req: NextRequest) {
@@ -30,6 +31,15 @@ export async function POST(req: NextRequest) {
         }
 
         await docRef.set(bugReport)
+
+        // Escalate bug/feature reports to pipeline (fire-and-forget)
+        escalateToPipeline(db, {
+            id: docRef.id,
+            category: category || 'other',
+            description: description.trim(),
+            page: page || 'unknown',
+            name: name || '',
+        }).catch(() => {})
 
         // Send an email notification to the feedback inbox
         try {
@@ -60,6 +70,41 @@ export async function POST(req: NextRequest) {
         const msg = error instanceof Error ? error.message : String(error)
         console.error('Bug report save error:', msg)
         return NextResponse.json({ error: 'Failed to save bug report', details: msg }, { status: 500 })
+    }
+}
+
+// POST also creates a pipeline ticket for bug reports (fire-and-forget)
+async function escalateToPipeline(db: FirebaseFirestore.Firestore, bugReport: {
+    id: string; category: string; description: string; page: string; name: string
+}) {
+    try {
+        // Only escalate actual bugs, not suggestions or other feedback
+        const bugCategories = ['bug', 'tab', 'feature']
+        if (!bugCategories.includes(bugReport.category)) return
+
+        const ticket = {
+            title: `[User Report] ${bugReport.category}: ${bugReport.description.slice(0, 80)}`,
+            description: bugReport.description,
+            type: 'bug' as const,
+            priority: 'P2',
+            status: 'open',
+            createdAt: new Date().toISOString(),
+            createdBy: 'system:bug-report',
+            sourceBugId: bugReport.id,
+            agentResults: {},
+        }
+        const ref = await db.collection('pipeline_tickets').add(ticket)
+
+        // Notify admin
+        notifyUserBugEscalated({
+            category: bugReport.category,
+            description: bugReport.description,
+            page: bugReport.page,
+            userName: bugReport.name || 'Anonymous',
+            ticketId: ref.id,
+        }).catch(() => {})
+    } catch {
+        // Fire-and-forget — never fail the user's bug report submission
     }
 }
 
