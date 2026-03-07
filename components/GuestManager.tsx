@@ -472,30 +472,52 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
         })
         showToast('RSVP updated', 'info')
     }
+    const getGuestCircles = (g: Guest): string[] => {
+        // Look up circles from contacts store (single source of truth)
+        const contact = circleContacts.find(c =>
+            (g.email && c.email && c.email.toLowerCase() === g.email.toLowerCase()) ||
+            (!g.email && c.name && c.name.toLowerCase() === g.name.toLowerCase())
+        )
+        return contact?.circles || g.circles || []
+    }
+
     const toggleGuestCircle = (guestId: string, circle: string) => {
+        const guest = guests.find(g => g.id === guestId)
+        if (!guest) return
+
+        // Update contacts store (single source of truth)
+        const contacts = userGetJSON<{ id: string; name: string; email: string; phone: string; circles: string[]; avatar: string; color: string }[]>('partypal_contacts', [])
+        const contactIdx = contacts.findIndex(c =>
+            (guest.email && c.email && c.email.toLowerCase() === guest.email.toLowerCase()) ||
+            (!guest.email && c.name && c.name.toLowerCase() === guest.name.toLowerCase())
+        )
+
+        let updatedCircles: string[]
+        if (contactIdx >= 0) {
+            const current = contacts[contactIdx].circles || []
+            updatedCircles = current.includes(circle) ? current.filter(c => c !== circle) : [...current, circle]
+            contacts[contactIdx].circles = updatedCircles
+        } else {
+            // Contact doesn't exist yet — create one
+            updatedCircles = [circle]
+            contacts.push({
+                id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+                name: guest.name,
+                email: guest.email || '',
+                phone: '',
+                circles: updatedCircles,
+                avatar: guest.avatar || guest.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
+                color: guest.color || '#4AADA8',
+            })
+        }
+        userSetJSON('partypal_contacts', contacts)
+        setCircleContacts(contacts)
+
+        // Also update the guest object for immediate UI feedback
         setGuests(prev => prev.map(g => {
             if (g.id !== guestId) return g
-            const current = g.circles || []
-            const updated = current.includes(circle) ? current.filter(c => c !== circle) : [...current, circle]
-            return { ...g, circles: updated }
+            return { ...g, circles: updatedCircles }
         }))
-        // Sync circle change back to contacts store so Guest Management page reflects it
-        try {
-            const guest = guests.find(g => g.id === guestId)
-            if (guest) {
-                const contacts = userGetJSON<{ id: string; name: string; email: string; circles: string[] }[]>('partypal_contacts', [])
-                // Match by email first, then by name as fallback
-                const contactIdx = contacts.findIndex(c =>
-                    (guest.email && c.email && c.email === guest.email) ||
-                    (!guest.email && c.name === guest.name)
-                )
-                if (contactIdx >= 0) {
-                    const current = contacts[contactIdx].circles || []
-                    contacts[contactIdx].circles = current.includes(circle) ? current.filter(c => c !== circle) : [...current, circle]
-                    userSetJSON('partypal_contacts', contacts)
-                }
-            }
-        } catch { /* fire-and-forget */ }
     }
     const removeGuest = async (id: string) => {
         const g = guests.find(x => x.id === id);
@@ -1190,7 +1212,9 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                 <div style={{ padding: '2rem', textAlign: 'center', color: '#9aabbb', fontWeight: 700 }}>
                                     {search || filter !== 'all' ? 'No guests match your filters' : 'No guests yet — add some above!'}
                                 </div>
-                            ) : filteredGuests.map(g => (
+                            ) : filteredGuests.map(g => {
+                                const gCircles = getGuestCircles(g)
+                                return (
                                 <div key={g.id} className={styles.guestEntry}>
                                     <div className={styles.guestRow} onClick={() => setExpandedGuest(expandedGuest === g.id ? null : g.id)} style={{ cursor: 'pointer' }}>
                                         {selectionMode && (
@@ -1209,7 +1233,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                         </div>
                                         {g.dietary !== 'None' && <span className={styles.dietary}>{g.dietary}</span>}
                                         {g.additionalGuests.length > 0 && <span className={styles.partySize} title={g.additionalGuests.map(ag => ag.name || 'Guest').join(', ')}>👥 +{g.additionalGuests.length}</span>}
-                                        {(g.circles?.length || 0) > 0 && g.circles!.map(c => (
+                                        {gCircles.length > 0 && gCircles.map(c => (
                                             <span key={c} style={{
                                                 padding: '0.1rem 0.4rem', borderRadius: 4, fontSize: '0.65rem',
                                                 fontWeight: 700, background: 'rgba(74,173,168,0.1)', color: 'var(--teal)',
@@ -1219,11 +1243,11 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                         {!isGuest && (
                                             <div className={styles.circleDropdown} onClick={e => e.stopPropagation()}>
                                                 <button
-                                                    className={`${styles.circleBtn} ${(g.circles?.length || 0) > 0 ? styles.circleBtnActive : ''}`}
+                                                    className={`${styles.circleBtn} ${gCircles.length > 0 ? styles.circleBtnActive : ''}`}
                                                     title="Assign circle"
                                                     onClick={() => setOpenCircleDropdown(openCircleDropdown === g.id ? null : g.id)}
                                                 >
-                                                    🏷️ {(g.circles?.length || 0) > 0 ? g.circles!.length : '+'}
+                                                    🏷️ {gCircles.length > 0 ? gCircles.length : '+'}
                                                 </button>
                                             </div>
                                         )}
@@ -1250,13 +1274,13 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                                 <label key={c} style={{
                                                     display: 'flex', alignItems: 'center', gap: '0.3rem',
                                                     padding: '0.2rem 0.5rem', borderRadius: 6,
-                                                    background: g.circles?.includes(c) ? 'rgba(74,173,168,0.12)' : 'transparent',
-                                                    border: `1px solid ${g.circles?.includes(c) ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`,
+                                                    background: gCircles.includes(c) ? 'rgba(74,173,168,0.12)' : 'transparent',
+                                                    border: `1px solid ${gCircles.includes(c) ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`,
                                                     fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
-                                                    color: g.circles?.includes(c) ? 'var(--teal)' : 'var(--navy)',
+                                                    color: gCircles.includes(c) ? 'var(--teal)' : 'var(--navy)',
                                                     transition: 'all 0.15s',
                                                 }}>
-                                                    <input type="checkbox" checked={g.circles?.includes(c) || false}
+                                                    <input type="checkbox" checked={gCircles.includes(c)}
                                                         onChange={() => toggleGuestCircle(g.id, c)}
                                                         style={{ accentColor: 'var(--teal)' }} />
                                                     {c}
@@ -1312,7 +1336,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                         </div>
                                     )}
                                 </div>
-                            ))}
+                            )})}
                         </div>
                     </div>
 

@@ -83,15 +83,7 @@ export default function GuestsPage() {
             merged[existingIdx] = { ...existing, email: g.email.trim() }
             changed = true
           }
-          // Sync circles from event guest to contact (event guest is source of truth)
-          if (g.circles && g.circles.length > 0) {
-            const currentCircles = existing.circles || []
-            const circlesMatch = g.circles.length === currentCircles.length && g.circles.every(c => currentCircles.includes(c))
-            if (!circlesMatch) {
-              merged[existingIdx] = { ...merged[existingIdx], circles: [...g.circles] }
-              changed = true
-            }
-          }
+          // Contacts store is the source of truth for circles — don't overwrite
         } else {
           // New contact from event guest
           merged.push({
