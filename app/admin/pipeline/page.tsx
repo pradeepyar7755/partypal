@@ -936,15 +936,25 @@ function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent, 
                     {ticket.status}
                 </span>
                 <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
-                    {ticket.status === 'open' && (
+                    {ticket.status === 'open' && !hasTriageResult && (
+                        <button className={styles.btnSmall} onClick={() => onRunAgent(ticket.id, 'triage')} disabled={!!runningAgent} title="AI Triage (Gemini)" style={{ color: '#4AADA8', opacity: isRunning('triage') ? 0.6 : 1 }}>
+                            {isRunning('triage') ? '... Analyzing' : '🤖 AI Triage'}
+                        </button>
+                    )}
+                    {ticket.status === 'open' && hasTriageResult && (
                         <>
-                            <button className={styles.btnSmall} onClick={() => onRunAgent(ticket.id, 'triage')} disabled={!!runningAgent} title="AI Triage (Gemini)" style={{ color: '#4AADA8', opacity: isRunning('triage') ? 0.6 : 1 }}>
-                                {isRunning('triage') ? '... Analyzing' : hasTriageResult ? '🔍 Re-triage' : '🤖 AI Triage'}
+                            <button className={styles.btnSmall} onClick={() => onRunAgent(ticket.id, 'triage')} disabled={!!runningAgent} title="Re-run AI Triage" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                                🔍 Re-triage
                             </button>
-                            <button className={styles.btnSmall} onClick={() => { onStatusChange(ticket.id, 'in_progress'); onCreateRun(ticket.id); }} title="Fix manually in Claude Code">
-                                🔧 Manual Fix
+                            <button className={styles.btnSmall} onClick={() => { onStatusChange(ticket.id, 'in_progress'); onCreateRun(ticket.id); }} title="AI handles the full fix pipeline" style={{ color: '#4AADA8', background: 'rgba(74,173,168,0.1)', borderColor: 'rgba(74,173,168,0.3)' }}>
+                                🤖 AI Fix
                             </button>
                         </>
+                    )}
+                    {ticket.status === 'open' && (
+                        <button className={styles.btnSmall} onClick={() => { onStatusChange(ticket.id, 'in_progress'); onCreateRun(ticket.id); }} title="Fix manually in Claude Code">
+                            🔧 Manual Fix
+                        </button>
                     )}
                     {ticket.status === 'in_progress' && (
                         <>
