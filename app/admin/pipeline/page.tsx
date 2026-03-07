@@ -1,7 +1,7 @@
 'use client'
 
-import { useState, useEffect, useCallback } from 'react'
-import { useRouter } from 'next/navigation'
+import { useState, useEffect, useCallback, Suspense } from 'react'
+import { useRouter, useSearchParams } from 'next/navigation'
 import { useAuth } from '@/components/AuthContext'
 import { SITE_EMAILS } from '@/lib/constants'
 import styles from './pipeline.module.css'
@@ -142,12 +142,25 @@ const GOLDEN_TESTS = [
 
 const ADMIN_EMAILS = [SITE_EMAILS.admin]
 
-export default function PipelineDashboard() {
+export default function PipelinePage() {
+    return (
+        <Suspense fallback={<div style={{ minHeight: '100vh', background: '#0d1117' }} />}>
+            <PipelineDashboard />
+        </Suspense>
+    )
+}
+
+function PipelineDashboard() {
     const router = useRouter()
+    const searchParams = useSearchParams()
     const { user, loading: authLoading } = useAuth()
 
+    const VALID_TABS = ['overview', 'tickets', 'agents', 'tests', 'runs'] as const
+    type TabKey = typeof VALID_TABS[number]
+    const initialTab = VALID_TABS.includes(searchParams.get('tab') as TabKey) ? searchParams.get('tab') as TabKey : 'overview'
+
     // ── State ──────────────────────────────────
-    const [selectedTab, setSelectedTab] = useState<'overview' | 'tickets' | 'agents' | 'tests' | 'runs'>('overview')
+    const [selectedTab, setSelectedTab] = useState<TabKey>(initialTab)
     const [loading, setLoading] = useState(true)
     const [runs, setRuns] = useState<PipelineRun[]>([])
     const [tickets, setTickets] = useState<Ticket[]>([])
@@ -162,6 +175,13 @@ export default function PipelineDashboard() {
     const [latestDeploy, setLatestDeploy] = useState<{ url: string; state: string; createdAt: string; meta?: { githubCommitMessage?: string } } | null>(null)
 
     const isAdmin = user && ADMIN_EMAILS.includes(user.email || '')
+
+    // Sync tab to URL
+    const switchTab = (tab: TabKey) => {
+        setSelectedTab(tab)
+        const url = tab === 'overview' ? '/admin/pipeline' : `/admin/pipeline?tab=${tab}`
+        window.history.replaceState(null, '', url)
+    }
 
     const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
         setToast({ message, type })
@@ -324,7 +344,7 @@ export default function PipelineDashboard() {
                     ] as const).map(([key, label]) => (
                         <button
                             key={key}
-                            onClick={() => setSelectedTab(key)}
+                            onClick={() => switchTab(key)}
                             className={`${styles.tabBtn} ${selectedTab === key ? styles.tabBtnActive : ''}`}
                             style={{ borderBottom: selectedTab === key ? '2.5px solid #4AADA8' : '2.5px solid transparent' }}
                         >
@@ -465,10 +485,10 @@ export default function PipelineDashboard() {
                                     <button className={styles.btnSmall} onClick={() => handleCreateRun()}>
                                         Start Pipeline Run
                                     </button>
-                                    <button className={styles.btnSmall} onClick={() => setSelectedTab('tests')}>
+                                    <button className={styles.btnSmall} onClick={() => switchTab('tests')}>
                                         View Golden Tests
                                     </button>
-                                    <button className={styles.btnSmall} onClick={() => setSelectedTab('agents')}>
+                                    <button className={styles.btnSmall} onClick={() => switchTab('agents')}>
                                         Configure Agents
                                     </button>
                                     <button className={styles.btnSmall} onClick={async () => {
