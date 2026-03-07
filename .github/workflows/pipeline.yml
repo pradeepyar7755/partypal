@@ -1,0 +1,148 @@
+name: PartyPal Agent Pipeline
+
+on:
+  pull_request:
+    branches: [main, staging]
+  push:
+    branches: [main, staging]
+
+jobs:
+  # ── Stage 1: Lint + Type Check ────────────────────────
+  lint:
+    name: Lint & Type Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run lint
+      - run: npx tsc --noEmit
+
+  # ── Stage 2: Golden Tests (must pass) ─────────────────
+  golden-tests:
+    name: Golden Tests (blocking)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx vitest run tests/golden/ --reporter=verbose
+
+  # ── Stage 3: Full Test Suite ──────────────────────────
+  tests:
+    name: Full Test Suite
+    runs-on: ubuntu-latest
+    needs: golden-tests
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npx vitest run --reporter=verbose --coverage
+      - name: Upload coverage
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: coverage/
+
+  # ── Stage 4: Build Check ─────────────────────────────
+  build:
+    name: Production Build
+    runs-on: ubuntu-latest
+    needs: [lint, golden-tests]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+      - run: npm ci
+      - run: npm run build
+        env:
+          NEXT_PUBLIC_APP_URL: https://partypal.social
+          NEXT_PUBLIC_DOMAIN: partypal.social
+          NEXT_PUBLIC_FIREBASE_API_KEY: ${{ secrets.NEXT_PUBLIC_FIREBASE_API_KEY }}
+          NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN: ${{ secrets.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN }}
+          NEXT_PUBLIC_FIREBASE_PROJECT_ID: ${{ secrets.NEXT_PUBLIC_FIREBASE_PROJECT_ID }}
+
+  # ── Stage 5: Security Scan ───────────────────────────
+  security:
+    name: Security Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check for secrets in code
+        run: |
+          # Scan for common secret patterns
+          FOUND=0
+          for pattern in "AKIA[0-9A-Z]{16}" "AIza[0-9A-Za-z_-]{35}" "sk-[a-zA-Z0-9]{48}" "ghp_[a-zA-Z0-9]{36}"; do
+            if grep -rn "$pattern" --include="*.ts" --include="*.tsx" --include="*.js" --exclude-dir=node_modules --exclude-dir=.next . 2>/dev/null; then
+              echo "ALERT: Potential secret found matching pattern: $pattern"
+              FOUND=1
+            fi
+          done
+          if [ $FOUND -eq 1 ]; then
+            echo "::error::Potential secrets detected in source code"
+            exit 1
+          fi
+          echo "No secrets detected"
+
+      - name: Check for dangerous patterns
+        run: |
+          ISSUES=0
+          # Check for eval usage
+          if grep -rn "eval(" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.next . 2>/dev/null; then
+            echo "::error::eval() usage detected — this is a security risk"
+            ISSUES=$((ISSUES + 1))
+          fi
+          # Check for dangerouslySetInnerHTML with variables
+          if grep -rn "dangerouslySetInnerHTML.*{.*__html.*:.*\$\|dangerouslySetInnerHTML.*{.*__html.*:.*req\|dangerouslySetInnerHTML.*{.*__html.*:.*params" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.next . 2>/dev/null; then
+            echo "::error::dangerouslySetInnerHTML with dynamic content detected — XSS risk"
+            ISSUES=$((ISSUES + 1))
+          fi
+          # Check for console.log (should be console.error in prod)
+          LOGS=$(grep -rn "console\.log" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.next --exclude-dir=tests . 2>/dev/null | wc -l)
+          if [ "$LOGS" -gt 0 ]; then
+            echo "::warning::Found $LOGS console.log statements (use console.error for error handlers)"
+          fi
+          if [ $ISSUES -gt 0 ]; then
+            echo "::error::Security scan failed with $ISSUES blocking issue(s)"
+            exit 1
+          fi
+          echo "Security scan passed. No dangerous patterns found."
+
+  # ── Notify on failure ──────────────────────────────
+  notify-failure:
+    name: Notify on Failure
+    runs-on: ubuntu-latest
+    needs: [lint, golden-tests, tests, build, security]
+    if: failure()
+    steps:
+      - name: Send failure notification via API
+        env:
+          APP_URL: ${{ secrets.NEXT_PUBLIC_APP_URL || 'https://partypal.social' }}
+          RESEND_API_KEY: ${{ secrets.RESEND_API_KEY }}
+        run: |
+          # Determine which job failed
+          FAILED_JOBS=""
+          if [ "${{ needs.lint.result }}" = "failure" ]; then FAILED_JOBS="Lint/TypeCheck"; fi
+          if [ "${{ needs.golden-tests.result }}" = "failure" ]; then FAILED_JOBS="${FAILED_JOBS:+$FAILED_JOBS, }Golden Tests"; fi
+          if [ "${{ needs.tests.result }}" = "failure" ]; then FAILED_JOBS="${FAILED_JOBS:+$FAILED_JOBS, }Full Test Suite"; fi
+          if [ "${{ needs.build.result }}" = "failure" ]; then FAILED_JOBS="${FAILED_JOBS:+$FAILED_JOBS, }Production Build"; fi
+          if [ "${{ needs.security.result }}" = "failure" ]; then FAILED_JOBS="${FAILED_JOBS:+$FAILED_JOBS, }Security Scan"; fi
+
+          echo "Failed jobs: $FAILED_JOBS"
+          echo "Branch: ${{ github.ref_name }}"
+          echo "Commit: ${{ github.sha }}"
+          echo ""
+          echo "Pipeline failures will block deployment."
+          echo "Check the Actions tab for details: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
