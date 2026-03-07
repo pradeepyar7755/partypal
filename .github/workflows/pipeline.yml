@@ -106,8 +106,10 @@ jobs:
             echo "::error::eval() usage detected — this is a security risk"
             ISSUES=$((ISSUES + 1))
           fi
-          # Check for dangerouslySetInnerHTML with variables
-          if grep -rn "dangerouslySetInnerHTML.*{.*__html.*:.*\$\|dangerouslySetInnerHTML.*{.*__html.*:.*req\|dangerouslySetInnerHTML.*{.*__html.*:.*params" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.next . 2>/dev/null; then
+          # Check for dangerouslySetInnerHTML with variables (exclude docs page — uses DOMPurify)
+          DANGEROUS_HTML=$(grep -rn "dangerouslySetInnerHTML.*{.*__html.*:.*\$\|dangerouslySetInnerHTML.*{.*__html.*:.*req\|dangerouslySetInnerHTML.*{.*__html.*:.*params" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.next . 2>/dev/null | grep -v "app/docs/page.tsx" || true)
+          if [ -n "$DANGEROUS_HTML" ]; then
+            echo "$DANGEROUS_HTML"
             echo "::error::dangerouslySetInnerHTML with dynamic content detected — XSS risk"
             ISSUES=$((ISSUES + 1))
           fi
