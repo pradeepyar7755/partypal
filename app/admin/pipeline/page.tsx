@@ -157,8 +157,15 @@ export default function PipelineDashboard() {
     const [newTicket, setNewTicket] = useState<{ title: string; description: string; type: 'bug' | 'feature'; priority: string }>({ title: '', description: '', type: 'bug', priority: 'P2' })
     const [goldenResults, setGoldenResults] = useState<GoldenTestResult | null>(null)
     const [expandedRun, setExpandedRun] = useState<string | null>(null)
+    const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
+    const [runningAgent, setRunningAgent] = useState<string | null>(null) // ticketId:agent currently running
 
     const isAdmin = user && ADMIN_EMAILS.includes(user.email || '')
+
+    const showToast = (message: string, type: 'success' | 'error' | 'info' = 'info') => {
+        setToast({ message, type })
+        setTimeout(() => setToast(null), 4000)
+    }
 
     // ── Data Fetch ─────────────────────────────
     const fetchData = useCallback(async () => {
@@ -228,17 +235,14 @@ export default function PipelineDashboard() {
 
     const handleRunAgent = async (ticketId: string, agent: string) => {
         const agentLabel = agent === 'triage' ? 'AI Triage' : agent === 'review' ? 'AI Code Review' : 'AI Shiproom'
-        if (!window.confirm(`Run ${agentLabel} on this ticket?\n\nThis will call Gemini 2.5 Flash to analyze the ticket.`)) return
+        setRunningAgent(`${ticketId}:${agent}`)
+        showToast(`Running ${agentLabel}...`, 'info')
         const result = await apiPost({ action: 'execute_agent', agent, ticketId })
+        setRunningAgent(null)
         if (result.error) {
-            alert(`Agent failed: ${result.error}`)
+            showToast(`${agentLabel} failed: ${result.error}`, 'error')
         } else {
-            const agentResult = result.result?.result as Record<string, unknown> | undefined
-            if (agentResult?.severity) {
-                alert(`${agentLabel} complete:\n\nSeverity: ${agentResult.severity}\nModule: ${agentResult.module}\nRoot Cause: ${String(agentResult.root_cause_hypothesis || '').slice(0, 100)}`)
-            } else {
-                alert(`${agentLabel} complete. Results saved to ticket.`)
-            }
+            showToast(`${agentLabel} complete — results below`, 'success')
         }
         fetchData()
     }
@@ -253,20 +257,13 @@ export default function PipelineDashboard() {
     }
 
     const handleUpdateStage = async (runId: string, stage: string, status: string) => {
-        // Require confirmation for completing or failing stages
-        if (status === 'completed') {
-            const stageName = PIPELINE_STAGES.find(s => s.key === stage)?.label || stage
-            if (!window.confirm(`Mark "${stageName}" as PASSED?\n\nThis confirms the stage was reviewed and completed successfully.`)) return
-        }
-        if (status === 'failed') {
-            const stageName = PIPELINE_STAGES.find(s => s.key === stage)?.label || stage
-            if (!window.confirm(`Mark "${stageName}" as FAILED?\n\nThis will block the pipeline from proceeding.`)) return
-        }
         const result = await apiPost({ action: 'update_stage', runId, stage, status })
         if (result.error) {
-            alert(`Cannot update stage: ${result.error}`)
+            showToast(result.error, 'error')
             return
         }
+        const stageName = PIPELINE_STAGES.find(s => s.key === stage)?.label || stage
+        showToast(`${stageName} ${status === 'completed' ? 'passed' : status === 'failed' ? 'failed' : 'started'}`, status === 'failed' ? 'error' : 'success')
         fetchData()
     }
 
@@ -425,7 +422,7 @@ export default function PipelineDashboard() {
                                         Configure Agents
                                     </button>
                                     <button className={styles.btnSmall} onClick={async () => {
-                                        if (!window.confirm('Import all existing bug reports as pipeline tickets?\n\nThis will skip duplicates and junk entries.')) return
+                                        showToast('Importing bug reports...', 'info')
                                         const token = await user!.getIdToken()
                                         const res = await fetch('/api/admin/pipeline/backfill', {
                                             method: 'POST',
@@ -433,10 +430,10 @@ export default function PipelineDashboard() {
                                         })
                                         const result = await res.json()
                                         if (result.success) {
-                                            alert(`Imported ${result.created} tickets (${result.skipped} skipped)`)
+                                            showToast(`Imported ${result.created} tickets (${result.skipped} skipped)`, 'success')
                                             fetchData()
                                         } else {
-                                            alert(`Import failed: ${result.error}`)
+                                            showToast(`Import failed: ${result.error}`, 'error')
                                         }
                                     }}>
                                         Import Bug Reports
@@ -472,7 +469,7 @@ export default function PipelineDashboard() {
                                 ) : (
                                     <div className={styles.ticketList}>
                                         {tickets.slice(0, 5).map(ticket => (
-                                            <TicketRow key={ticket.id} ticket={ticket} onStatusChange={handleUpdateTicketStatus} onDelete={handleDeleteTicket} onCreateRun={handleCreateRun} onRunAgent={handleRunAgent} />
+                                            <TicketRow key={ticket.id} ticket={ticket} onStatusChange={handleUpdateTicketStatus} onDelete={handleDeleteTicket} onCreateRun={handleCreateRun} onRunAgent={handleRunAgent} runningAgent={runningAgent} />
                                         ))}
                                     </div>
                                 )}
@@ -502,7 +499,7 @@ export default function PipelineDashboard() {
                                 ) : (
                                     <div className={styles.ticketList}>
                                         {tickets.map(ticket => (
-                                            <TicketRow key={ticket.id} ticket={ticket} onStatusChange={handleUpdateTicketStatus} onDelete={handleDeleteTicket} onCreateRun={handleCreateRun} onRunAgent={handleRunAgent} />
+                                            <TicketRow key={ticket.id} ticket={ticket} onStatusChange={handleUpdateTicketStatus} onDelete={handleDeleteTicket} onCreateRun={handleCreateRun} onRunAgent={handleRunAgent} runningAgent={runningAgent} />
                                         ))}
                                     </div>
                                 )}
@@ -605,8 +602,7 @@ export default function PipelineDashboard() {
 
                                 <div style={{ marginBottom: '1rem' }}>
                                     <button className={styles.btnSmall} onClick={() => {
-                                        // Show instructions since tests run locally
-                                        alert('Run golden tests locally:\n\nnpm run test:golden\n\nOr run the full suite:\n\nnpm test')
+                                        showToast('Run: npm run test:golden (or npm test for full suite)', 'info')
                                     }}>
                                         Run Tests Locally
                                     </button>
@@ -717,6 +713,31 @@ export default function PipelineDashboard() {
                     </div>
                 </div>
             )}
+
+            {/* Toast notification */}
+            {toast && (
+                <div style={{
+                    position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+                    background: toast.type === 'error' ? '#2a1215' : toast.type === 'success' ? '#0d2818' : '#161b22',
+                    border: `1px solid ${toast.type === 'error' ? 'rgba(232,137,106,0.3)' : toast.type === 'success' ? 'rgba(61,140,110,0.3)' : 'rgba(74,173,168,0.3)'}`,
+                    borderRadius: 12, padding: '0.7rem 1.4rem',
+                    color: toast.type === 'error' ? '#E8896A' : toast.type === 'success' ? '#3D8C6E' : '#4AADA8',
+                    fontWeight: 800, fontSize: '0.82rem',
+                    boxShadow: '0 8px 32px rgba(0,0,0,0.4)', zIndex: 300,
+                    maxWidth: '90vw', textAlign: 'center',
+                    animation: 'fadeInUp 0.3s ease-out',
+                    fontFamily: "'Nunito', sans-serif",
+                }}>
+                    {toast.type === 'error' ? '✗ ' : toast.type === 'success' ? '✓ ' : '→ '}{toast.message}
+                </div>
+            )}
+
+            <style jsx>{`
+                @keyframes fadeInUp {
+                    from { opacity: 0; transform: translateX(-50%) translateY(12px); }
+                    to { opacity: 1; transform: translateX(-50%) translateY(0); }
+                }
+            `}</style>
         </main>
     )
 }
@@ -733,8 +754,56 @@ function KPICard({ icon, label, value, color, sub }: { icon: string; label: stri
     )
 }
 
-function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent }: { ticket: Ticket; onStatusChange: (id: string, status: string) => void; onDelete: (id: string) => void; onCreateRun: (id: string) => void; onRunAgent: (ticketId: string, agent: string) => void }) {
+function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent, runningAgent }: { ticket: Ticket; onStatusChange: (id: string, status: string) => void; onDelete: (id: string) => void; onCreateRun: (id: string) => void; onRunAgent: (ticketId: string, agent: string) => void; runningAgent: string | null }) {
     const hasTriageResult = !!ticket.agentResults?.triage
+    const hasReviewResult = !!ticket.agentResults?.review
+    const isRunning = (agent: string) => runningAgent === `${ticket.id}:${agent}`
+
+    const renderAgentResult = (label: string, raw: Record<string, unknown>) => {
+        const fields: { key: string; label: string }[] = [
+            { key: 'severity', label: 'Severity' },
+            { key: 'module', label: 'Module' },
+            { key: 'root_cause_hypothesis', label: 'Root Cause' },
+            { key: 'suggested_fix', label: 'Suggested Fix' },
+            { key: 'effort_estimate', label: 'Effort' },
+            { key: 'verdict', label: 'Verdict' },
+            { key: 'risk_level', label: 'Risk' },
+            { key: 'summary', label: 'Summary' },
+            { key: 'recommendation', label: 'Recommendation' },
+            { key: 'experience_impact', label: 'Experience Impact' },
+        ]
+        const data = fields
+            .map(f => ({ label: f.label, value: raw[f.key] ? String(raw[f.key]) : '' }))
+            .filter(f => f.value)
+
+        if (data.length === 0) return null
+
+        return (
+            <div className={styles.card} style={{ marginTop: '0.3rem', marginBottom: '0.5rem', marginLeft: '2rem', padding: '0.8rem' }}>
+                <div className={styles.cardTitle}>{label}</div>
+                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.3rem 0.8rem', fontSize: '0.75rem' }}>
+                    {data.map(d => (
+                        <div key={d.label} style={{ display: 'contents' }}>
+                            <span style={{ fontWeight: 800, color: 'rgba(255,255,255,0.4)' }}>{d.label}</span>
+                            <span style={{ color: d.label === 'Severity' || d.label === 'Verdict' || d.label === 'Recommendation' ? 'white' : 'rgba(255,255,255,0.7)', fontWeight: d.label === 'Severity' || d.label === 'Verdict' ? 700 : 400 }}>{d.value}</span>
+                        </div>
+                    ))}
+                </div>
+                {Array.isArray(raw.blocking_issues) && (raw.blocking_issues as unknown[]).length > 0 && (
+                    <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: 'rgba(232,137,106,0.08)', borderRadius: 8, border: '1px solid rgba(232,137,106,0.15)' }}>
+                        <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#E8896A', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Blocking Issues</div>
+                        {(raw.blocking_issues as { issue?: string; file?: string; suggestion?: string }[]).map((issue, i) => (
+                            <div key={i} style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', marginBottom: '0.2rem' }}>
+                                {issue.file && <span style={{ color: '#4AADA8', fontWeight: 700 }}>{issue.file}: </span>}
+                                {issue.issue || String(issue)}
+                            </div>
+                        ))}
+                    </div>
+                )}
+            </div>
+        )
+    }
+
     return (
         <div>
             <div className={styles.ticketRow}>
@@ -757,8 +826,8 @@ function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent }
                 <div style={{ display: 'flex', gap: '0.3rem', flexWrap: 'wrap' }}>
                     {ticket.status === 'open' && (
                         <>
-                            <button className={styles.btnSmall} onClick={() => onRunAgent(ticket.id, 'triage')} title="AI Triage (Gemini)" style={{ color: '#4AADA8' }}>
-                                {hasTriageResult ? '🔍 Re-triage' : '🤖 AI Triage'}
+                            <button className={styles.btnSmall} onClick={() => onRunAgent(ticket.id, 'triage')} disabled={!!runningAgent} title="AI Triage (Gemini)" style={{ color: '#4AADA8', opacity: isRunning('triage') ? 0.6 : 1 }}>
+                                {isRunning('triage') ? '... Analyzing' : hasTriageResult ? '🔍 Re-triage' : '🤖 AI Triage'}
                             </button>
                             <button className={styles.btnSmall} onClick={() => { onStatusChange(ticket.id, 'in_progress'); onCreateRun(ticket.id); }} title="Fix manually in Claude Code">
                                 🔧 Manual Fix
@@ -767,37 +836,23 @@ function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent }
                     )}
                     {ticket.status === 'in_progress' && (
                         <>
-                            <button className={styles.btnSmall} onClick={() => onRunAgent(ticket.id, 'review')} title="AI Code Review (Gemini)" style={{ color: '#4AADA8' }}>🛡️ AI Review</button>
+                            <button className={styles.btnSmall} onClick={() => onRunAgent(ticket.id, 'review')} disabled={!!runningAgent} title="AI Code Review (Gemini)" style={{ color: '#4AADA8', opacity: isRunning('review') ? 0.6 : 1 }}>
+                                {isRunning('review') ? '... Reviewing' : '🛡️ AI Review'}
+                            </button>
                             <button className={styles.btnSmall} onClick={() => onStatusChange(ticket.id, 'done')} title="Mark done">✓ Done</button>
                         </>
                     )}
                     <button className={styles.btnSmall} onClick={() => onDelete(ticket.id)} title="Delete" style={{ color: '#E8896A' }}>✗</button>
                 </div>
             </div>
-            {/* Show agent results inline if available */}
-            {hasTriageResult && (
-                <div className={styles.card} style={{ marginTop: '0.3rem', marginBottom: '0.5rem', marginLeft: '2rem', padding: '0.8rem' }}>
-                    <div className={styles.cardTitle}>AI Triage Result</div>
-                    {(() => {
-                        const raw = (ticket.agentResults.triage as { result?: Record<string, unknown> })?.result || ticket.agentResults.triage as Record<string, unknown>
-                        const r = {
-                            severity: raw.severity ? String(raw.severity) : '',
-                            module: raw.module ? String(raw.module) : '',
-                            root_cause: raw.root_cause_hypothesis ? String(raw.root_cause_hypothesis) : '',
-                            fix: raw.suggested_fix ? String(raw.suggested_fix) : '',
-                            effort: raw.effort_estimate ? String(raw.effort_estimate) : '',
-                        }
-                        return (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.3rem 0.8rem', fontSize: '0.75rem' }}>
-                                {r.severity && <><span style={{ fontWeight: 800, color: 'rgba(255,255,255,0.4)' }}>Severity</span><span style={{ color: 'white', fontWeight: 700 }}>{r.severity}</span></>}
-                                {r.module && <><span style={{ fontWeight: 800, color: 'rgba(255,255,255,0.4)' }}>Module</span><span style={{ color: 'white', fontWeight: 700 }}>{r.module}</span></>}
-                                {r.root_cause && <><span style={{ fontWeight: 800, color: 'rgba(255,255,255,0.4)' }}>Root Cause</span><span style={{ color: 'rgba(255,255,255,0.7)' }}>{r.root_cause}</span></>}
-                                {r.fix && <><span style={{ fontWeight: 800, color: 'rgba(255,255,255,0.4)' }}>Suggested Fix</span><span style={{ color: 'rgba(255,255,255,0.7)' }}>{r.fix}</span></>}
-                                {r.effort && <><span style={{ fontWeight: 800, color: 'rgba(255,255,255,0.4)' }}>Effort</span><span style={{ color: 'rgba(255,255,255,0.7)' }}>{r.effort}</span></>}
-                            </div>
-                        )
-                    })()}
-                </div>
+            {/* Show all agent results inline */}
+            {hasTriageResult && renderAgentResult(
+                'AI Triage Result',
+                ((ticket.agentResults.triage as { result?: Record<string, unknown> })?.result || ticket.agentResults.triage) as Record<string, unknown>
+            )}
+            {hasReviewResult && renderAgentResult(
+                'AI Code Review',
+                ((ticket.agentResults.review as { result?: Record<string, unknown> })?.result || ticket.agentResults.review) as Record<string, unknown>
             )}
         </div>
     )
