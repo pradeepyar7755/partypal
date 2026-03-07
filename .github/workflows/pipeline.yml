@@ -99,8 +99,8 @@ jobs:
       - name: Check for dangerous patterns
         run: |
           ISSUES=0
-          # Check for eval usage (exclude prompts, comments, and string content)
-          EVAL_MATCHES=$(grep -rn "[^a-zA-Z]eval(" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.next --exclude="pipeline-ai.ts" . 2>/dev/null | grep -v "//\|eslint" || true)
+          # Check for eval usage (exclude pipeline-ai.ts which has eval in prompt text)
+          EVAL_MATCHES=$(grep -rn "[^a-zA-Z]eval(" --include="*.ts" --include="*.tsx" --exclude-dir=node_modules --exclude-dir=.next . 2>/dev/null | grep -v "pipeline-ai\|//\|eslint" || true)
           if [ -n "$EVAL_MATCHES" ]; then
             echo "$EVAL_MATCHES"
             echo "::error::eval() usage detected — this is a security risk"
