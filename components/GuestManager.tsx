@@ -68,7 +68,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
     const [search, setSearch] = useState('')
     const [filter, setFilter] = useState<string>('all')
     const [expandedGuest, setExpandedGuest] = useState<string | null>(null)
-    const [openCircleDropdown, setOpenCircleDropdown] = useState<string | null>(null)
     const [inviteTheme, setInviteTheme] = useState(propPlanData?.theme || 'Modern & Fun')
     const [inviteTemp, setInviteTemp] = useState(0.7)
     const [rsvpByDate, setRsvpByDate] = useState(() => {
@@ -504,48 +503,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
         return contact?.circles || g.circles || []
     }
 
-    const toggleGuestCircle = (guestId: string, circle: string) => {
-        const guest = guests.find(g => g.id === guestId)
-        if (!guest) return
-
-        // Update contacts store (single source of truth)
-        const contacts = userGetJSON<{ id: string; name: string; email: string; phone: string; circles: string[]; avatar: string; color: string }[]>('partypal_contacts', [])
-        const contactIdx = contacts.findIndex(c =>
-            (guest.email && c.email && c.email.toLowerCase() === guest.email.toLowerCase()) ||
-            (!guest.email && c.name && c.name.toLowerCase() === guest.name.toLowerCase())
-        )
-
-        let updatedCircles: string[]
-        if (contactIdx >= 0) {
-            const current = contacts[contactIdx].circles || []
-            updatedCircles = current.includes(circle) ? current.filter(c => c !== circle) : [...current, circle]
-            contacts[contactIdx].circles = updatedCircles
-        } else {
-            // Contact doesn't exist yet — create one
-            updatedCircles = [circle]
-            contacts.push({
-                id: Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
-                name: guest.name,
-                email: guest.email || '',
-                phone: '',
-                circles: updatedCircles,
-                avatar: guest.avatar || guest.name.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2),
-                color: guest.color || '#4AADA8',
-            })
-        }
-        userSetJSON('partypal_contacts', contacts)
-        setCircleContacts(contacts)
-        // Cloud sync (debounced)
-        if (user && !user.isAnonymous) {
-            pushContactsToCloud(user.uid, contacts)
-        }
-
-        // Also update the guest object for immediate UI feedback
-        setGuests(prev => prev.map(g => {
-            if (g.id !== guestId) return g
-            return { ...g, circles: updatedCircles }
-        }))
-    }
     const removeGuest = async (id: string) => {
         const g = guests.find(x => x.id === id);
 
@@ -1267,17 +1224,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                                 border: '1px solid rgba(74,173,168,0.2)', whiteSpace: 'nowrap',
                                             }}>{c}</span>
                                         ))}
-                                        {!isGuest && (
-                                            <div className={styles.circleDropdown} onClick={e => e.stopPropagation()}>
-                                                <button
-                                                    className={`${styles.circleBtn} ${gCircles.length > 0 ? styles.circleBtnActive : ''}`}
-                                                    title="Assign circle"
-                                                    onClick={() => setOpenCircleDropdown(openCircleDropdown === g.id ? null : g.id)}
-                                                >
-                                                    🏷️ {gCircles.length > 0 ? gCircles.length : '+'}
-                                                </button>
-                                            </div>
-                                        )}
                                         <select value={g.status} onChange={e => { e.stopPropagation(); updateStatus(g.id, e.target.value as Guest['status']) }} onClick={e => e.stopPropagation()} className={styles.statusSelect} style={{ background: STATUS_BG[g.status], color: STATUS_COLORS[g.status] }}>
                                             <option value="going">✓ Going</option>
                                             <option value="maybe">? Maybe</option>
@@ -1288,40 +1234,6 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                         <span className={styles.expandIcon}>{expandedGuest === g.id ? '▾' : '▸'}</span>
                                     </div>
 
-                                    {/* Inline circle assignment — shows below the row */}
-                                    {openCircleDropdown === g.id && (
-                                        <div onClick={e => e.stopPropagation()} style={{
-                                            display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap',
-                                            padding: '0.5rem 1rem 0.5rem 2.5rem',
-                                            background: 'rgba(74,173,168,0.04)',
-                                            borderTop: '1px dashed var(--border)',
-                                        }}>
-                                            <span style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase', letterSpacing: '0.5px', marginRight: '0.3rem' }}>Circles:</span>
-                                            {savedCircles.map(c => (
-                                                <label key={c} style={{
-                                                    display: 'flex', alignItems: 'center', gap: '0.3rem',
-                                                    padding: '0.2rem 0.5rem', borderRadius: 6,
-                                                    background: gCircles.includes(c) ? 'rgba(74,173,168,0.12)' : 'transparent',
-                                                    border: `1px solid ${gCircles.includes(c) ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`,
-                                                    fontSize: '0.78rem', fontWeight: 600, cursor: 'pointer',
-                                                    color: gCircles.includes(c) ? 'var(--teal)' : 'var(--navy)',
-                                                    transition: 'all 0.15s',
-                                                }}>
-                                                    <input type="checkbox" checked={gCircles.includes(c)}
-                                                        onChange={() => toggleGuestCircle(g.id, c)}
-                                                        style={{ accentColor: 'var(--teal)' }} />
-                                                    {c}
-                                                </label>
-                                            ))}
-                                            {savedCircles.length === 0 && (
-                                                <span style={{ fontSize: '0.75rem', color: '#9aabbb', fontWeight: 600 }}>No circles yet. <a href="/guests" style={{ color: 'var(--teal)', fontWeight: 800 }}>Create circles</a></span>
-                                            )}
-                                            <button onClick={() => setOpenCircleDropdown(null)} style={{
-                                                marginLeft: 'auto', border: 'none', background: 'none',
-                                                color: '#9aabbb', cursor: 'pointer', fontSize: '0.75rem', fontWeight: 700,
-                                            }}>Done</button>
-                                        </div>
-                                    )}
 
                                     {expandedGuest === g.id && (
                                         <div className={styles.guestExpanded}>
