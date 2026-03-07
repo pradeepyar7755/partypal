@@ -842,6 +842,9 @@ function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent, 
                             <button className={styles.btnSmall} onClick={() => onStatusChange(ticket.id, 'done')} title="Mark done">✓ Done</button>
                         </>
                     )}
+                    {(ticket.status === 'in_progress' || ticket.status === 'done') && (
+                        <button className={styles.btnSmall} onClick={() => onStatusChange(ticket.id, 'open')} title="Reset to open — start over" style={{ color: '#F7C948' }}>↺ Reset</button>
+                    )}
                     <button className={styles.btnSmall} onClick={() => onDelete(ticket.id)} title="Delete" style={{ color: '#E8896A' }}>✗</button>
                 </div>
             </div>
