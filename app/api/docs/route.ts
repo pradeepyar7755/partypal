@@ -23,6 +23,7 @@ export async function GET() {
                 .replace(/Agentic Workflow/, 'Agentic Workflow')
                 .replace(/Claude Skill.*/, 'Claude Skill')
                 .replace(/Resource Usage/, 'Resource Usage')
+                .replace(/Subscription Model/, 'Subscription Model')
             return {
                 id: file.replace('.md', ''),
                 title: shortTitle,

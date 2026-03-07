@@ -3,18 +3,9 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthContext'
 import { userGetJSON, userSetJSON } from '@/lib/userStorage'
+import { pushContactsToCloud, pullContactsFromCloud, Contact } from '@/lib/contacts-sync'
 import styles from './guests.module.css'
 import { showToast } from '@/components/Toast'
-
-interface Contact {
-  id: string
-  name: string
-  email: string
-  phone: string
-  circles: string[]
-  avatar: string
-  color: string
-}
 
 interface EventGuest {
   id: string; name: string; email: string; status: string; circles?: string[]
@@ -94,6 +85,7 @@ export default function GuestsPage() {
             circles: g.circles || [],
             avatar: getInitials(g.name),
             color: AVATAR_COLORS[merged.length % AVATAR_COLORS.length],
+            updatedAt: new Date().toISOString(),
           })
           changed = true
         }
@@ -104,18 +96,35 @@ export default function GuestsPage() {
       userSetJSON('partypal_contacts', merged)
     }
     setContacts(merged)
+
+    // Pull from cloud and merge (async, non-blocking)
+    if (user && !user.isAnonymous) {
+      pullContactsFromCloud(user.uid).then(({ contacts: cloudContacts, circles: cloudCircles, changed: cloudChanged }) => {
+        if (cloudChanged) {
+          setContacts(cloudContacts)
+          setCircles(cloudCircles)
+        }
+      }).catch(() => {})
+    }
   }, [user])
 
   // Save contacts
   const saveContacts = (c: Contact[]) => {
     setContacts(c)
     userSetJSON('partypal_contacts', c)
+    if (user && !user.isAnonymous) {
+      pushContactsToCloud(user.uid, c)
+    }
   }
 
   // Save circles
   const saveCircles = (c: string[]) => {
     setCircles(c)
     userSetJSON('partypal_circles', c)
+    userSetJSON('partypal_circles_updated_at', new Date().toISOString())
+    if (user && !user.isAnonymous) {
+      pushContactsToCloud(user.uid, undefined, c)
+    }
   }
 
   // Add a single contact
@@ -133,6 +142,7 @@ export default function GuestsPage() {
       circles: form.circles,
       avatar: getInitials(form.name),
       color: AVATAR_COLORS[contacts.length % AVATAR_COLORS.length],
+      updatedAt: new Date().toISOString(),
     }
     saveContacts([...contacts, newContact])
     setForm({ name: '', email: '', phone: '', circles: [] })
@@ -148,7 +158,7 @@ export default function GuestsPage() {
       return
     }
     const updated = contacts.map(c =>
-      c.id === editingId ? { ...c, name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim(), circles: form.circles, avatar: getInitials(form.name) } : c
+      c.id === editingId ? { ...c, name: form.name.trim(), email: form.email.trim(), phone: form.phone.trim(), circles: form.circles, avatar: getInitials(form.name), updatedAt: new Date().toISOString() } : c
     )
     saveContacts(updated)
     setEditingId(null)
@@ -156,9 +166,18 @@ export default function GuestsPage() {
     showToast('Contact updated', 'success')
   }
 
-  // Delete contact
+  // Delete contact (soft-delete for cloud sync, remove from local display)
   const deleteContact = (id: string) => {
-    saveContacts(contacts.filter(c => c.id !== id))
+    const filtered = contacts.filter(c => c.id !== id)
+    saveContacts(filtered)
+    // Soft-delete in cloud so other devices remove it too
+    if (user && !user.isAnonymous) {
+      fetch('/api/contacts', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ uid: user.uid, contactIds: [id] }),
+      }).catch(() => {})
+    }
     showToast('Contact removed', 'success')
   }
 
@@ -167,7 +186,7 @@ export default function GuestsPage() {
     const updated = contacts.map(c => {
       if (c.id !== contactId) return c
       const has = c.circles.includes(circle)
-      return { ...c, circles: has ? c.circles.filter(ci => ci !== circle) : [...c.circles, circle] }
+      return { ...c, circles: has ? c.circles.filter(ci => ci !== circle) : [...c.circles, circle], updatedAt: new Date().toISOString() }
     })
     saveContacts(updated)
   }
@@ -185,6 +204,7 @@ export default function GuestsPage() {
         circles: selectedCircle ? [selectedCircle] : [],
         avatar: getInitials(parts[0] || ''),
         color: AVATAR_COLORS[(contacts.length + i) % AVATAR_COLORS.length],
+        updatedAt: new Date().toISOString(),
       }
     }).filter(c => c.name)
     saveContacts([...contacts, ...newContacts])

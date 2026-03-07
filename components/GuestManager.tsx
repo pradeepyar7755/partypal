@@ -1,6 +1,7 @@
 'use client'
 import React, { useState, useEffect, useRef } from 'react'
 import { userGet, userSetJSON, userGetJSON } from '@/lib/userStorage'
+import { pushContactsToCloud, pullContactsFromCloud } from '@/lib/contacts-sync'
 import { showToast } from '@/components/Toast'
 import styles from './GuestManager.module.css'
 import { useAIContext } from '@/lib/useAIContext'
@@ -305,6 +306,15 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
     }
     useEffect(() => {
         reloadContacts()
+        // Pull from cloud on initial mount (not on every focus to avoid excess API calls)
+        if (user && !user.isAnonymous) {
+            pullContactsFromCloud(user.uid).then(({ contacts, circles, changed }) => {
+                if (changed) {
+                    setCircleContacts(contacts)
+                    setSavedCircles(circles)
+                }
+            }).catch(() => {})
+        }
         const onFocus = () => reloadContacts()
         const onVisible = () => { if (document.visibilityState === 'visible') reloadContacts() }
         window.addEventListener('focus', onFocus)
@@ -313,6 +323,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
             window.removeEventListener('focus', onFocus)
             document.removeEventListener('visibilitychange', onVisible)
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [])
 
     useEffect(() => {
@@ -524,6 +535,10 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
         }
         userSetJSON('partypal_contacts', contacts)
         setCircleContacts(contacts)
+        // Cloud sync (debounced)
+        if (user && !user.isAnonymous) {
+            pushContactsToCloud(user.uid, contacts)
+        }
 
         // Also update the guest object for immediate UI feedback
         setGuests(prev => prev.map(g => {

@@ -3,6 +3,7 @@ import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import { useAuth } from '@/components/AuthContext'
 import { marked } from 'marked'
+import DOMPurify from 'isomorphic-dompurify'
 import styles from './docs.module.css'
 import { SITE_EMAILS } from '@/lib/constants'
 
@@ -17,6 +18,7 @@ const TAB_EMOJIS: Record<string, string> = {
     '4-agentic-workflow': '🤖',
     '5-claude-skill': '🧠',
     '6-resource-usage': '💰',
+    '7-subscription-model': '💳',
 }
 
 interface DocItem {
@@ -95,7 +97,8 @@ export default function DocsPage() {
     }
 
     const currentDoc = docs.find(d => d.id === activeDoc)
-    const renderedHTML = currentDoc ? marked.parse(currentDoc.content) : ''
+    const rawHTML = currentDoc ? marked.parse(currentDoc.content) : ''
+    const sanitizedHTML = DOMPurify.sanitize(typeof rawHTML === 'string' ? rawHTML : '')
 
     return (
         <main className={styles.docsPage}>
@@ -147,7 +150,7 @@ export default function DocsPage() {
                         {currentDoc && (
                             <article
                                 className={styles.markdown}
-                                dangerouslySetInnerHTML={{ __html: typeof renderedHTML === 'string' ? renderedHTML : '' }}
+                                dangerouslySetInnerHTML={{ __html: sanitizedHTML }}
                             />
                         )}
                     </div>

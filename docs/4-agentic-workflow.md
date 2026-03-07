@@ -137,7 +137,89 @@ Agent: Reads current CSS → Identifies improvement areas
 
 ---
 
-## 5. Key Challenges & Solutions
+## 5. Maintenance Pipeline — 7-Agent System
+
+Beyond initial development, PartyPal uses a **7-agent pipeline** for ongoing maintenance, bug fixes, and feature delivery. The pipeline enforces two human gates and runs across three execution modes: CLI, CI/CD, and a production web dashboard.
+
+### Pipeline Flow
+
+```
+Bug/Feature Intake → Triage/Prioritize → [HUMAN APPROVAL] → Dev Agent → Code Review
+→ [HUMAN REVIEW] → Test Agent → Sandbox Deploy → Shiproom → [HUMAN SHIPS]
+```
+
+### The 7 Agents
+
+| # | Agent | Prompt File | Purpose |
+|---|-------|-------------|---------|
+| 1 | **Bug Triage** | `.agents/prompts/bug-triage.md` | Classifies bugs by severity (P0–P3), maps to module, hypothesizes root cause, outputs structured JSON ticket |
+| 2 | **Feature Prioritize** | `.agents/prompts/feature-prioritize.md` | Scores features on a weighted rubric (Impact ×3, Revenue ×2, Strategic ×2, Feasibility ×1, minus Effort), recommends BUILD/DEFER/REJECT |
+| 3 | **Dev Agent** | `.agents/prompts/dev-agent.md` | Writes production-ready code following all PartyPal conventions, includes a security checklist |
+| 4 | **Code Review** | `.agents/prompts/code-review.md` | Reviews diffs with a multi-tier checklist: Security (BLOCKING), Convention (WARNING), Logic (WARNING), Performance (INFO), Mobile (INFO). Outputs PASS/FAIL/PASS_WITH_WARNINGS |
+| 5 | **Test Agent** | `.agents/prompts/test-agent.md` | Generates and runs tests using Vitest. Defines 10 golden test cases that must always pass. Includes Firestore and NextRequest mock patterns |
+| 6 | **Sandbox Deploy** | `.agents/prompts/sandbox-deploy.md` | Deploys to Vercel preview, runs smoke tests against 9 endpoints, reports health as HEALTHY/DEGRADED/DOWN |
+| 7 | **Shiproom** | `.agents/prompts/shiproom.md` | Final gate agent. Synthesizes all pipeline outputs into a SHIP/HOLD/REJECT decision brief with risk assessment |
+
+### Three Execution Modes
+
+**CLI Mode** (`npm run agent:*`)
+
+Shell scripts invoke Claude Code locally with structured system prompts. The full pipeline (`npm run agent:pipeline` / `scripts/pipeline.sh`) is interactive with terminal-based human gates and writes reports to `.agents/reports/`.
+
+| Command | What It Does |
+|---------|-------------|
+| `npm run agent:triage` | Feed a bug report to the triage agent |
+| `npm run agent:prioritize` | Feed a feature request to the prioritize agent |
+| `npm run agent:dev` | Launch Claude interactively with the dev-agent prompt |
+| `npm run agent:review` | Capture `git diff`, run code review agent |
+| `npm run agent:test` | Run golden tests (blocking), then full suite |
+| `npm run agent:sandbox` | Build, deploy to Vercel preview, smoke-test endpoints |
+| `npm run agent:shiproom` | Gather reports, produce SHIP/HOLD/REJECT recommendation |
+| `npm run agent:pipeline` | Run the full pipeline end-to-end with human gates |
+
+**CI/CD Mode** (GitHub Actions — `.github/workflows/pipeline.yml`)
+
+Automated on every push/PR. Runs 5 jobs: lint, golden tests, full test suite with coverage, build verification, and security scanning (hardcoded secrets, `eval()`, `dangerouslySetInnerHTML`, `console.log` counts). No AI agents in this path — purely deterministic.
+
+**Web Dashboard Mode** (`/admin/pipeline`)
+
+Production admin UI backed by Firestore. Features:
+- 5 tabs: Overview (KPIs + pipeline flow), Tickets (CRUD + AI triage), Agents (enable/disable + auto-run toggles), Tests (golden suite display), Runs (per-stage tracking)
+- AI triage and code review executed via Gemini 2.5 Flash directly from the browser (`lib/pipeline-ai.ts`)
+- Enforced stage ordering with auto-advance logic
+- Email notifications at every stage transition (`lib/pipeline-notify.ts`)
+- "Copy for Claude Code" button that generates structured prompts for manual fixes
+- Human gate toggle configuration per stage
+
+### Pipeline Data Model (Firestore)
+
+| Collection | Purpose |
+|------------|---------|
+| `pipeline_runs` | Pipeline execution state with per-stage status |
+| `pipeline_tickets` | Bug/feature tickets with triage results |
+| `pipeline_config` | Agent enable/disable and gate settings |
+
+### Golden Test Suite
+
+Located in `tests/golden/critical-paths.test.ts` — 6 suites, 25 tests that must never break:
+
+1. **Event CRUD** — GET/POST/DELETE validation, ownership checks
+2. **Auth Guards** — PATCH ownership enforcement, missing action, nonexistent event
+3. **Poll Lifecycle** — Create/vote/read/delete validation
+4. **Rate Limiter** — Tier calculation for various user base sizes
+5. **Email System** — Sender types, function exports
+6. **Error Response Shapes** — All API routes return `{ error: string }` on failure
+
+Golden tests block the pipeline at both the CLI level (`scripts/pre-push.sh` hook) and CI level (GitHub Actions).
+
+### Inbox/Reports Convention
+
+- `.agents/inbox/` — Drop `.md` files here as bug/feature tickets for processing
+- `.agents/reports/` — Agent outputs: diffs, triage reports, test reports, deploy reports, shiproom briefs, and `audit.log` for gate approvals/rejections
+
+---
+
+## 6. Key Challenges & Solutions
 
 | Challenge | Solution |
 |---|---|
@@ -150,7 +232,7 @@ Agent: Reads current CSS → Identifies improvement areas
 
 ---
 
-## 6. Productivity Metrics
+## 7. Productivity Metrics
 
 | Metric | Estimate |
 |---|---|
@@ -164,7 +246,7 @@ Agent: Reads current CSS → Identifies improvement areas
 
 ---
 
-## 7. Workflow Recommendations
+## 8. Workflow Recommendations
 
 ### For Future AI-Assisted Projects:
 

@@ -119,6 +119,21 @@ export function migrateAnonymousData(uid: string): void {
         }
 
         localStorage.setItem(migrationFlag, new Date().toISOString())
+
+        // Push migrated contacts & circles to cloud so they persist across devices
+        const migratedContacts = safeParseArray(localStorage.getItem(`${uid}_partypal_contacts`) || '[]')
+        const migratedCircles = safeParseArray(localStorage.getItem(`${uid}_partypal_circles`) || '[]')
+        if (migratedContacts.length > 0 || migratedCircles.length > 0) {
+            fetch('/api/contacts', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    uid,
+                    contacts: migratedContacts.length > 0 ? migratedContacts : undefined,
+                    circles: migratedCircles.length > 0 ? migratedCircles : undefined,
+                }),
+            }).catch(() => {})
+        }
     } catch (error) {
         console.error('Anonymous data migration failed:', error)
     }
