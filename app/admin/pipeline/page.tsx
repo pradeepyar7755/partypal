@@ -172,6 +172,7 @@ function PipelineDashboard() {
     const [expandedRun, setExpandedRun] = useState<string | null>(null)
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
     const [runningAgent, setRunningAgent] = useState<string | null>(null) // ticketId:agent currently running
+    const [localAgentResults, setLocalAgentResults] = useState<Record<string, Record<string, unknown>>>({}) // ticketId -> agent result (immediate display)
     const [latestDeploy, setLatestDeploy] = useState<{ url: string; state: string; createdAt: string; meta?: { githubCommitMessage?: string } } | null>(null)
 
     const isAdmin = user && ADMIN_EMAILS.includes(user.email || '')
@@ -261,16 +262,21 @@ function PipelineDashboard() {
         const agentLabel = agent === 'triage' ? 'AI Triage' : agent === 'review' ? 'AI Code Review' : 'AI Shiproom'
         setRunningAgent(`${ticketId}:${agent}`)
         showToast(`Running ${agentLabel}...`, 'info')
-        const result = await apiPost({ action: 'execute_agent', agent, ticketId })
+        const response = await apiPost({ action: 'execute_agent', agent, ticketId })
         setRunningAgent(null)
-        if (result.error) {
-            showToast(`${agentLabel} failed: ${result.error}`, 'error')
+        if (response.error) {
+            showToast(`${agentLabel} failed: ${response.error}`, 'error')
         } else {
             showToast(`${agentLabel} complete`, 'success')
-            console.log('[Pipeline] Agent result:', JSON.stringify(result.result, null, 2))
+            // Store result locally for immediate display (don't wait for Firestore round-trip)
+            if (response.result) {
+                setLocalAgentResults(prev => ({
+                    ...prev,
+                    [`${ticketId}:${agent}`]: response.result,
+                }))
+            }
         }
         await fetchData()
-        // Switch to tickets tab to show results
         if (selectedTab === 'overview') switchTab('tickets')
     }
 
@@ -545,7 +551,7 @@ function PipelineDashboard() {
                                 ) : (
                                     <div className={styles.ticketList}>
                                         {tickets.slice(0, 5).map(ticket => (
-                                            <TicketRow key={ticket.id} ticket={ticket} onStatusChange={handleUpdateTicketStatus} onDelete={handleDeleteTicket} onCreateRun={handleCreateRun} onRunAgent={handleRunAgent} runningAgent={runningAgent} />
+                                            <TicketRow key={ticket.id} ticket={ticket} onStatusChange={handleUpdateTicketStatus} onDelete={handleDeleteTicket} onCreateRun={handleCreateRun} onRunAgent={handleRunAgent} runningAgent={runningAgent} localResults={localAgentResults} />
                                         ))}
                                     </div>
                                 )}
@@ -575,7 +581,7 @@ function PipelineDashboard() {
                                 ) : (
                                     <div className={styles.ticketList}>
                                         {tickets.map(ticket => (
-                                            <TicketRow key={ticket.id} ticket={ticket} onStatusChange={handleUpdateTicketStatus} onDelete={handleDeleteTicket} onCreateRun={handleCreateRun} onRunAgent={handleRunAgent} runningAgent={runningAgent} />
+                                            <TicketRow key={ticket.id} ticket={ticket} onStatusChange={handleUpdateTicketStatus} onDelete={handleDeleteTicket} onCreateRun={handleCreateRun} onRunAgent={handleRunAgent} runningAgent={runningAgent} localResults={localAgentResults} />
                                         ))}
                                     </div>
                                 )}
@@ -767,7 +773,7 @@ function PipelineDashboard() {
                         </div>
                         <div className={styles.formGroup}>
                             <label className={styles.formLabel}>Title</label>
-                            <input className={styles.formInput} placeholder="Brief description..." value={newTicket.title} onChange={e => setNewTicket({ ...newTicket, title: e.target.value })} autoFocus />
+                            <input className={styles.formInput} name="ticket-title" placeholder="Brief description..." value={newTicket.title} onChange={e => setNewTicket({ ...newTicket, title: e.target.value })} autoFocus />
                         </div>
                         <div className={styles.formGroup}>
                             <label className={styles.formLabel}>Description</label>
@@ -830,9 +836,12 @@ function KPICard({ icon, label, value, color, sub }: { icon: string; label: stri
     )
 }
 
-function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent, runningAgent }: { ticket: Ticket; onStatusChange: (id: string, status: string) => void; onDelete: (id: string) => void; onCreateRun: (id: string) => void; onRunAgent: (ticketId: string, agent: string) => void; runningAgent: string | null }) {
-    const hasTriageResult = !!ticket.agentResults?.triage
-    const hasReviewResult = !!ticket.agentResults?.review
+function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent, runningAgent, localResults }: { ticket: Ticket; onStatusChange: (id: string, status: string) => void; onDelete: (id: string) => void; onCreateRun: (id: string) => void; onRunAgent: (ticketId: string, agent: string) => void; runningAgent: string | null; localResults: Record<string, Record<string, unknown>> }) {
+    // Use local results as fallback when Firestore hasn't synced yet
+    const triageData = (ticket.agentResults?.triage as Record<string, unknown>) || localResults[`${ticket.id}:triage`] || null
+    const reviewData = (ticket.agentResults?.review as Record<string, unknown>) || localResults[`${ticket.id}:review`] || null
+    const hasTriageResult = !!triageData
+    const hasReviewResult = !!reviewData
     const isRunning = (agent: string) => runningAgent === `${ticket.id}:${agent}`
 
     const renderAgentResult = (label: string, raw: Record<string, unknown>) => {
@@ -952,14 +961,8 @@ function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent, 
                 </div>
             </div>
             {/* Show all agent results inline */}
-            {hasTriageResult && renderAgentResult(
-                'AI Triage Result',
-                ticket.agentResults.triage as Record<string, unknown>
-            )}
-            {hasReviewResult && renderAgentResult(
-                'AI Code Review',
-                ticket.agentResults.review as Record<string, unknown>
-            )}
+            {hasTriageResult && renderAgentResult('AI Triage Result', triageData!)}
+            {hasReviewResult && renderAgentResult('AI Code Review', reviewData!)}
         </div>
     )
 }
