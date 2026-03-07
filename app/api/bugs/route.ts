@@ -78,19 +78,30 @@ async function escalateToPipeline(db: FirebaseFirestore.Firestore, bugReport: {
     id: string; category: string; description: string; page: string; name: string
 }) {
     try {
-        // Only escalate actual bugs, not suggestions or other feedback
-        const bugCategories = ['bug', 'tab', 'feature']
-        if (!bugCategories.includes(bugReport.category)) return
+        // Map every user report category to a pipeline ticket type and priority
+        const categoryConfig: Record<string, { type: 'bug' | 'feature'; priority: string; label: string }> = {
+            bug:        { type: 'bug',     priority: 'P1', label: 'Bug' },
+            tab:        { type: 'bug',     priority: 'P2', label: 'Navigation Issue' },
+            feature:    { type: 'bug',     priority: 'P2', label: 'Feature Not Working' },
+            experience: { type: 'feature', priority: 'P3', label: 'UX Issue' },
+            suggestion: { type: 'feature', priority: 'P3', label: 'Suggestion' },
+            other:      { type: 'bug',     priority: 'P3', label: 'Other' },
+        }
+
+        const config = categoryConfig[bugReport.category]
+        if (!config) return // Unknown category — skip
 
         const ticket = {
-            title: `[User Report] ${bugReport.category}: ${bugReport.description.slice(0, 80)}`,
+            title: `[User Report] ${config.label}: ${bugReport.description.slice(0, 80)}`,
             description: bugReport.description,
-            type: 'bug' as const,
-            priority: 'P2',
+            type: config.type,
+            priority: config.priority,
             status: 'open',
             createdAt: new Date().toISOString(),
             createdBy: 'system:bug-report',
             sourceBugId: bugReport.id,
+            sourceCategory: bugReport.category,
+            sourcePage: bugReport.page,
             agentResults: {},
         }
         const ref = await db.collection('pipeline_tickets').add(ticket)
