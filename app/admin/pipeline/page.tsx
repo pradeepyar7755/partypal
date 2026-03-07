@@ -810,12 +810,19 @@ function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent, 
     const isRunning = (agent: string) => runningAgent === `${ticket.id}:${agent}`
 
     const renderAgentResult = (label: string, raw: Record<string, unknown>) => {
+        // Try to extract the inner result if wrapped by executeAgent
+        const inner = (raw.result && typeof raw.result === 'object' && !Array.isArray(raw.result))
+            ? raw.result as Record<string, unknown>
+            : raw
+
         const fields: { key: string; label: string }[] = [
             { key: 'severity', label: 'Severity' },
             { key: 'module', label: 'Module' },
             { key: 'root_cause_hypothesis', label: 'Root Cause' },
             { key: 'suggested_fix', label: 'Suggested Fix' },
             { key: 'effort_estimate', label: 'Effort' },
+            { key: 'impact', label: 'Impact' },
+            { key: 'affected_files', label: 'Affected Files' },
             { key: 'verdict', label: 'Verdict' },
             { key: 'risk_level', label: 'Risk' },
             { key: 'summary', label: 'Summary' },
@@ -823,26 +830,46 @@ function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent, 
             { key: 'experience_impact', label: 'Experience Impact' },
         ]
         const data = fields
-            .map(f => ({ label: f.label, value: raw[f.key] ? String(raw[f.key]) : '' }))
+            .map(f => {
+                const val = inner[f.key]
+                if (!val) return { label: f.label, value: '' }
+                if (Array.isArray(val)) return { label: f.label, value: (val as string[]).join(', ') }
+                return { label: f.label, value: String(val) }
+            })
             .filter(f => f.value)
 
-        if (data.length === 0) return null
+        // Show model/duration metadata if available
+        const meta = inner.model ? `${inner.model}` : raw.model ? `${raw.model}` : ''
+        const duration = inner.durationMs ? `${Math.round(Number(inner.durationMs) / 1000)}s` : raw.durationMs ? `${Math.round(Number(raw.durationMs) / 1000)}s` : ''
 
         return (
             <div className={styles.card} style={{ marginTop: '0.3rem', marginBottom: '0.5rem', marginLeft: '2rem', padding: '0.8rem' }}>
-                <div className={styles.cardTitle}>{label}</div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.3rem 0.8rem', fontSize: '0.75rem' }}>
-                    {data.map(d => (
-                        <div key={d.label} style={{ display: 'contents' }}>
-                            <span style={{ fontWeight: 800, color: 'rgba(255,255,255,0.4)' }}>{d.label}</span>
-                            <span style={{ color: d.label === 'Severity' || d.label === 'Verdict' || d.label === 'Recommendation' ? 'white' : 'rgba(255,255,255,0.7)', fontWeight: d.label === 'Severity' || d.label === 'Verdict' ? 700 : 400 }}>{d.value}</span>
-                        </div>
-                    ))}
+                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
+                    <div className={styles.cardTitle} style={{ margin: 0 }}>{label}</div>
+                    {(meta || duration) && (
+                        <span style={{ fontSize: '0.6rem', color: 'rgba(255,255,255,0.2)', fontWeight: 600 }}>
+                            {[meta, duration].filter(Boolean).join(' / ')}
+                        </span>
+                    )}
                 </div>
-                {Array.isArray(raw.blocking_issues) && (raw.blocking_issues as unknown[]).length > 0 && (
+                {data.length > 0 ? (
+                    <div style={{ display: 'grid', gridTemplateColumns: 'auto 1fr', gap: '0.3rem 0.8rem', fontSize: '0.75rem' }}>
+                        {data.map(d => (
+                            <div key={d.label} style={{ display: 'contents' }}>
+                                <span style={{ fontWeight: 800, color: 'rgba(255,255,255,0.4)' }}>{d.label}</span>
+                                <span style={{ color: d.label === 'Severity' || d.label === 'Verdict' || d.label === 'Recommendation' ? 'white' : 'rgba(255,255,255,0.7)', fontWeight: d.label === 'Severity' || d.label === 'Verdict' ? 700 : 400 }}>{d.value}</span>
+                            </div>
+                        ))}
+                    </div>
+                ) : (
+                    <pre style={{ fontSize: '0.68rem', color: 'rgba(255,255,255,0.5)', whiteSpace: 'pre-wrap', wordBreak: 'break-word', margin: 0, fontFamily: "'Courier New', monospace" }}>
+                        {inner.raw ? String(inner.raw) : JSON.stringify(inner, null, 2).slice(0, 500)}
+                    </pre>
+                )}
+                {Array.isArray(inner.blocking_issues) && (inner.blocking_issues as unknown[]).length > 0 && (
                     <div style={{ marginTop: '0.5rem', padding: '0.5rem', background: 'rgba(232,137,106,0.08)', borderRadius: 8, border: '1px solid rgba(232,137,106,0.15)' }}>
                         <div style={{ fontSize: '0.65rem', fontWeight: 800, color: '#E8896A', textTransform: 'uppercase', marginBottom: '0.3rem' }}>Blocking Issues</div>
-                        {(raw.blocking_issues as { issue?: string; file?: string; suggestion?: string }[]).map((issue, i) => (
+                        {(inner.blocking_issues as { issue?: string; file?: string; suggestion?: string }[]).map((issue, i) => (
                             <div key={i} style={{ fontSize: '0.72rem', color: 'rgba(255,255,255,0.6)', marginBottom: '0.2rem' }}>
                                 {issue.file && <span style={{ color: '#4AADA8', fontWeight: 700 }}>{issue.file}: </span>}
                                 {issue.issue || String(issue)}
@@ -901,11 +928,11 @@ function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent, 
             {/* Show all agent results inline */}
             {hasTriageResult && renderAgentResult(
                 'AI Triage Result',
-                ((ticket.agentResults.triage as { result?: Record<string, unknown> })?.result || ticket.agentResults.triage) as Record<string, unknown>
+                ticket.agentResults.triage as Record<string, unknown>
             )}
             {hasReviewResult && renderAgentResult(
                 'AI Code Review',
-                ((ticket.agentResults.review as { result?: Record<string, unknown> })?.result || ticket.agentResults.review) as Record<string, unknown>
+                ticket.agentResults.review as Record<string, unknown>
             )}
         </div>
     )
