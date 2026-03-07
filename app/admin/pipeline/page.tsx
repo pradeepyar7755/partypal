@@ -200,6 +200,9 @@ function PipelineDashboard() {
             const data = await res.json()
             setRuns(data.runs || [])
             setTickets(data.tickets || [])
+            // Debug: log tickets with agent results
+            const withResults = (data.tickets || []).filter((t: Ticket) => t.agentResults && Object.keys(t.agentResults).length > 0)
+            if (withResults.length > 0) console.log('[Pipeline] Tickets with agent results:', withResults.length, withResults[0]?.agentResults)
             setAgentConfig(data.agentConfig || null)
             setStats(data.stats || null)
             if (data.agentConfig?.lastGoldenTestResult) {
@@ -263,9 +266,12 @@ function PipelineDashboard() {
         if (result.error) {
             showToast(`${agentLabel} failed: ${result.error}`, 'error')
         } else {
-            showToast(`${agentLabel} complete — results below`, 'success')
+            showToast(`${agentLabel} complete`, 'success')
+            console.log('[Pipeline] Agent result:', JSON.stringify(result.result, null, 2))
         }
-        fetchData()
+        await fetchData()
+        // Switch to tickets tab to show results
+        if (selectedTab === 'overview') switchTab('tickets')
     }
 
     const handleToggleAgent = async (agentKey: string, field: 'enabled' | 'autoRun', value: boolean) => {
