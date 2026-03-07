@@ -17,7 +17,7 @@ interface Contact {
 }
 
 interface EventGuest {
-  id: string; name: string; email: string; status: string
+  id: string; name: string; email: string; status: string; circles?: string[]
 }
 
 const AVATAR_COLORS = ['#4AADA8', '#E8896A', '#7B5EA7', '#F7C948', '#3D8C6E', '#c4880a', '#D35E8D', '#5B8AF5']
@@ -83,6 +83,15 @@ export default function GuestsPage() {
             merged[existingIdx] = { ...existing, email: g.email.trim() }
             changed = true
           }
+          // Merge circles from event guest into contact (union)
+          if (g.circles && g.circles.length > 0) {
+            const currentCircles = existing.circles || []
+            const newCircles = g.circles.filter(c => !currentCircles.includes(c))
+            if (newCircles.length > 0) {
+              merged[existingIdx] = { ...merged[existingIdx], circles: [...currentCircles, ...newCircles] }
+              changed = true
+            }
+          }
         } else {
           // New contact from event guest
           merged.push({
@@ -90,7 +99,7 @@ export default function GuestsPage() {
             name: g.name.trim(),
             email: (g.email || '').trim(),
             phone: '',
-            circles: [],
+            circles: g.circles || [],
             avatar: getInitials(g.name),
             color: AVATAR_COLORS[merged.length % AVATAR_COLORS.length],
           })
