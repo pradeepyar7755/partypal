@@ -839,9 +839,7 @@ function KPICard({ icon, label, value, color, sub }: { icon: string; label: stri
 function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent, runningAgent, localResults }: { ticket: Ticket; onStatusChange: (id: string, status: string) => void; onDelete: (id: string) => void; onCreateRun: (id: string) => void; onRunAgent: (ticketId: string, agent: string) => void; runningAgent: string | null; localResults: Record<string, Record<string, unknown>> }) {
     // Use local results as fallback when Firestore hasn't synced yet
     const triageData = (ticket.agentResults?.triage as Record<string, unknown>) || localResults[`${ticket.id}:triage`] || null
-    const reviewData = (ticket.agentResults?.review as Record<string, unknown>) || localResults[`${ticket.id}:review`] || null
     const hasTriageResult = !!triageData
-    const hasReviewResult = !!reviewData
     const isRunning = (agent: string) => runningAgent === `${ticket.id}:${agent}`
 
     const copyForClaudeCode = () => {
@@ -962,14 +960,9 @@ function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent, 
                         </button>
                     )}
                     {ticket.status === 'open' && hasTriageResult && (
-                        <>
-                            <button className={styles.btnSmall} onClick={() => onRunAgent(ticket.id, 'triage')} disabled={!!runningAgent} title="Re-run AI Triage" style={{ color: 'rgba(255,255,255,0.4)' }}>
-                                🔍 Re-triage
-                            </button>
-                            <button className={styles.btnSmall} onClick={() => { onStatusChange(ticket.id, 'in_progress'); onCreateRun(ticket.id); }} title="AI handles the full fix pipeline" style={{ color: '#4AADA8', background: 'rgba(74,173,168,0.1)', borderColor: 'rgba(74,173,168,0.3)' }}>
-                                🤖 AI Fix
-                            </button>
-                        </>
+                        <button className={styles.btnSmall} onClick={() => onRunAgent(ticket.id, 'triage')} disabled={!!runningAgent} title="Re-run AI Triage" style={{ color: 'rgba(255,255,255,0.4)' }}>
+                            🔍 Re-triage
+                        </button>
                     )}
                     {ticket.status === 'open' && (
                         <button className={styles.btnSmall} onClick={() => { copyForClaudeCode(); onStatusChange(ticket.id, 'in_progress'); onCreateRun(ticket.id); }} title="Copy prompt + start fix in Claude Code">
@@ -980,9 +973,6 @@ function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent, 
                         <>
                             <button className={styles.btnSmall} onClick={copyForClaudeCode} title="Copy ticket prompt for Claude Code" style={{ color: '#7B5EA7' }}>
                                 📋 Copy
-                            </button>
-                            <button className={styles.btnSmall} onClick={() => onRunAgent(ticket.id, 'review')} disabled={!!runningAgent} title="AI Code Review (Gemini)" style={{ color: '#4AADA8', opacity: isRunning('review') ? 0.6 : 1 }}>
-                                {isRunning('review') ? '... Reviewing' : '🛡️ AI Review'}
                             </button>
                             <button className={styles.btnSmall} onClick={() => onStatusChange(ticket.id, 'done')} title="Mark done">✓ Done</button>
                         </>
@@ -995,7 +985,6 @@ function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent, 
             </div>
             {/* Show all agent results inline */}
             {hasTriageResult && renderAgentResult('AI Triage Result', triageData!)}
-            {hasReviewResult && renderAgentResult('AI Code Review', reviewData!)}
         </div>
     )
 }
