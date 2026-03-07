@@ -407,6 +407,23 @@ export default function PipelineDashboard() {
                                     <button className={styles.btnSmall} onClick={() => setSelectedTab('agents')}>
                                         Configure Agents
                                     </button>
+                                    <button className={styles.btnSmall} onClick={async () => {
+                                        if (!window.confirm('Import all existing bug reports as pipeline tickets?\n\nThis will skip duplicates and junk entries.')) return
+                                        const token = await user!.getIdToken()
+                                        const res = await fetch('/api/admin/pipeline/backfill', {
+                                            method: 'POST',
+                                            headers: { Authorization: `Bearer ${token}` },
+                                        })
+                                        const result = await res.json()
+                                        if (result.success) {
+                                            alert(`Imported ${result.created} tickets (${result.skipped} skipped)`)
+                                            fetchData()
+                                        } else {
+                                            alert(`Import failed: ${result.error}`)
+                                        }
+                                    }}>
+                                        Import Bug Reports
+                                    </button>
                                 </div>
 
                                 {/* Recent Runs */}
