@@ -479,6 +479,19 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
             const updated = current.includes(circle) ? current.filter(c => c !== circle) : [...current, circle]
             return { ...g, circles: updated }
         }))
+        // Sync circle change back to contacts store so Guest Management page reflects it
+        try {
+            const guest = guests.find(g => g.id === guestId)
+            if (guest?.email) {
+                const contacts = userGetJSON<{ id: string; email: string; circles: string[] }[]>('partypal_contacts', [])
+                const contactIdx = contacts.findIndex(c => c.email === guest.email)
+                if (contactIdx >= 0) {
+                    const current = contacts[contactIdx].circles || []
+                    contacts[contactIdx].circles = current.includes(circle) ? current.filter(c => c !== circle) : [...current, circle]
+                    userSetJSON('partypal_contacts', contacts)
+                }
+            }
+        } catch { /* fire-and-forget */ }
     }
     const removeGuest = async (id: string) => {
         const g = guests.find(x => x.id === id);
@@ -1151,7 +1164,8 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                                 const newGs: Guest[] = toAdd.map((c, i) => ({
                                                     id: (Date.now() + i).toString(), name: c.name, email: c.email,
                                                     status: 'pending' as const, dietary: 'None', additionalGuests: [],
-                                                    avatar: c.avatar, color: c.color
+                                                    avatar: c.avatar, color: c.color,
+                                                    circles: c.circles || [],
                                                 }))
                                                 setGuests(prev => [...prev, ...newGs])
                                                 setShowCircles(false)
@@ -1191,6 +1205,13 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                         </div>
                                         {g.dietary !== 'None' && <span className={styles.dietary}>{g.dietary}</span>}
                                         {g.additionalGuests.length > 0 && <span className={styles.partySize} title={g.additionalGuests.map(ag => ag.name || 'Guest').join(', ')}>👥 +{g.additionalGuests.length}</span>}
+                                        {(g.circles?.length || 0) > 0 && g.circles!.map(c => (
+                                            <span key={c} style={{
+                                                padding: '0.1rem 0.4rem', borderRadius: 4, fontSize: '0.65rem',
+                                                fontWeight: 700, background: 'rgba(74,173,168,0.1)', color: 'var(--teal)',
+                                                border: '1px solid rgba(74,173,168,0.2)', whiteSpace: 'nowrap',
+                                            }}>{c}</span>
+                                        ))}
                                         {!isGuest && (
                                             <div className={styles.circleDropdown} onClick={e => e.stopPropagation()}>
                                                 <button
