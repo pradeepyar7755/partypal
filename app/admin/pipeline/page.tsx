@@ -844,6 +844,23 @@ function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent, 
     const hasReviewResult = !!reviewData
     const isRunning = (agent: string) => runningAgent === `${ticket.id}:${agent}`
 
+    const copyForClaudeCode = () => {
+        const triage = triageData
+            ? (() => {
+                const inner = (triageData.result && typeof triageData.result === 'object') ? triageData.result as Record<string, unknown> : triageData
+                return `\nAI Triage:\n  Severity: ${inner.severity || 'unknown'}\n  Module: ${inner.module || 'unknown'}\n  Root Cause: ${inner.root_cause_hypothesis || 'unknown'}\n  Suggested Fix: ${inner.suggested_fix || 'unknown'}\n  Affected Files: ${Array.isArray(inner.affected_files) ? (inner.affected_files as string[]).join(', ') : inner.affected_files || 'unknown'}\n  Effort: ${inner.effort_estimate || 'unknown'}`
+            })()
+            : ''
+        const prompt = `Fix ticket #${ticket.id.slice(-5)}: ${ticket.title}\n\nDescription: ${ticket.description}\nType: ${ticket.type}\nPriority: ${ticket.priority}${triage}\n\nPlease analyze the codebase, implement the fix, run tests, and commit.`
+        navigator.clipboard.writeText(prompt)
+        // Use a DOM event to show feedback since we can't call showToast from here
+        const el = document.createElement('div')
+        el.textContent = '✓ Copied to clipboard'
+        el.style.cssText = 'position:fixed;bottom:24px;left:50%;transform:translateX(-50%);background:#0d2818;border:1px solid rgba(61,140,110,0.3);border-radius:12px;padding:0.7rem 1.4rem;color:#3D8C6E;font-weight:800;font-size:0.82rem;z-index:300;font-family:Nunito,sans-serif;box-shadow:0 8px 32px rgba(0,0,0,0.4)'
+        document.body.appendChild(el)
+        setTimeout(() => el.remove(), 2000)
+    }
+
     const renderAgentResult = (label: string, raw: Record<string, unknown>) => {
         // Try to extract the inner result if wrapped by executeAgent
         const inner = (raw.result && typeof raw.result === 'object' && !Array.isArray(raw.result))
@@ -955,12 +972,15 @@ function TicketRow({ ticket, onStatusChange, onDelete, onCreateRun, onRunAgent, 
                         </>
                     )}
                     {ticket.status === 'open' && (
-                        <button className={styles.btnSmall} onClick={() => { onStatusChange(ticket.id, 'in_progress'); onCreateRun(ticket.id); }} title="Fix manually in Claude Code">
+                        <button className={styles.btnSmall} onClick={() => { copyForClaudeCode(); onStatusChange(ticket.id, 'in_progress'); onCreateRun(ticket.id); }} title="Copy prompt + start fix in Claude Code">
                             🔧 Manual Fix
                         </button>
                     )}
                     {ticket.status === 'in_progress' && (
                         <>
+                            <button className={styles.btnSmall} onClick={copyForClaudeCode} title="Copy ticket prompt for Claude Code" style={{ color: '#7B5EA7' }}>
+                                📋 Copy
+                            </button>
                             <button className={styles.btnSmall} onClick={() => onRunAgent(ticket.id, 'review')} disabled={!!runningAgent} title="AI Code Review (Gemini)" style={{ color: '#4AADA8', opacity: isRunning('review') ? 0.6 : 1 }}>
                                 {isRunning('review') ? '... Reviewing' : '🛡️ AI Review'}
                             </button>
