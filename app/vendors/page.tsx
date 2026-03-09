@@ -50,7 +50,7 @@ function VendorsContent() {
   const [selectedVendor, setSelectedVendor] = useState<Vendor | null>(null)
   const [currentPage, setCurrentPage] = useState(1)
   const VENDORS_PER_PAGE = 10
-  const [showSidebar, setShowSidebar] = useState(true)
+  const [showSidebar, setShowSidebar] = useState(false)
   const [priceMax, setPriceMax] = useState(1000)
   const [ratingFilter, setRatingFilter] = useState(4)
   const [detectedLocation, setDetectedLocation] = useState('')
@@ -453,7 +453,7 @@ function VendorsContent() {
           <div className={styles.searchInputWrap}>
             <input className={styles.searchInput} type="text" placeholder="Search vendors, styles, services…" value={search} onChange={e => setSearch(e.target.value)} />
           </div>
-          <button className={styles.filterBtn} onClick={() => setShowSidebar(!showSidebar)}>⚙️ Filters</button>
+          <button className={`${styles.filterBtn} ${showSidebar ? styles.filterBtnActive : ''}`} onClick={() => setShowSidebar(!showSidebar)}>⚙️ Filters</button>
           <button className={`${styles.shortlistToggle} ${showShortlistOnly ? styles.shortlistActive : ''}`} onClick={() => { if (isGuest) { setShowSignupPrompt(true); return } setShowShortlistOnly(!showShortlistOnly) }}>
             ❤️ Shortlist ({shortlist.length})
           </button>
@@ -486,7 +486,13 @@ function VendorsContent() {
       <div className={styles.main} style={showSidebar ? {} : { gridTemplateColumns: '1fr' }}>
         {/* ── Sidebar Filters ── */}
         {showSidebar && (
+          <>
+          <div className={styles.sidebarOverlay} onClick={() => setShowSidebar(false)} />
           <div className={styles.sidebarFilters}>
+            <div className={styles.sidebarHeader}>
+              <h3>Filters</h3>
+              <button className={styles.sidebarClose} onClick={() => setShowSidebar(false)}>✕</button>
+            </div>
             <div className={styles.filterSection}>
               <h3>Price Range</h3>
               <div className={styles.priceRange}>
