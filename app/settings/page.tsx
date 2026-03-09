@@ -319,7 +319,7 @@ export default function SettingsPage() {
                                 </button>
                             )}
                             <button className={styles.verifyRefreshBtn} onClick={refreshVerification}>
-                                🔄 I've verified, refresh
+                                🔄 I&apos;ve verified, refresh
                             </button>
                         </div>
                     </div>
@@ -519,7 +519,7 @@ export default function SettingsPage() {
                             onChange={e => setPref('defaultLocation', e.target.value)}
                             placeholder="e.g. Atlanta, GA"
                         />
-                        <div className={styles.fieldHint}>Pre-fills "Location" when creating new events</div>
+                        <div className={styles.fieldHint}>Pre-fills &ldquo;Location&rdquo; when creating new events</div>
                     </div>
                 </div>
 

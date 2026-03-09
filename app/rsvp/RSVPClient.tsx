@@ -396,7 +396,7 @@ function RSVPContent() {
                                 color: '#c0392b',
                                 lineHeight: 1.5,
                             }}>
-                                This email has already been used to RSVP. To update your response, use the "Update RSVP" link in your confirmation email.
+                                This email has already been used to RSVP. To update your response, use the &ldquo;Update RSVP&rdquo; link in your confirmation email.
                             </div>
                         )}
 

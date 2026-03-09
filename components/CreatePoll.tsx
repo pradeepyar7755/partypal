@@ -70,7 +70,7 @@ export default function CreatePoll({ eventId, creatorName, eventContext, onCreat
     const [creating, setCreating] = useState(false)
     const [showPreview, setShowPreview] = useState(false)
 
-    const usePreset = (preset: typeof PRESET_POLLS[0]) => {
+    const applyPreset = (preset: typeof PRESET_POLLS[0]) => {
         setQuestion(preset.question)
         setOptionsText(preset.placeholder)
     }
@@ -270,7 +270,7 @@ export default function CreatePoll({ eventId, creatorName, eventContext, onCreat
                             </div>
                             <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.4rem', marginBottom: '1.2rem' }}>
                                 {PRESET_POLLS.map((p, i) => (
-                                    <button key={i} onClick={() => usePreset(p)} style={{
+                                    <button key={i} onClick={() => applyPreset(p)} style={{
                                         padding: '0.35rem 0.7rem', borderRadius: 8,
                                         border: '1px solid var(--border)', background: '#fafbfc',
                                         cursor: 'pointer', fontSize: '0.78rem', fontWeight: 700,

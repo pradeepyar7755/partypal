@@ -16,14 +16,14 @@ const CATEGORIES = [
 
 export default function BugReportButton() {
     const pathname = usePathname()
-    // Hide on standalone invite pages
-    if (pathname?.startsWith('/join')) return null
-
     const [open, setOpen] = useState(false)
     const [form, setForm] = useState({ category: '', description: '' })
     const [submitting, setSubmitting] = useState(false)
     const [submitted, setSubmitted] = useState(false)
     const { user } = useAuth()
+
+    // Hide on standalone invite pages
+    if (pathname?.startsWith('/join')) return null
 
     const handleSubmit = async () => {
         if (!form.category || !form.description.trim()) return

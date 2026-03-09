@@ -12,9 +12,6 @@ export default function Nav() {
   const pathname = usePathname()
   const { user, loading, logout } = useAuth()
 
-  // Hide nav on standalone invite pages
-  if (pathname?.startsWith('/join')) return null
-
   useEffect(() => {
     setMobileOpen(false)
     setShowDropdown(false)
@@ -29,6 +26,9 @@ export default function Nav() {
     document.addEventListener('mousedown', handleClick)
     return () => document.removeEventListener('mousedown', handleClick)
   }, [])
+
+  // Hide nav on standalone invite pages
+  if (pathname?.startsWith('/join')) return null
 
   // Admin email whitelist — must match lib/admin-auth.ts
   const isAdmin = user?.email === SITE_EMAILS.admin
