@@ -251,6 +251,10 @@ function DashboardContent() {
     const [newCheckCategory, setNewCheckCategory] = useState('')
     const [dragTaskIdx, setDragTaskIdx] = useState<number | null>(null)
     const [moveMenuIdx, setMoveMenuIdx] = useState<number | null>(null)
+
+    // ── Touch drag-and-drop support (iPad / mobile) ──
+    const touchDragRef = useRef<{ type: 'task' | 'timeline'; idx: number; ghost: HTMLElement | null } | null>(null)
+    const touchOverRef = useRef<string | null>(null)
     const [guestSearch, setGuestSearch] = useState('')
     const [guestFilter, setGuestFilter] = useState<'all' | 'invited' | 'confirmed' | 'declined'>('all')
     const [expandedMatchedVendor, setExpandedMatchedVendor] = useState<number | null>(null)
@@ -965,6 +969,102 @@ function DashboardContent() {
         setMoveMenuIdx(null)
         showToast('Task moved ✓', 'success')
     }
+
+    // ── Touch drag-and-drop handlers (iPad / mobile) ──
+    const handleTouchDragStart = (type: 'task' | 'timeline', idx: number) => (e: React.TouchEvent) => {
+        e.stopPropagation()
+        const touch = e.touches[0]
+        // Create ghost element for visual feedback
+        const ghost = document.createElement('div')
+        ghost.style.cssText = 'position:fixed;z-index:9999;pointer-events:none;padding:0.4rem 0.8rem;border-radius:8px;font-size:0.75rem;font-weight:700;color:#fff;white-space:nowrap;transform:translate(-50%,-50%);'
+        ghost.style.background = type === 'task' ? 'var(--teal, #4AADA8)' : 'var(--navy, #2C3E50)'
+        ghost.style.left = touch.clientX + 'px'
+        ghost.style.top = touch.clientY + 'px'
+        ghost.textContent = type === 'task' ? '⠿ Moving task…' : '⋮⋮ Reordering…'
+        document.body.appendChild(ghost)
+        touchDragRef.current = { type, idx, ghost }
+        if (type === 'task') setDragTaskIdx(idx)
+        if (type === 'timeline') setDragIdx(idx)
+    }
+
+    useEffect(() => {
+        const handleTouchMove = (e: TouchEvent) => {
+            if (!touchDragRef.current) return
+            e.preventDefault()
+            const touch = e.touches[0]
+            const ghost = touchDragRef.current.ghost
+            if (ghost) {
+                ghost.style.left = touch.clientX + 'px'
+                ghost.style.top = touch.clientY + 'px'
+            }
+            // Hide ghost briefly to find element underneath
+            if (ghost) ghost.style.display = 'none'
+            const el = document.elementFromPoint(touch.clientX, touch.clientY)
+            if (ghost) ghost.style.display = ''
+            if (!el) { touchOverRef.current = null; return }
+            const target = el.closest('[data-drop-zone]') as HTMLElement | null
+            const prevTarget = touchOverRef.current
+            // Clear previous highlight
+            if (prevTarget) {
+                const prevEl = document.querySelector(`[data-drop-zone="${prevTarget}"]`) as HTMLElement | null
+                if (prevEl) { prevEl.style.borderLeft = ''; prevEl.style.background = '' }
+            }
+            if (target) {
+                const zone = target.getAttribute('data-drop-zone') || ''
+                touchOverRef.current = zone
+                target.style.borderLeft = '3px solid #4AADA8'
+            } else {
+                touchOverRef.current = null
+            }
+        }
+        const handleTouchEnd = () => {
+            if (!touchDragRef.current) return
+            const { type, idx, ghost } = touchDragRef.current
+            const zone = touchOverRef.current
+            // Clean up ghost
+            if (ghost) ghost.remove()
+            // Clear highlight on drop target
+            if (zone) {
+                const targetEl = document.querySelector(`[data-drop-zone="${zone}"]`) as HTMLElement | null
+                if (targetEl) { targetEl.style.borderLeft = ''; targetEl.style.background = '' }
+            }
+            touchDragRef.current = null
+            touchOverRef.current = null
+            if (zone === null || zone === undefined) {
+                setDragIdx(null); setDragTaskIdx(null); return
+            }
+            if (type === 'timeline') {
+                const targetIdx = parseInt(zone.replace('timeline-', ''))
+                if (!isNaN(targetIdx) && targetIdx !== idx && data?.plan?.timeline) {
+                    const items = [...data.plan.timeline]
+                    const [moved] = items.splice(idx, 1)
+                    items.splice(targetIdx, 0, moved)
+                    const updated = { ...data, plan: { ...data.plan, timeline: items } }
+                    setData(updated)
+                    userSetJSON('partyplan', updated)
+                }
+                setDragIdx(null)
+            } else if (type === 'task') {
+                if (zone === 'general') {
+                    moveTaskToCategory(idx, '__general__')
+                } else if (zone.startsWith('tasks-')) {
+                    const tlIdx = parseInt(zone.replace('tasks-', ''))
+                    if (!isNaN(tlIdx) && data?.plan?.timeline?.[tlIdx]) {
+                        const t = data.plan.timeline[tlIdx]
+                        const keywords = `${t.task} ${t.category}`.split(/[\s_,/]+/).filter(w => w.length > 2).slice(0, 2).join(' ')
+                        moveTaskToCategory(idx, keywords || t.task.split(' ')[0])
+                    }
+                }
+                setDragTaskIdx(null)
+            }
+        }
+        document.addEventListener('touchmove', handleTouchMove, { passive: false })
+        document.addEventListener('touchend', handleTouchEnd)
+        return () => {
+            document.removeEventListener('touchmove', handleTouchMove)
+            document.removeEventListener('touchend', handleTouchEnd)
+        }
+    }) // intentionally no deps — uses refs for drag state
 
     const removeCheckItem = (i: number, e: React.MouseEvent) => {
         e.stopPropagation()
@@ -2457,6 +2557,7 @@ function DashboardContent() {
                                                 <div
                                                     key={i}
                                                     className={styles.timelineItem}
+                                                    data-drop-zone={`timeline-${i}`}
                                                     draggable={editTimelineMode}
                                                     onDragStart={() => editTimelineMode && setDragIdx(i)}
                                                     onDragOver={e => editTimelineMode && e.preventDefault()}
@@ -2478,7 +2579,11 @@ function DashboardContent() {
                                                     style={{ opacity: dragIdx === i ? 0.4 : 1, cursor: editTimelineMode ? 'grab' : 'default' }}
                                                 >
                                                     {editTimelineMode && (
-                                                        <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', marginRight: 4, color: '#ccc', fontSize: '0.7rem', cursor: 'grab', userSelect: 'none' }} title="Drag to reorder">⋮⋮</div>
+                                                        <div
+                                                            style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center', marginRight: 4, color: '#ccc', fontSize: '0.7rem', cursor: 'grab', userSelect: 'none', touchAction: 'none' }}
+                                                            title="Drag to reorder"
+                                                            onTouchStart={handleTouchDragStart('timeline', i)}
+                                                        >⋮⋮</div>
                                                     )}
                                                     <div className={styles.tlLeft}>
                                                         <div className={`${styles.tlDot} ${styles[`tlDot${dotColor}` as keyof typeof styles]}`}>
@@ -2638,6 +2743,7 @@ function DashboardContent() {
                                                                 {!tasksCollapsed && taskMapping[i]?.length > 0 && (
                                                                     <div
                                                                         style={{ marginTop: '0.5rem', borderTop: '1px solid rgba(0,0,0,0.05)', paddingTop: '0.4rem' }}
+                                                                        data-drop-zone={`tasks-${i}`}
                                                                         onDragOver={e => { e.preventDefault(); e.currentTarget.style.borderLeft = '3px solid var(--teal)' }}
                                                                         onDragLeave={e => { e.currentTarget.style.borderLeft = 'none' }}
                                                                         onDrop={e => {
@@ -2667,7 +2773,7 @@ function DashboardContent() {
                                                                                     }}
                                                                                 >
                                                                                     {/* Drag handle */}
-                                                                                    <span style={{ cursor: 'grab', fontSize: '0.7rem', color: '#ccc', userSelect: 'none', flexShrink: 0 }} title="Drag to move">⠿</span>
+                                                                                    <span style={{ cursor: 'grab', fontSize: '0.7rem', color: '#ccc', userSelect: 'none', flexShrink: 0, touchAction: 'none' }} title="Drag to move" onTouchStart={handleTouchDragStart('task', ci)}>⠿</span>
                                                                                     {/* Checkbox */}
                                                                                     <div
                                                                                         onClick={() => toggleCheck(ci)}
@@ -2763,6 +2869,7 @@ function DashboardContent() {
                                     {!tasksCollapsed && (
                                         <div
                                             className={styles.timelineItem}
+                                            data-drop-zone="general"
                                             onDragOver={e => { e.preventDefault(); e.currentTarget.style.background = 'rgba(74,173,168,0.02)' }}
                                             onDragLeave={e => { e.currentTarget.style.background = 'transparent' }}
                                             onDrop={e => {
@@ -2807,7 +2914,7 @@ function DashboardContent() {
                                                                         opacity: dragTaskIdx === ci ? 0.3 : 1, position: 'relative',
                                                                     }}
                                                                 >
-                                                                    <span style={{ cursor: 'grab', fontSize: '0.7rem', color: '#ccc', userSelect: 'none', flexShrink: 0 }}>⠿</span>
+                                                                    <span style={{ cursor: 'grab', fontSize: '0.7rem', color: '#ccc', userSelect: 'none', flexShrink: 0, touchAction: 'none' }} onTouchStart={handleTouchDragStart('task', ci)}>⠿</span>
                                                                     <div onClick={() => toggleCheck(ci)} style={{ width: 16, height: 16, borderRadius: 4, border: c.done ? '2px solid #3D8C6E' : '2px solid #ccc', background: c.done ? '#3D8C6E' : 'transparent', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.6rem', color: '#fff', flexShrink: 0, transition: 'all 0.2s', cursor: 'pointer' }}>{c.done ? '✓' : ''}</div>
                                                                     <span onClick={() => toggleCheck(ci)} style={{ fontSize: '0.75rem', fontWeight: 600, color: c.done ? '#9aabbb' : 'var(--navy)', textDecoration: c.done ? 'line-through' : 'none', flex: 1, cursor: 'pointer' }}>{c.item}</span>
                                                                     {c.completedAt && <span style={{ fontSize: '0.55rem', color: '#3D8C6E', fontWeight: 700, whiteSpace: 'nowrap' }}>{new Date(c.completedAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>}
