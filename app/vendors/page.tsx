@@ -351,6 +351,20 @@ function VendorsContent() {
       v.description.toLowerCase().includes(search.toLowerCase()) ||
       v.tags.some(t => t.toLowerCase().includes(search.toLowerCase()))
   }).sort((a, b) => {
+    if (sort === 'Nearest') {
+      const loc = (detectedLocation || planData.location || '').toLowerCase()
+      const getDistance = (v: Vendor) => {
+        if (v.distance != null) return v.distance
+        const vLoc = v.location.toLowerCase()
+        const locCity = loc.split(',')[0].trim()
+        const cityInAddress = locCity.length > 2 && vLoc.includes(locCity)
+        const locParts = loc.split(',').map(p => p.trim())
+        const locState = locParts.length >= 2 ? locParts[locParts.length - 1].trim() : ''
+        const stateInAddress = locState.length >= 2 && vLoc.includes(locState.toLowerCase())
+        return cityInAddress ? 3 : stateInAddress ? 15 : 30
+      }
+      return getDistance(a) - getDistance(b)
+    }
     if (sort === 'Top Rated') return b.rating - a.rating
     if (sort === 'Price: Low to High') return parseInt(a.price.replace(/[^0-9]/g, '')) - parseInt(b.price.replace(/[^0-9]/g, ''))
     if (sort === 'Price: High to Low') return parseInt(b.price.replace(/[^0-9]/g, '')) - parseInt(a.price.replace(/[^0-9]/g, ''))
@@ -445,6 +459,7 @@ function VendorsContent() {
           </button>
           <select className={styles.sortSelect} value={sort} onChange={e => setSort(e.target.value)}>
             <option>Best Match</option>
+            <option>Nearest</option>
             <option>Top Rated</option>
             <option>Price: Low to High</option>
             <option>Price: High to Low</option>
