@@ -581,51 +581,6 @@ export default function SettingsPage() {
                     </div>
                 </div>
 
-                {/* ═══ LINKED ACCOUNTS ═══ */}
-                {!isGuest && (
-                    <div className={styles.section}>
-                        <div className={styles.sectionTitle}>
-                            <span className={styles.sectionEmoji}>🔗</span> Linked Accounts
-                        </div>
-
-                        <div className={styles.linkedAccount}>
-                            <div className={styles.linkedIcon} style={{ background: 'rgba(66,133,244,0.1)' }}>
-                                🔵
-                            </div>
-                            <div className={styles.linkedInfo}>
-                                <div className={styles.linkedName}>Google</div>
-                                <div className={styles.linkedStatus} style={{ color: getSignInMethod() === 'Google' ? 'var(--teal)' : '#9aabbb' }}>
-                                    {getSignInMethod() === 'Google' ? '✓ Connected' : 'Not connected'}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className={styles.linkedAccount}>
-                            <div className={styles.linkedIcon} style={{ background: 'rgba(0,0,0,0.06)' }}>
-                                🍎
-                            </div>
-                            <div className={styles.linkedInfo}>
-                                <div className={styles.linkedName}>Apple</div>
-                                <div className={styles.linkedStatus} style={{ color: getSignInMethod() === 'Apple' ? 'var(--teal)' : '#9aabbb' }}>
-                                    {getSignInMethod() === 'Apple' ? '✓ Connected' : 'Not connected'}
-                                </div>
-                            </div>
-                        </div>
-
-                        <div className={styles.linkedAccount}>
-                            <div className={styles.linkedIcon} style={{ background: 'rgba(74,173,168,0.08)' }}>
-                                ✉️
-                            </div>
-                            <div className={styles.linkedInfo}>
-                                <div className={styles.linkedName}>Email & Password</div>
-                                <div className={styles.linkedStatus} style={{ color: getSignInMethod() === 'Email & Password' ? 'var(--teal)' : '#9aabbb' }}>
-                                    {getSignInMethod() === 'Email & Password' ? '✓ Active' : 'Not connected'}
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                )}
-
                 {/* ═══ DATA & PRIVACY ═══ */}
                 <div className={styles.section}>
                     <div className={styles.sectionTitle}>

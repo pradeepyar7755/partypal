@@ -187,45 +187,6 @@
     transform: translateX(20px);
 }
 
-/* Linked Accounts */
-.linkedAccount {
-    display: flex;
-    align-items: center;
-    gap: 0.8rem;
-    padding: 0.7rem 1.5rem;
-    border-top: 1px solid rgba(0, 0, 0, 0.04);
-}
-
-.linkedAccount:first-of-type {
-    border-top: none;
-}
-
-.linkedIcon {
-    width: 36px;
-    height: 36px;
-    border-radius: 10px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 1.1rem;
-    flex-shrink: 0;
-}
-
-.linkedInfo {
-    flex: 1;
-}
-
-.linkedName {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--navy);
-}
-
-.linkedStatus {
-    font-size: 0.7rem;
-    font-weight: 600;
-}
-
 /* Action buttons */
 .actionBtn {
     display: flex;
