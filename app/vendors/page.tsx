@@ -528,6 +528,7 @@ function VendorsContent() {
               </div>
             </div>
           </div>
+          </>
         )}
 
         {/* ── Vendor Cards ── */}
