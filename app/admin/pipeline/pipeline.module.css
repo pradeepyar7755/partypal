@@ -137,6 +137,39 @@
     border-bottom: 2.5px solid #4AADA8;
 }
 
+/* ── Ticket Filter Toggle ─────────────────────────── */
+
+.ticketFilterToggle {
+    display: flex;
+    background: rgba(255,255,255,0.04);
+    border-radius: 8px;
+    padding: 2px;
+    border: 1px solid rgba(255,255,255,0.06);
+}
+
+.ticketFilterBtn {
+    padding: 0.35rem 0.75rem;
+    border: none;
+    background: transparent;
+    color: #586069;
+    font-weight: 800;
+    font-size: 0.75rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    border-radius: 6px;
+    font-family: 'Nunito', sans-serif;
+    white-space: nowrap;
+}
+
+.ticketFilterBtn:hover {
+    color: #9aabbb;
+}
+
+.ticketFilterBtnActive {
+    background: rgba(74,173,168,0.15);
+    color: #4AADA8;
+}
+
 /* ── Section Headers ──────────────────────────────── */
 
 .sectionHeader {

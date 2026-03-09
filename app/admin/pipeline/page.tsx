@@ -172,6 +172,7 @@ function PipelineDashboard() {
     const [expandedRun, setExpandedRun] = useState<string | null>(null)
     const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' | 'info' } | null>(null)
     const [runningAgent, setRunningAgent] = useState<string | null>(null) // ticketId:agent currently running
+    const [ticketFilter, setTicketFilter] = useState<'open' | 'all'>('open')
     const [localAgentResults, setLocalAgentResults] = useState<Record<string, Record<string, unknown>>>({}) // ticketId -> agent result (immediate display)
     const [latestDeploy, setLatestDeploy] = useState<{ url: string; state: string; createdAt: string; meta?: { githubCommitMessage?: string } } | null>(null)
 
@@ -559,34 +560,59 @@ function PipelineDashboard() {
                         )}
 
                         {/* ═══ TICKETS TAB ═══ */}
-                        {selectedTab === 'tickets' && (
+                        {selectedTab === 'tickets' && (() => {
+                            const filteredTickets = ticketFilter === 'open'
+                                ? tickets.filter(t => t.status === 'open' || t.status === 'in_progress')
+                                : tickets
+                            return (
                             <>
                                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
                                     <div className={styles.sectionHeader} style={{ margin: 0, border: 'none', paddingBottom: 0 }}>
                                         <span className={styles.sectionEmoji}>🎫</span>
-                                        <span className={styles.sectionTitle}>All Tickets</span>
-                                        <span className={styles.sectionSub}>{tickets.length} total</span>
+                                        <span className={styles.sectionTitle}>{ticketFilter === 'open' ? 'Open Tickets' : 'All Tickets'}</span>
+                                        <span className={styles.sectionSub}>{filteredTickets.length}{ticketFilter === 'open' ? ` open · ${tickets.length} total` : ' total'}</span>
                                     </div>
-                                    <button className={styles.btnPrimary} onClick={() => setShowCreateTicket(true)} style={{ flex: 'none', padding: '0.5rem 1rem' }}>
-                                        + New Ticket
-                                    </button>
+                                    <div style={{ display: 'flex', gap: '0.5rem', alignItems: 'center' }}>
+                                        <div className={styles.ticketFilterToggle}>
+                                            <button
+                                                className={`${styles.ticketFilterBtn} ${ticketFilter === 'open' ? styles.ticketFilterBtnActive : ''}`}
+                                                onClick={() => setTicketFilter('open')}
+                                            >
+                                                Open
+                                            </button>
+                                            <button
+                                                className={`${styles.ticketFilterBtn} ${ticketFilter === 'all' ? styles.ticketFilterBtnActive : ''}`}
+                                                onClick={() => setTicketFilter('all')}
+                                            >
+                                                All
+                                            </button>
+                                        </div>
+                                        <button className={styles.btnPrimary} onClick={() => setShowCreateTicket(true)} style={{ flex: 'none', padding: '0.5rem 1rem' }}>
+                                            + New Ticket
+                                        </button>
+                                    </div>
                                 </div>
 
-                                {tickets.length === 0 ? (
+                                {filteredTickets.length === 0 ? (
                                     <div className={styles.emptyState}>
                                         <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>🎫</div>
-                                        <div>No tickets yet.</div>
-                                        <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.2)', marginTop: '0.3rem' }}>Create a bug report or feature request to start the pipeline.</div>
+                                        <div>{ticketFilter === 'open' ? 'No open tickets.' : 'No tickets yet.'}</div>
+                                        <div style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.2)', marginTop: '0.3rem' }}>
+                                            {ticketFilter === 'open'
+                                                ? 'All tickets are resolved. Create a new one or switch to "All" to see past tickets.'
+                                                : 'Create a bug report or feature request to start the pipeline.'}
+                                        </div>
                                     </div>
                                 ) : (
                                     <div className={styles.ticketList}>
-                                        {tickets.map(ticket => (
+                                        {filteredTickets.map(ticket => (
                                             <TicketRow key={ticket.id} ticket={ticket} onStatusChange={handleUpdateTicketStatus} onDelete={handleDeleteTicket} onCreateRun={handleCreateRun} onRunAgent={handleRunAgent} runningAgent={runningAgent} localResults={localAgentResults} />
                                         ))}
                                     </div>
                                 )}
                             </>
-                        )}
+                            )
+                        })()}
 
                         {/* ═══ AGENTS TAB ═══ */}
                         {selectedTab === 'agents' && (
