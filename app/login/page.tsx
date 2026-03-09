@@ -57,7 +57,9 @@ function LoginContent() {
                 setLoading(false)
                 return
             }
-            if (msg.includes('unauthorized-domain')) {
+            if (msg.includes('account-exists-with-different-credential') || msg.includes('credential-already-in-use')) {
+                setError('An account with this email already exists using a different sign-in method. Please sign in with the method you originally used (Google, Apple, or Email).')
+            } else if (msg.includes('unauthorized-domain')) {
                 setError('This domain is not authorized. Add it in Firebase Console → Authentication → Settings → Authorized domains.')
             } else if (msg.includes('operation-not-allowed')) {
                 setError(`${provider} sign-in is not enabled. Enable it in Firebase Console → Authentication → Sign-in method.`)
@@ -84,7 +86,8 @@ function LoginContent() {
             router.push(redirectUrl)
         } catch (err: unknown) {
             const msg = err instanceof Error ? err.message : ''
-            if (msg.includes('email-already-in-use')) setError('Email already in use. Try logging in.')
+            if (msg.includes('email-already-in-use')) setError('An account with this email already exists. If you signed up with Google or Apple, please use that method instead.')
+            else if (msg.includes('account-exists-with-different-credential') || msg.includes('credential-already-in-use')) setError('An account with this email already exists using a different sign-in method. Please sign in with the method you originally used.')
             else if (msg.includes('invalid-credential') || msg.includes('wrong-password')) setError('Invalid email or password.')
             else if (msg.includes('user-not-found')) setError('No account found. Try signing up.')
             else setError('Something went wrong. Please try again.')
