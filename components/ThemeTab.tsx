@@ -36,6 +36,7 @@ interface ThemeTabProps {
     isDemo: boolean
     getContextPayload: () => Record<string, unknown>
     learn: (signal: InteractionSignal) => UserPreferences
+    onMoodboardChange?: (data: any) => void
 }
 
 const SUB_TABS: { key: SubTab; label: string; emoji: string }[] = [
@@ -44,7 +45,7 @@ const SUB_TABS: { key: SubTab; label: string; emoji: string }[] = [
     { key: 'cake', label: 'Cake', emoji: '🎂' },
 ]
 
-export default function ThemeTab({ eventId, planData, eventGuests, isDemo, getContextPayload, learn }: ThemeTabProps) {
+export default function ThemeTab({ eventId, planData, eventGuests, isDemo, getContextPayload, learn, onMoodboardChange }: ThemeTabProps) {
     const subTabKey = `partypal_theme_subtab_${eventId}`
     const [activeSubTab, setActiveSubTab] = useState<SubTab>(() => {
         const saved = userGetJSON<SubTab | null>(subTabKey, null)
@@ -125,6 +126,7 @@ export default function ThemeTab({ eventId, planData, eventGuests, isDemo, getCo
                     getContextPayload={getContextPayload}
                     learn={learn}
                     isDemo={isDemo}
+                    onMoodboardChange={onMoodboardChange}
                 />
             )}
 

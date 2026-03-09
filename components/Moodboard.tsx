@@ -36,6 +36,7 @@ interface MoodboardProps {
     getContextPayload: () => Record<string, unknown>
     learn: (signal: InteractionSignal) => UserPreferences
     isDemo: boolean
+    onMoodboardChange?: (data: MoodboardState) => void
 }
 
 const DEMO_MOODBOARD: MoodboardData = {
@@ -72,7 +73,7 @@ const TILE_BG_COLORS: Record<string, string> = {
     music: 'rgba(147, 112, 219, 0.08)',
 }
 
-export default function Moodboard({ eventId, theme, eventType, budget, getContextPayload, learn, isDemo }: MoodboardProps) {
+export default function Moodboard({ eventId, theme, eventType, budget, getContextPayload, learn, isDemo, onMoodboardChange }: MoodboardProps) {
     const storageKey = `partypal_moodboard_${eventId}`
     const [state, setState] = useState<MoodboardState>(() => {
         if (isDemo) return { board: DEMO_MOODBOARD, pinnedTileIndices: [0, 3], refinementHistory: [], generatedAt: new Date().toISOString() }
@@ -86,7 +87,10 @@ export default function Moodboard({ eventId, theme, eventType, budget, getContex
 
     const persist = (next: MoodboardState) => {
         setState(next)
-        if (!isDemo) userSetJSON(storageKey, next)
+        if (!isDemo) {
+            userSetJSON(storageKey, next)
+            onMoodboardChange?.(next)
+        }
     }
 
     const generate = async () => {

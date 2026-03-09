@@ -284,6 +284,7 @@ function DashboardContent() {
     const [showBudgetTips, setShowBudgetTips] = useState(false)
     const progressRefs = useRef<HTMLDivElement[]>([])
     const deletedEventIdsRef = useRef<Set<string>>(new Set())
+    const sharedEventIdsRef = useRef<Set<string>>(new Set())
     // Hydrate deletedEventIdsRef from localStorage on first render
     // so deleted events stay deleted across page refreshes
     if (deletedEventIdsRef.current.size === 0 && typeof window !== 'undefined') {
@@ -330,6 +331,16 @@ function DashboardContent() {
         } catch { /* silent */ }
         setPollsLoading(false)
     }, [])
+
+    // Sync moodboard changes to Firestore so collaborators can see them
+    const handleMoodboardChange = useCallback((moodboardData: any) => {
+        if (!data.eventId || data.eventId === 'demo') return
+        fetch('/api/events', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ eventId: data.eventId, moodboardData }),
+        }).catch(() => { })
+    }, [data.eventId])
 
     // Fetch polls when event changes — uses explicit eventId, no stale closure
     useEffect(() => {
@@ -528,6 +539,10 @@ function DashboardContent() {
         }
         // Load shortlisted vendors from /vendors page
         setSavedVendors(userGetJSON('partypal_shortlist_data', {}))
+        // Load moodboard from Firestore data for shared events
+        if (!demo && plan.eventId && (plan as any).moodboardData) {
+            userSetJSON(`partypal_moodboard_${plan.eventId}`, (plan as any).moodboardData)
+        }
     }
 
     useEffect(() => {
@@ -699,7 +714,10 @@ function DashboardContent() {
                     // If it was just a stub from URL parm, don't clean up yet (shared fetch handles it)
                     // Skip cleanup when events are still being backfilled to avoid deleting
                     // migrated anonymous data before it reaches Firestore
-                    if (activePlan.eventType !== DEFAULT_PLAN.eventType) {
+                    // Also skip cleanup for shared events — they belong to another user
+                    if (activePlan.eventId && sharedEventIdsRef.current.has(activePlan.eventId)) {
+                        // Shared event — don't clean up, it's managed by the shared events sync
+                    } else if (activePlan.eventType !== DEFAULT_PLAN.eventType) {
                         userRemove('partyplan')
                         userRemove(`partypal_guests_${activePlan.eventId}`)
                         userRemove(`partypal_vendors_${activePlan.eventId}`)
@@ -757,15 +775,18 @@ function DashboardContent() {
         return () => window.removeEventListener('focus', handleFocus)
     }, [data.eventId, isDemo])
 
-    // Fetch shared events from Firestore
-    useEffect(() => {
+    // Reusable function to fetch shared events from Firestore
+    const syncSharedEvents = useCallback(async (isInitial = false) => {
         if (!user?.uid) return
-        fetch(`/api/events/shared?uid=${user.uid}&email=${encodeURIComponent(user.email || '')}`)
-            .then(r => r.json())
-            .then(d => {
-                const shared = d.events || []
-                setSharedEvents(shared)
+        try {
+            const r = await fetch(`/api/events/shared?uid=${user.uid}&email=${encodeURIComponent(user.email || '')}`)
+            const d = await r.json()
+            const shared: PlanData[] = d.events || []
+            setSharedEvents(shared)
+            // Keep ref in sync for syncFromFirestore cleanup guard
+            sharedEventIdsRef.current = new Set(shared.map(e => e.eventId!).filter(Boolean))
 
+            if (isInitial) {
                 // If the user's current data.eventId matches one of these shared events, load it
                 // (This resolves the stub created on initial load from the URL parameter)
                 const targetShared = shared.find((e: any) => e.eventId === data.eventId)
@@ -793,9 +814,30 @@ function DashboardContent() {
                         }
                     }
                 }
-            })
-            .catch(() => { /* silent */ })
+            } else {
+                // Periodic refresh: update active shared event if server has newer data
+                const activePlan = userGetJSON<PlanData>('partyplan', null as any)
+                if (activePlan?.eventId) {
+                    const activeShared = shared.find(e => e.eventId === activePlan.eventId)
+                    if (activeShared) {
+                        const localTime = activePlan.updatedAt ? new Date(activePlan.updatedAt).getTime() : 0
+                        const serverTime = (activeShared as any).updatedAt ? new Date((activeShared as any).updatedAt).getTime() : 0
+                        if (serverTime > localTime) {
+                            userSetJSON('partyplan', activeShared)
+                            loadEvent(activeShared, false, undefined, true)
+                        }
+                    }
+                }
+            }
+        } catch { /* silent */ }
     }, [user])
+
+    // Initial shared events fetch + 30-second polling for collaborator updates
+    useEffect(() => {
+        syncSharedEvents(true)
+        const interval = setInterval(() => syncSharedEvents(false), 30000)
+        return () => clearInterval(interval)
+    }, [syncSharedEvents])
 
     // Animate progress bars on mount
     useEffect(() => {
@@ -2052,6 +2094,7 @@ function DashboardContent() {
                             isDemo={isDemo}
                             getContextPayload={getContextPayload}
                             learn={learn}
+                            onMoodboardChange={handleMoodboardChange}
                         />
                     </div>
                 )
