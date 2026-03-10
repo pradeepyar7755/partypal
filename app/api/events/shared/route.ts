@@ -23,8 +23,11 @@ export async function GET(req: NextRequest) {
                 for (const ref of eventRefs) {
                     const eventDoc = await db.collection('events').doc(ref.eventId).get()
                     if (eventDoc.exists) {
+                        const eventData = eventDoc.data()!
+                        // Skip trashed events
+                        if (eventData.trashedAt) continue
                         sharedEvents.push({
-                            ...eventDoc.data(),
+                            ...eventData,
                             eventId: ref.eventId,
                             collaboratorRole: ref.role,
                             isShared: true,
@@ -44,6 +47,8 @@ export async function GET(req: NextRequest) {
                     c.email === email || (uid && c.uid === uid)
                 )
                 if (isCollab && !sharedEvents.some(e => e.eventId === doc.id)) {
+                    // Skip trashed events
+                    if (data.trashedAt) return
                     const role = collabs.find((c: { email: string }) => c.email === email)?.role || 'Viewer'
                     sharedEvents.push({
                         ...data,

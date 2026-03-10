@@ -589,16 +589,33 @@ function DashboardContent() {
         }
 
         // If URL specifies an event, load that event
-        if (urlEventId && urlEventId !== 'demo') {
-            const targetEvent = storedEvents.find(ev => ev.eventId === urlEventId)
-            if (targetEvent) {
-                loadEvent(targetEvent, false, urlTab || 'plan')
-                return
+        if (urlEventId) {
+            // If URL says demo but user has real events, skip demo and load a real event below
+            if (urlEventId === 'demo') {
+                const realEvents = storedEvents.filter(e => e.eventId && e.eventId !== 'demo')
+                if (realEvents.length > 0) {
+                    // Fall through to load a real event instead of demo
+                } else {
+                    // No real events — show demo properly
+                    const saved = userGetJSON('partypal_demo', null)
+                    loadEvent(saved || DEFAULT_PLAN, true)
+                    return
+                }
             } else {
-                // Event not found locally (might be a shared event loading from cloud)
-                // Load a stub so the URL param isn't overwritten by the demo card
-                loadEvent({ ...DEFAULT_PLAN, eventId: urlEventId }, false, urlTab || 'plan')
-                return
+                const targetEvent = storedEvents.find(ev => ev.eventId === urlEventId)
+                if (targetEvent) {
+                    loadEvent(targetEvent, false, urlTab || 'plan')
+                    return
+                }
+                // Event not found locally — only load stub if user has other real events
+                // (meaning this is likely a shared event loading from cloud).
+                // If user has NO events, fall through to demo instead.
+                const realEvents = storedEvents.filter(e => e.eventId && e.eventId !== 'demo')
+                if (realEvents.length > 0) {
+                    loadEvent({ ...DEFAULT_PLAN, eventId: urlEventId }, false, urlTab || 'plan')
+                    return
+                }
+                // No real events and event not found — fall through to demo
             }
         }
 
@@ -636,7 +653,7 @@ function DashboardContent() {
         try {
             const res = await fetch(`/api/events?uid=${user.uid}&includeTrashed=true`)
             const d = await res.json()
-            const serverEvents: PlanData[] = (d.events || []).filter((e: any) => !deletedEventIdsRef.current.has(e.eventId))
+            const serverEvents: PlanData[] = (d.events || []).filter((e: any) => !deletedEventIdsRef.current.has(e.eventId) && !e.trashedAt)
             // Update trashed events list from server
             if (d.trashedEvents) setTrashedEvents(d.trashedEvents as PlanData[])
             if (serverEvents.length === 0 && !isInitial) return

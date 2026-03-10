@@ -922,6 +922,7 @@
 @media (max-width: 900px) {
     .main {
         grid-template-columns: 1fr;
+        gap: 1.25rem;
     }
 
     .vendorsTabGrid {
@@ -939,7 +940,7 @@
 
 @media (max-width: 600px) {
     .header {
-        padding: 1.2rem 1rem 0.8rem;
+        padding: 0.8rem 1rem 0.5rem;
     }
 
     .headerTitle {
@@ -947,45 +948,46 @@
     }
 
     .headerHeading {
-        font-size: 1.3rem;
-        margin-bottom: 0.2rem;
+        font-size: 1.2rem;
+        margin-bottom: 0.15rem;
     }
 
     .headerSubtitle {
-        font-size: 0.8rem;
-        margin-bottom: 0.3rem;
+        font-size: 0.75rem;
+        margin-bottom: 0.15rem;
     }
 
     .main {
-        padding: 0.6rem;
+        padding: 0.4rem;
+        gap: 0.75rem;
     }
 
     .sectionCard {
-        padding: 1rem;
-        border-radius: 14px;
-        margin-bottom: 0.75rem;
+        padding: 0.8rem;
+        border-radius: 12px;
+        margin-bottom: 0.5rem;
     }
 
     .sidebarCard {
-        padding: 1rem;
-        border-radius: 14px;
-        margin-bottom: 0.75rem;
+        padding: 0.8rem;
+        border-radius: 12px;
+        margin-bottom: 0.5rem;
     }
 
     .cardHeader {
-        margin-bottom: 0.75rem;
+        margin-bottom: 0.5rem;
     }
 
     .adWrapper {
-        padding: 0.25rem 0.5rem;
+        padding: 0.15rem 0.5rem;
     }
 
     .eventCardsWrapper {
-        padding: 0.5rem 0.5rem 0;
+        padding: 0.4rem 0.5rem 0;
     }
 
     .headerBreadcrumb {
-        margin-bottom: 0.3rem;
+        margin-bottom: 0.2rem;
         font-size: 0.72rem;
     }
 
@@ -994,24 +996,29 @@
     }
 
     .emptyState {
-        padding: 2rem 1rem;
+        padding: 1.2rem 1rem;
     }
 
     .emptyIcon {
-        font-size: 2.5rem;
-        margin-bottom: 0.5rem;
+        font-size: 2rem;
+        margin-bottom: 0.3rem;
+    }
+
+    .emptyTitle {
+        font-size: 1.2rem;
+        margin-bottom: 0.3rem;
     }
 
     .tabBtn {
         flex: 1 1 auto;
         font-size: 0.72rem;
-        padding: 0.6rem 0.25rem;
+        padding: 0.5rem 0.25rem;
         min-width: min-content;
     }
 
     .checkItem {
-        padding: 0.6rem 0.8rem;
-        gap: 0.6rem;
+        padding: 0.5rem 0.7rem;
+        gap: 0.5rem;
     }
 
     .checkLabel {
@@ -1020,6 +1027,10 @@
 
     .budgetAmount {
         font-size: 1.8rem;
+    }
+
+    .budgetTotal {
+        margin-bottom: 0.8rem;
     }
 
     .aiGenerating {
@@ -1034,6 +1045,7 @@
 
     .timelineItem {
         gap: 0.8rem;
+        padding-bottom: 1rem;
     }
 
     .tlTitle {
@@ -1044,11 +1056,19 @@
         font-size: 0.78rem;
     }
 
+    .sidebarTitle {
+        margin-bottom: 0.8rem;
+    }
+
+    .progressList {
+        gap: 0.6rem;
+    }
+
     .demoBanner {
         flex-direction: column;
         align-items: stretch;
-        gap: 0.8rem;
-        padding: 1rem;
+        gap: 0.6rem;
+        padding: 0.8rem;
     }
 
     .demoTextWrapper {
@@ -1080,11 +1100,15 @@
     .demoActions {
         flex-direction: column;
         width: 100%;
-        gap: 0.5rem;
+        gap: 0.4rem;
     }
 
     .demoCreateBtn,
     .demoResetBtn {
         width: 100%;
+    }
+
+    .checklist {
+        gap: 0.4rem;
     }
 }
