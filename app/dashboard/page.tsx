@@ -1589,6 +1589,21 @@ function DashboardContent() {
         }).catch(() => showToast('Failed to delete', 'error'))
     }
 
+    const emptyTrash = () => {
+        if (!confirm(`Permanently delete all ${trashedEvents.length} trashed event${trashedEvents.length !== 1 ? 's' : ''}? This cannot be undone.`)) return
+        Promise.all(trashedEvents.map(ev =>
+            fetch('/api/events', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ eventId: ev.eventId, uid: user?.uid, action: 'permanent_delete' }),
+            })
+        )).then(() => {
+            setTrashedEvents([])
+            setShowTrash(false)
+            showToast('Trash emptied', 'success')
+        }).catch(() => showToast('Failed to empty trash', 'error'))
+    }
+
     const resignFromEvent = async (eventId: string, e: React.MouseEvent) => {
         e.stopPropagation()
         if (!confirm('Leave this shared event? You will no longer have access.')) return
@@ -1943,17 +1958,29 @@ function DashboardContent() {
                         {/* Trash toggle */}
                         {trashedEvents.length > 0 && (
                             <div style={{ maxWidth: 1200, margin: '0.3rem auto 0', padding: '0 0.75rem' }}>
-                                <button
-                                    onClick={() => setShowTrash(prev => !prev)}
-                                    style={{
-                                        background: 'none', border: 'none', cursor: 'pointer',
-                                        fontSize: '0.72rem', color: '#9aabbb', fontWeight: 700,
-                                        display: 'flex', alignItems: 'center', gap: '0.3rem',
-                                    }}
-                                >
-                                    🗑️ Trash ({trashedEvents.length})
-                                    <span style={{ fontSize: '0.6rem' }}>{showTrash ? '▲' : '▼'}</span>
-                                </button>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                    <button
+                                        onClick={() => setShowTrash(prev => !prev)}
+                                        style={{
+                                            background: 'none', border: 'none', cursor: 'pointer',
+                                            fontSize: '0.72rem', color: '#9aabbb', fontWeight: 700,
+                                            display: 'flex', alignItems: 'center', gap: '0.3rem',
+                                        }}
+                                    >
+                                        🗑️ Trash ({trashedEvents.length})
+                                        <span style={{ fontSize: '0.6rem' }}>{showTrash ? '▲' : '▼'}</span>
+                                    </button>
+                                    {showTrash && (
+                                        <button
+                                            onClick={emptyTrash}
+                                            style={{
+                                                background: 'rgba(232,137,106,0.08)', border: '1.5px solid rgba(232,137,106,0.2)',
+                                                borderRadius: 6, padding: '0.15rem 0.5rem', cursor: 'pointer',
+                                                fontSize: '0.62rem', fontWeight: 800, color: '#E8896A', whiteSpace: 'nowrap',
+                                            }}
+                                        >Empty Trash</button>
+                                    )}
+                                </div>
                                 {showTrash && (
                                     <div style={{ display: 'flex', gap: '0.5rem', overflowX: 'auto', padding: '0.4rem 0', scrollbarWidth: 'thin' }}>
                                         {trashedEvents.map(ev => {
@@ -2567,7 +2594,7 @@ function DashboardContent() {
                                                 ⏳ Event Countdown
                                             </div>
                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
-                                                <button onClick={() => isGuest ? setShowSignupPrompt('collaborate') : setShowCollabModal(true)} style={{ background: collaborators.length > 0 ? 'rgba(74,173,168,0.08)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${collaborators.length > 0 ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`, borderRadius: 8, padding: '0.2rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: collaborators.length > 0 ? 'var(--teal)' : 'var(--navy)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>👥 Add Collaborators{collaborators.length > 0 && <span style={{ background: 'var(--teal)', color: '#fff', fontSize: '0.58rem', fontWeight: 900, borderRadius: '50%', width: 16, height: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{collaborators.length}</span>}</button>
+                                                <button onClick={() => isGuest ? setShowSignupPrompt('collaborate') : setShowCollabModal(true)} style={{ background: collaborators.length > 0 ? 'rgba(74,173,168,0.08)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${collaborators.length > 0 ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`, borderRadius: 8, padding: '0.2rem 0.6rem', fontSize: '0.7rem', fontWeight: 800, color: collaborators.length > 0 ? 'var(--teal)' : 'var(--navy)', cursor: 'pointer', whiteSpace: 'nowrap', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: '0.3rem' }}>👥 Collaborators{collaborators.length > 0 && <span style={{ background: 'var(--teal)', color: '#fff', fontSize: '0.58rem', fontWeight: 900, borderRadius: '50%', width: 16, height: 16, display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}>{collaborators.length}</span>}</button>
                                                 <div style={{ fontSize: '0.78rem', fontWeight: 800, color: daysLeft !== null && daysLeft <= 7 ? '#E8896A' : 'var(--teal)' }}>
                                                     {daysLeft !== null ? (daysLeft === 0 ? '🎉 Today!' : `${daysLeft} day${daysLeft !== 1 ? 's' : ''} left`) : 'No date set'}
                                                 </div>
