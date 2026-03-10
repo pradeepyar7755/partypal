@@ -232,6 +232,7 @@ function DashboardContent() {
     const [dragIdx, setDragIdx] = useState<number | null>(null)
     const [allEvents, setAllEvents] = useState<PlanData[]>([])
     const [sharedEvents, setSharedEvents] = useState<PlanData[]>([])
+    const [eventSortOrder, setEventSortOrder] = useState<'date' | 'created'>('date')
     const [trashedEvents, setTrashedEvents] = useState<PlanData[]>([])
     const [showTrash, setShowTrash] = useState(false)
     const [checklist, setChecklist] = useState<ChecklistItem[]>([])
@@ -560,6 +561,10 @@ function DashboardContent() {
         })
         setAllEvents(storedEvents)
 
+        // Load persisted event sort preference
+        const savedSort = userGet('partypal_event_sort')
+        if (savedSort === 'date' || savedSort === 'created') setEventSortOrder(savedSort)
+
         // Load the active plan
         const stored = userGet('partyplan')
         let parsed: PlanData
@@ -599,7 +604,14 @@ function DashboardContent() {
             }
         }
 
-        loadEvent(parsed, !stored, urlTab || undefined)
+        // If no stored active plan but real events exist, load the first one
+        // instead of falling back to the demo card
+        const realEvents = storedEvents.filter(e => e.eventId && e.eventId !== 'demo')
+        if (!stored && realEvents.length > 0) {
+            loadEvent(realEvents[0], false, urlTab || undefined)
+        } else {
+            loadEvent(parsed, !stored, urlTab || undefined)
+        }
     }, [authLoading])
 
     // React to URL search param changes during SPA navigation
@@ -792,10 +804,15 @@ function DashboardContent() {
             sharedEventIdsRef.current = new Set(shared.map(e => e.eventId!).filter(Boolean))
 
             if (isInitial) {
-                // If the user's current data.eventId matches one of these shared events, load it
+                // Read the active plan directly from localStorage to avoid stale closure
+                // (this useCallback depends on [user], so data/allEvents may be stale)
+                const activePlan = userGetJSON<PlanData>('partyplan', null as any)
+                const localEvents: PlanData[] = userGetJSON('partypal_events', [])
+
+                // If the user's current active plan matches one of these shared events, load it
                 // (This resolves the stub created on initial load from the URL parameter)
-                const targetShared = shared.find((e: any) => e.eventId === data.eventId)
-                if (targetShared && data.eventType === DEFAULT_PLAN.eventType) {
+                const targetShared = activePlan?.eventId ? shared.find((e: any) => e.eventId === activePlan.eventId) : null
+                if (targetShared && activePlan?.eventType === DEFAULT_PLAN.eventType) {
                     loadEvent(targetShared, false)
                     return
                 }
@@ -804,9 +821,9 @@ function DashboardContent() {
                 // Skip if user explicitly navigated to a specific event via URL
                 // Skip if user already has a real (non-demo) event loaded (e.g. just created one)
                 const urlParams = new URLSearchParams(window.location.search)
-                const currentIsReal = data.eventId && data.eventId !== 'demo' && data.eventType !== DEFAULT_PLAN.eventType
+                const currentIsReal = activePlan?.eventId && activePlan.eventId !== 'demo' && activePlan.eventType !== DEFAULT_PLAN.eventType
                 if (!currentIsReal && (!urlParams.get('event') || urlParams.get('event') === 'demo')) {
-                    const ownEvents = allEvents.filter(e => e.eventId !== 'demo')
+                    const ownEvents = localEvents.filter(e => e.eventId !== 'demo')
                     const allCandidates = [...ownEvents, ...shared]
                     if (allCandidates.length > 0) {
                         // Sort by creation time descending (most recently created first)
@@ -816,7 +833,7 @@ function DashboardContent() {
                             return bT - aT
                         })
                         const best = sorted[0]
-                        if (best.eventId !== data.eventId) {
+                        if (best.eventId !== activePlan?.eventId) {
                             loadEvent(best, false)
                         }
                     }
@@ -1782,7 +1799,15 @@ function DashboardContent() {
                     { bg: 'rgba(66,133,244,0.08)', border: 'rgba(66,133,244,0.25)' },
                 ]
                 const sharedIds = new Set(sharedEvents.map(se => se.eventId))
-                const sortedEvents = [...allEvents.map(e => ({ ...e, _shared: sharedIds.has(e.eventId) })), ...sharedEvents.filter(se => !allEvents.some(e => e.eventId === se.eventId)).map(e => ({ ...e, _shared: true }))].sort((a, b) => {
+                const mergedEvents = [...allEvents.map(e => ({ ...e, _shared: sharedIds.has(e.eventId) })), ...sharedEvents.filter(se => !allEvents.some(e => e.eventId === se.eventId)).map(e => ({ ...e, _shared: true }))]
+                const sortedEvents = mergedEvents.sort((a, b) => {
+                    if (eventSortOrder === 'created') {
+                        // Sort by creation time descending (most recently created first)
+                        const aT = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : 0
+                        const bT = (b as any).createdAt ? new Date((b as any).createdAt).getTime() : 0
+                        return bT - aT
+                    }
+                    // Default: sort by event date (upcoming first, past after)
                     const now = new Date()
                     const aDate = a.date ? new Date(a.date + 'T12:00:00') : null
                     const bDate = b.date ? new Date(b.date + 'T12:00:00') : null
@@ -1811,7 +1836,25 @@ function DashboardContent() {
                                 <div style={{ fontSize: '1.5rem', opacity: 0.5 }}>➕</div>
                                 <div style={{ fontSize: '0.78rem', color: '#9aabbb', fontWeight: 700 }}>Plan a Party</div>
                             </div>
-                            {/* All events (own + shared) sorted by date: upcoming first, past after */}
+                            {/* Sort toggle */}
+                            <div style={{
+                                minWidth: 'fit-content', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.25rem',
+                            }}>
+                                <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)' }}>
+                                    {([['date', 'By Date'], ['created', 'Newest']] as const).map(([value, label]) => (
+                                        <button
+                                            key={value}
+                                            onClick={() => { setEventSortOrder(value); userSet('partypal_event_sort', value) }}
+                                            style={{
+                                                padding: '0.35rem 0.6rem', fontSize: '0.7rem', fontWeight: 600, cursor: 'pointer', border: 'none', transition: 'all 0.2s',
+                                                background: eventSortOrder === value ? 'rgba(74,173,168,0.15)' : 'transparent',
+                                                color: eventSortOrder === value ? '#3a8c6e' : '#9aabbb',
+                                            }}
+                                        >{label}</button>
+                                    ))}
+                                </div>
+                            </div>
+                            {/* All events (own + shared) sorted by selected order */}
                             {sortedEvents.map((ev, idx) => {
                                 const isActive = !isDemo && data.eventId === ev.eventId
                                 const evDate = ev.date ? new Date(ev.date + 'T12:00:00') : null
