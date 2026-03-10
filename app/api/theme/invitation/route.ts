@@ -87,7 +87,7 @@ Motif options: "floral-corners", "geometric-border", "watercolor-wash", "minimal
 Make each design distinct and deeply themed.`
         }
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { thinkingConfig: { thinkingBudget: 0 } } })
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { thinkingConfig: { thinkingBudget: 0 } } as object })
         const result = await model.generateContent(prompt)
         const text = result.response.text()
         const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()

@@ -162,7 +162,7 @@ CHECKLIST RULES:
 
 Make ALL content specific to the actual event details provided. Adjust budget percentages to make sense for the event type and the budget amount given.`
 
-    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { thinkingConfig: { thinkingBudget: 0 } } })
+    const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { thinkingConfig: { thinkingBudget: 0 } } as object })
     const result = await model.generateContent(prompt)
     const text = result.response.text()
     const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
