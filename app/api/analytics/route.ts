@@ -148,11 +148,11 @@ export async function GET(req: NextRequest) {
                             const snap = await db.collection('analytics_events')
                                 .where('event', '==', 'error')
                                 .orderBy('serverTimestamp', 'desc')
-                                .limit(20)
+                                .limit(50)
                                 .get()
                             return snap.docs.map(doc => {
                                 const d = doc.data()
-                                return { message: d.properties?.error || 'Unknown', source: d.properties?.source || '', page: d.page, timestamp: d.timestamp, userId: d.userId as string | undefined }
+                                return { message: d.properties?.error || d.properties?.message || 'Unknown', source: d.properties?.source || '', page: d.page || '', timestamp: d.serverTimestamp || d.timestamp || '', userId: d.userId as string | undefined }
                             })
                         },
                         [] as { message: string; source: string; page: string; timestamp: string; userId: string | undefined }[]
@@ -348,6 +348,7 @@ export async function GET(req: NextRequest) {
 
                 const pageViewsByDay: { date: string; views: number }[] = []
                 const signUpsByDay: { date: string; count: number }[] = []
+                const errorsByDay: { date: string; count: number }[] = []
 
                 for (const day of dailyData) {
                     const events = (day.events || {}) as Record<string, number>
@@ -364,6 +365,9 @@ export async function GET(req: NextRequest) {
                     totalEvents += (day.totalEvents as number) || 0
                     pageViewsByDay.push({ date: day.date as string, views: pv })
                     signUpsByDay.push({ date: day.date as string, count: events.sign_up || 0 })
+                    if (events.error > 0) {
+                        errorsByDay.push({ date: day.date as string, count: events.error })
+                    }
                 }
 
                 // Fill empty chart data when no Firestore data exists
@@ -414,6 +418,7 @@ export async function GET(req: NextRequest) {
                     signUpsByDay: signUpsByDay.reverse(),
                     pagePopularity,
                     recentErrors,
+                    errorsByDay: errorsByDay.sort((a, b) => b.date.localeCompare(a.date)),
                     recentActivity,
                     eventInsights,
                     eventDeletions: eventDeletionData,

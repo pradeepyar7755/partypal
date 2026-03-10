@@ -39,6 +39,7 @@ interface DashboardData {
     signUpsByDay: { date: string; count: number }[]
     pagePopularity: Record<string, number>
     recentErrors: { message: string; source: string; page: string; timestamp: string; userId?: string }[]
+    errorsByDay: { date: string; count: number }[]
     recentActivity: { event: string; page: string; timestamp: string; userId?: string; properties?: Record<string, unknown> }[]
     eventInsights: {
         totalEventsCreated: number
@@ -148,8 +149,8 @@ export default function AdminDashboard() {
         multiSelectPolls: number; multiSelectRate: string
     } | null>(null)
 
-    // Bug reports state
-    const [bugReports, setBugReports] = useState<{ id: string; category: string; description: string; page: string; status: string; createdAt: string; email: string; name: string; uid: string }[]>([])
+    // Pipeline tickets state
+    const [pipelineTickets, setPipelineTickets] = useState<{ id: string; title: string; description: string; type: string; priority: string; status: string; createdAt: string; sourcePage?: string; sourceCategory?: string }[]>([])
     const [showBugReports, setShowBugReports] = useState(true)
     const [bugFilter, setBugFilter] = useState<'open' | 'all'>('open')
     const [expandedBugId, setExpandedBugId] = useState<string | null>(null)
@@ -214,33 +215,23 @@ export default function AdminDashboard() {
         }
     }, [authLoading, isAdmin])
 
-    // Fetch bug reports
+    // Fetch open bugs from pipeline tickets
     useEffect(() => {
-        if (!authLoading && isAdmin) {
+        if (!authLoading && isAdmin && user) {
             (async () => {
                 try {
-                    const res = await fetch('/api/bugs')
+                    const token = await user.getIdToken()
+                    const res = await fetch('/api/admin/pipeline?action=tickets', {
+                        headers: { Authorization: `Bearer ${token}` },
+                    })
                     if (res.ok) {
                         const data = await res.json()
-                        setBugReports(data.bugs || [])
+                        setPipelineTickets(data.tickets || [])
                     }
                 } catch { /* silent */ }
             })()
         }
-    }, [authLoading, isAdmin])
-
-    const markBugStatus = async (id: string, newStatus: string) => {
-        try {
-            const res = await fetch('/api/bugs', {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ id, status: newStatus }),
-            })
-            if (res.ok) {
-                setBugReports(prev => prev.map(b => b.id === id ? { ...b, status: newStatus } : b))
-            }
-        } catch { /* silent */ }
-    }
+    }, [authLoading, isAdmin, user])
 
     // Fetch users drill-down data
     useEffect(() => {
@@ -393,7 +384,7 @@ export default function AdminDashboard() {
                             <KPICard label="Vendor Searches" value={formatNumber(k!.totalVendorSearches)} icon="🔍" />
                             <KPICard label="RSVPs" value={formatNumber(k!.totalRSVPs)} icon="✅" />
                             <KPICard label="Errors" value={formatNumber(k!.totalErrors)} icon="🐛" color={k!.totalErrors > 0 ? '#E8896A' : undefined} />
-                            <KPICard label="Open Bugs" value={bugReports.filter(b => b.status !== 'fixed').length} icon="📋" color={bugReports.filter(b => b.status === 'new').length > 0 ? '#E8896A' : bugReports.filter(b => b.status !== 'fixed').length > 0 ? '#F7C948' : '#3D8C6E'} subtitle={`${bugReports.filter(b => b.status === 'new').length} new`} />
+                            <KPICard label="Open Bugs" value={pipelineTickets.filter(t => t.status === 'open' || t.status === 'in_progress').length} icon="📋" color={pipelineTickets.filter(t => t.status === 'open' || t.status === 'in_progress').length > 0 ? '#E8896A' : '#3D8C6E'} />
                             {usageData && (
                                 <>
                                     <KPICard label="Gemini AI Calls" value={formatNumber(usageData.apiMetrics?.totals?.gemini || 0)} icon="🧠" color="#7B5EA7" subtitle={`Est. ${usageData.apiMetrics?.estMonthlyCost || '$0'}/mo`} />
@@ -1003,13 +994,13 @@ export default function AdminDashboard() {
                         <div className={styles.sectionHeader}>
                             <span className={styles.sectionEmoji}>🐛</span>
                             <span className={styles.sectionTitle}>Errors & Bugs</span>
-                            <span className={styles.sectionSub} style={{ color: data.recentErrors.length > 0 ? '#E8896A' : undefined }}>
-                                {data.recentErrors.length > 0 ? `${data.recentErrors.length} recent errors` : k!.totalErrors > 0 ? `${k!.totalErrors} errors in period (resolved)` : 'No errors'}
+                            <span className={styles.sectionSub} style={{ color: (data.recentErrors.length > 0 || k!.totalErrors > 0) ? '#E8896A' : undefined }}>
+                                {data.recentErrors.length > 0 ? `${data.recentErrors.length} recent errors` : k!.totalErrors > 0 ? `${k!.totalErrors} errors in period` : 'No errors'}
                             </span>
                         </div>
                         {data.recentErrors.length > 0 ? (
                             <div className={styles.errorCard}>
-                                {data.recentErrors.slice(0, 10).map((err, i) => (
+                                {data.recentErrors.slice(0, 20).map((err, i) => (
                                     <div key={i} className={styles.errorItem}>
                                         <div className={styles.errorMsg}>{err.message}</div>
                                         <div className={styles.errorMeta}>
@@ -1019,22 +1010,33 @@ export default function AdminDashboard() {
                                     </div>
                                 ))}
                             </div>
+                        ) : k!.totalErrors > 0 && data.errorsByDay?.length > 0 ? (
+                            <div className={styles.errorCard}>
+                                <div style={{ color: '#E8896A', fontWeight: 700, marginBottom: '0.75rem' }}>
+                                    {k!.totalErrors} errors logged — individual events cleaned up, showing daily breakdown:
+                                </div>
+                                {data.errorsByDay.map((d, i) => (
+                                    <div key={i} className={styles.errorItem}>
+                                        <div className={styles.errorMsg}>{d.count} error{d.count !== 1 ? 's' : ''} on {d.date}</div>
+                                    </div>
+                                ))}
+                            </div>
                         ) : (
                             <div className={styles.chartCard} style={{ textAlign: 'center', padding: '2rem' }}>
                                 <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✅</div>
-                                <div style={{ color: '#3D8C6E', fontWeight: 800 }}>No recent errors detected!</div>
+                                <div style={{ color: '#3D8C6E', fontWeight: 800 }}>No errors detected!</div>
                                 <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', marginTop: '0.3rem' }}>
-                                    {k!.totalErrors > 0 ? `${k!.totalErrors} errors logged in aggregate data but no active error events found — they may have been cleaned up.` : 'Everything is running smoothly'}
+                                    Everything is running smoothly
                                 </div>
                             </div>
                         )}
 
-                        {/* ══ USER BUG REPORTS ══ */}
+                        {/* ══ OPEN BUGS (from Pipeline) ══ */}
                         <div className={styles.sectionHeader}>
                             <span className={styles.sectionEmoji}>📋</span>
-                            <span className={styles.sectionTitle}>User Bug Reports</span>
-                            <span className={styles.sectionSub} style={{ color: bugReports.filter(b => b.status === 'new').length > 0 ? '#E8896A' : undefined }}>
-                                {bugReports.filter(b => b.status === 'new').length} new · {bugReports.filter(b => b.status !== 'fixed').length} open · {bugReports.length} total
+                            <span className={styles.sectionTitle}>Open Bugs</span>
+                            <span className={styles.sectionSub} style={{ color: pipelineTickets.filter(t => t.status === 'open' || t.status === 'in_progress').length > 0 ? '#E8896A' : undefined }}>
+                                {pipelineTickets.filter(t => t.status === 'open' || t.status === 'in_progress').length} open · {pipelineTickets.length} total
                             </span>
                             <button
                                 onClick={() => setShowBugReports(!showBugReports)}
@@ -1046,16 +1048,16 @@ export default function AdminDashboard() {
                                     fontFamily: "'Nunito', sans-serif",
                                 }}
                             >
-                                {showBugReports ? '▲ Collapse' : '▼ Show Reports'}
+                                {showBugReports ? '▲ Collapse' : '▼ Show Bugs'}
                             </button>
                         </div>
                         {showBugReports && (
                             <div className={styles.chartCard}>
-                                {bugReports.length === 0 ? (
+                                {pipelineTickets.length === 0 ? (
                                     <div style={{ textAlign: 'center', padding: '2rem' }}>
                                         <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>✅</div>
-                                        <div style={{ color: '#3D8C6E', fontWeight: 800 }}>No bug reports!</div>
-                                        <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', marginTop: '0.3rem' }}>Users haven&apos;t reported any issues</div>
+                                        <div style={{ color: '#3D8C6E', fontWeight: 800 }}>No open bugs!</div>
+                                        <div style={{ color: 'rgba(255,255,255,0.3)', fontSize: '0.8rem', marginTop: '0.3rem' }}>All tickets are resolved</div>
                                     </div>
                                 ) : (
                                     <div style={{ overflowX: 'auto' }}>
@@ -1071,7 +1073,7 @@ export default function AdminDashboard() {
                                                     fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: "'Nunito', sans-serif",
                                                 }}
                                             >
-                                                Open ({bugReports.filter(b => b.status !== 'fixed').length})
+                                                Open ({pipelineTickets.filter(t => t.status === 'open' || t.status === 'in_progress').length})
                                             </button>
                                             <button
                                                 onClick={() => setBugFilter('all')}
@@ -1083,37 +1085,45 @@ export default function AdminDashboard() {
                                                     fontWeight: 700, fontSize: '0.72rem', cursor: 'pointer', fontFamily: "'Nunito', sans-serif",
                                                 }}
                                             >
-                                                All ({bugReports.length})
+                                                All ({pipelineTickets.length})
                                             </button>
                                         </div>
                                         <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: '0.8rem', fontFamily: "'Nunito', sans-serif" }}>
                                             <thead>
                                                 <tr style={{ borderBottom: '2px solid var(--border)', textTransform: 'uppercase', fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', letterSpacing: '0.5px' }}>
-                                                    <th style={{ padding: '0.6rem 0.8rem', textAlign: 'left' }}>Status</th>
-                                                    <th style={{ padding: '0.6rem 0.5rem', textAlign: 'left' }}>Category</th>
+                                                    <th style={{ padding: '0.6rem 0.8rem', textAlign: 'left' }}>Priority</th>
+                                                    <th style={{ padding: '0.6rem 0.5rem', textAlign: 'left' }}>Status</th>
+                                                    <th style={{ padding: '0.6rem 0.5rem', textAlign: 'left' }}>Title</th>
                                                     <th style={{ padding: '0.6rem 0.5rem', textAlign: 'left' }}>Description</th>
                                                     <th style={{ padding: '0.6rem 0.5rem', textAlign: 'left' }}>Page</th>
-                                                    <th style={{ padding: '0.6rem 0.5rem', textAlign: 'left' }}>Reporter</th>
                                                     <th style={{ padding: '0.6rem 0.5rem', textAlign: 'right' }}>When</th>
-                                                    <th style={{ padding: '0.6rem 0.8rem', textAlign: 'center' }}>Action</th>
                                                 </tr>
                                             </thead>
                                             <tbody>
-                                                {bugReports
-                                                    .filter(bug => bugFilter === 'all' ? true : bug.status !== 'fixed')
+                                                {pipelineTickets
+                                                    .filter(bug => bugFilter === 'all' ? true : bug.status === 'open' || bug.status === 'in_progress')
                                                     .map(bug => (
                                                     <tr key={bug.id} style={{ borderBottom: '1px solid rgba(0,0,0,0.05)' }}>
                                                         <td style={{ padding: '0.7rem 0.8rem' }}>
                                                             <span style={{
                                                                 padding: '0.2rem 0.5rem', borderRadius: 50, fontSize: '0.68rem', fontWeight: 800,
-                                                                background: bug.status === 'new' ? 'rgba(232,137,106,0.15)' : bug.status === 'reviewed' ? 'rgba(247,201,72,0.15)' : 'rgba(61,140,110,0.15)',
-                                                                color: bug.status === 'new' ? '#E8896A' : bug.status === 'reviewed' ? '#C4A020' : '#3D8C6E',
+                                                                background: bug.priority === 'P0' ? 'rgba(232,80,80,0.15)' : bug.priority === 'P1' ? 'rgba(232,137,106,0.15)' : bug.priority === 'P2' ? 'rgba(247,201,72,0.15)' : 'rgba(150,160,170,0.15)',
+                                                                color: bug.priority === 'P0' ? '#D04040' : bug.priority === 'P1' ? '#E8896A' : bug.priority === 'P2' ? '#C4A020' : '#8090A0',
                                                             }}>
-                                                                {bug.status === 'new' ? '🔴 New' : bug.status === 'reviewed' ? '🟡 Reviewed' : '🟢 Fixed'}
+                                                                {bug.priority}
+                                                            </span>
+                                                        </td>
+                                                        <td style={{ padding: '0.7rem 0.5rem' }}>
+                                                            <span style={{
+                                                                padding: '0.2rem 0.5rem', borderRadius: 50, fontSize: '0.68rem', fontWeight: 800,
+                                                                background: bug.status === 'open' ? 'rgba(232,137,106,0.15)' : bug.status === 'in_progress' ? 'rgba(74,173,168,0.15)' : bug.status === 'done' || bug.status === 'shipped' ? 'rgba(61,140,110,0.15)' : 'rgba(150,160,170,0.15)',
+                                                                color: bug.status === 'open' ? '#E8896A' : bug.status === 'in_progress' ? '#4AADA8' : bug.status === 'done' || bug.status === 'shipped' ? '#3D8C6E' : '#8090A0',
+                                                            }}>
+                                                                {bug.status === 'open' ? '🔴 Open' : bug.status === 'in_progress' ? '🔵 In Progress' : bug.status === 'done' ? '🟢 Done' : bug.status === 'shipped' ? '🟢 Shipped' : '⚪ ' + bug.status}
                                                             </span>
                                                         </td>
                                                         <td style={{ padding: '0.7rem 0.5rem', fontWeight: 700, color: 'var(--navy)' }}>
-                                                            {bug.category === 'bug' ? '🐛' : bug.category === 'feature' ? '⚙️' : bug.category === 'experience' ? '✨' : bug.category === 'tab' ? '🗂️' : bug.category === 'suggestion' ? '💡' : '📝'} {bug.category}
+                                                            {bug.type === 'bug' ? '🐛' : '⚙️'} {bug.title}
                                                         </td>
                                                         <td
                                                             style={{
@@ -1128,28 +1138,9 @@ export default function AdminDashboard() {
                                                                 <span style={{ color: '#4AADA8', fontSize: '0.7rem', fontWeight: 800, marginLeft: '0.3rem' }}>more</span>
                                                             )}
                                                         </td>
-                                                        <td style={{ padding: '0.7rem 0.5rem', color: '#6b7f94', fontWeight: 600, fontSize: '0.75rem' }}>{bug.page}</td>
-                                                        <td style={{ padding: '0.7rem 0.5rem', color: '#6b7f94', fontWeight: 600, fontSize: '0.75rem' }}>
-                                                            {bug.name || bug.email || 'Anonymous'}
-                                                        </td>
+                                                        <td style={{ padding: '0.7rem 0.5rem', color: '#6b7f94', fontWeight: 600, fontSize: '0.75rem' }}>{bug.sourcePage || '—'}</td>
                                                         <td style={{ padding: '0.7rem 0.5rem', textAlign: 'right', fontSize: '0.72rem', color: '#9aabbb', fontWeight: 600 }}>
                                                             {timeAgo(bug.createdAt)}
-                                                        </td>
-                                                        <td style={{ padding: '0.7rem 0.8rem', textAlign: 'center' }}>
-                                                            {bug.status === 'new' && (
-                                                                <button onClick={() => markBugStatus(bug.id, 'reviewed')} style={{
-                                                                    background: 'rgba(247,201,72,0.12)', border: '1px solid rgba(247,201,72,0.3)',
-                                                                    color: '#C4A020', padding: '0.25rem 0.6rem', borderRadius: 6,
-                                                                    fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', fontFamily: "'Nunito', sans-serif",
-                                                                }}>Mark Reviewed</button>
-                                                            )}
-                                                            {bug.status === 'reviewed' && (
-                                                                <button onClick={() => markBugStatus(bug.id, 'fixed')} style={{
-                                                                    background: 'rgba(61,140,110,0.12)', border: '1px solid rgba(61,140,110,0.3)',
-                                                                    color: '#3D8C6E', padding: '0.25rem 0.6rem', borderRadius: 6,
-                                                                    fontSize: '0.7rem', fontWeight: 800, cursor: 'pointer', fontFamily: "'Nunito', sans-serif",
-                                                                }}>Mark Fixed</button>
-                                                            )}
                                                         </td>
                                                     </tr>
                                                 ))}
