@@ -622,10 +622,18 @@ function DashboardContent() {
         // If no stored active plan but real events exist, load the first one
         // instead of falling back to the demo card
         const realEvents = storedEvents.filter(e => e.eventId && e.eventId !== 'demo')
-        if (!stored && realEvents.length > 0) {
-            loadEvent(realEvents[0], false, urlTab || undefined)
+        if (realEvents.length > 0) {
+            if (stored && realEvents.some(e => e.eventId === parsed.eventId)) {
+                // Active plan matches a real event — load it
+                loadEvent(parsed, false, urlTab || undefined)
+            } else {
+                // No matching active plan — load the first real event
+                loadEvent(realEvents[0], false, urlTab || undefined)
+            }
         } else {
-            loadEvent(parsed, !stored, urlTab || undefined)
+            // No real events — always show demo
+            const saved = userGetJSON('partypal_demo', null)
+            loadEvent(saved || DEFAULT_PLAN, true, urlTab || undefined)
         }
     }, [authLoading])
 
