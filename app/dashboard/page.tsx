@@ -1807,11 +1807,6 @@ function DashboardContent() {
                 </div>
             )}
 
-            {/* ══ AD UNIT ══ */}
-            <div className={styles.adWrapper}>
-                <AdUnit slot="dashboard-top" format="horizontal" />
-            </div>
-
             {/* ══ EVENT CARDS ══ */}
             {(() => {
                 // Compute active event's palette color for use in details strip and tabs
@@ -2137,6 +2132,11 @@ function DashboardContent() {
                     </div>
                 </>)
             })()}
+
+            {/* ══ AD UNIT (desktop only, hidden ≤900px) ══ */}
+            <div className={styles.adWrapperDesktop}>
+                <AdUnit slot="dashboard-top" format="horizontal" />
+            </div>
 
 
             {/* ══ THEME TAB ══ */}

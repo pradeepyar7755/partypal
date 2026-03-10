@@ -64,6 +64,12 @@
     padding: 0.5rem 0.75rem;
 }
 
+.adWrapperDesktop {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0.5rem 0.75rem;
+}
+
 .eventCardsWrapper {
     max-width: 1200px;
     margin: 0 auto;
@@ -941,6 +947,10 @@
 
     .adWrapper {
         padding: 0.25rem 0.75rem;
+    }
+
+    .adWrapperDesktop {
+        display: none;
     }
 
     .eventCardsWrapper {
