@@ -2029,14 +2029,7 @@ function DashboardContent() {
                                             <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>📍 {shortLocation(data.location)}</div>
                                             {data.theme && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>🎨 {data.theme}</div>}
                                             {data.budget && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>💰 {data.budget}</div>}
-                                            <div style={{ position: 'relative', display: 'inline-flex', marginLeft: 'auto' }}>
-                                                <button onClick={startEditing} style={{ background: 'rgba(74,173,168,0.1)', border: '1.5px solid rgba(74,173,168,0.25)', borderRadius: 8, padding: '0.3rem 0.8rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>✏️ Edit</button>
-                                                <div style={{ position: 'absolute', top: '-2.2rem', left: '50%', transform: 'translateX(-50%)', background: 'var(--navy)', color: '#fff', fontSize: '0.58rem', fontWeight: 800, padding: '0.2rem 0.5rem', borderRadius: 6, whiteSpace: 'nowrap', zIndex: 50, boxShadow: '0 2px 8px rgba(0,0,0,0.2)', pointerEvents: 'none' }}>
-                                                    Rename/Edit Event
-                                                    <div style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '5px solid var(--navy)' }} />
-                                                </div>
-                                                <span style={{ position: 'absolute', top: -2, right: -2, width: 8, height: 8, borderRadius: '50%', background: '#E8896A', animation: 'pulse 1.5s infinite', zIndex: 51 }} />
-                                            </div>
+                                            <button onClick={startEditing} style={{ marginLeft: 'auto', background: 'rgba(74,173,168,0.1)', border: '1.5px solid rgba(74,173,168,0.25)', borderRadius: 8, padding: '0.3rem 0.8rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>✏️ Edit</button>
                                         </div>
                                     ) : (
                                         <div>
@@ -2638,7 +2631,7 @@ function DashboardContent() {
                                                 <button onClick={() => setTasksCollapsed(!tasksCollapsed)} title={tasksCollapsed ? 'Show smart checklist' : 'Hide smart checklist'} style={{ background: tasksCollapsed ? 'rgba(74,173,168,0.1)' : 'transparent', color: tasksCollapsed ? 'var(--teal)' : '#9aabbb', border: `1.5px solid ${tasksCollapsed ? 'rgba(74,173,168,0.3)' : 'var(--border)'}`, borderRadius: 6, padding: '0.18rem 0.35rem', fontSize: '0.62rem', cursor: 'pointer', transition: 'all 0.2s', whiteSpace: 'nowrap' }}>{tasksCollapsed ? '☐' : '☑'}</button>
                                                 {showChecklistHint && tasksCollapsed && (
                                                     <div style={{ position: 'absolute', top: '-2.2rem', left: '50%', transform: 'translateX(-50%)', background: 'var(--navy)', color: '#fff', fontSize: '0.6rem', fontWeight: 800, padding: '0.25rem 0.5rem', borderRadius: 6, whiteSpace: 'nowrap', zIndex: 50, boxShadow: '0 2px 8px rgba(0,0,0,0.2)', pointerEvents: 'none' }}>
-                                                        Open Smart Checklist ✨
+                                                        Checklist ✨
                                                         <div style={{ position: 'absolute', bottom: -4, left: '50%', transform: 'translateX(-50%)', width: 0, height: 0, borderLeft: '4px solid transparent', borderRight: '4px solid transparent', borderTop: '5px solid var(--navy)' }} />
                                                     </div>
                                                 )}
