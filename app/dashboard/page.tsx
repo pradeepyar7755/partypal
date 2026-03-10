@@ -635,13 +635,16 @@ function DashboardContent() {
     const urlTabParam = searchParams.get('tab')
     useEffect(() => {
         if (authLoading || !urlEventParam) return
+        // Skip demo event ID — handled by initial load
+        if (urlEventParam === 'demo') return
         const storedEvents: PlanData[] = userGetJSON('partypal_events', [])
         const targetEvent = storedEvents.find(ev => ev.eventId === urlEventParam)
         if (targetEvent) {
             loadEvent(targetEvent, false, (urlTabParam as 'plan' | 'theme' | 'vendors' | 'guests' | 'polls') || 'plan')
         } else {
-            // Stub for shared events loading from cloud
-            if (data.eventId !== urlEventParam) {
+            // Stub for shared events loading from cloud — only if user has real events
+            const realEvents = storedEvents.filter(e => e.eventId && e.eventId !== 'demo')
+            if (realEvents.length > 0 && data.eventId !== urlEventParam) {
                 loadEvent({ ...DEFAULT_PLAN, eventId: urlEventParam }, false, (urlTabParam as 'plan' | 'theme' | 'vendors' | 'guests' | 'polls') || 'plan')
             }
         }
