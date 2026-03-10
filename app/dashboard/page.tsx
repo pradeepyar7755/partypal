@@ -9,7 +9,6 @@ import GuestManager from '@/components/GuestManager'
 import { useAuth } from '@/components/AuthContext'
 import { useAIContext } from '@/lib/useAIContext'
 import CreatePoll from '@/components/CreatePoll'
-import AdUnit from '@/components/AdUnit'
 import { trackEventDeleted } from '@/lib/analytics'
 import ThemeTab from '@/components/ThemeTab'
 
@@ -3616,10 +3615,6 @@ function DashboardContent() {
                     </div>
                 </div>
             )}
-            {/* ══ AD UNIT (desktop only, hidden ≤900px) ══ */}
-            <div className={styles.adWrapperDesktop}>
-                <AdUnit slot="dashboard-top" format="horizontal" />
-            </div>
         </main >
     )
 }

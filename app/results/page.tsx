@@ -3,7 +3,6 @@ import { userGet } from '@/lib/userStorage'
 import { useState, useEffect } from 'react'
 import { useRouter } from 'next/navigation'
 import styles from './results.module.css'
-import AdUnit from '@/components/AdUnit'
 
 interface ChecklistItem { item: string; category: string; done: boolean }
 interface TimelineItem { weeks: string; task: string; category: string; priority: string }
@@ -256,7 +255,6 @@ export default function Results() {
           <button className="btn-primary" onClick={() => router.push(`/vendors?location=${data.location}&theme=${data.theme || ''}`)}>Browse All Vendors →</button>
         </div>
       )}
-      <AdUnit slot="results-mid" format="horizontal" style={{ margin: '1.5rem auto', maxWidth: 1200 }} />
     </main>
   )
 }
