@@ -7,7 +7,10 @@
 import { getDb } from '@/lib/firebase'
 
 // ── Configuration ─────────────────────────────────────
-// Gemini 2.5 Flash — Paid Tier 1 limits:
+// Set to true to enforce per-user daily rate limits
+export const RATE_LIMITING_ENABLED = false
+
+// Gemini 2.0 Flash — Paid Tier 1 limits:
 export const PLAN_CONFIG = {
     dailyRequestBudget: 1500,     // Paid Tier 1: 1,500 RPD
     requestsPerMinute: 300,       // Paid Tier 1: 300 RPM
@@ -61,6 +64,11 @@ export async function checkRateLimit(
 ): Promise<{ allowed: boolean; remaining: number; limit: number; resetAt: string }> {
     const today = new Date().toISOString().split('T')[0]
 
+    // Skip all Firestore checks when rate limiting is off
+    if (!RATE_LIMITING_ENABLED) {
+        return { allowed: true, remaining: 999, limit: 999, resetAt: `${today}T23:59:59Z` }
+    }
+
     // Gracefully handle missing Firebase Admin credentials
     // (e.g. local dev without FIREBASE_SERVICE_ACCOUNT)
     let db: ReturnType<typeof getDb>
@@ -75,11 +83,12 @@ export async function checkRateLimit(
         const safeId = identifier.replace(/[./]/g, '_')   // sanitize IPs for Firestore doc ids
         const rateLimitRef = db.collection('rate_limits').doc(`${safeId}_${today}`)
 
-        const doc = await rateLimitRef.get()
+        // Parallelize Firestore reads for speed
+        const [doc, usersSnap] = await Promise.all([
+            rateLimitRef.get(),
+            db.collection('users').count().get(),
+        ])
         const currentCount = doc.exists ? (doc.data()?.count || 0) : 0
-
-        // Get current user count to determine tier
-        const usersSnap = await db.collection('users').count().get()
         const registeredUsers = usersSnap.data().count || 1
         const tier = getCurrentTier(registeredUsers)
 

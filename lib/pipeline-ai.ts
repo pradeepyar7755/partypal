@@ -115,7 +115,7 @@ export async function executeAgent(
     }
 
     try {
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
 
         const result = await model.generateContent({
             contents: [{ role: 'user', parts: [{ text: `${systemPrompt}\n\n---\n\nInput:\n${input}` }] }],
@@ -140,7 +140,7 @@ export async function executeAgent(
             agent,
             status: 'success',
             result: parsed,
-            model: 'gemini-2.5-flash',
+            model: 'gemini-2.0-flash',
             tokensUsed: result.response.usageMetadata?.totalTokenCount,
             durationMs: Date.now() - startTime,
         }
@@ -150,7 +150,7 @@ export async function executeAgent(
             agent,
             status: 'error',
             result: { error: msg },
-            model: 'gemini-2.5-flash',
+            model: 'gemini-2.0-flash',
             durationMs: Date.now() - startTime,
         }
     }

@@ -74,7 +74,7 @@ Return ONLY valid JSON array (exactly 5 concepts), no markdown:
 Make each concept deeply themed and unique.`
         }
 
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
         const result = await model.generateContent(prompt)
         const text = result.response.text()
         const cleaned = text.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim()
