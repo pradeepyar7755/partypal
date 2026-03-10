@@ -227,7 +227,7 @@ const DEFAULT_PLAN: PlanData = {
 
 function DashboardContent() {
     const router = useRouter()
-    const { user } = useAuth()
+    const { user, loading: authLoading } = useAuth()
     const [data, setData] = useState<PlanData>(DEFAULT_PLAN)
     const [dragIdx, setDragIdx] = useState<number | null>(null)
     const [allEvents, setAllEvents] = useState<PlanData[]>([])
@@ -546,6 +546,11 @@ function DashboardContent() {
     }
 
     useEffect(() => {
+        // Wait for Firebase Auth to resolve so userStorage has the correct uid scope.
+        // Without this guard, a page refresh reads un-scoped localStorage keys and
+        // shows DEFAULT_PLAN ("Maya's 30th Birthday") instead of the real user's events.
+        if (authLoading) return
+
         // Load all events from localStorage, filtering out any that were deleted
         const storedEvents: PlanData[] = userGetJSON('partypal_events', [])
             .filter((ev: PlanData) => !ev.eventId || !deletedEventIdsRef.current.has(ev.eventId))
@@ -595,14 +600,14 @@ function DashboardContent() {
         }
 
         loadEvent(parsed, !stored, urlTab || undefined)
-    }, [])
+    }, [authLoading])
 
     // React to URL search param changes during SPA navigation
     const searchParams = useSearchParams()
     const urlEventParam = searchParams.get('event')
     const urlTabParam = searchParams.get('tab')
     useEffect(() => {
-        if (!urlEventParam) return
+        if (authLoading || !urlEventParam) return
         const storedEvents: PlanData[] = userGetJSON('partypal_events', [])
         const targetEvent = storedEvents.find(ev => ev.eventId === urlEventParam)
         if (targetEvent) {
@@ -613,7 +618,7 @@ function DashboardContent() {
                 loadEvent({ ...DEFAULT_PLAN, eventId: urlEventParam }, false, (urlTabParam as 'plan' | 'theme' | 'vendors' | 'guests' | 'polls') || 'plan')
             }
         }
-    }, [urlEventParam, urlTabParam])
+    }, [urlEventParam, urlTabParam, authLoading])
 
     // Multi-device sync: merge Firestore events with localStorage
     const syncFromFirestore = useCallback(async (isInitial = false) => {
@@ -1688,6 +1693,12 @@ function DashboardContent() {
     const totalSpan = (eventDate && createdDate) ? Math.max(1, Math.ceil((eventDate.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24))) : 42
     const elapsed = (createdDate) ? Math.max(0, Math.ceil((today.getTime() - createdDate.getTime()) / (1000 * 60 * 60 * 24))) : 0
     const countdownPct = Math.min(100, Math.max(0, Math.round((elapsed / totalSpan) * 100)))
+
+    // Show empty shell while Firebase Auth is resolving to prevent
+    // flashing DEFAULT_PLAN data from un-scoped localStorage reads
+    if (authLoading) {
+        return <main className="page-enter" style={{ minHeight: '100vh' }} />
+    }
 
     return (
         <main className="page-enter">
