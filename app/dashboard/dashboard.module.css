@@ -44,6 +44,41 @@
     margin-bottom: 0.5rem;
 }
 
+.headerHeading {
+    font-family: 'Fredoka One', cursive;
+    font-size: 2.2rem;
+    color: white;
+    margin-bottom: 0.4rem;
+}
+
+.headerSubtitle {
+    color: rgba(255, 255, 255, 0.55);
+    font-size: 0.95rem;
+    font-weight: 600;
+    margin-bottom: 0.5rem;
+}
+
+.adWrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0.5rem 0.75rem;
+}
+
+.eventCardsWrapper {
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 1rem 0.75rem 0;
+}
+
+.headerBreadcrumb {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.8rem;
+    color: rgba(255, 255, 255, 0.4);
+    margin-bottom: 0.6rem;
+}
+
 .eventMeta {
     display: flex;
     gap: 1rem;
@@ -904,29 +939,67 @@
 
 @media (max-width: 600px) {
     .header {
-        padding: 2rem 1rem;
+        padding: 1.2rem 1rem 0.8rem;
     }
 
     .headerTitle {
         font-size: 1.6rem;
     }
 
+    .headerHeading {
+        font-size: 1.3rem;
+        margin-bottom: 0.2rem;
+    }
+
+    .headerSubtitle {
+        font-size: 0.8rem;
+        margin-bottom: 0.3rem;
+    }
+
     .main {
-        padding: 1rem;
+        padding: 0.6rem;
     }
 
     .sectionCard {
-        padding: 1.2rem;
+        padding: 1rem;
         border-radius: 14px;
+        margin-bottom: 0.75rem;
     }
 
     .sidebarCard {
-        padding: 1.2rem;
+        padding: 1rem;
         border-radius: 14px;
+        margin-bottom: 0.75rem;
+    }
+
+    .cardHeader {
+        margin-bottom: 0.75rem;
+    }
+
+    .adWrapper {
+        padding: 0.25rem 0.5rem;
+    }
+
+    .eventCardsWrapper {
+        padding: 0.5rem 0.5rem 0;
+    }
+
+    .headerBreadcrumb {
+        margin-bottom: 0.3rem;
+        font-size: 0.72rem;
     }
 
     .cardTitleGroup h2 {
         font-size: 1rem;
+    }
+
+    .emptyState {
+        padding: 2rem 1rem;
+    }
+
+    .emptyIcon {
+        font-size: 2.5rem;
+        margin-bottom: 0.5rem;
     }
 
     .tabBtn {

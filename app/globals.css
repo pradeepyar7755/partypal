@@ -499,6 +499,14 @@ nav ul a:hover {
   }
 }
 
+@media (max-width: 600px) {
+  .back-btn {
+    margin-bottom: 0.5rem;
+    font-size: 0.75rem;
+    padding: 0.3rem 0.8rem 0.3rem 0.6rem;
+  }
+}
+
 /* ── Native App (Capacitor / PWA) ── */
 /* Safe area insets for iOS notch / Dynamic Island */
 body {

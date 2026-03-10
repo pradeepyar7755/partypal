@@ -1724,12 +1724,12 @@ function DashboardContent() {
             {/* ══ HEADER ══ */}
             <header className={styles.header}>
                 <div className={styles.headerInner}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)', marginBottom: '0.6rem' }}>
+                    <div className={styles.headerBreadcrumb}>
                         <a href="/" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>🏠 Home</a> › <span style={{ color: 'var(--yellow)' }}>My Events</span>
                     </div>
                     <button className="back-btn" onClick={() => router.push('/')} style={{ marginTop: 0 }}>← Back to Home</button>
-                    <h1 style={{ fontFamily: "'Fredoka One', cursive", fontSize: '2.2rem', color: 'white', marginBottom: '0.4rem' }}>Plan your events with the help of AI ✨</h1>
-                    <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.5rem' }}>Create, manage, and share your party plans — all powered by AI.</p>
+                    <h1 className={styles.headerHeading}>Plan your events with the help of AI ✨</h1>
+                    <p className={styles.headerSubtitle}>Create, manage, and share your party plans — all powered by AI.</p>
                 </div>
             </header>
 
@@ -1784,7 +1784,7 @@ function DashboardContent() {
             )}
 
             {/* ══ AD UNIT ══ */}
-            <div style={{ maxWidth: 1200, margin: '0 auto', padding: '0.5rem 0.75rem' }}>
+            <div className={styles.adWrapper}>
                 <AdUnit slot="dashboard-top" format="horizontal" />
             </div>
 
@@ -1822,7 +1822,7 @@ function DashboardContent() {
                 const activeColor = activeIdx >= 0 ? EVENT_PALETTE[activeIdx % EVENT_PALETTE.length] : { bg: 'transparent', border: 'transparent' }
                 const demoBg = isDemo ? 'rgba(155,155,155,0.06)' : activeColor.bg
                 return (<>
-                    <div style={{ maxWidth: 1200, margin: '0 auto', padding: '1rem 0.75rem 0' }}>
+                    <div className={styles.eventCardsWrapper}>
                         <div style={{ display: 'flex', gap: '0.6rem', overflowX: 'auto', paddingBottom: '0.5rem', scrollbarWidth: 'thin', WebkitOverflowScrolling: 'touch' }}>
                             {/* + Plan a Party card (always first) */}
                             <div
