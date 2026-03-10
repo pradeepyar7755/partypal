@@ -800,18 +800,20 @@ function DashboardContent() {
                     return
                 }
 
-                // Auto-select the latest event (own or shared) so user lands on what's top of mind
+                // Auto-select the most recently created event so user lands on what's top of mind
                 // Skip if user explicitly navigated to a specific event via URL
+                // Skip if user already has a real (non-demo) event loaded (e.g. just created one)
                 const urlParams = new URLSearchParams(window.location.search)
-                if (!urlParams.get('event') || urlParams.get('event') === 'demo') {
+                const currentIsReal = data.eventId && data.eventId !== 'demo' && data.eventType !== DEFAULT_PLAN.eventType
+                if (!currentIsReal && (!urlParams.get('event') || urlParams.get('event') === 'demo')) {
                     const ownEvents = allEvents.filter(e => e.eventId !== 'demo')
                     const allCandidates = [...ownEvents, ...shared]
                     if (allCandidates.length > 0) {
-                        // Sort by date descending (most recent/upcoming first)
+                        // Sort by creation time descending (most recently created first)
                         const sorted = [...allCandidates].sort((a: any, b: any) => {
-                            const aD = a.date ? new Date(a.date + 'T12:00:00').getTime() : 0
-                            const bD = b.date ? new Date(b.date + 'T12:00:00').getTime() : 0
-                            return bD - aD
+                            const aT = a.createdAt ? new Date(a.createdAt).getTime() : 0
+                            const bT = b.createdAt ? new Date(b.createdAt).getTime() : 0
+                            return bT - aT
                         })
                         const best = sorted[0]
                         if (best.eventId !== data.eventId) {
