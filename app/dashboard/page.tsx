@@ -2141,12 +2141,6 @@ function DashboardContent() {
                 </>)
             })()}
 
-            {/* ══ AD UNIT (desktop only, hidden ≤900px) ══ */}
-            <div className={styles.adWrapperDesktop}>
-                <AdUnit slot="dashboard-top" format="horizontal" />
-            </div>
-
-
             {/* ══ THEME TAB ══ */}
             {
                 selectedTab === 'theme' && (
@@ -3622,6 +3616,10 @@ function DashboardContent() {
                     </div>
                 </div>
             )}
+            {/* ══ AD UNIT (desktop only, hidden ≤900px) ══ */}
+            <div className={styles.adWrapperDesktop}>
+                <AdUnit slot="dashboard-top" format="horizontal" />
+            </div>
         </main >
     )
 }

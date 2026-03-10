@@ -132,7 +132,6 @@ export default function Results() {
             </div>
 
             {/* Timeline */}
-            <AdUnit slot="results-mid" format="horizontal" style={{ marginBottom: '1.5rem' }} />
             <div className="card" style={{ marginBottom: '1.5rem' }}>
               <h3 className={styles.cardTitle}>📅 Planning Timeline</h3>
               {data.plan.timeline.map((t, i) => (
@@ -257,6 +256,7 @@ export default function Results() {
           <button className="btn-primary" onClick={() => router.push(`/vendors?location=${data.location}&theme=${data.theme || ''}`)}>Browse All Vendors →</button>
         </div>
       )}
+      <AdUnit slot="results-mid" format="horizontal" style={{ margin: '1.5rem auto', maxWidth: 1200 }} />
     </main>
   )
 }
