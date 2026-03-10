@@ -232,7 +232,7 @@ function DashboardContent() {
     const [dragIdx, setDragIdx] = useState<number | null>(null)
     const [allEvents, setAllEvents] = useState<PlanData[]>([])
     const [sharedEvents, setSharedEvents] = useState<PlanData[]>([])
-    const [eventSortOrder, setEventSortOrder] = useState<'date' | 'created'>('date')
+    const [eventSortOrder] = useState<'date'>('date')
     const [trashedEvents, setTrashedEvents] = useState<PlanData[]>([])
     const [showTrash, setShowTrash] = useState(false)
     const [checklist, setChecklist] = useState<ChecklistItem[]>([])
@@ -561,9 +561,7 @@ function DashboardContent() {
         })
         setAllEvents(storedEvents)
 
-        // Load persisted event sort preference
-        const savedSort = userGet('partypal_event_sort')
-        if (savedSort === 'date' || savedSort === 'created') setEventSortOrder(savedSort)
+        // Sort order is always 'date' (by event date)
 
         // Load the active plan
         const stored = userGet('partyplan')
@@ -591,7 +589,7 @@ function DashboardContent() {
         }
 
         // If URL specifies an event, load that event
-        if (urlEventId) {
+        if (urlEventId && urlEventId !== 'demo') {
             const targetEvent = storedEvents.find(ev => ev.eventId === urlEventId)
             if (targetEvent) {
                 loadEvent(targetEvent, false, urlTab || 'plan')
@@ -826,11 +824,17 @@ function DashboardContent() {
                     const ownEvents = localEvents.filter(e => e.eventId !== 'demo')
                     const allCandidates = [...ownEvents, ...shared]
                     if (allCandidates.length > 0) {
-                        // Sort by creation time descending (most recently created first)
+                        // Sort by event date (upcoming first, then past)
+                        const now = new Date()
                         const sorted = [...allCandidates].sort((a: any, b: any) => {
-                            const aT = a.createdAt ? new Date(a.createdAt).getTime() : 0
-                            const bT = b.createdAt ? new Date(b.createdAt).getTime() : 0
-                            return bT - aT
+                            const aDate = a.date ? new Date(a.date + 'T12:00:00') : null
+                            const bDate = b.date ? new Date(b.date + 'T12:00:00') : null
+                            const aIsPast = aDate ? aDate < now : false
+                            const bIsPast = bDate ? bDate < now : false
+                            if (aIsPast && !bIsPast) return 1
+                            if (!aIsPast && bIsPast) return -1
+                            if (aDate && bDate) return aIsPast ? bDate.getTime() - aDate.getTime() : aDate.getTime() - bDate.getTime()
+                            return 0
                         })
                         const best = sorted[0]
                         if (best.eventId !== activePlan?.eventId) {
@@ -1801,13 +1805,7 @@ function DashboardContent() {
                 const sharedIds = new Set(sharedEvents.map(se => se.eventId))
                 const mergedEvents = [...allEvents.map(e => ({ ...e, _shared: sharedIds.has(e.eventId) })), ...sharedEvents.filter(se => !allEvents.some(e => e.eventId === se.eventId)).map(e => ({ ...e, _shared: true }))]
                 const sortedEvents = mergedEvents.sort((a, b) => {
-                    if (eventSortOrder === 'created') {
-                        // Sort by creation time descending (most recently created first)
-                        const aT = (a as any).createdAt ? new Date((a as any).createdAt).getTime() : 0
-                        const bT = (b as any).createdAt ? new Date((b as any).createdAt).getTime() : 0
-                        return bT - aT
-                    }
-                    // Default: sort by event date (upcoming first, past after)
+                    // Sort by event date (upcoming first, past after)
                     const now = new Date()
                     const aDate = a.date ? new Date(a.date + 'T12:00:00') : null
                     const bDate = b.date ? new Date(b.date + 'T12:00:00') : null
@@ -1836,25 +1834,7 @@ function DashboardContent() {
                                 <div style={{ fontSize: '1.5rem', opacity: 0.5 }}>➕</div>
                                 <div style={{ fontSize: '0.78rem', color: '#9aabbb', fontWeight: 700 }}>Plan a Party</div>
                             </div>
-                            {/* Sort toggle */}
-                            <div style={{
-                                minWidth: 'fit-content', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: '0.25rem',
-                            }}>
-                                <div style={{ display: 'flex', borderRadius: 8, overflow: 'hidden', border: '1px solid rgba(0,0,0,0.08)' }}>
-                                    {([['date', 'By Date'], ['created', 'Newest']] as const).map(([value, label]) => (
-                                        <button
-                                            key={value}
-                                            onClick={() => { setEventSortOrder(value); userSet('partypal_event_sort', value) }}
-                                            style={{
-                                                padding: '0.35rem 0.6rem', fontSize: '0.7rem', fontWeight: 600, cursor: 'pointer', border: 'none', transition: 'all 0.2s',
-                                                background: eventSortOrder === value ? 'rgba(74,173,168,0.15)' : 'transparent',
-                                                color: eventSortOrder === value ? '#3a8c6e' : '#9aabbb',
-                                            }}
-                                        >{label}</button>
-                                    ))}
-                                </div>
-                            </div>
-                            {/* All events (own + shared) sorted by selected order */}
+                            {/* All events (own + shared) sorted by event date */}
                             {sortedEvents.map((ev, idx) => {
                                 const isActive = !isDemo && data.eventId === ev.eventId
                                 const evDate = ev.date ? new Date(ev.date + 'T12:00:00') : null
