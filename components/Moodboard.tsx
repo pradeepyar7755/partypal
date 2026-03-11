@@ -195,6 +195,9 @@ export default function Moodboard({ eventId, theme, eventType, budget, getContex
                 <button className={styles.generateBtn} onClick={generate} disabled={isDemo}>
                     ✨ Generate Moodboard
                 </button>
+                <div style={{ fontSize: '0.6rem', color: '#9aabbb', marginTop: '0.4rem', lineHeight: 1.4, textAlign: 'center' }}>
+                    Your event details are processed by <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer" style={{ color: '#9aabbb', textDecoration: 'underline' }}>Google AI</a>. <a href="/privacy#ai-privacy" style={{ color: '#9aabbb', textDecoration: 'underline' }}>Privacy Policy</a>
+                </div>
             </div>
         )
     }

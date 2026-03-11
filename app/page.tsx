@@ -441,6 +441,9 @@ export default function Home() {
                 </span>
               ) : '🪄 Generate My Party Plan with AI'}
             </button>
+            <p style={{ fontSize: '0.62rem', color: 'rgba(255,255,255,0.45)', textAlign: 'center', marginTop: '0.4rem', lineHeight: 1.4 }}>
+              By generating, your event details are processed by <a href="https://ai.google.dev/gemini-api/terms" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.55)', textDecoration: 'underline' }}>Google AI</a>. No personal names or contact info are sent. See our <a href="/privacy#ai-privacy" style={{ color: 'rgba(255,255,255,0.55)', textDecoration: 'underline' }}>AI Privacy Policy</a>.
+            </p>
             {/* View Demo Plan button with hover popover */}
             <div style={{ position: 'relative', display: 'flex', justifyContent: 'center', marginTop: '0.6rem' }}
               onMouseEnter={() => setShowDemoHover(true)}
