@@ -1,3 +1,5 @@
+@import url('https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap');
+
 :root {
   --yellow: #F7C948;
   --coral: #E8896A;
@@ -20,7 +22,7 @@
 }
 
 body {
-  font-family: var(--font-nunito), 'Nunito', sans-serif;
+  font-family: 'Nunito', sans-serif;
   background: var(--light-bg);
   color: var(--navy);
   position: relative;
@@ -38,8 +40,6 @@ body::before {
     radial-gradient(ellipse 40% 30% at 80% 10%, rgba(123, 94, 167, 0.04) 0%, transparent 60%);
   animation: gradientShift 12s ease-in-out infinite alternate;
   pointer-events: none;
-  will-change: transform, opacity;
-  contain: strict;
 }
 
 @keyframes gradientShift {
@@ -79,7 +79,7 @@ nav {
 }
 
 .nav-logo {
-  font-family: var(--font-fredoka), 'Fredoka One', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 1.5rem;
   color: var(--white);
   display: flex;
@@ -163,7 +163,7 @@ nav ul a:hover {
   border: none;
   padding: 0.85rem 2rem;
   border-radius: 50px;
-  font-family: var(--font-nunito), 'Nunito', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-weight: 800;
   font-size: 1rem;
   cursor: pointer;
@@ -181,7 +181,7 @@ nav ul a:hover {
   border: 1.5px solid rgba(255, 255, 255, 0.3);
   padding: 0.85rem 2rem;
   border-radius: 50px;
-  font-family: var(--font-nunito), 'Nunito', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-weight: 800;
   font-size: 1rem;
   cursor: pointer;
@@ -247,7 +247,7 @@ nav ul a:hover {
 }
 
 .section-title {
-  font-family: var(--font-fredoka), 'Fredoka One', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 2.2rem;
   color: var(--navy);
   margin-bottom: 0.75rem;

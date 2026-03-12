@@ -27,7 +27,7 @@
 }
 
 .title {
-    font-family: var(--font-fredoka), 'Fredoka One', cursive;
+    font-family: 'Fredoka One', cursive;
     font-size: clamp(1.8rem, 4vw, 2.6rem);
     color: white;
     margin-bottom: 0.6rem;
@@ -108,7 +108,7 @@
 }
 
 .sectionTitle {
-    font-family: var(--font-fredoka), 'Fredoka One', cursive;
+    font-family: 'Fredoka One', cursive;
     font-size: 1.5rem;
     color: white;
     margin-bottom: 0.8rem;

@@ -1,6 +1,4 @@
 import type { Metadata, Viewport } from 'next'
-import { Nunito, Fredoka } from 'next/font/google'
-import Script from 'next/script'
 import './globals.css'
 import Nav from '@/components/Nav'
 import ToastContainer from '@/components/Toast'
@@ -8,20 +6,6 @@ import { AuthProvider } from '@/components/AuthContext'
 import AnalyticsProvider from '@/components/AnalyticsProvider'
 import NativeInit from '@/components/NativeInit'
 import BugReportButton from '@/components/BugReportButton'
-
-const nunito = Nunito({
-  subsets: ['latin'],
-  weight: ['400', '600', '700', '800'],
-  display: 'swap',
-  variable: '--font-nunito',
-})
-
-const fredoka = Fredoka({
-  subsets: ['latin'],
-  weight: ['700'],
-  display: 'swap',
-  variable: '--font-fredoka',
-})
 
 export const viewport: Viewport = {
   width: 'device-width',
@@ -35,12 +19,6 @@ export const metadata: Metadata = {
   title: 'PartyPal — AI Party Planner',
   description: 'Plan the perfect party with AI. Venues, vendors, guests, budget tracking, and more — all in one place.',
   manifest: '/manifest.json',
-  icons: {
-    icon: [
-      { url: '/favicon.ico', sizes: 'any' },
-    ],
-    apple: '/app-icon.png',
-  },
   appleWebApp: {
     capable: true,
     statusBarStyle: 'black-translucent',
@@ -70,7 +48,24 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" className={`${nunito.variable} ${fredoka.variable}`}>
+    <html lang="en">
+      <head>
+        <link rel="preconnect" href="https://fonts.googleapis.com" />
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
+        <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;600;700;800&display=swap" rel="stylesheet" />
+        {/* Mobile app icons */}
+        <link rel="icon" href="/favicon.ico" sizes="any" />
+        <link rel="icon" type="image/png" href="/logo.png" />
+        <link rel="apple-touch-icon" href="/app-icon.png" />
+        {/* Google AdSense — Auto Ads (activated via AdSense dashboard) */}
+        {process.env.NEXT_PUBLIC_ADSENSE_CLIENT && (
+          <script
+            async
+            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT}`}
+            crossOrigin="anonymous"
+          />
+        )}
+      </head>
       <body>
         <AuthProvider>
           <AnalyticsProvider>
@@ -81,13 +76,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             <BugReportButton />
           </AnalyticsProvider>
         </AuthProvider>
-        {process.env.NEXT_PUBLIC_ADSENSE_CLIENT && (
-          <Script
-            src={`https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=${process.env.NEXT_PUBLIC_ADSENSE_CLIENT}`}
-            strategy="lazyOnload"
-            crossOrigin="anonymous"
-          />
-        )}
       </body>
     </html>
   )

@@ -43,7 +43,7 @@
 }
 
 .headerTitle {
-  font-family: var(--font-fredoka), 'Fredoka One', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 2.2rem;
   color: white;
   margin-bottom: 0.5rem;
@@ -78,7 +78,7 @@
   border: none;
   background: rgba(255, 255, 255, 0.06);
   color: rgba(255, 255, 255, 0.5);
-  font-family: var(--font-nunito), 'Nunito', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-weight: 700;
   font-size: 0.85rem;
   cursor: pointer;
@@ -132,7 +132,7 @@
   border: 1.5px solid var(--border);
   border-radius: 12px;
   background: var(--white);
-  font-family: var(--font-nunito), 'Nunito', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-size: 0.95rem;
   color: var(--navy);
   outline: none;
@@ -153,7 +153,7 @@
   border: 1.5px solid var(--border);
   background: var(--white);
   cursor: pointer;
-  font-family: var(--font-nunito), 'Nunito', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-weight: 700;
   font-size: 0.9rem;
   color: var(--navy);
@@ -169,7 +169,7 @@
   border-radius: 12px;
   border: 1.5px solid var(--border);
   background: var(--white);
-  font-family: var(--font-nunito), 'Nunito', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-weight: 700;
   font-size: 0.9rem;
   color: var(--navy);
@@ -196,7 +196,7 @@
 }
 
 .filterSection h3 {
-  font-family: var(--font-fredoka), 'Fredoka One', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 1rem;
   color: var(--navy);
   margin-bottom: 0.9rem;
@@ -407,7 +407,7 @@
 }
 
 .vendorName {
-  font-family: var(--font-fredoka), 'Fredoka One', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 1.15rem;
   color: var(--navy);
   margin-bottom: 0.2rem;
@@ -490,7 +490,7 @@
 }
 
 .priceAmount {
-  font-family: var(--font-fredoka), 'Fredoka One', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 1.2rem;
   color: var(--green);
 }
@@ -498,7 +498,7 @@
 .bookBtn {
   background: var(--yellow);
   color: var(--dark-navy);
-  font-family: var(--font-nunito), 'Nunito', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-weight: 800;
   font-size: 0.85rem;
   padding: 0.55rem 1.2rem;
@@ -549,7 +549,7 @@
   color: var(--coral);
   padding: 0.55rem 1.2rem;
   border-radius: 12px;
-  font-family: var(--font-nunito), 'Nunito', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-weight: 800;
   font-size: 0.85rem;
   cursor: pointer;
@@ -659,7 +659,7 @@
 }
 
 .modalSectionTitle {
-  font-family: var(--font-fredoka), 'Fredoka One', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 0.95rem;
   color: var(--navy);
   margin-bottom: 0.6rem;
@@ -672,7 +672,7 @@
   border: none;
   padding: 0.85rem;
   border-radius: 12px;
-  font-family: var(--font-nunito), 'Nunito', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-weight: 800;
   font-size: 1rem;
   cursor: pointer;
@@ -777,7 +777,7 @@
   }
 
   .sidebarHeader h3 {
-    font-family: var(--font-fredoka), 'Fredoka One', cursive;
+    font-family: 'Fredoka One', cursive;
     font-size: 1.2rem;
     color: var(--navy);
     margin: 0;
@@ -858,7 +858,7 @@
   border-radius: 10px;
   border: 1.5px solid var(--border);
   background: var(--white);
-  font-family: var(--font-nunito), 'Nunito', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-weight: 800;
   font-size: 0.85rem;
   color: var(--navy);
@@ -890,7 +890,7 @@
   border-radius: 10px;
   border: 1.5px solid var(--border);
   background: var(--white);
-  font-family: var(--font-nunito), 'Nunito', sans-serif;
+  font-family: 'Nunito', sans-serif;
   font-weight: 800;
   font-size: 0.85rem;
   color: var(--navy);
@@ -943,7 +943,7 @@
   border-radius: 50px;
   border: 2px solid var(--teal);
   background: rgba(74, 173, 168, 0.06);
-  font-family: var(--font-fredoka), 'Fredoka One', cursive;
+  font-family: 'Fredoka One', cursive;
   font-size: 0.92rem;
   color: var(--teal);
   cursor: pointer;

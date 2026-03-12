@@ -1,18 +1,18 @@
 .header { background:var(--dark-navy); padding:2.5rem; }
 .headerInner { max-width:1100px; margin:0 auto; }
 .eventBadge { display:inline-flex; align-items:center; gap:0.5rem; background:rgba(247,201,72,0.12); border:1px solid rgba(247,201,72,0.3); color:var(--yellow); padding:0.35rem 0.9rem; border-radius:50px; font-size:0.78rem; font-weight:800; margin-bottom:1rem; }
-.headerTitle { font-family:var(--font-fredoka),'Fredoka One',cursive; font-size:2.6rem; color:white; margin-bottom:0.4rem; }
+.headerTitle { font-family:'Fredoka One',cursive; font-size:2.6rem; color:white; margin-bottom:0.4rem; }
 .headerTitle em { color:var(--yellow); font-style:normal; }
 .headerSub { color:rgba(255,255,255,0.55); font-weight:600; margin-bottom:1.5rem; }
 .tabs { display:flex; gap:0.5rem; margin-top:1.5rem; }
-.tab { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:0.55rem 1.2rem; border-radius:50px; font-family:var(--font-nunito),'Nunito',sans-serif; font-weight:800; font-size:0.85rem; cursor:pointer; transition:all 0.2s; }
+.tab { background:rgba(255,255,255,0.06); border:1px solid rgba(255,255,255,0.1); color:rgba(255,255,255,0.6); padding:0.55rem 1.2rem; border-radius:50px; font-family:'Nunito',sans-serif; font-weight:800; font-size:0.85rem; cursor:pointer; transition:all 0.2s; }
 .tab:hover { background:rgba(255,255,255,0.1); color:white; }
 .tabActive { background:var(--yellow) !important; color:var(--dark-navy) !important; border-color:var(--yellow) !important; }
 
 .planLayout { display:grid; grid-template-columns:1fr 320px; gap:1.5rem; padding:2rem 2.5rem; max-width:1100px; margin:0 auto; }
 .mainCol {}
 .sidebar {}
-.cardTitle { font-family:var(--font-fredoka),'Fredoka One',cursive; font-size:1.1rem; color:var(--navy); margin-bottom:1rem; }
+.cardTitle { font-family:'Fredoka One',cursive; font-size:1.1rem; color:var(--navy); margin-bottom:1rem; }
 
 /* Timeline */
 .timelineItem { display:flex; gap:1rem; margin-bottom:1rem; align-items:flex-start; }
@@ -31,15 +31,15 @@
 .tipNum { width:24px; height:24px; background:var(--yellow); color:var(--dark-navy); border-radius:50%; display:flex; align-items:center; justify-content:center; font-size:0.75rem; font-weight:800; flex-shrink:0; }
 
 /* Budget */
-.budgetTotal { font-family:var(--font-fredoka),'Fredoka One',cursive; font-size:2rem; color:var(--navy); margin-bottom:0.5rem; }
-.budgetTotal span { font-size:1rem; color:#9aabbb; font-family:var(--font-nunito),'Nunito',sans-serif; font-weight:700; }
+.budgetTotal { font-family:'Fredoka One',cursive; font-size:2rem; color:var(--navy); margin-bottom:0.5rem; }
+.budgetTotal span { font-size:1rem; color:#9aabbb; font-family:'Nunito',sans-serif; font-weight:700; }
 .budgetBar { height:8px; background:var(--border); border-radius:50px; overflow:hidden; margin-bottom:0.5rem; }
 .budgetFill { height:100%; background:linear-gradient(90deg,var(--teal),var(--yellow)); border-radius:50px; transition:width 0.8s ease; }
 .budgetRow { display:flex; align-items:center; gap:0.6rem; margin-bottom:0.6rem; }
 .budgetDot { width:10px; height:10px; border-radius:50%; flex-shrink:0; }
 
 /* Quick Actions */
-.qaBtn { width:100%; display:flex; align-items:center; justify-content:space-between; background:white; border:1.5px solid var(--border); border-radius:10px; padding:0.75rem 1rem; font-family:var(--font-nunito),'Nunito',sans-serif; font-weight:700; color:var(--navy); cursor:pointer; margin-bottom:0.5rem; transition:all 0.2s; font-size:0.9rem; }
+.qaBtn { width:100%; display:flex; align-items:center; justify-content:space-between; background:white; border:1.5px solid var(--border); border-radius:10px; padding:0.75rem 1rem; font-family:'Nunito',sans-serif; font-weight:700; color:var(--navy); cursor:pointer; margin-bottom:0.5rem; transition:all 0.2s; font-size:0.9rem; }
 .qaBtn:hover { border-color:var(--yellow); background:rgba(247,201,72,0.04); }
 
 /* Mood Board */
@@ -51,10 +51,10 @@
 .moodGrid { display:grid; grid-template-columns:repeat(3,1fr); gap:1rem; margin-bottom:2rem; }
 .moodTile { background:white; border:1.5px solid var(--border); border-radius:16px; padding:1.5rem; text-align:center; }
 .moodEmoji { font-size:2.5rem; display:block; margin-bottom:0.6rem; }
-.moodTileTitle { font-family:var(--font-fredoka),'Fredoka One',cursive; font-size:1rem; color:var(--navy); margin-bottom:0.4rem; }
+.moodTileTitle { font-family:'Fredoka One',cursive; font-size:1rem; color:var(--navy); margin-bottom:0.4rem; }
 .moodTileDesc { font-size:0.82rem; color:#6b7f94; font-weight:600; line-height:1.5; }
 .moodDetails { display:grid; grid-template-columns:1fr 1fr; gap:1rem; margin-bottom:1.5rem; }
-.hashtag { text-align:center; font-family:var(--font-fredoka),'Fredoka One',cursive; font-size:1.3rem; color:var(--teal); padding:1rem; }
+.hashtag { text-align:center; font-family:'Fredoka One',cursive; font-size:1.3rem; color:var(--teal); padding:1rem; }
 .breadcrumb { display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; color:rgba(255,255,255,0.4); margin-bottom:1rem; }
 
 @media (max-width:900px) {

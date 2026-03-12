@@ -54,7 +54,7 @@
 
 .loginTitle {
     text-align: center;
-    font-family: var(--font-fredoka), 'Fredoka One', cursive;
+    font-family: 'Fredoka One', cursive;
     font-size: 1.8rem;
     color: #fff;
     margin-bottom: 0.3rem;
@@ -270,7 +270,7 @@
 
 .resetTitle {
     text-align: center;
-    font-family: var(--font-fredoka), 'Fredoka One', cursive;
+    font-family: 'Fredoka One', cursive;
     font-size: 1rem;
     color: #F7C948;
     margin-bottom: 0.8rem;

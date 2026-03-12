@@ -2,7 +2,7 @@
     min-height: 100vh;
     background: #0d1117;
     color: #c9d1d9;
-    font-family: var(--font-nunito), 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
+    font-family: 'Nunito', -apple-system, BlinkMacSystemFont, sans-serif;
     padding-bottom: 4rem;
 }
 
@@ -28,7 +28,7 @@
 }
 
 .logo {
-    font-family: var(--font-fredoka), 'Fredoka One', cursive;
+    font-family: 'Fredoka One', cursive;
     font-size: 1.2rem;
     color: white;
     text-decoration: none;
@@ -124,7 +124,7 @@
     transition: all 0.2s;
     border-radius: 8px 8px 0 0;
     white-space: nowrap;
-    font-family: var(--font-nunito), 'Nunito', sans-serif;
+    font-family: 'Nunito', sans-serif;
 }
 
 .tabBtn:hover {
@@ -157,7 +157,7 @@
     cursor: pointer;
     transition: all 0.2s;
     border-radius: 6px;
-    font-family: var(--font-nunito), 'Nunito', sans-serif;
+    font-family: 'Nunito', sans-serif;
     white-space: nowrap;
 }
 
@@ -186,7 +186,7 @@
 }
 
 .sectionTitle {
-    font-family: var(--font-fredoka), 'Fredoka One', cursive;
+    font-family: 'Fredoka One', cursive;
     font-size: 1.1rem;
     color: white;
 }
@@ -232,7 +232,7 @@
 }
 
 .kpiValue {
-    font-family: var(--font-fredoka), 'Fredoka One', cursive;
+    font-family: 'Fredoka One', cursive;
     font-size: 1.5rem;
     color: white;
 }
@@ -675,7 +675,7 @@
 }
 
 .modalTitle {
-    font-family: var(--font-fredoka), 'Fredoka One', cursive;
+    font-family: 'Fredoka One', cursive;
     font-size: 1.1rem;
     color: white;
     margin-bottom: 1rem;
@@ -704,7 +704,7 @@
     color: white;
     font-size: 0.85rem;
     font-weight: 600;
-    font-family: var(--font-nunito), 'Nunito', sans-serif;
+    font-family: 'Nunito', sans-serif;
     outline: none;
     transition: border-color 0.2s;
 }
@@ -722,7 +722,7 @@
     color: white;
     font-size: 0.85rem;
     font-weight: 600;
-    font-family: var(--font-nunito), 'Nunito', sans-serif;
+    font-family: 'Nunito', sans-serif;
     outline: none;
     resize: vertical;
     min-height: 80px;
@@ -742,7 +742,7 @@
     color: white;
     font-size: 0.85rem;
     font-weight: 600;
-    font-family: var(--font-nunito), 'Nunito', sans-serif;
+    font-family: 'Nunito', sans-serif;
     outline: none;
     cursor: pointer;
 }
@@ -763,7 +763,7 @@
     font-weight: 800;
     font-size: 0.82rem;
     cursor: pointer;
-    font-family: var(--font-nunito), 'Nunito', sans-serif;
+    font-family: 'Nunito', sans-serif;
     transition: transform 0.2s, box-shadow 0.2s;
 }
 
@@ -782,7 +782,7 @@
     font-weight: 800;
     font-size: 0.82rem;
     cursor: pointer;
-    font-family: var(--font-nunito), 'Nunito', sans-serif;
+    font-family: 'Nunito', sans-serif;
     transition: all 0.2s;
 }
 
@@ -800,7 +800,7 @@
     font-weight: 800;
     font-size: 0.7rem;
     cursor: pointer;
-    font-family: var(--font-nunito), 'Nunito', sans-serif;
+    font-family: 'Nunito', sans-serif;
     transition: all 0.2s;
 }
 
@@ -854,7 +854,7 @@
 }
 
 .accessTitle {
-    font-family: var(--font-fredoka), 'Fredoka One', cursive;
+    font-family: 'Fredoka One', cursive;
     font-size: 1.5rem;
     color: white;
 }

@@ -38,7 +38,7 @@
 }
 
 .heroTitle {
-    font-family: var(--font-fredoka), 'Fredoka One', cursive;
+    font-family: 'Fredoka One', cursive;
     font-size: clamp(2.4rem, 5vw, 3.8rem);
     color: white;
     line-height: 1.1;
@@ -161,7 +161,7 @@
 }
 
 .catName {
-    font-family: var(--font-fredoka), 'Fredoka One', cursive;
+    font-family: 'Fredoka One', cursive;
     font-size: 1.15rem;
     color: var(--navy);
     margin-bottom: 0.3rem;
@@ -333,7 +333,7 @@
     border-radius: 10px;
     padding: 0.7rem 1rem;
     color: white;
-    font-family: var(--font-nunito), 'Nunito', sans-serif;
+    font-family: 'Nunito', sans-serif;
     font-size: 0.95rem;
     font-weight: 600;
     outline: none;
@@ -362,7 +362,7 @@
     border: none;
     padding: 1rem 2rem;
     border-radius: 12px;
-    font-family: var(--font-nunito), 'Nunito', sans-serif;
+    font-family: 'Nunito', sans-serif;
     font-size: 1.05rem;
     font-weight: 800;
     cursor: pointer;
@@ -435,7 +435,7 @@
 }
 
 .videoTitle {
-    font-family: var(--font-fredoka), 'Fredoka One', cursive;
+    font-family: 'Fredoka One', cursive;
     font-size: 1.15rem;
     color: white;
 }
@@ -600,7 +600,7 @@
 }
 
 .featureCard h3 {
-    font-family: var(--font-fredoka), 'Fredoka One', cursive;
+    font-family: 'Fredoka One', cursive;
     font-size: 1.05rem;
     color: var(--navy);
     margin-bottom: 0.5rem;
@@ -645,7 +645,7 @@
 }
 
 .footerLogo {
-    font-family: var(--font-fredoka), 'Fredoka One', cursive;
+    font-family: 'Fredoka One', cursive;
     font-size: 1.4rem;
     color: white;
     margin-bottom: 0.5rem;
@@ -670,7 +670,7 @@
 }
 
 .footerCol h4 {
-    font-family: var(--font-fredoka), 'Fredoka One', cursive;
+    font-family: 'Fredoka One', cursive;
     font-size: 0.85rem;
     color: rgba(255, 255, 255, 0.7);
     margin-bottom: 0.3rem;
