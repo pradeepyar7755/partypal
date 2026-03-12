@@ -153,13 +153,16 @@ function VendorsContent() {
   }, [params])
 
   const detectLocation = async () => {
+    const isNativePlatform = typeof window !== 'undefined' && !!(window as any).Capacitor?.isNativePlatform()
+
     // 1. Try browser Geolocation API
+    // Use a longer timeout on native to allow the iOS permission dialog to appear
     if ('geolocation' in navigator) {
       try {
         const pos = await new Promise<GeolocationPosition>((resolve, reject) => {
           navigator.geolocation.getCurrentPosition(resolve, reject, {
             enableHighAccuracy: false,
-            timeout: 5000,
+            timeout: isNativePlatform ? 15000 : 5000,
             maximumAge: 300000, // Cache for 5 min
           })
         })
@@ -192,7 +195,10 @@ function VendorsContent() {
         setLocationReady(true)
         return
       } catch {
-        // Geolocation denied or failed — fall through to IP
+        // Geolocation denied or failed — prompt user on native
+        if (isNativePlatform) {
+          showToast('📍 Enable Location in Settings for better vendor results', 'info')
+        }
       }
     }
 

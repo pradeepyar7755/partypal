@@ -25,12 +25,19 @@ export async function initNativeApp() {
     setTimeout(() => SplashScreen.hide({ fadeOutDuration: 500 }), 2500);
 
     // ── Keyboard ──
+    // Scroll the focused input into view when keyboard opens,
+    // without using position:fixed which destroys scroll position.
     const { Keyboard } = await import('@capacitor/keyboard');
     Keyboard.addListener('keyboardWillShow', () => {
-        document.body.classList.add('keyboard-open');
+        const el = document.activeElement as HTMLElement | null;
+        if (el && (el.tagName === 'INPUT' || el.tagName === 'TEXTAREA' || el.tagName === 'SELECT')) {
+            setTimeout(() => {
+                el.scrollIntoView({ behavior: 'smooth', block: 'center' });
+            }, 100);
+        }
     });
     Keyboard.addListener('keyboardWillHide', () => {
-        document.body.classList.remove('keyboard-open');
+        // No-op: avoid position:fixed which resets scroll
     });
 
     // ── App lifecycle ──

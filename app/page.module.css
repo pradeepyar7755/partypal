@@ -333,8 +333,9 @@
     border-radius: 10px;
     padding: 0.7rem 1rem;
     color: white;
+    -webkit-text-fill-color: white;
     font-family: 'Nunito', sans-serif;
-    font-size: 0.95rem;
+    font-size: 16px;
     font-weight: 600;
     outline: none;
     transition: border-color 0.2s;

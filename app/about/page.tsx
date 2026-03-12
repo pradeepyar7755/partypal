@@ -23,7 +23,7 @@ export default function About() {
                         Planning a party should be exciting, not stressful. PartyPal was built to take the
                         guesswork out of event planning by combining artificial intelligence with practical
                         tools that anyone can use. Whether you&apos;re throwing a backyard barbecue or organizing
-                        a wedding, PartyPal gives you a custom plan, connects you with local vendors, and
+                        a family reunion, PartyPal gives you a custom plan, connects you with local vendors, and
                         keeps everything organized in one place.
                     </p>
                 </section>
@@ -73,7 +73,7 @@ export default function About() {
                             <div className={styles.stepNumber}>1</div>
                             <div>
                                 <h4>Describe Your Event</h4>
-                                <p>Tell us what you&apos;re planning — birthday, wedding, baby shower, game night, corporate event, or anything else. Add your date, location, guest count, theme, and budget.</p>
+                                <p>Tell us what you&apos;re planning — birthday, family reunion, baby shower, game night, corporate event, or anything else. Add your date, location, guest count, theme, and budget.</p>
                             </div>
                         </div>
                         <div className={styles.deletionStep}>
@@ -110,7 +110,7 @@ export default function About() {
                             <li><strong>AI-powered</strong> — get a complete, personalized party plan in under 30 seconds</li>
                             <li><strong>All-in-one platform</strong> — planning, guests, vendors, budget, and collaboration in a single dashboard</li>
                             <li><strong>Privacy-first</strong> — your data is never sold and your behavioral preferences stay in your browser</li>
-                            <li><strong>Works for any event</strong> — from intimate dinners to large weddings, any celebration you can imagine</li>
+                            <li><strong>Works for any event</strong> — from intimate dinners to large family reunions, any celebration you can imagine</li>
                         </ul>
                     </div>
                 </section>
