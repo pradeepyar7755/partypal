@@ -1,11 +1,17 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import dynamic from 'next/dynamic'
 import { useRouter } from 'next/navigation'
 import styles from './page.module.css'
-import LocationSearch from '@/components/LocationSearch'
+import Image from 'next/image'
 import { userGet, userGetJSON, userSetJSON } from '@/lib/userStorage'
 import { useAuth } from '@/components/AuthContext'
 import { trackPlanGenerated, trackError, trackFeatureUsed } from '@/lib/analytics'
+
+const LocationSearch = dynamic(() => import('@/components/LocationSearch'), {
+  loading: () => <input type="text" placeholder="Search a city, venue, or address..." disabled style={{ opacity: 0.5 }} />,
+  ssr: false,
+})
 
 const CATEGORIES = [
   { name: 'Venue', emoji: '🏛️', count: 'Event spaces, banquet halls', color: 'yellow', cat: 'venue' },
@@ -243,7 +249,7 @@ export default function Home() {
   const nextSlide = () => setSlide(s => Math.min(DEMO_SLIDES.length - 1, s + 1))
 
   // Generate confetti particles
-  const particles = Array.from({ length: 20 }, (_, i) => ({
+  const particles = Array.from({ length: 8 }, (_, i) => ({
     left: `${Math.random() * 100}%`,
     width: `${4 + Math.random() * 8}px`,
     height: `${4 + Math.random() * 8}px`,
@@ -514,7 +520,7 @@ export default function Home() {
       <footer className={styles.footer}>
         <div className={styles.footerTop}>
           <div className={styles.footerAbout}>
-            <div className={styles.footerLogo}><img src="/logo.png" alt="PartyPal" style={{ height: 36, borderRadius: 8, marginRight: '0.4rem' }} />Party<span>Pal</span></div>
+            <div className={styles.footerLogo}><Image src="/logo.png" alt="PartyPal" width={36} height={36} style={{ borderRadius: 8, marginRight: '0.4rem' }} />Party<span>Pal</span></div>
             <p className={styles.footerAboutText}>
               PartyPal is your AI-powered party planning companion. We help you plan memorable celebrations by connecting you with the best vendors, managing your guests, and keeping your budget on track — all in one place.
             </p>

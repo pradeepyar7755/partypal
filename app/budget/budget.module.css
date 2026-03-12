@@ -9,7 +9,7 @@
 }
 
 .budgetTitle {
-    font-family: 'Fredoka One', cursive;
+    font-family: var(--font-fredoka), 'Fredoka One', cursive;
     font-size: 2.2rem;
     color: white;
     margin-bottom: 0.3rem;
@@ -56,7 +56,7 @@
 }
 
 .donutTotal {
-    font-family: 'Fredoka One', cursive;
+    font-family: var(--font-fredoka), 'Fredoka One', cursive;
     font-size: 1.8rem;
     color: var(--navy);
 }
@@ -106,7 +106,7 @@
 }
 
 .budgetAmt {
-    font-family: 'Fredoka One', cursive;
+    font-family: var(--font-fredoka), 'Fredoka One', cursive;
     font-size: 1.1rem;
     color: var(--navy);
     min-width: 70px;
@@ -126,7 +126,7 @@
     border: 1.5px solid var(--teal);
     border-radius: 8px;
     padding: 0.3rem 0.6rem;
-    font-family: 'Fredoka One', cursive;
+    font-family: var(--font-fredoka), 'Fredoka One', cursive;
     font-size: 1rem;
     color: var(--navy);
     width: 90px;
@@ -152,7 +152,7 @@
 }
 
 .statusTitle {
-    font-family: 'Fredoka One', cursive;
+    font-family: var(--font-fredoka), 'Fredoka One', cursive;
     font-size: 1.3rem;
     margin-bottom: 0.3rem;
 }
@@ -225,7 +225,7 @@
     border-radius: 14px;
     padding: 0.8rem;
     color: var(--teal);
-    font-family: 'Nunito', sans-serif;
+    font-family: var(--font-nunito), 'Nunito', sans-serif;
     font-weight: 800;
     font-size: 0.85rem;
     cursor: pointer;

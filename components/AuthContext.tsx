@@ -4,8 +4,7 @@ import {
     User,
     onAuthStateChanged,
     signInWithPopup,
-    signInWithRedirect,
-    getRedirectResult,
+    signInWithCredential,
     GoogleAuthProvider,
     OAuthProvider,
     signInWithEmailAndPassword,
@@ -59,20 +58,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        // Handle redirect result after native OAuth flow completes
-        if (isNativeApp()) {
-            getRedirectResult(auth).then((result) => {
-                if (result?.user) {
-                    const providerId = result.user.providerData?.[0]?.providerId || 'unknown'
-                    if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
-                        trackSignUp(providerId === 'google.com' ? 'google' : 'apple')
-                    } else {
-                        trackLogin(providerId === 'google.com' ? 'google' : 'apple')
-                    }
-                }
-            }).catch(() => { })
-        }
-
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setUser(user)
             setStorageUid(user?.uid || null)
@@ -101,27 +86,37 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signInWithGoogle = async () => {
         const provider = new GoogleAuthProvider()
-        if (isNativeApp()) {
-            // Popups are blocked in native WebViews — use redirect flow instead
-            await signInWithRedirect(auth, provider)
+        const result = await signInWithPopup(auth, provider)
+        if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
+            trackSignUp('google')
         } else {
-            const result = await signInWithPopup(auth, provider)
-            if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
-                trackSignUp('google')
-            } else {
-                trackLogin('google')
-            }
+            trackLogin('google')
         }
     }
 
     const signInWithApple = async () => {
-        const provider = new OAuthProvider('apple.com')
-        provider.addScope('email')
-        provider.addScope('name')
         if (isNativeApp()) {
-            // Popups are blocked in native WebViews — use redirect flow instead
-            await signInWithRedirect(auth, provider)
+            // Use native Sign in with Apple — shows in-app sheet, no Safari redirect
+            const { SignInWithApple } = await import('@capacitor-community/apple-sign-in')
+            const result = await SignInWithApple.authorize({
+                clientId: 'social.partypal.app',
+                redirectURI: 'https://partypal.social',
+                scopes: 'email name',
+            })
+            const provider = new OAuthProvider('apple.com')
+            const credential = provider.credential({
+                idToken: result.response.identityToken,
+            })
+            const userCred = await signInWithCredential(auth, credential)
+            if (userCred.user.metadata.creationTime === userCred.user.metadata.lastSignInTime) {
+                trackSignUp('apple')
+            } else {
+                trackLogin('apple')
+            }
         } else {
+            const provider = new OAuthProvider('apple.com')
+            provider.addScope('email')
+            provider.addScope('name')
             const result = await signInWithPopup(auth, provider)
             if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
                 trackSignUp('apple')

@@ -36,7 +36,7 @@
 }
 
 .pollQuestion {
-    font-family: 'Fredoka One', cursive;
+    font-family: var(--font-fredoka), 'Fredoka One', cursive;
     font-size: 1.3rem;
     color: var(--navy);
     margin: 0 0 0.5rem;
@@ -296,7 +296,7 @@
     font-size: 0.85rem;
     color: white;
     cursor: pointer;
-    font-family: 'Fredoka One', cursive;
+    font-family: var(--font-fredoka), 'Fredoka One', cursive;
 }
 
 .nameModalSubmit:disabled {

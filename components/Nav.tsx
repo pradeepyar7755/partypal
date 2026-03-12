@@ -1,5 +1,6 @@
 'use client'
 import { useState, useEffect, useRef } from 'react'
+import Image from 'next/image'
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
 import { useAuth } from '@/components/AuthContext'
@@ -53,7 +54,7 @@ export default function Nav() {
 
   return (
     <nav>
-      <Link href="/" className="nav-logo"><img src="/logo.png" alt="PartyPal" className="nav-logo-img" />Party<span>Pal</span></Link>
+      <Link href="/" className="nav-logo"><Image src="/logo.png" alt="PartyPal" className="nav-logo-img" width={36} height={36} priority />Party<span>Pal</span></Link>
       <button className={`hamburger ${mobileOpen ? 'open' : ''}`} onClick={() => setMobileOpen(!mobileOpen)} aria-label="Toggle menu">
         <span /><span /><span />
       </button>
@@ -89,7 +90,7 @@ export default function Nav() {
                 }}
               >
                 {user.photoURL ? (
-                  <img src={user.photoURL} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover', borderRadius: '50%' }} />
+                  <Image src={user.photoURL} alt="" width={36} height={36} style={{ objectFit: 'cover', borderRadius: '50%' }} />
                 ) : (
                   getInitials()
                 )}
