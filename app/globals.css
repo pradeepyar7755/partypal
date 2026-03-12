@@ -516,8 +516,8 @@ nav ul a:hover {
 /* ── Native App (Capacitor / PWA) ── */
 /* Safe area insets for iOS notch / Dynamic Island */
 /* NOTE: body does NOT get padding-top — the nav handles it to avoid double offset */
+/* NOTE: body does NOT get padding-bottom — content should end naturally at the footer */
 body {
-  padding-bottom: env(safe-area-inset-bottom);
   padding-left: env(safe-area-inset-left);
   padding-right: env(safe-area-inset-right);
 }
@@ -535,6 +535,16 @@ select,
 textarea {
   -webkit-text-fill-color: inherit;
   font-size: max(16px, 1em);
+}
+
+/* ── iOS Date Input Normalization ── */
+/* iOS renders date inputs as button-like elements with different sizing; */
+/* force them to match text inputs for consistent height and appearance */
+input[type="date"] {
+  -webkit-appearance: textfield;
+  appearance: textfield;
+  min-height: 0;
+  line-height: normal;
 }
 
 /* ── Mobile Overflow Prevention ── */

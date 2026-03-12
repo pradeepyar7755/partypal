@@ -262,16 +262,13 @@ export default function GuestsPage() {
     <>
       <div className={styles.header}>
         <div className={styles.headerInner}>
-          <div className={styles.breadcrumb}>
-            <a href="/">🏠 Home</a> › <span>Guests</span>
-          </div>
-          <button className="back-btn" onClick={() => window.location.href = '/'} style={{ marginTop: 0 }}>← Back to Home</button>
+          <div style={{ display: 'flex', gap: '0.8rem', marginTop: '0.3rem', flexWrap: 'wrap' }}>
           {activeEvents.length > 0 && (
             activeEvents.length === 1 ? (
-              <button className="back-btn" onClick={() => router.push(`/dashboard?event=${activeEvents[0].eventId}&tab=guests`)} style={{ marginTop: 0, background: 'rgba(74,173,168,0.1)', color: 'var(--teal)', border: '1.5px solid rgba(74,173,168,0.25)' }}>← Back to My Events</button>
+              <button className="back-btn" onClick={() => router.push(`/dashboard?event=${activeEvents[0].eventId}&tab=guests`)} style={{ background: 'rgba(74,173,168,0.1)', color: 'var(--teal)', border: '1.5px solid rgba(74,173,168,0.25)' }}>← Back to My Events</button>
             ) : (
-              <div style={{ position: 'relative', display: 'inline-block' }}>
-                <button className="back-btn" onClick={() => setShowEventPicker(p => !p)} style={{ marginTop: 0, background: 'rgba(74,173,168,0.1)', color: 'var(--teal)', border: '1.5px solid rgba(74,173,168,0.25)' }}>← Back to My Events</button>
+              <div style={{ position: 'relative' }}>
+                <button className="back-btn" onClick={() => setShowEventPicker(p => !p)} style={{ background: 'rgba(74,173,168,0.1)', color: 'var(--teal)', border: '1.5px solid rgba(74,173,168,0.25)' }}>← Back to My Events</button>
                 {showEventPicker && (
                   <div style={{ position: 'absolute', top: '110%', left: 0, background: 'white', borderRadius: 10, boxShadow: '0 4px 20px rgba(0,0,0,0.15)', border: '1.5px solid var(--border)', padding: '0.5rem', zIndex: 100, minWidth: 200 }}>
                     <div style={{ fontSize: '0.68rem', fontWeight: 800, color: '#9aabbb', padding: '0.2rem 0.4rem', marginBottom: '0.3rem' }}>Select event:</div>
@@ -286,6 +283,7 @@ export default function GuestsPage() {
               </div>
             )
           )}
+          </div>
           <div className={styles.headerTitle}>Guest Management 👥</div>
           <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: '0.95rem', fontWeight: 600, marginBottom: '0.2rem' }}>Add your friends & family to circles for faster and repeatable access</p>
           <div className={styles.headerSub}>{contacts.length} contact{contacts.length !== 1 ? 's' : ''} · {circles.length} circle{circles.length !== 1 ? 's' : ''}</div>

@@ -246,7 +246,7 @@ function DashboardContent() {
     const [guestForm, setGuestForm] = useState({ name: '', email: '' })
     const [vendorForm, setVendorForm] = useState({ name: '', category: '', notes: '', costEstimate: '', budgetCategory: '' })
     const ALL_VENDOR_CATS = ['Venue', 'Decor', 'Baker', 'Food', 'Photos', 'Music', 'Drinks', 'Entertain']
-    const [enabledCats, setEnabledCats] = useState<string[]>(ALL_VENDOR_CATS)
+    const [enabledCats, setEnabledCats] = useState<string[]>(ALL_VENDOR_CATS.filter(c => c !== 'Music' && c !== 'Drinks'))
     const [newCheckItem, setNewCheckItem] = useState('')
     const [newCheckCategory, setNewCheckCategory] = useState('')
     const [dragTaskIdx, setDragTaskIdx] = useState<number | null>(null)
@@ -1071,6 +1071,7 @@ function DashboardContent() {
     // ── Touch drag-and-drop handlers (iPad / mobile) ──
     const handleTouchDragStart = (type: 'task' | 'timeline', idx: number) => (e: React.TouchEvent) => {
         e.stopPropagation()
+        e.preventDefault()
         const touch = e.touches[0]
         // Create ghost element for visual feedback
         const ghost = document.createElement('div')
@@ -2054,7 +2055,7 @@ function DashboardContent() {
                                             </div>
                                             {data.date && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>🗓️ {new Date(data.date + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</div>}
                                             <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>👥 {data.guests} guests</div>
-                                            <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>📍 {shortLocation(data.location)}</div>
+                                            <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)', maxWidth: '200px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>📍 {shortLocation(data.location)}</div>
                                             {data.theme && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>🎨 {data.theme}</div>}
                                             {data.budget && <div style={{ background: 'rgba(74,173,168,0.08)', borderRadius: 20, padding: '0.25rem 0.7rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)' }}>💰 {data.budget}</div>}
                                             <button onClick={startEditing} style={{ marginLeft: 'auto', background: 'rgba(74,173,168,0.1)', border: '1.5px solid rgba(74,173,168,0.25)', borderRadius: 8, padding: '0.3rem 0.8rem', fontSize: '0.72rem', fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>✏️ Edit</button>

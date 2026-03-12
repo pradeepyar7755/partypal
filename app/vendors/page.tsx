@@ -395,11 +395,7 @@ function VendorsContent() {
       {/* ══ HEADER ══ */}
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <div className={styles.breadcrumb}>
-            <a href="/">🏠 Home</a> › <span>{activecat === 'All Vendors' ? 'Vendors' : activecat + ' Vendors'}</span>
-          </div>
           <div style={{ display: 'flex', gap: '0.8rem', marginTop: '0.3rem', flexWrap: 'wrap' }}>
-            <button className="back-btn" onClick={() => router.push('/')}>← Back to Home</button>
             {activeEvents.length > 0 && (
               activeEvents.length === 1 ? (
                 <button className="back-btn" onClick={() => router.push(`/dashboard?event=${activeEvents[0].eventId}&tab=vendors`)} style={{ background: 'rgba(74,173,168,0.1)', color: 'var(--teal)', border: '1.5px solid rgba(74,173,168,0.25)' }}>← Back to My Events</button>

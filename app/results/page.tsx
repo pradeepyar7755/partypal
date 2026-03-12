@@ -105,10 +105,6 @@ export default function Results() {
     <main>
       <header className={styles.header}>
         <div className={styles.headerInner}>
-          <button className="back-btn" onClick={() => router.push('/')}>← Back to Home</button>
-          <div className={styles.breadcrumb}>
-            <a href="/" className="breadcrumb">Home</a> › <span className="breadcrumb current">{data.eventType}</span>
-          </div>
           <div className={styles.eventBadge}>🤖 AI Generated Plan</div>
           <h1 className={styles.headerTitle}>{data.eventType} <em>Plan</em></h1>
           <p className={styles.headerSub}>{data.guests} guests · {data.location}{data.date ? ` · ${new Date(data.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : ''}{data.theme ? ` · ${data.theme} theme` : ''}</p>

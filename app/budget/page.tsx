@@ -133,9 +133,6 @@ export default function Budget() {
             <header className={styles.budgetHeader}>
                 <div className={styles.budgetHeaderInner}>
                     <button className="back-btn" onClick={() => router.back()}>← Back</button>
-                    <div className="breadcrumb">
-                        <a href="/">Home</a> › {eventType && <><a href="/results">{eventType}</a> › </>}<span className="breadcrumb current">Budget</span>
-                    </div>
                     <h1 className={styles.budgetTitle}>💰 Budget Tracker</h1>
                     <p className={styles.budgetSub}>Track and manage your party spending across all categories</p>
                 </div>
