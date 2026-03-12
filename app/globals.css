@@ -548,11 +548,13 @@ input[type="date"] {
   box-sizing: border-box;
 }
 
-/* ── Native App Padding Reduction ── */
-/* Capacitor apps add safe-area for the notch; reduce nav content height */
-/* to keep overall top space closer to what Safari shows */
+/* ── Native App Nav ── */
+/* In Capacitor, remove safe-area-inset-top from nav to prevent iOS WebView */
+/* from dynamically adding padding after first scroll. The dark nav background */
+/* blends with the dark status bar so no visual gap is needed. */
 html.native-app nav {
-  height: calc(52px + env(safe-area-inset-top));
+  padding-top: 0;
+  height: 52px;
 }
 
 /* ── Mobile Overflow Prevention ── */
