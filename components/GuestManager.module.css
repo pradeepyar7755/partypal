@@ -480,6 +480,28 @@
     }
 }
 
+/* ── Mobile: icon-only for upload buttons, action buttons on second line ── */
+.uploadBtn span {
+    display: inline;
+}
+
+.inviteActions {
+    display: flex;
+    gap: 0.3rem;
+    align-items: center;
+}
+
+@media (max-width: 480px) {
+    .uploadBtn span {
+        display: none;
+    }
+
+    .inviteActions {
+        width: 100%;
+        order: 10;
+    }
+}
+
 /* ── Guest Selection ───────────────────────── */
 
 .selectCheckbox {

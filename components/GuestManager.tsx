@@ -249,9 +249,13 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
     const inviteFingerprint = invite ? JSON.stringify({ s: invite.subject, m: invite.message, sm: invite.smsVersion, ci: invite.customImage, cp: invite.coverPhoto }) : ''
     const hasUnpublishedChanges = invite && (!isPublished || inviteFingerprint !== lastPublishedInvite)
 
+    const bootstrappedPublishRef = useRef(false)
+
     // Bootstrap publishedInvite from server data if it exists but local state is empty
     useEffect(() => {
+        if (bootstrappedPublishRef.current) return
         if (invite && joinCode && !publishedInvite) {
+            bootstrappedPublishRef.current = true
             const savedPayload = { ...invite, customImage: invite.customImage || undefined, coverPhoto: invite.coverPhoto || undefined }
             setPublishedInvite(savedPayload)
             userSetJSON(publishedInviteKey, savedPayload)
@@ -775,6 +779,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                 {!invite && (
                     <div className="card" style={{ padding: '0.8rem 1.2rem', marginBottom: 0, display: 'flex', alignItems: 'center', gap: '0.4rem', flexWrap: 'wrap' }}>
                         <h3 style={{ fontFamily: "'Fredoka One',cursive", fontSize: '0.9rem', color: 'var(--navy)' }}>✉️ Invitation</h3>
+                        <div className={styles.inviteActions}>
                         <button className={styles.actionBtn} onClick={() => generateInvite()} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
                         <button className={styles.secondaryBtn} onClick={() => setShowPreview(true)} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>👁️ Preview</button>
                         {hasUnpublishedChanges
@@ -790,6 +795,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                 </>
                             )
                         }
+                        </div>
                     </div>
                 )}
                 {invite && (
@@ -799,7 +805,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                 <span style={{ fontSize: '0.7rem', transition: 'transform 0.2s', display: 'inline-block', transform: inviteCollapsed ? 'rotate(-90deg)' : 'rotate(0deg)' }}>▼</span>
                                 ✉️ Invitation
                             </h3>
-                            <div style={{ display: 'flex', gap: '0.3rem', alignItems: 'center' }} onClick={e => e.stopPropagation()}>
+                            <div className={styles.inviteActions} onClick={e => e.stopPropagation()}>
                                 <button className={styles.actionBtn} onClick={() => generateInvite()} disabled={loadingInvite} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>{loadingInvite ? '⏳...' : '✨ Generate'}</button>
                                 <button className={styles.secondaryBtn} onClick={() => setShowPreview(true)} style={{ fontSize: '0.68rem', padding: '0.2rem 0.5rem' }}>👁️ Preview</button>
                                 {hasUnpublishedChanges
@@ -968,9 +974,9 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
 
                             <input ref={customInviteRef} type="file" accept="image/*" onChange={handleCustomInviteUpload} style={{ display: 'none' }} />
                             <input ref={coverPhotoRef} type="file" accept="image/*" onChange={handleCoverPhotoUpload} style={{ display: 'none' }} />
-                            <button onClick={() => customInviteRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>🖼️ Invite</button>
-                            <button onClick={() => coverPhotoRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>📸 Cover</button>
-                            <button onClick={() => setShowRegistryForm(!showRegistryForm)} style={{ background: giftRegistry.length > 0 ? 'rgba(123,94,167,0.08)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${giftRegistry.length > 0 ? 'rgba(123,94,167,0.3)' : 'var(--border)'}`, borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: giftRegistry.length > 0 ? '#7B5EA7' : 'var(--navy)', cursor: 'pointer' }}>🎁 Registry{giftRegistry.length > 0 ? ` (${giftRegistry.length})` : ''}</button>
+                            <button className={styles.uploadBtn} onClick={() => customInviteRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>🖼️<span> Invite</span></button>
+                            <button className={styles.uploadBtn} onClick={() => coverPhotoRef.current?.click()} style={{ background: 'rgba(0,0,0,0.04)', border: '1.5px solid var(--border)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)', cursor: 'pointer' }}>📸<span> Cover</span></button>
+                            <button className={styles.uploadBtn} onClick={() => setShowRegistryForm(!showRegistryForm)} style={{ background: giftRegistry.length > 0 ? 'rgba(123,94,167,0.08)' : 'rgba(0,0,0,0.04)', border: `1.5px solid ${giftRegistry.length > 0 ? 'rgba(123,94,167,0.3)' : 'var(--border)'}`, borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: giftRegistry.length > 0 ? '#7B5EA7' : 'var(--navy)', cursor: 'pointer' }}>🎁<span> Registry{giftRegistry.length > 0 ? ` (${giftRegistry.length})` : ''}</span></button>
                         </>
                     )}
                 </div>
