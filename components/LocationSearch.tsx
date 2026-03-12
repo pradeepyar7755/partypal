@@ -205,7 +205,8 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
                     padding: '0.4rem 0.7rem', background: 'rgba(74,173,168,0.06)',
                     border: '1px solid rgba(74,173,168,0.15)', borderRadius: 8,
                     fontSize: '0.75rem', fontWeight: 600, color: '#4AADA8',
-                    animation: 'locFade 0.2s ease'
+                    animation: 'locFade 0.2s ease',
+                    maxWidth: '100%', boxSizing: 'border-box', overflow: 'hidden'
                 }}>
                     <span style={{ fontSize: '0.9rem' }}>{selected.icon}</span>
                     <span style={{ flex: 1, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
