@@ -1,0 +1,26 @@
+PartyPal is your AI-powered party planning assistant. Plan unforgettable events with smart timelines, guest management, and vendor discovery — all in one app.
+
+KEY FEATURES:
+
+AI Party Planning
+Tell PartyPal about your event and get an instant, personalized party plan with a detailed timeline, checklist, and creative ideas powered by AI.
+
+Guest Management & RSVPs
+Create beautiful invite links, track RSVPs in real-time, and manage your guest list effortlessly. Guests can RSVP without downloading the app.
+
+Vendor Discovery
+Find nearby vendors — caterers, DJs, photographers, florists, and more — with ratings, reviews, and contact info right at your fingertips.
+
+Budget Tracking
+Set a budget and track expenses as you plan. Stay on top of costs with a simple, visual budget breakdown.
+
+Collaboration
+Invite co-hosts to help plan together. Share responsibilities and keep everyone on the same page.
+
+Polls & Voting
+Can't decide on a theme, venue, or menu? Create polls and let your guests vote.
+
+Works for Any Event
+Birthday parties, weddings, baby showers, corporate events, holiday gatherings, game nights, barbecues — PartyPal handles it all.
+
+Download PartyPal and start planning your next party today!

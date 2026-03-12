@@ -1,0 +1,2 @@
+- Improved vendor search with distance and rating filters
+- Bug fixes and performance improvements
