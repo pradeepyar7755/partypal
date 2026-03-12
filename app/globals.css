@@ -538,15 +538,14 @@ textarea {
 }
 
 /* ── iOS Date Input Normalization ── */
-/* iOS renders date inputs as button-like elements with different sizing; */
-/* force them to match text inputs for consistent height and appearance */
+/* iOS renders date inputs with native button-like styling that differs in height; */
+/* force identical appearance to text inputs */
 input[type="date"] {
-  -webkit-appearance: textfield;
-  appearance: textfield;
+  -webkit-appearance: none;
+  appearance: none;
   min-height: 0;
   line-height: normal;
   box-sizing: border-box;
-  height: auto;
 }
 
 /* ── Native App Padding Reduction ── */

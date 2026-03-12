@@ -2102,7 +2102,7 @@ function DashboardContent() {
                                             <div style={{ marginBottom: '0.6rem' }}>
                                                 <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 4, display: 'block' }}>📍 Location</label>
                                                 <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
-                                                    <div style={{ flex: 1 }}>
+                                                    <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
                                                         {editData.location === 'TBD' ? (
                                                             <div style={{ background: 'rgba(74,173,168,0.08)', border: '1.5px dashed rgba(74,173,168,0.3)', borderRadius: 8, padding: '0.4rem 0.8rem', color: 'var(--teal)', fontWeight: 700, fontSize: '0.82rem' }}>📍 Location TBD</div>
                                                         ) : (
