@@ -642,6 +642,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
     }
 
     const generateInvite = async (retryCount = 0) => {
+        bootstrappedPublishRef.current = true // prevent bootstrap effect from auto-marking as published
         setLoadingInvite(true)
         try {
             const res = await fetch('/api/guests', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ action: 'generate_invite', eventDetails: { ...planData, inviteTheme, hostName: editableHostName || 'Your Host' }, temperature: inviteTemp, ...getContextPayload() }) })
