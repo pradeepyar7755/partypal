@@ -964,7 +964,7 @@ export default function GuestManager({ eventId, planData: propPlanData, isDemo, 
                                 <span style={{ fontSize: '0.65rem', fontWeight: 800, color: 'var(--navy)' }}>{rsvpByDate ? new Date(rsvpByDate + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : 'Set date'}</span>
                             </div>
 
-                            <button onClick={() => { setDraftDetails({ hostName: editableHostName, rsvpBy: rsvpByDate || '', time: editableEventTime, timezone: editableTimezone }); setIsEditingStrip(true) }} style={{ background: 'none', border: '1px solid var(--teal)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>✏️ Edit Details</button>
+                            <button onClick={() => { setDraftDetails({ hostName: editableHostName, rsvpBy: rsvpByDate || '', time: editableEventTime, timezone: editableTimezone }); setIsEditingStrip(true) }} style={{ background: 'none', border: '1px solid var(--teal)', borderRadius: 6, padding: '0.15rem 0.5rem', fontSize: '0.65rem', fontWeight: 800, color: 'var(--teal)', cursor: 'pointer' }}>✏️ Edit</button>
 
                             <input ref={customInviteRef} type="file" accept="image/*" onChange={handleCustomInviteUpload} style={{ display: 'none' }} />
                             <input ref={coverPhotoRef} type="file" accept="image/*" onChange={handleCoverPhotoUpload} style={{ display: 'none' }} />

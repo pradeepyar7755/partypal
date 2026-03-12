@@ -538,13 +538,11 @@ export default function Home() {
               <a href="/contact">Contact Us</a>
               <a href="/contact">FAQs</a>
               <a href="/about">About</a>
-              <a href="/privacy">Privacy Policy</a>
-              <a href="/terms">Terms of Service</a>
             </div>
           </div>
         </div>
         <div className={styles.footerBottom}>
-          <p>© 2026 PartyPal · partypal.social · <a href="/privacy" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Privacy</a> · <a href="/terms" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Terms</a></p>
+          <p>© 2026 PartyPal Social LLC. All rights reserved. · <a href="/privacy" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Privacy</a> · <a href="/terms" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>Terms</a></p>
         </div>
       </footer>
     </main>
