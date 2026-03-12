@@ -4,6 +4,8 @@ import {
     User,
     onAuthStateChanged,
     signInWithPopup,
+    signInWithRedirect,
+    getRedirectResult,
     signInWithCredential,
     GoogleAuthProvider,
     OAuthProvider,
@@ -58,6 +60,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
+        // Handle redirect result after Google OAuth on native
+        if (isNativeApp()) {
+            getRedirectResult(auth).then((result) => {
+                if (result?.user) {
+                    if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
+                        trackSignUp('google')
+                    } else {
+                        trackLogin('google')
+                    }
+                }
+            }).catch(() => { })
+        }
+
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setUser(user)
             setStorageUid(user?.uid || null)
@@ -86,11 +101,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const signInWithGoogle = async () => {
         const provider = new GoogleAuthProvider()
-        const result = await signInWithPopup(auth, provider)
-        if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
-            trackSignUp('google')
+        if (isNativeApp()) {
+            // Redirect stays in-app because authDomain is set to partypal.social
+            // and /__/auth/* is proxied to Firebase's auth handler
+            await signInWithRedirect(auth, provider)
         } else {
-            trackLogin('google')
+            const result = await signInWithPopup(auth, provider)
+            if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
+                trackSignUp('google')
+            } else {
+                trackLogin('google')
+            }
         }
     }
 

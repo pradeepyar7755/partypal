@@ -17,6 +17,15 @@ const nextConfig = {
   compiler: {
     removeConsole: process.env.NODE_ENV === 'production' ? { exclude: ['error', 'warn'] } : false,
   },
+  async rewrites() {
+    return [
+      {
+        // Proxy Firebase Auth handler so signInWithRedirect stays in-app on Capacitor
+        source: '/__/auth/:path*',
+        destination: 'https://party-pal-488618.firebaseapp.com/__/auth/:path*',
+      },
+    ];
+  },
 };
 
 module.exports = withSentryConfig(nextConfig, {

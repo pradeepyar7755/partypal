@@ -3,7 +3,9 @@ import { getAuth } from 'firebase/auth'
 
 const firebaseConfig = {
     apiKey: process.env.NEXT_PUBLIC_FIREBASE_API_KEY,
-    authDomain: process.env.NEXT_PUBLIC_FIREBASE_AUTH_DOMAIN || 'party-pal-488618.firebaseapp.com',
+    // Use own domain as authDomain so signInWithRedirect stays in the Capacitor WebView
+    // instead of breaking out to Safari. The /__/auth/* path is proxied to Firebase.
+    authDomain: process.env.NEXT_PUBLIC_DOMAIN || 'partypal.social',
     projectId: process.env.NEXT_PUBLIC_FIREBASE_PROJECT_ID || 'party-pal-488618',
 }
 
