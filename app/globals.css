@@ -545,6 +545,15 @@ input[type="date"] {
   appearance: textfield;
   min-height: 0;
   line-height: normal;
+  box-sizing: border-box;
+  height: auto;
+}
+
+/* ── Native App Padding Reduction ── */
+/* Capacitor apps add safe-area for the notch; reduce nav content height */
+/* to keep overall top space closer to what Safari shows */
+html.native-app nav {
+  height: calc(52px + env(safe-area-inset-top));
 }
 
 /* ── Mobile Overflow Prevention ── */

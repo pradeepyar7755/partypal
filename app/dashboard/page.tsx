@@ -1772,12 +1772,8 @@ function DashboardContent() {
             {/* ══ HEADER ══ */}
             <header className={styles.header}>
                 <div className={styles.headerInner}>
-                    <div className={styles.headerBreadcrumb}>
-                        <a href="/" style={{ color: 'rgba(255,255,255,0.4)', textDecoration: 'none' }}>🏠 Home</a> › <span style={{ color: 'var(--yellow)' }}>My Events</span>
-                    </div>
-                    <button className="back-btn" onClick={() => router.push('/')} style={{ marginTop: 0 }}>← Back to Home</button>
                     <h1 className={styles.headerHeading}>Plan your events with AI ✨</h1>
-                    <p className={styles.headerSubtitle}>Create, manage, and share your party plans — all powered by AI.</p>
+                    <p className={styles.headerSubtitle}>Create and manage your party plans — all powered by AI.</p>
                 </div>
             </header>
 

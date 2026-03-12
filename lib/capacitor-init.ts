@@ -12,6 +12,9 @@ export const getPlatform = () => Capacitor.getPlatform(); // 'ios' | 'android' |
 export async function initNativeApp() {
     if (!isNative()) return;
 
+    // ── Mark native context for CSS ──
+    document.documentElement.classList.add('native-app');
+
     // ── Status Bar ──
     const { StatusBar, Style } = await import('@capacitor/status-bar');
     await StatusBar.setStyle({ style: Style.Dark });

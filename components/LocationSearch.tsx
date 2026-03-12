@@ -173,14 +173,14 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
     }
 
     return (
-        <div ref={containerRef} style={{ position: 'relative' }}>
+        <div ref={containerRef} style={{ position: 'relative', width: '100%', minWidth: 0 }}>
             <div style={{ position: 'relative' }}>
                 <input
                     ref={inputRef} type="text" placeholder={placeholder} value={query}
                     onChange={e => handleInput(e.target.value)}
                     onFocus={() => { if (predictions.length > 0 && !selected) setIsOpen(true) }}
                     onKeyDown={handleKey} className={className} autoComplete="off"
-                    style={{ paddingRight: query ? '2.5rem' : '1rem' }}
+                    style={{ paddingRight: query ? '2.5rem' : '1rem', width: '100%', boxSizing: 'border-box' }}
                 />
                 {loading && (
                     <div style={{
