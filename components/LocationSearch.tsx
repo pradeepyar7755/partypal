@@ -173,7 +173,7 @@ export default function LocationSearch({ value, onChange, placeholder = 'Search 
     }
 
     return (
-        <div ref={containerRef} style={{ position: 'relative', width: '100%', minWidth: 0, overflow: 'hidden' }}>
+        <div ref={containerRef} style={{ position: 'relative', width: '100%', minWidth: 0 }}>
             <div style={{ position: 'relative' }}>
                 <input
                     ref={inputRef} type="text" placeholder={placeholder} value={query}
