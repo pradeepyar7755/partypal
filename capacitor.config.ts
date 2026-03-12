@@ -45,12 +45,6 @@ const config: CapacitorConfig = {
         PushNotifications: {
             presentationOptions: ['badge', 'sound', 'alert'],
         },
-        GoogleAuth: {
-            scopes: ['email', 'profile'],
-            // iOS client ID from Firebase Console → Project settings → Your apps → iOS app
-            iosClientId: '502123555355-v6oudp93bbsh3o9eib5nc0p8todekms7.apps.googleusercontent.com',
-            forceCodeForRefreshToken: true,
-        },
     },
 };
 

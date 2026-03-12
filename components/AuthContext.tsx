@@ -85,26 +85,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [])
 
     const signInWithGoogle = async () => {
-        if (isNativeApp()) {
-            // Use native Google Sign-In — shows in-app sheet, no Safari redirect
-            const { GoogleAuth } = await import('@southdevs/capacitor-google-auth')
-            await GoogleAuth.initialize()
-            const googleUser = await GoogleAuth.signIn({ scopes: ['email', 'profile'] })
-            const credential = GoogleAuthProvider.credential(googleUser.authentication.idToken)
-            const userCred = await signInWithCredential(auth, credential)
-            if (userCred.user.metadata.creationTime === userCred.user.metadata.lastSignInTime) {
-                trackSignUp('google')
-            } else {
-                trackLogin('google')
-            }
+        const provider = new GoogleAuthProvider()
+        const result = await signInWithPopup(auth, provider)
+        if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
+            trackSignUp('google')
         } else {
-            const provider = new GoogleAuthProvider()
-            const result = await signInWithPopup(auth, provider)
-            if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
-                trackSignUp('google')
-            } else {
-                trackLogin('google')
-            }
+            trackLogin('google')
         }
     }
 

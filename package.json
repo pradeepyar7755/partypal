@@ -40,7 +40,6 @@
     "@capacitor/status-bar": "^8.0.1",
     "@google/generative-ai": "^0.24.1",
     "@sentry/nextjs": "^9",
-    "@southdevs/capacitor-google-auth": "^7.0.0",
     "firebase": "^12.9.0",
     "firebase-admin": "^13.7.0",
     "isomorphic-dompurify": "^3.0.0",
