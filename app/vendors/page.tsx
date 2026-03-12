@@ -52,14 +52,14 @@ function VendorsContent() {
   const VENDORS_PER_PAGE = 10
   const [showSidebar, setShowSidebar] = useState(false)
   const [priceMax, setPriceMax] = useState(1000)
-  const [ratingFilter, setRatingFilter] = useState(4)
+  const [ratingFilter, setRatingFilter] = useState(3)
   const [detectedLocation, setDetectedLocation] = useState('')
   const [displayLocation, setDisplayLocation] = useState('')
   const [locationReady, setLocationReady] = useState(false)
   const [isAutoDetected, setIsAutoDetected] = useState(false)
   const [usedGeoLocation, setUsedGeoLocation] = useState(false)
   const [cuisine, setCuisine] = useState('All')
-  const [distanceFilter, setDistanceFilter] = useState('all')
+  const [distanceFilter, setDistanceFilter] = useState('<25')
   const [activeEvents, setActiveEvents] = useState<{ eventId: string; eventType: string }[]>([])
   const [addToEventVendor, setAddToEventVendor] = useState<string | null>(null)
   const [showEventPicker, setShowEventPicker] = useState(false)
@@ -521,7 +521,7 @@ function VendorsContent() {
             <div className={styles.filterSection}>
               <h3>Distance</h3>
               <div style={{ display: 'flex', flexDirection: 'column', gap: '0.25rem' }}>
-                {[{ label: 'Any Distance', value: 'all' }, { label: '< 5 miles', value: '<5' }, { label: '< 10 miles', value: '<10' }, { label: '< 25 miles', value: '<25' }].map(d => (
+                {[{ label: '< 5 miles', value: '<5' }, { label: '< 10 miles', value: '<10' }, { label: '< 25 miles', value: '<25' }].map(d => (
                   <label key={d.value} className={styles.filterCheck}>
                     <input type="radio" name="distance" checked={distanceFilter === d.value} onChange={() => setDistanceFilter(d.value)} />
                     <span style={{ fontSize: '0.82rem', fontWeight: 600, color: 'var(--navy)' }}>{d.label}</span>
