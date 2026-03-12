@@ -4,8 +4,6 @@ import {
     User,
     onAuthStateChanged,
     signInWithPopup,
-    signInWithRedirect,
-    getRedirectResult,
     signInWithCredential,
     GoogleAuthProvider,
     OAuthProvider,
@@ -60,19 +58,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const [loading, setLoading] = useState(true)
 
     useEffect(() => {
-        // Handle redirect result after Google OAuth on native
-        if (isNativeApp()) {
-            getRedirectResult(auth).then((result) => {
-                if (result?.user) {
-                    if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
-                        trackSignUp('google')
-                    } else {
-                        trackLogin('google')
-                    }
-                }
-            }).catch(() => { })
-        }
-
         const unsubscribe = onAuthStateChanged(auth, (user) => {
             setUser(user)
             setStorageUid(user?.uid || null)
@@ -100,12 +85,20 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [])
 
     const signInWithGoogle = async () => {
-        const provider = new GoogleAuthProvider()
         if (isNativeApp()) {
-            // Redirect stays in-app because authDomain is set to partypal.social
-            // and /__/auth/* is proxied to Firebase's auth handler
-            await signInWithRedirect(auth, provider)
+            // Use native Google Sign-In — shows in-app sheet, no Safari redirect
+            const { GoogleAuth } = await import('@southdevs/capacitor-google-auth')
+            await GoogleAuth.initialize()
+            const googleUser = await GoogleAuth.signIn({ scopes: ['email', 'profile'] })
+            const credential = GoogleAuthProvider.credential(googleUser.authentication.idToken)
+            const userCred = await signInWithCredential(auth, credential)
+            if (userCred.user.metadata.creationTime === userCred.user.metadata.lastSignInTime) {
+                trackSignUp('google')
+            } else {
+                trackLogin('google')
+            }
         } else {
+            const provider = new GoogleAuthProvider()
             const result = await signInWithPopup(auth, provider)
             if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
                 trackSignUp('google')
