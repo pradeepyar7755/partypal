@@ -553,8 +553,8 @@ input[type="date"] {
 /* from dynamically adding padding after first scroll. The dark nav background */
 /* blends with the dark status bar so no visual gap is needed. */
 html.native-app nav {
-  padding-top: 0;
-  height: 52px;
+  padding-top: 6px;
+  height: 58px;
 }
 
 /* ── Mobile Overflow Prevention ── */
