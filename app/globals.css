@@ -549,12 +549,16 @@ input[type="date"] {
 }
 
 /* ── Native App Nav ── */
-/* In Capacitor, remove safe-area-inset-top from nav to prevent iOS WebView */
-/* from dynamically adding padding after first scroll. The dark nav background */
-/* blends with the dark status bar so no visual gap is needed. */
+/* In Capacitor, use a fixed safe-area offset instead of env(safe-area-inset-top) */
+/* to prevent iOS WebView from dynamically recalculating padding after first scroll. */
+/* 47px covers the status bar height on all modern iPhones (notch + Dynamic Island). */
 html.native-app nav {
-  padding-top: 6px;
-  height: 58px;
+  padding-top: 47px;
+  height: calc(64px + 47px);
+}
+
+html.native-app nav ul {
+  top: calc(64px + 47px);
 }
 
 /* ── Mobile Overflow Prevention ── */
