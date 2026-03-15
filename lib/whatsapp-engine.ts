@@ -179,7 +179,7 @@ ${contextInfo}
 Classify the user's message into exactly one intent. Extract any relevant entities.
 
 INTENTS:
-- create_event: User wants to create/plan a new party or event. Extract eventType if mentioned.
+- create_event: User wants to create/plan a new party or event. Extract: eventType, date, location, guests (count), theme, budget — any that are mentioned.
 - list_events: User wants to see their events/parties.
 - select_event: User wants to switch to or work with a specific event. Extract eventName if mentioned.
 - add_guests: User wants to add guests. Extract guestNames (comma-separated) if mentioned.
@@ -198,6 +198,11 @@ INTENTS:
 - help: User wants help or a list of commands.
 - greeting: User is just saying hello.
 - unknown: Can't determine intent.
+
+EXAMPLES:
+"Create a birthday party for April 4" => {"intent":"create_event","entities":{"eventType":"Birthday Party","date":"April 4"},"confidence":0.95}
+"Plan a BBQ next Saturday at Central Park for 30 people" => {"intent":"create_event","entities":{"eventType":"BBQ","date":"next Saturday","location":"Central Park","guests":"30"},"confidence":0.95}
+"Find DJs near Atlanta" => {"intent":"find_vendors","entities":{"vendorType":"DJs","location":"Atlanta"},"confidence":0.95}
 
 User message: "${text}"
 

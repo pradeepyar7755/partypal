@@ -105,17 +105,43 @@ export async function handleCreateEvent(
         return
     }
 
-    // Start multi-step event creation
-    const eventType = entities.eventType || ''
+    // Start multi-step event creation — pre-fill any entities extracted from the message
+    const slots: Record<string, string> = {}
+    if (entities.eventType) slots.eventType = entities.eventType
+    if (entities.date) slots.date = entities.date
+    if (entities.guests) slots.guests = entities.guests
+    if (entities.location) slots.location = entities.location
+    if (entities.theme) slots.theme = entities.theme
+    if (entities.budget) slots.budget = entities.budget
+
     await updateSession(from, {
         state: 'creating_event',
-        eventSlots: eventType ? { eventType } : {},
+        eventSlots: slots,
     })
 
-    if (eventType) {
-        await sendTextMessage(from, `🎉 Let's plan a *${eventType}*!\n\n📅 When is it? (e.g., "April 15" or "next Saturday")`)
-    } else {
+    // Ask for the next missing field
+    if (!slots.eventType) {
         await sendTextMessage(from, `🎉 Let's plan a party!\n\nWhat type of event? (e.g., Birthday, Wedding, BBQ, Game Night, Baby Shower)`)
+    } else if (!slots.date) {
+        await sendTextMessage(from, `🎉 Let's plan a *${slots.eventType}*!\n\n📅 When is it? (e.g., "April 15" or "next Saturday")`)
+    } else if (!slots.guests) {
+        await sendTextMessage(from, `🎉 *${slots.eventType}* on *${slots.date}* — nice!\n\n👥 How many guests are you expecting?`)
+    } else if (!slots.location) {
+        await sendTextMessage(from, `🎉 *${slots.eventType}* on *${slots.date}* for *${slots.guests} guests*\n\n📍 Where will it be? (address, venue name, or city)`)
+    } else {
+        // All required fields filled — offer to create or add extras
+        await sendButtons(from,
+            `🎉 Here's what I have:\n\n` +
+            `📋 *${slots.eventType}*\n📅 ${slots.date}\n👥 ${slots.guests} guests\n📍 ${slots.location}\n` +
+            (slots.theme ? `🎨 ${slots.theme}\n` : '') +
+            (slots.budget ? `💰 ${slots.budget}\n` : '') +
+            `\nCreate the event?`,
+            [
+                { id: 'event_create_now', title: 'Create now ✨' },
+                { id: 'event_add_theme', title: 'Add theme' },
+                { id: 'event_add_budget', title: 'Add budget' },
+            ]
+        )
     }
 }
 
