@@ -2062,17 +2062,21 @@ function DashboardContent() {
                                                 <div>
                                                     <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 2, display: 'block' }}>Event Name</label>
                                                     {(() => {
-                                                        // Extract trailing emoji from event name (e.g. "Birthday 🎂" -> emoji="🎂")
-                                                        const words = editData.eventType.trim().split(' ')
+                                                        // Extract emoji from event name (supports both leading "🎂 Birthday" and trailing "Birthday 🎂")
+                                                        const raw = editData.eventType.trim()
+                                                        const words = raw.split(' ')
+                                                        const firstWord = words[0] || ''
                                                         const lastWord = words[words.length - 1] || ''
-                                                        const isEmoji = lastWord.length <= 2 && !/^[a-zA-Z0-9]+$/.test(lastWord) && words.length > 1
-                                                        const textPart = isEmoji ? words.slice(0, -1).join(' ') : editData.eventType
-                                                        const emojiPart = isEmoji ? lastWord : ''
+                                                        const isLeadingEmoji = firstWord.length <= 2 && !/^[a-zA-Z0-9]+$/.test(firstWord) && words.length > 1
+                                                        const isTrailingEmoji = !isLeadingEmoji && lastWord.length <= 2 && !/^[a-zA-Z0-9]+$/.test(lastWord) && words.length > 1
+                                                        const emojiPart = isLeadingEmoji ? firstWord : isTrailingEmoji ? lastWord : ''
+                                                        const textPart = isLeadingEmoji ? words.slice(1).join(' ') : isTrailingEmoji ? words.slice(0, -1).join(' ') : raw
                                                         return (
                                                             <div style={{ display: 'flex', alignItems: 'center', gap: '0.3rem' }}>
-                                                                {emojiPart && <span style={{ fontSize: '1.2rem', padding: '0 0.3rem', userSelect: 'none' }}>{emojiPart}</span>}
+                                                                {emojiPart && <span style={{ fontSize: '1.2rem', padding: '0.3rem 0.4rem', userSelect: 'none', background: 'rgba(74,173,168,0.08)', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.15)', cursor: 'default' }} title="Event icon (auto-assigned)">{emojiPart}</span>}
                                                                 <input value={textPart} onChange={e => {
-                                                                    setEditData(p => ({ ...p, eventType: e.target.value + (emojiPart ? ` ${emojiPart}` : '') }))
+                                                                    const newText = e.target.value
+                                                                    setEditData(p => ({ ...p, eventType: emojiPart ? (isLeadingEmoji ? `${emojiPart} ${newText}` : `${newText} ${emojiPart}`) : newText }))
                                                                 }} style={{ flex: 1, padding: '0.4rem 0.6rem', borderRadius: 8, border: '1.5px solid rgba(74,173,168,0.3)', fontSize: '0.82rem', fontWeight: 700, outline: 'none', color: 'var(--navy)' }} />
                                                             </div>
                                                         )
