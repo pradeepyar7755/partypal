@@ -561,7 +561,7 @@ async function handleButtonReply(from: string, session: WhatsAppSession, buttonI
                 `If you have the app installed, tap here:\n` +
                 `https://partypal.social/app\n\n` +
                 `Don't have it yet? Download it:\n` +
-                `🍎 iOS: https://apps.apple.com/app/partypal\n` +
+                `🍎 iOS: https://apps.apple.com/us/app/partypal-ai-party-planner/id6759846460\n` +
                 `🤖 Android: Coming soon!`
             )
             break
