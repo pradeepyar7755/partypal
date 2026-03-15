@@ -59,6 +59,8 @@ interface ClassifiedIntent {
 export async function handleIncomingMessage(msg: IncomingMessage): Promise<void> {
     const { from, text, type, buttonId, listId, isGroup } = msg
 
+    console.log(`[Emcee] Message from ${from}: type=${type}, text=${text?.slice(0, 50)}`)
+
     // In group chats, only respond if mentioned
     if (isGroup && text) {
         const lowerText = text.toLowerCase()
@@ -66,37 +68,54 @@ export async function handleIncomingMessage(msg: IncomingMessage): Promise<void>
         if (!isMentioned) return
     }
 
-    // Get or create session
-    const session = await getSession(from)
-    await touchSession(from)
-
-    // Handle button/list replies as contextual responses
-    if (type === 'button' && buttonId) {
-        await handleButtonReply(from, session, buttonId, text || '')
-        return
-    }
-    if (type === 'list' && listId) {
-        await handleListReply(from, session, listId, text || '')
-        return
-    }
-
-    // Text messages
-    if (!text) {
-        await sendTextMessage(from, `🎤 Hey! I'm ${EMCEE_NAME}, your party planning assistant. I work best with text messages — just type what you need!`)
-        return
+    // Get or create session — with graceful fallback
+    let session: WhatsAppSession
+    try {
+        session = await getSession(from)
+        touchSession(from).catch(() => {})  // fire-and-forget
+    } catch (err) {
+        console.error('[Emcee] Session error, using default:', err)
+        session = {
+            phoneNumber: from,
+            state: 'idle',
+            lastActivity: new Date().toISOString(),
+            createdAt: new Date().toISOString(),
+            messageCount: 0,
+        }
     }
 
-    // Check if user is in a multi-step flow
-    if (session.state !== 'idle') {
-        await handleMultiStepFlow(from, session, text)
-        return
+    try {
+        // Handle button/list replies as contextual responses
+        if (type === 'button' && buttonId) {
+            await handleButtonReply(from, session, buttonId, text || '')
+            return
+        }
+        if (type === 'list' && listId) {
+            await handleListReply(from, session, listId, text || '')
+            return
+        }
+
+        // Text messages
+        if (!text) {
+            await sendTextMessage(from, `🎤 Hey! I'm ${EMCEE_NAME}, your party planning assistant. I work best with text messages — just type what you need!`)
+            return
+        }
+
+        // Check if user is in a multi-step flow
+        if (session.state !== 'idle') {
+            await handleMultiStepFlow(from, session, text)
+            return
+        }
+
+        // Classify intent
+        const classified = await classifyIntent(text, session)
+
+        // Route to handler
+        await routeIntent(from, session, classified, text)
+    } catch (err) {
+        console.error('[Emcee] Handler error:', err)
+        await sendTextMessage(from, `🎤 I hit a snag processing that. Try again?`).catch(() => {})
     }
-
-    // Classify intent
-    const classified = await classifyIntent(text, session)
-
-    // Route to handler
-    await routeIntent(from, session, classified, text)
 }
 
 // ── Intent Classification via Gemini ──────────────────
@@ -515,8 +534,8 @@ async function handleListReply(from: string, session: WhatsAppSession, listId: s
 
 async function handleGreeting(from: string, session: WhatsAppSession): Promise<void> {
     if (!session.uid) {
-        // New user — offer to link account
-        await sendButtons(from,
+        // New user — send simple text greeting first (more reliable than buttons)
+        await sendTextMessage(from,
             `🎤 Hey there! I'm *${EMCEE_NAME}*, your AI party planning assistant from PartyPal!\n\n` +
             `I can help you:\n` +
             `🎉 Create & manage parties\n` +
@@ -524,11 +543,8 @@ async function handleGreeting(from: string, session: WhatsAppSession): Promise<v
             `🎂 Generate cake, decor & invite ideas\n` +
             `💌 Send RSVP invitations\n` +
             `📝 Track your party checklist\n\n` +
-            `Want to link your PartyPal account for full access?`,
-            [
-                { id: 'link_yes', title: 'Link account' },
-                { id: 'link_skip', title: 'Skip for now' },
-            ]
+            `To link your PartyPal account, say *"link account"*\n` +
+            `Or just start with *"create a party"* or *"help"*!`
         )
     } else {
         const name = session.displayName ? `, ${session.displayName.split(' ')[0]}` : ''
