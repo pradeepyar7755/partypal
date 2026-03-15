@@ -58,7 +58,7 @@ function getEventEmoji(eventType: string): string {
 }
 
 /** Ensure eventType has emoji prefix for dashboard compatibility */
-function formatEventType(eventType: string): string {
+export function formatEventType(eventType: string): string {
     if (!eventType) return '🎉 Party'
     // Already has emoji prefix? Return as-is
     if (eventType.charCodeAt(0) > 255) return eventType
@@ -225,11 +225,15 @@ export async function handleCreateEvent(
                     (slots.theme ? `🎨 ${slots.theme}\n` : '') +
                     (slots.budget ? `💰 ${slots.budget}\n` : '') +
                     `\n🔗 Join code: *${data.joinCode}*\n` +
-                    `Share link: ${APP_URL}/join/${data.joinCode}\n\n` +
-                    `What's next?\n` +
-                    `📝 Generate a plan\n` +
-                    `👥 Add guests\n` +
-                    `🎂 Explore cake ideas`
+                    `Share link: ${APP_URL}/join/${data.joinCode}`
+                )
+                // Proactive naming prompt — helps the invite look great
+                await sendButtons(from,
+                    `✨ *Quick tip:* Give your event a catchy name so it looks great on invites!\n\nFor example: _"Sarah's 30th Birthday Bash"_ or _"Summer BBQ 2026"_`,
+                    [
+                        { id: 'rename_event_yes', title: 'Name my event' },
+                        { id: 'rename_event_skip', title: 'Skip for now' },
+                    ]
                 )
             } else {
                 await sendTextMessage(from, `❌ Failed to create event: ${data.error}`)
@@ -487,15 +491,69 @@ export async function handleSendInvites(from: string, session: WhatsAppSession):
         const joinCode = data.joinCode
         const joinUrl = `${APP_URL}/join/${joinCode}`
 
+        // First message: just the URL — easy to forward
+        await sendTextMessage(from, joinUrl)
+
+        // Follow-up: context and tips
         await sendTextMessage(from,
-            `💌 *Invite link for ${session.activeEventName}:*\n\n` +
-            `${joinUrl}\n\n` +
-            `Share this link with your guests — they can RSVP directly from it!\n\n` +
-            `💡 *Tip:* Forward this message to your group chat, or share individually.`
+            `💌 *RSVP link for ${session.activeEventName}*\n\n` +
+            `Forward the link above to your guests or group chats — they can RSVP directly!\n\n` +
+            `💡 You can also say *"add guests"* to add people by name.`
         )
     } catch (err) {
         console.error('[Emcee] Send invites error:', err)
         await sendTextMessage(from, '❌ Couldn\'t generate invite link. Try again?')
+    }
+}
+
+// ── Rename Event ──────────────────────────────────────
+
+export async function handleRenameEvent(
+    from: string,
+    session: WhatsAppSession,
+    entities: Record<string, string>,
+    rawText: string
+): Promise<void> {
+    if (!(await requireAccount(from, session))) return
+    if (!(await requireEvent(from, session))) return
+
+    // If the user provided a new name in the message, use it directly
+    const newName = entities.eventName || ''
+
+    if (newName) {
+        await doRename(from, session, newName)
+    } else {
+        // Ask for the new name
+        await updateSession(from, { state: 'renaming_event' })
+        await sendTextMessage(from,
+            `✏️ What would you like to call *${session.activeEventName}*?\n\n` +
+            `Type a new name like:\n_"Sarah's 30th Birthday Bash"_\n_"Summer BBQ 2026"_`
+        )
+    }
+}
+
+async function doRename(from: string, session: WhatsAppSession, newName: string): Promise<void> {
+    try {
+        const formattedName = formatEventType(newName)
+
+        await fetch(`${APP_URL}/api/events`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                eventId: session.activeEventId,
+                eventType: formattedName,
+            }),
+        })
+
+        await setActiveEvent(from, session.activeEventId!, formattedName)
+        await resetState(from)
+        await sendTextMessage(from,
+            `✅ Event renamed to *${formattedName}*\n\n` +
+            `This will show up on invites and your dashboard. What's next?`
+        )
+    } catch (err) {
+        console.error('[Emcee] Rename error:', err)
+        await sendTextMessage(from, '❌ Couldn\'t rename the event. Try again?')
     }
 }
 

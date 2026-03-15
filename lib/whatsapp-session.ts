@@ -14,6 +14,7 @@ export type ConversationState =
     | 'idle'
     | 'awaiting_link'           // Waiting for user to link their PartyPal account
     | 'creating_event'          // Multi-step event creation
+    | 'renaming_event'          // Waiting for new event name
     | 'selecting_event'         // Choosing which event to work with
     | 'managing_guests'         // Adding/viewing guests
     | 'creating_poll'           // Multi-step poll creation

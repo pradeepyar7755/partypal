@@ -12,6 +12,7 @@ import {
 } from '@/lib/whatsapp-session'
 import {
     handleCreateEvent, handleListEvents, handleSelectEvent,
+    handleRenameEvent, formatEventType,
     handleAddGuests, handleCheckRsvps, handleSendInvites,
     handleCreatePoll, handleGeneratePlan, handleFindVendors,
     handleShowChecklist, handleShowBudget,
@@ -30,6 +31,7 @@ export type Intent =
     | 'create_event'
     | 'list_events'
     | 'select_event'
+    | 'rename_event'
     | 'add_guests'
     | 'check_rsvps'
     | 'send_invites'
@@ -146,6 +148,10 @@ async function classifyIntent(text: string, session: WhatsAppSession): Promise<C
     if (/^(show|list|my)\s*(events?|parties)/i.test(cleanText)) {
         return { intent: 'list_events', entities: {}, confidence: 0.95 }
     }
+    if (/^rename\s*(event|party|it)?/i.test(cleanText) || /^(call|name)\s*(it|this|the event|the party|my event|my party)/i.test(cleanText)) {
+        const namePart = cleanText.replace(/^(rename|call|name)\s*(event|party|it|this|the event|the party|my event|my party)?\s*(to|as)?\s*/i, '').trim()
+        return { intent: 'rename_event', entities: namePart ? { eventName: namePart } : {}, confidence: 0.95 }
+    }
     if (/^(show|view|check)\s*(rsvp|who'?s coming|guest status)/i.test(cleanText)) {
         return { intent: 'check_rsvps', entities: {}, confidence: 0.95 }
     }
@@ -188,6 +194,7 @@ INTENTS:
 - create_event: User wants to create/plan a new party or event. Extract: eventType, date, location, guests (count), theme, budget — any that are mentioned.
 - list_events: User wants to see their events/parties.
 - select_event: User wants to switch to or work with a specific event. Extract eventName if mentioned.
+- rename_event: User wants to rename/change the name of their event. Extract eventName (the new name) if mentioned.
 - add_guests: User wants to add guests. Extract guestNames (comma-separated) if mentioned.
 - check_rsvps: User wants to check RSVP status or see who's coming.
 - send_invites: User wants to send invitations or RSVP links.
@@ -249,6 +256,9 @@ async function routeIntent(from: string, session: WhatsAppSession, classified: C
             break
         case 'select_event':
             await handleSelectEvent(from, session, entities)
+            break
+        case 'rename_event':
+            await handleRenameEvent(from, session, entities, rawText)
             break
         case 'add_guests':
             await handleAddGuests(from, session, entities, rawText)
@@ -315,6 +325,9 @@ async function handleMultiStepFlow(from: string, session: WhatsAppSession, text:
     switch (session.state) {
         case 'creating_event':
             await handleEventCreationStep(from, session, text)
+            break
+        case 'renaming_event':
+            await handleRenameStep(from, session, text)
             break
         case 'creating_poll':
             await handlePollCreationStep(from, session, text)
@@ -520,6 +533,20 @@ async function handleButtonReply(from: string, session: WhatsAppSession, buttonI
                 `For now, what would you like to do?\n🎉 Plan a party\n📝 Help`
             )
             break
+        case 'rename_event_yes':
+            await updateSession(from, { state: 'renaming_event' })
+            await sendTextMessage(from,
+                `✏️ What would you like to call your event?\n\n` +
+                `Type a name like:\n_"Sarah's 30th Birthday Bash"_\n_"Summer BBQ 2026"_`
+            )
+            break
+        case 'rename_event_skip':
+            await resetState(from)
+            await sendTextMessage(from,
+                `👍 No problem! You can rename it later by saying *"rename event"*.\n\n` +
+                `What's next?\n📝 Generate a plan\n👥 Add guests\n🎂 Explore cake ideas`
+            )
+            break
         default:
             await sendTextMessage(from, `Got your selection. What would you like to do next?`)
     }
@@ -538,6 +565,39 @@ async function handleListReply(from: string, session: WhatsAppSession, listId: s
             `What would you like to do with this event?\n` +
             `👥 Check RSVPs\n📋 View checklist\n💰 Budget\n🎂 Cake ideas\n💌 Design invitations\n📊 Create poll`
         )
+    }
+}
+
+// ── Rename Step Handler ───────────────────────────────
+
+async function handleRenameStep(from: string, session: WhatsAppSession, text: string): Promise<void> {
+    const newName = text.trim()
+    if (!newName) {
+        await sendTextMessage(from, '✏️ Please type a name for your event:')
+        return
+    }
+    // Use doRename from whatsapp-actions via direct API call
+    const formattedName = formatEventType(newName)
+    try {
+        await fetch(`${process.env.NEXT_PUBLIC_APP_URL || 'https://partypal.social'}/api/events`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                eventId: session.activeEventId,
+                eventType: formattedName,
+            }),
+        })
+        const { setActiveEvent } = await import('@/lib/whatsapp-session')
+        await setActiveEvent(from, session.activeEventId!, formattedName)
+        await resetState(from)
+        await sendTextMessage(from,
+            `✅ Event renamed to *${formattedName}*\n\n` +
+            `This will show up on invites and your dashboard. What's next?\n` +
+            `📝 Generate a plan\n👥 Add guests\n🎂 Explore cake ideas`
+        )
+    } catch (err) {
+        console.error('[Emcee] Rename step error:', err)
+        await sendTextMessage(from, '❌ Couldn\'t rename the event. Try again?')
     }
 }
 
