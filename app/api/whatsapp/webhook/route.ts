@@ -31,6 +31,8 @@ export async function POST(req: NextRequest) {
     try {
         const rawBody = await req.text()
 
+        console.log('[WhatsApp Webhook] POST received, body length:', rawBody.length)
+
         // Validate signature (skip in dev for easier testing)
         if (process.env.NODE_ENV === 'production') {
             const signature = req.headers.get('x-hub-signature-256') || ''
@@ -43,21 +45,27 @@ export async function POST(req: NextRequest) {
         const body = JSON.parse(rawBody) as Record<string, unknown>
         const messages = parseWebhookPayload(body)
 
+        console.log(`[WhatsApp Webhook] Parsed ${messages.length} message(s)`)
+
         if (messages.length === 0) {
             // Status update or other non-message webhook — acknowledge
             return NextResponse.json({ status: 'ok' })
         }
 
-        // Process each message (fire-and-forget to respond within 5s)
-        // WhatsApp requires fast acknowledgment
+        // Process each message — MUST await on Vercel serverless
+        // (function terminates after response, so fire-and-forget won't work)
         for (const msg of messages) {
-            // Mark as read immediately
+            console.log(`[WhatsApp Webhook] Processing: from=${msg.from}, type=${msg.type}, text=${msg.text?.slice(0, 50)}`)
+
+            // Mark as read
             markAsRead(msg.messageId).catch(() => {})
 
-            // Process message asynchronously
-            handleIncomingMessage(msg).catch((err) => {
+            // Process message — await to ensure it completes
+            try {
+                await handleIncomingMessage(msg)
+            } catch (err) {
                 console.error('[WhatsApp Webhook] Handler error:', err)
-            })
+            }
         }
 
         return NextResponse.json({ status: 'ok' })
