@@ -634,7 +634,7 @@ async function handleVoiceMessage(
         console.log(`[Emcee] Audio downloaded: ${media.data.length} bytes, type=${media.mimeType}`)
 
         // Step 2: Transcribe with Gemini
-        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash', generationConfig: { thinkingConfig: { thinkingBudget: 0 } } as object })
         const result = await model.generateContent([
             {
                 inlineData: {
