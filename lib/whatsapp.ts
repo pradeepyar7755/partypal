@@ -172,10 +172,12 @@ export interface IncomingMessage {
     from: string           // sender phone number
     messageId: string      // message ID for read receipts
     timestamp: string
-    type: 'text' | 'button' | 'list' | 'image' | 'unknown'
+    type: 'text' | 'button' | 'list' | 'image' | 'audio' | 'unknown'
     text?: string          // text body or button/list selection
     buttonId?: string      // button reply ID
     listId?: string        // list selection ID
+    mediaId?: string       // audio/image media ID for downloading
+    mimeType?: string      // media MIME type (e.g., audio/ogg)
     isGroup: boolean
     groupId?: string
 }
@@ -230,6 +232,13 @@ export function parseWebhookPayload(body: Record<string, unknown>): IncomingMess
                         }
                     } else if (msgType === 'image') {
                         parsed.type = 'image'
+                        const image = msg.image as Record<string, unknown>
+                        if (image?.id) parsed.mediaId = String(image.id)
+                    } else if (msgType === 'audio') {
+                        parsed.type = 'audio'
+                        const audio = msg.audio as Record<string, unknown>
+                        if (audio?.id) parsed.mediaId = String(audio.id)
+                        if (audio?.mime_type) parsed.mimeType = String(audio.mime_type)
                     }
 
                     if (parsed.from) messages.push(parsed)
@@ -241,4 +250,40 @@ export function parseWebhookPayload(body: Record<string, unknown>): IncomingMess
     }
 
     return messages
+}
+
+// ── Download Media from WhatsApp ──────────────────────
+// Voice notes and images come with a media ID.
+// We first get the download URL, then fetch the binary.
+
+export async function downloadMedia(mediaId: string): Promise<{ data: Buffer; mimeType: string } | null> {
+    try {
+        // Step 1: Get the media URL
+        const urlRes = await fetch(`${WHATSAPP_API}/${mediaId}`, {
+            headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` },
+        })
+        if (!urlRes.ok) {
+            console.error('[WhatsApp Media] Failed to get URL:', urlRes.status)
+            return null
+        }
+        const urlData = await urlRes.json() as { url: string; mime_type: string }
+
+        // Step 2: Download the actual media
+        const mediaRes = await fetch(urlData.url, {
+            headers: { 'Authorization': `Bearer ${ACCESS_TOKEN}` },
+        })
+        if (!mediaRes.ok) {
+            console.error('[WhatsApp Media] Failed to download:', mediaRes.status)
+            return null
+        }
+
+        const arrayBuffer = await mediaRes.arrayBuffer()
+        return {
+            data: Buffer.from(arrayBuffer),
+            mimeType: urlData.mime_type || 'audio/ogg',
+        }
+    } catch (err) {
+        console.error('[WhatsApp Media] Download error:', err)
+        return null
+    }
 }

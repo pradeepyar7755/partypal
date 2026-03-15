@@ -5,7 +5,7 @@
 // ═══════════════════════════════════════════════════════
 
 import { GoogleGenerativeAI } from '@google/generative-ai'
-import { sendTextMessage, sendButtons, sendList, type IncomingMessage } from '@/lib/whatsapp'
+import { sendTextMessage, sendButtons, sendList, downloadMedia, type IncomingMessage } from '@/lib/whatsapp'
 import {
     getSession, updateSession, resetState, touchSession,
     type WhatsAppSession, type ConversationState
@@ -95,9 +95,15 @@ export async function handleIncomingMessage(msg: IncomingMessage): Promise<void>
             return
         }
 
-        // Text messages
+        // Voice messages — transcribe and process as text
+        if (type === 'audio' && msg.mediaId) {
+            await handleVoiceMessage(from, session, msg.mediaId, msg.mimeType || 'audio/ogg')
+            return
+        }
+
+        // Non-text, non-audio messages (images, stickers, etc.)
         if (!text) {
-            await sendTextMessage(from, `🎤 Hey! I'm ${EMCEE_NAME}, your party planning assistant. I work best with text messages — just type what you need!`)
+            await sendTextMessage(from, `🎤 Hey! I'm ${EMCEE_NAME}, your party planning assistant. Send me a text or voice message — I understand both!`)
             return
         }
 
@@ -603,4 +609,65 @@ async function finalizePollCreation(from: string, session: WhatsAppSession): Pro
         await sendTextMessage(from, '❌ Something went wrong creating the poll. Try again?')
     }
     await resetState(from)
+}
+
+// ── Voice Message Handler ─────────────────────────────
+// Downloads audio from WhatsApp, transcribes with Gemini,
+// shows the user their transcript, then processes as text.
+
+async function handleVoiceMessage(
+    from: string,
+    session: WhatsAppSession,
+    mediaId: string,
+    mimeType: string
+): Promise<void> {
+    console.log(`[Emcee] Voice message from ${from}, mediaId=${mediaId}, mime=${mimeType}`)
+
+    try {
+        // Step 1: Download audio
+        const media = await downloadMedia(mediaId)
+        if (!media) {
+            await sendTextMessage(from, `🎤 I received your voice message but couldn't download it. Could you try again or type your message instead?`)
+            return
+        }
+
+        console.log(`[Emcee] Audio downloaded: ${media.data.length} bytes, type=${media.mimeType}`)
+
+        // Step 2: Transcribe with Gemini
+        const model = genAI.getGenerativeModel({ model: 'gemini-2.0-flash' })
+        const result = await model.generateContent([
+            {
+                inlineData: {
+                    mimeType: media.mimeType,
+                    data: media.data.toString('base64'),
+                },
+            },
+            'Transcribe this audio message exactly as spoken. Return ONLY the transcribed text, nothing else. If it is unclear, do your best to transcribe it. If completely inaudible, reply with "[inaudible]".',
+        ])
+
+        const transcript = result.response.text().trim()
+        console.log(`[Emcee] Transcript: ${transcript.slice(0, 100)}`)
+
+        if (!transcript || transcript === '[inaudible]') {
+            await sendTextMessage(from, `🎤 I couldn't make out your voice message. Could you try again or type your message instead?`)
+            return
+        }
+
+        // Step 3: Show transcript to user (like Wispr Flow)
+        await sendTextMessage(from, `🎤 *I heard:*\n_"${transcript}"_`)
+
+        // Step 4: Process transcript through the normal text pipeline
+
+        // Re-enter the handler as if it were a text message
+        if (session.state !== 'idle') {
+            await handleMultiStepFlow(from, session, transcript)
+        } else {
+            const classified = await classifyIntent(transcript, session)
+            console.log(`[Emcee] Voice intent: ${classified.intent} (${classified.confidence})`)
+            await routeIntent(from, session, classified, transcript)
+        }
+    } catch (err) {
+        console.error('[Emcee] Voice transcription error:', err)
+        await sendTextMessage(from, `🎤 Something went wrong processing your voice message. Could you type it instead?`)
+    }
 }
