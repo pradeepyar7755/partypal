@@ -115,19 +115,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const signInWithApple = async () => {
         if (isNativeApp()) {
             let userCred
-            try {
-                // New plugin (available on new native builds)
+            if (Capacitor.isPluginAvailable('FirebaseAuthentication')) {
+                // New plugin (new native builds with @capacitor-firebase/authentication)
                 const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication')
                 const result = await FirebaseAuthentication.signInWithApple()
-                if (!result.credential?.idToken) throw new Error('Missing token')
+                if (!result.credential?.idToken) throw new Error('Apple Sign-In failed or missing token.')
                 const provider = new OAuthProvider('apple.com')
                 const credential = provider.credential({
                     idToken: result.credential.idToken,
                     rawNonce: result.credential.nonce
                 })
                 userCred = await signInWithCredential(auth, credential)
-            } catch {
-                // Fallback to old plugin (available on old native builds)
+            } else {
+                // Old plugin (old native builds with @capacitor-community/apple-sign-in)
                 const { SignInWithApple } = await import('@capacitor-community/apple-sign-in')
                 const result = await SignInWithApple.authorize({
                     clientId: 'social.partypal.app',
