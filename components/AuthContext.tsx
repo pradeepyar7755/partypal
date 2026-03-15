@@ -48,9 +48,11 @@ const AuthContext = createContext<AuthContextType>({
     sendVerificationEmail: async () => { },
 })
 
+import { Capacitor } from '@capacitor/core'
+
 // Returns true when running inside a Capacitor native app (iOS/Android)
 function isNativeApp(): boolean {
-    return typeof window !== 'undefined' && !!(window as any).Capacitor?.isNativePlatform()
+    return Capacitor.isNativePlatform()
 }
 
 export function AuthProvider({ children }: { children: ReactNode }) {
@@ -85,29 +87,59 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }, [])
 
     const signInWithGoogle = async () => {
-        const provider = new GoogleAuthProvider()
-        const result = await signInWithPopup(auth, provider)
-        if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
-            trackSignUp('google')
+        if (isNativeApp()) {
+            const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication')
+            const nativeResult = await FirebaseAuthentication.signInWithGoogle()
+            if (nativeResult.credential?.idToken) {
+                const credential = GoogleAuthProvider.credential(nativeResult.credential.idToken)
+                const result = await signInWithCredential(auth, credential)
+                if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
+                    trackSignUp('google')
+                } else {
+                    trackLogin('google')
+                }
+            } else {
+                throw new Error('Google Sign-In failed or missing token.')
+            }
         } else {
-            trackLogin('google')
+            const provider = new GoogleAuthProvider()
+            const result = await signInWithPopup(auth, provider)
+            if (result.user.metadata.creationTime === result.user.metadata.lastSignInTime) {
+                trackSignUp('google')
+            } else {
+                trackLogin('google')
+            }
         }
     }
 
     const signInWithApple = async () => {
         if (isNativeApp()) {
-            // Use native Sign in with Apple — shows in-app sheet, no Safari redirect
-            const { SignInWithApple } = await import('@capacitor-community/apple-sign-in')
-            const result = await SignInWithApple.authorize({
-                clientId: 'social.partypal.app',
-                redirectURI: 'https://partypal.social',
-                scopes: 'email name',
-            })
-            const provider = new OAuthProvider('apple.com')
-            const credential = provider.credential({
-                idToken: result.response.identityToken,
-            })
-            const userCred = await signInWithCredential(auth, credential)
+            let userCred
+            try {
+                // New plugin (available on new native builds)
+                const { FirebaseAuthentication } = await import('@capacitor-firebase/authentication')
+                const result = await FirebaseAuthentication.signInWithApple()
+                if (!result.credential?.idToken) throw new Error('Missing token')
+                const provider = new OAuthProvider('apple.com')
+                const credential = provider.credential({
+                    idToken: result.credential.idToken,
+                    rawNonce: result.credential.nonce
+                })
+                userCred = await signInWithCredential(auth, credential)
+            } catch {
+                // Fallback to old plugin (available on old native builds)
+                const { SignInWithApple } = await import('@capacitor-community/apple-sign-in')
+                const result = await SignInWithApple.authorize({
+                    clientId: 'social.partypal.app',
+                    redirectURI: 'https://partypal.social',
+                    scopes: 'email name',
+                })
+                const provider = new OAuthProvider('apple.com')
+                const credential = provider.credential({
+                    idToken: result.response.identityToken,
+                })
+                userCred = await signInWithCredential(auth, credential)
+            }
             if (userCred.user.metadata.creationTime === userCred.user.metadata.lastSignInTime) {
                 trackSignUp('apple')
             } else {
