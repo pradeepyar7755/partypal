@@ -5,6 +5,7 @@
 // ═══════════════════════════════════════════════════════
 
 import { getDb } from '@/lib/firebase'
+import { FieldValue } from 'firebase-admin/firestore'
 
 const SESSION_COLLECTION = 'whatsapp_sessions'
 const SESSION_TTL_MS = 30 * 60 * 1000 // 30 minutes
@@ -93,13 +94,14 @@ export async function getSession(phoneNumber: string): Promise<WhatsAppSession> 
 
 export async function updateSession(phoneNumber: string, updates: Partial<WhatsAppSession>): Promise<void> {
     const db = getDb()
-    await db.collection(SESSION_COLLECTION).doc(phoneNumber).set(
-        {
-            ...updates,
-            lastActivity: new Date().toISOString(),
-        },
-        { merge: true }
-    )
+    // Filter out undefined values — Firestore doesn't accept them
+    const cleanUpdates: Record<string, unknown> = { lastActivity: new Date().toISOString() }
+    for (const [key, value] of Object.entries(updates)) {
+        if (value !== undefined) {
+            cleanUpdates[key] = value
+        }
+    }
+    await db.collection(SESSION_COLLECTION).doc(phoneNumber).set(cleanUpdates, { merge: true })
 }
 
 // ── Increment Message Count ───────────────────────────
@@ -131,11 +133,13 @@ export async function linkAccount(phoneNumber: string, uid: string, displayName?
 // ── Reset Session State ───────────────────────────────
 
 export async function resetState(phoneNumber: string): Promise<void> {
-    await updateSession(phoneNumber, {
+    const db = getDb()
+    await db.collection(SESSION_COLLECTION).doc(phoneNumber).update({
         state: 'idle',
-        eventSlots: undefined as unknown as EventSlots,
-        pollSlots: undefined as unknown as PollSlots,
-        themeSlots: undefined as unknown as ThemeSlots,
+        eventSlots: FieldValue.delete(),
+        pollSlots: FieldValue.delete(),
+        themeSlots: FieldValue.delete(),
+        lastActivity: new Date().toISOString(),
     })
 }
 
