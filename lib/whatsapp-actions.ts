@@ -14,6 +14,58 @@ import {
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL || 'https://partypal.social'
 
+// ── Event type → Emoji mapping (must match web wizard) ──
+
+const EVENT_EMOJI_MAP: Record<string, string> = {
+    'birthday': '🎂',
+    'engagement': '💍',
+    'graduation': '🎓',
+    'baby shower': '👶',
+    'housewarming': '🏠',
+    'holiday': '🎄',
+    'christmas': '🎄',
+    'corporate': '💼',
+    'poker': '🃏',
+    'game night': '🎮',
+    'family reunion': '👨‍👩‍👧‍👦',
+    'reunion': '👨‍👩‍👧‍👦',
+    'anniversary': '💞',
+    'wedding': '💒',
+    'bbq': '🍖',
+    'barbecue': '🍖',
+    'get together': '🍻',
+    'cocktail': '🍸',
+    'dinner': '🍽️',
+    'brunch': '🥂',
+    'halloween': '🎃',
+    'new year': '🥳',
+    'super bowl': '🏈',
+    'watch party': '📺',
+    'pool party': '🏊',
+    'block party': '🏘️',
+    'party': '🎉',
+}
+
+function getEventEmoji(eventType: string): string {
+    const lower = eventType.toLowerCase()
+    // Check if it already starts with an emoji (character outside ASCII)
+    if (lower.length > 0 && lower.charCodeAt(0) > 255) return ''
+    // Find matching emoji
+    for (const [key, emoji] of Object.entries(EVENT_EMOJI_MAP)) {
+        if (lower.includes(key)) return emoji
+    }
+    return '🎉' // default party emoji
+}
+
+/** Ensure eventType has emoji prefix for dashboard compatibility */
+function formatEventType(eventType: string): string {
+    if (!eventType) return '🎉 Party'
+    // Already has emoji prefix? Return as-is
+    if (eventType.charCodeAt(0) > 255) return eventType
+    const emoji = getEventEmoji(eventType)
+    return `${emoji} ${eventType}`
+}
+
 // ── Helper: require linked account ────────────────────
 
 async function requireAccount(from: string, session: WhatsAppSession): Promise<boolean> {
@@ -67,7 +119,7 @@ export async function handleCreateEvent(
                 body: JSON.stringify({
                     eventId,
                     uid: session.uid,
-                    eventType: slots.eventType,
+                    eventType: formatEventType(slots.eventType || ''),
                     date: slots.date,
                     guests: slots.guests,
                     location: slots.location,
