@@ -299,13 +299,21 @@ async function routeIntent(from: string, session: WhatsAppSession, classified: C
             break
         default:
             await sendTextMessage(from,
-                `🤔 I'm not sure what you mean. Here's what I can do:\n\n` +
+                `🤔 I'm not sure how to help with that yet. Here's what I can do:\n\n` +
                 `🎉 *Create a party* — "Plan a birthday party"\n` +
                 `📋 *My events* — "Show my events"\n` +
                 `🎂 *Theme ideas* — "Show me cake ideas"\n` +
                 `📊 *Polls* — "Create a poll"\n` +
                 `📝 *Checklist* — "Show my checklist"\n\n` +
-                `Type *help* for the full command list!`
+                `For anything else, you can do more on the app or web! 👇`
+            )
+            await sendButtons(from,
+                `Open PartyPal for the full experience:`,
+                [
+                    { id: 'open_app', title: '📱 Open App' },
+                    { id: 'open_web', title: '🌐 Open in Browser' },
+                    { id: 'get_help', title: '❓ Help' },
+                ]
             )
     }
 }
@@ -546,6 +554,26 @@ async function handleButtonReply(from: string, session: WhatsAppSession, buttonI
                 `👍 No problem! You can rename it later by saying *"rename event"*.\n\n` +
                 `What's next?\n📝 Generate a plan\n👥 Add guests\n🎂 Explore cake ideas`
             )
+            break
+        case 'open_app':
+            await sendTextMessage(from,
+                `📱 *Open PartyPal on your phone:*\n\n` +
+                `If you have the app installed, tap here:\n` +
+                `https://partypal.social/app\n\n` +
+                `Don't have it yet? Download it:\n` +
+                `🍎 iOS: https://apps.apple.com/app/partypal\n` +
+                `🤖 Android: Coming soon!`
+            )
+            break
+        case 'open_web':
+            await sendTextMessage(from,
+                `🌐 *Open PartyPal in your browser:*\n\n` +
+                `https://partypal.social/dashboard\n\n` +
+                `You can manage events, view plans, customize themes, and more from the full web experience!`
+            )
+            break
+        case 'get_help':
+            await handleHelp(from, session)
             break
         default:
             await sendTextMessage(from, `Got your selection. What would you like to do next?`)
