@@ -66,6 +66,90 @@ function formatEventType(eventType: string): string {
     return `${emoji} ${eventType}`
 }
 
+/** Parse a natural language date into YYYY-MM-DD for dashboard compatibility */
+function parseNaturalDate(input: string): string {
+    if (!input) return ''
+
+    // Already in ISO format?
+    if (/^\d{4}-\d{2}-\d{2}$/.test(input)) return input
+
+    // Try MM/DD/YYYY or MM-DD-YYYY
+    const slashMatch = input.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/)
+    if (slashMatch) {
+        return `${slashMatch[3]}-${slashMatch[1].padStart(2, '0')}-${slashMatch[2].padStart(2, '0')}`
+    }
+
+    // Month name patterns: "April 4", "Apr 4, 2026", "4 April", "April 4th"
+    const months: Record<string, number> = {
+        january: 1, jan: 1, february: 2, feb: 2, march: 3, mar: 3,
+        april: 4, apr: 4, may: 5, june: 6, jun: 6, july: 7, jul: 7,
+        august: 8, aug: 8, september: 9, sep: 9, sept: 9,
+        october: 10, oct: 10, november: 11, nov: 11, december: 12, dec: 12,
+    }
+
+    const cleaned = input.toLowerCase().replace(/(st|nd|rd|th)/g, '').replace(/,/g, '').trim()
+    const parts = cleaned.split(/\s+/)
+
+    let month = 0, day = 0, year = new Date().getFullYear()
+
+    for (const part of parts) {
+        if (months[part]) {
+            month = months[part]
+        } else if (/^\d{1,2}$/.test(part) && !day) {
+            day = parseInt(part)
+        } else if (/^\d{4}$/.test(part)) {
+            year = parseInt(part)
+        }
+    }
+
+    // Handle relative dates
+    if (!month && !day) {
+        const lower = input.toLowerCase()
+        const today = new Date()
+        const dayOfWeek = today.getDay()
+
+        if (lower.includes('tomorrow')) {
+            const d = new Date(today)
+            d.setDate(d.getDate() + 1)
+            return d.toISOString().split('T')[0]
+        }
+        if (lower.includes('today')) {
+            return today.toISOString().split('T')[0]
+        }
+
+        const dayNames: Record<string, number> = {
+            sunday: 0, sun: 0, monday: 1, mon: 1, tuesday: 2, tue: 2, tues: 2,
+            wednesday: 3, wed: 3, thursday: 4, thu: 4, thurs: 4,
+            friday: 5, fri: 5, saturday: 6, sat: 6,
+        }
+
+        for (const [name, targetDay] of Object.entries(dayNames)) {
+            if (lower.includes(name)) {
+                let daysAhead = (targetDay - dayOfWeek + 7) % 7
+                if (daysAhead === 0) daysAhead = 7 // "next" always means upcoming
+                if (lower.includes('next')) daysAhead += (daysAhead <= 0 ? 7 : 0)
+                const d = new Date(today)
+                d.setDate(d.getDate() + daysAhead)
+                return d.toISOString().split('T')[0]
+            }
+        }
+
+        // Couldn't parse — return original (will show raw text but not crash)
+        return input
+    }
+
+    if (month && day) {
+        // If the date is in the past for this year, assume next year
+        const candidate = new Date(year, month - 1, day)
+        if (candidate < new Date() && year === new Date().getFullYear()) {
+            year += 1
+        }
+        return `${year}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+    }
+
+    return input // fallback: return as-is
+}
+
 // ── Helper: require linked account ────────────────────
 
 async function requireAccount(from: string, session: WhatsAppSession): Promise<boolean> {
@@ -120,7 +204,7 @@ export async function handleCreateEvent(
                     eventId,
                     uid: session.uid,
                     eventType: formatEventType(slots.eventType || ''),
-                    date: slots.date,
+                    date: parseNaturalDate(slots.date || ''),
                     guests: slots.guests,
                     location: slots.location,
                     theme: slots.theme || undefined,
