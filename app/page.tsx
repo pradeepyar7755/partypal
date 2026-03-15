@@ -162,7 +162,7 @@ export default function Home() {
   const { user } = useAuth()
   const [form, setForm] = useState({ eventType: '', date: '', guests: '', location: '', theme: '', budget: '' })
   const [locationDetails, setLocationDetails] = useState<{ lat?: number; lng?: number; name?: string; city?: string; state?: string; type?: string } | null>(null)
-  const [locationTBD, setLocationTBD] = useState(false)
+
   const [loading, setLoading] = useState(false)
   const [showVideo, setShowVideo] = useState(false)
   const [showDemoHover, setShowDemoHover] = useState(false)
@@ -200,8 +200,8 @@ export default function Home() {
   }
 
   const handleSubmit = async () => {
-    if (!form.eventType || !form.guests || (!form.location && !locationTBD)) {
-      alert('Please fill in Event Type, Number of Guests, and Location (or mark as TBD)')
+    if (!form.eventType || !form.guests) {
+      alert('Please fill in Event Type and Number of Guests')
       return
     }
     setLoading(true)
@@ -387,39 +387,19 @@ export default function Home() {
                 <input type="number" placeholder="e.g. 30" min="1" value={form.guests} onChange={e => setForm({ ...form, guests: e.target.value })} />
               </div>
               <div className={styles.formGroup}>
-                <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span>Location / Venue {!locationTBD && '*'}</span>
-                  <label style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', fontSize: '0.78rem', fontWeight: 700, color: locationTBD ? 'var(--teal)' : '#9aabbb', cursor: 'pointer' }}>
-                    TBD
-                    <input type="checkbox" checked={locationTBD} onChange={e => {
-                      setLocationTBD(e.target.checked)
-                      if (e.target.checked) {
-                        setForm(prev => ({ ...prev, location: 'TBD' }))
-                        setLocationDetails(null)
-                      } else {
-                        setForm(prev => ({ ...prev, location: '' }))
-                      }
-                    }} style={{ accentColor: 'var(--teal)' }} />
-                  </label>
-                </label>
-                {locationTBD ? (
-                  <div style={{ background: 'rgba(74,173,168,0.08)', border: '1.5px dashed rgba(74,173,168,0.3)', borderRadius: 10, padding: '1rem', textAlign: 'center', color: 'var(--teal)', fontWeight: 700, fontSize: '0.9rem' }}>
-                    📍Location TBD
-                  </div>
-                ) : (
-                  <LocationSearch
-                    value={form.location}
-                    onChange={(location, details) => {
-                      setForm(prev => ({ ...prev, location }))
-                      if (details) {
-                        setLocationDetails({ lat: details.lat, lng: details.lng, name: details.name, city: details.city, state: details.state, type: details.type })
-                      } else {
-                        setLocationDetails(null)
-                      }
-                    }}
-                    placeholder="Search a city, venue, or address..."
-                  />
-                )}
+                <label>Location / Venue</label>
+                <LocationSearch
+                  value={form.location}
+                  onChange={(location, details) => {
+                    setForm(prev => ({ ...prev, location }))
+                    if (details) {
+                      setLocationDetails({ lat: details.lat, lng: details.lng, name: details.name, city: details.city, state: details.state, type: details.type })
+                    } else {
+                      setLocationDetails(null)
+                    }
+                  }}
+                  placeholder="Search a city, venue, or address..."
+                />
               </div>
             </div>
             <div className={styles.formRow}>

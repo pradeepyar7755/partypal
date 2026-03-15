@@ -266,13 +266,11 @@ export async function handleCreateEvent(
         await sendTextMessage(from, `🎉 Let's plan a *${slots.eventType}*!\n\n📅 When is it? (e.g., "April 15" or "next Saturday")`)
     } else if (!slots.guests) {
         await sendTextMessage(from, `🎉 *${slots.eventType}* on *${slots.date}* — nice!\n\n👥 How many guests are you expecting?`)
-    } else if (!slots.location) {
-        await sendTextMessage(from, `🎉 *${slots.eventType}* on *${slots.date}* for *${slots.guests} guests*\n\n📍 Where will it be? (address, venue name, or city)`)
     } else {
         // All required fields filled — offer to create or add extras
         await sendButtons(from,
             `🎉 Here's what I have:\n\n` +
-            `📋 *${slots.eventType}*\n📅 ${slots.date}\n👥 ${slots.guests} guests\n📍 ${slots.location}\n` +
+            `📋 *${slots.eventType}*\n📅 ${slots.date}\n👥 ${slots.guests} guests\n📍 ${slots.location || 'TBD'}\n` +
             (slots.theme ? `🎨 ${slots.theme}\n` : '') +
             (slots.budget ? `💰 ${slots.budget}\n` : '') +
             `\nCreate the event?`,

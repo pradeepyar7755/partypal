@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
 
     const body = await req.json()
     const { eventType, date, guests, location, theme, budget, refinement, existingTimeline } = body
-    if (!eventType || !guests || !location) {
+    if (!eventType || !guests) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
@@ -30,7 +30,7 @@ export async function POST(req: NextRequest) {
 
     const prompt = isRefinement ? `You are PartyPal, an expert party planner AI. The user wants to refine their existing plan. Apply their request precisely.
 ${contextBlock}
-Event: ${eventType} | Date: ${date || 'TBD'} | Guests: ${guests} | Location: ${location} | Theme: ${theme || 'Open'} | Budget: ${budget || 'Flexible'}
+Event: ${eventType} | Date: ${date || 'TBD'} | Guests: ${guests} | Location: ${location || 'TBD'} | Theme: ${theme || 'Open'} | Budget: ${budget || 'Flexible'}
 Today's date: ${new Date().toISOString().split('T')[0]}
 
 UNDERSTANDING THE DATA MODEL:
@@ -68,7 +68,7 @@ CHECKLIST RULES:
 - Keep existing checklist items that are still relevant (match them by category to the milestones).
 - Each item should be SHORT and actionable (e.g. "Buy card games & trivia sets" not "Research and purchase various card games and trivia question sets for the party").` : `You are PartyPal, an expert party planner AI. Generate a comprehensive party plan.
 ${contextBlock}
-Event: ${eventType} | Date: ${date || 'TBD'} | Guests: ${guests} | Location: ${location} | Theme: ${theme || 'Open'} | Budget: ${budget || 'NOT PROVIDED — you must estimate'}
+Event: ${eventType} | Date: ${date || 'TBD'} | Guests: ${guests} | Location: ${location || 'TBD'} | Theme: ${theme || 'Open'} | Budget: ${budget || 'NOT PROVIDED — you must estimate'}
 Today's date: ${new Date().toISOString().split('T')[0]}
 
 IMPORTANT TIMELINE RULES:

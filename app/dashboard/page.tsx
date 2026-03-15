@@ -2107,26 +2107,12 @@ function DashboardContent() {
                                                 <label style={{ fontSize: '0.65rem', fontWeight: 800, color: '#9aabbb', textTransform: 'uppercase' as const, letterSpacing: '0.05em', marginBottom: 4, display: 'block' }}>📍 Location</label>
                                                 <div style={{ display: 'flex', gap: '0.4rem', alignItems: 'center' }}>
                                                     <div style={{ flex: 1, minWidth: 0, overflow: 'hidden' }}>
-                                                        {editData.location === 'TBD' ? (
-                                                            <div style={{ background: 'rgba(74,173,168,0.08)', border: '1.5px dashed rgba(74,173,168,0.3)', borderRadius: 8, padding: '0.4rem 0.8rem', color: 'var(--teal)', fontWeight: 700, fontSize: '0.82rem' }}>📍 Location TBD</div>
-                                                        ) : (
-                                                            <LocationSearch
-                                                                value={editData.location}
-                                                                onChange={(loc) => setEditData(p => ({ ...p, location: loc }))}
-                                                                placeholder="Search a city, venue, or address..."
-                                                            />
-                                                        )}
+                                                        <LocationSearch
+                                                            value={editData.location === 'TBD' ? '' : editData.location}
+                                                            onChange={(loc) => setEditData(p => ({ ...p, location: loc }))}
+                                                            placeholder="Search a city, venue, or address..."
+                                                        />
                                                     </div>
-                                                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.25rem', fontSize: '0.72rem', fontWeight: 700, color: editData.location === 'TBD' ? 'var(--teal)' : '#9aabbb', cursor: 'pointer', whiteSpace: 'nowrap', flexShrink: 0 }}>
-                                                        TBD
-                                                        <input type="checkbox" checked={editData.location === 'TBD'} onChange={e => {
-                                                            if (e.target.checked) {
-                                                                setEditData(p => ({ ...p, location: 'TBD' }))
-                                                            } else {
-                                                                setEditData(p => ({ ...p, location: '' }))
-                                                            }
-                                                        }} style={{ accentColor: 'var(--teal)' }} />
-                                                    </label>
                                                 </div>
                                             </div>
                                             <div style={{ display: 'flex', gap: '0.5rem', justifyContent: 'flex-end' }}>
